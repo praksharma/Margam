@@ -12,3 +12,6 @@ docs_legacy/_build/
 
 # Python virtual environment
 .venv/
+
+# Generated benchmark artefacts
+benchmark-results/

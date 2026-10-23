@@ -129,6 +129,67 @@ on CUDA. They skip on CPU-only machines. For CPU-only installation, use the
 PyTorch CPU index (`https://download.pytorch.org/whl/cpu`) with `torch==2.0.1`.
 This is a baseline correctness check, not a benchmark suite.
 
+## Reusable benchmark runner
+
+Run the baseline on the Dell GPU with three independent seeds:
+
+```sh
+.venv/bin/python -m examples.benchmark_poisson --device cuda --seeds 7 17 27 --iterations 1000
+```
+
+Results go to a new timestamped folder under `benchmark-results/` (ignored by
+Git). Set `--output <new-folder>` to choose another location. Existing output
+folders are rejected to protect earlier runs.
+
+`DeepINN.benchmarking` exposes `BenchmarkCase`, `Recipe`, and `run_benchmark`.
+A case supplies a `build_problem()` factory returning a strong-form
+`PINNProblem`, evaluation points, and a reference solution. A recipe supplies
+`build(problem)` returning a compiled method with `device`, `train`, `predict`,
+and `loss_history`. Its factory owns network construction, so the runner does
+not require every method to have one network. Baseline method logic remains in
+`methods/pinn.py`.
+
+```python
+from DeepINN.benchmarking import BenchmarkCase, Recipe, run_benchmark
+
+case = BenchmarkCase("my_problem", build_problem, evaluation_points, reference_solution)
+recipes = [Recipe("baseline", build_baseline, config={"lr": 0.001})]
+results = run_benchmark(case, recipes, seeds=[7, 17, 27], iterations=1000,
+                        output_dir="benchmark-results/my-first-comparison")
+```
+
+For each seed, the runner materialises all samplers and target functions once,
+saves the data, and gives every recipe an independent copy. It resets Python,
+NumPy and PyTorch seeds before each recipe factory. Fixed evaluation tensors
+allow the same reference mesh across seeds; callable evaluation sources are
+sampled per seed. The case defines the training/evaluation split explicitly;
+the runner does not infer one from data. Seeds improve repeatability but do not
+guarantee identical floating-point results across hardware.
+
+Each output folder contains:
+
+- `manifest.json`: case/recipe settings, seeds, library versions, Git revision
+  and dirty state, and relevant numeric backend settings. Supply architecture,
+  optimiser, and other hyperparameters in recipe `config` for a useful record.
+- `seed-<n>/samples.npz` and `samples.json`: training coordinates and targets,
+  evaluation coordinates, references, constraint names, and a data fingerprint.
+- `seed-<n>/<recipe>/loss_history.csv`: named training losses per update.
+- `seed-<n>/<recipe>/predictions.npz`: evaluation points, predictions and reference.
+- `seed-<n>/<recipe>/result.json`: device/GPU, setup/training/prediction times,
+  RMSE, MAE, maximum absolute error and relative L2 error.
+- `summary.json` / `summary.csv`: individual run results.
+- `aggregate.json` / `aggregate.csv`: per-recipe means and sample standard
+  deviations across successful seeds, with success/failure counts. A single
+  seed has no sample standard deviation (`null` in JSON).
+
+Metrics pool all evaluation points and output components. Relative L2 is
+undefined for an all-zero reference and is recorded as `null`. Training losses
+are recorded before their corresponding updates; solution errors use the final
+network. CUDA timings synchronise the device, include history collection, and
+exclude writing artefacts. They are end-to-end measurements, not kernel timings.
+Failures are saved and re-raised, rather than silently omitted from comparisons.
+The example is an analytical Poisson check; no external dataset has been chosen.
+
 ## Docker image
 Pull the image with suitable tagname. The image is available [here](https://hub.docker.com/r/prakhars962/deepinn).
 
