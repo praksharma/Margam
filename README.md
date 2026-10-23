@@ -33,11 +33,101 @@ If you want to build the docs using the same environment, then install the relev
 pip install -r docs/requirements.txt
 ```
 
-# Testing
-The testing is very simple. Just run the test.py file in the current Python virtual environment.
-```sh
-python test.py
+# Modular baseline PINN
+
+Each PINN method has one file containing its method-specific preparation,
+loss evaluation, training procedure, and prediction. The first recipe is
+`DeepINN/methods/pinn.py` (`PINN`). Shared components remain reusable:
+
+- `components/problem.py`: `PINNProblem`, sampling sources, and named
+  `PointConstraint` conditions, including optional derivative operators.
+- `components/losses.py`: fixed weighted aggregation of named loss terms.
+- `nn/`, `geometry/`, and `utils/differentialoperators.py`: networks,
+  geometry/sampling, and automatic differentiation operators.
+- `model.py`: compatibility adapter for `Model(domain, network)`.
+
+Add a future method in `methods/<method>.py`, reuse the shared components,
+and keep that method's distinctive behaviour together there. This baseline
+introduces no registry or switches for hypothetical methods. Multi-network
+methods can define their own recipe interface when implemented.
+
+The user supplies a **strong-form PDE residual** `residual(x, prediction)`.
+Weak-form and variational methods are outside this project's scope.
+
+```python
+import torch
+import DeepINN as dp
+
+# u_xx + 2 = 0, u(0) = u(1) = 0; exact solution u = x(1-x).
+def residual(x, u):
+    return dp.utils.laplacian(u, x) + 2
+
+problem = dp.PINNProblem(
+    residual=residual,
+    collocation_points=lambda: torch.linspace(0, 1, 34)[1:-1, None],
+    constraints=[dp.PointConstraint("boundary", torch.tensor([[0.], [1.]]))],
+)
+network = dp.nn.FullyConnected(
+    [1, 16, 16, 1], "tanh", "Xavier normal", input_bounds=([0.], [1.]))
+pinn = dp.PINN(problem, network, weights={"pde": 1, "boundary": 1})
+pinn.compile(lr=0.01)  # CUDA when available; device="cpu" forces CPU
+pinn.train(iterations=1000, display_every=250)
+values = pinn.predict(torch.linspace(0, 1, 101)[:, None])
 ```
+
+The default `device="auto"` selects CUDA when available and otherwise CPU.
+Use `device="cuda"` to require GPU execution (failure is explicit if unavailable).
+Network parameters, fixed bounds, points and targets move to the selected device.
+
+The baseline samples once per `compile()`, applies a mean squared loss to each
+term, sums the weighted terms, and performs full-batch Adam updates. Each
+`train(n)` performs exactly `n` additional steps; recompiling resets the
+optimiser and histories. `loss_history` contains individual unweighted terms
+and the weighted `total`, measured before each update. `display_every=0`
+disables progress output. Set seeds before network construction and sampling
+for repeatable runs. A custom optimiser factory is accepted; closure-based
+optimisers such as LBFGS require their own training procedure.
+
+Point sources are `(N, D)` tensors or zero-argument sampler functions. For an
+existing geometry sampler, use `lambda: sampler.sample_points().as_tensor`.
+Residuals and constraint operators return `(N, C)` (or `(N,)` for scalar
+outputs). Targets default to scalar zero; tensors must match the output shape
+and callable targets receive the sampled points. Use multiple named constraints
+for boundary/initial conditions and observations. Each named term has its own
+mean loss, so splitting one condition into several changes the objective unless
+weights compensate. Existing `Model` calls retain a single combined boundary
+term through `PINNProblem.from_domain()`.
+
+**Numerical correction:** `FullyConnected` no longer normalises using each
+batch's extrema. It uses raw coordinates by default, or optional fixed
+`input_bounds`. This avoids batch-dependent solutions/derivatives and undefined
+single-point predictions. Old notebooks still accept the same constructor
+arguments, but numerical results will change. Fixed bounds follow the model's
+device and dtype. Use smooth activations such as tanh for second derivatives.
+
+# Testing
+
+The existing CI uses Python 3.9 and PyTorch 2.0.1. Keep NumPy below 2 for this
+legacy PyTorch environment. GPU setup for the Dell (PyTorch CUDA 11.8 build):
+
+```sh
+uv venv --python 3.9 .venv
+uv pip install --python .venv/bin/python "torch==2.0.1+cu118" --index-url https://download.pytorch.org/whl/cu118
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python test.py
+.venv/bin/python geometry_test.py
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m examples.baseline_poisson --device cuda
+```
+
+The tests cover a strong-form Poisson solve against an analytical solution,
+legacy geometry/domain integration, exact training counts and continuation,
+named weights, shape validation, derivative conditions, dtype preservation,
+and batch-independent network evaluation. The example reports solution RMSE.
+GPU tests verify device placement, CPU/GPU loss agreement and Poisson convergence
+on CUDA. They skip on CPU-only machines. For CPU-only installation, use the
+PyTorch CPU index (`https://download.pytorch.org/whl/cpu`) with `torch==2.0.1`.
+This is a baseline correctness check, not a benchmark suite.
 
 ## Docker image
 Pull the image with suitable tagname. The image is available [here](https://hub.docker.com/r/prakhars962/deepinn).

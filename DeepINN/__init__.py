@@ -17,3 +17,5 @@ from . import domain
 
 from .model import Model
 
+from .components import PINNProblem, PointConstraint
+from .methods import PINN
