@@ -19,7 +19,7 @@ there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 
 | Menu | Implemented actions |
 | --- | --- |
-| File | Reset Poisson template (Ctrl+N), Quit (Ctrl+Q) |
+| File | Reset Poisson template (Ctrl+N), Heat demo, Quit (Ctrl+Q) |
 | Edit | Delete selected (Delete, canvas focus), select all blocks (Ctrl+A, canvas focus) |
 | View | Panel visibility, zoom in/out, 100%, Fit model, Reset panel layout, Open selected output, Theme |
 | Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
@@ -69,12 +69,14 @@ Rectangle previews are available as read-only views during training.
 | --- | --- | --- |
 | Training Monitor | PINN method | Live losses; retained-update limit 25–100000, default 10000 |
 | Solution Plot | PINN method | Scalar predictions only; evaluation resolution 2–201 per axis |
-| Reference | No input | Explicit analytical interval Poisson demonstration source |
+| Reference | No input | Explicit interval analytical / rectangular truncated-series Poisson source |
 | Comparison | Model input above; Reference input below | Prediction/reference curves and RMSE at its own evaluation points |
 
 Outputs have stable instance identities and independent settings. A reference
-source does nothing unless connected to a requested Comparison. The current demo
-reference rejects rectangles; ordinary prediction views work without references.
+source does nothing unless connected to a requested Comparison. The rectangular reference supports equal constant Dirichlet conditions on all
+sides and uses 40 odd sine modes per axis (truncated). Interval references remain
+analytical. Other rectangle BCs are rejected for comparison; ordinary prediction
+views work without references.
 It is not a general symbolic or imported-data reference editor.
 
 Connect an output block before training, then double-click it or use its specific
@@ -119,7 +121,9 @@ points, hidden layers 16,16, learning rate .01 and 1000 iterations. Add Referenc
 and Comparison, connect the method to its upper model input and Reference to its
 lower reference input, then train and explicitly open the Comparison. The reference
 is u=x(1-x). A separate Solution Plot shows predictions alone, not an assumed exact
-solution. Rectangle plots show a predicted field and value range, not reference error.
+solution. A connected rectangular Comparison shows prediction/reference/error heatmaps,
+RMSE and maximum absolute error against its explicit truncated-series reference.
+Standalone rectangle Solution Plots show predictions alone.
 
 ## Validation and remaining work
 
@@ -139,3 +143,12 @@ zoom in/out, 100% and Fit model. Ctrl+Plus, Ctrl+Minus and Ctrl+0 are canvas-sco
 shortcuts, so property text inputs retain their own key handling. Fitting can choose
 a smaller scale if needed to include a large diagram. Panning and zoom do not move
 blocks, alter training settings, or reset simply because selection changes.
+
+## Ready-wired steady heat demo
+
+Toolbar/File → Heat demo loads the same baseline method with a configured square,
+constant source, zero edge temperature rise and connected monitor, prediction,
+Reference and Comparison blocks. No view is forced open. The current configuration
+uses 144 interior points, 24 samples per side, hidden layers 32,32, Adam learning
+rate .005, 2500 updates, PDE weight 1 and mean BC weight 10. These are editable demo
+settings, not universal defaults or an accuracy guarantee. See heat-demo.md.

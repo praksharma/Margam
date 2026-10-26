@@ -1,7 +1,8 @@
 """Block-based baseline Poisson workflow with background training."""
 from uuid import uuid4
 from copy import deepcopy
-from ..templates.poisson import PoissonConfig, make_interval_reference
+from ..templates.poisson import PoissonConfig, make_poisson_reference
+from ..templates.heat import heat_demo_config
 from ..components.outputs import OutputRequest
 from ..components.sampling import SAMPLERS
 from .plots import RectanglePreview
@@ -209,7 +210,7 @@ class Canvas(QGraphicsScene):
             if node.kind=='comparison':
                 if {w.target.name for w in incoming} != {'model','reference'}:
                     raise ValueError('Comparison needs both a trained-model connection and a Reference connection.')
-                reference=make_interval_reference(config)
+                reference=make_poisson_reference(config)
             if node.kind=='monitor':
                 if not 25 <= node.settings['history_limit'] <= 100000:
                     raise ValueError('Monitor history limit must be between 25 and 100000.')
@@ -246,6 +247,8 @@ class Window(QMainWindow):
         toolbar=self.addToolBar('Model')
         self.load_action=toolbar.addAction('Reset Poisson template')
         self.load_action.triggered.connect(self.reset_template)
+        self.heat_action=toolbar.addAction('Heat demo')
+        self.heat_action.triggered.connect(self.load_heat_template)
         self.zoom_in_action=toolbar.addAction('Zoom in')
         self.zoom_in_action.triggered.connect(lambda:self.view.zoom_by(1.2))
         self.zoom_out_action=toolbar.addAction('Zoom out')
@@ -315,6 +318,7 @@ class Window(QMainWindow):
         file_menu=self.menuBar().addMenu('File')
         self.load_action.setShortcut('Ctrl+N')
         file_menu.addAction(self.load_action)
+        file_menu.addAction(self.heat_action)
         file_menu.addSeparator()
         file_menu.addAction('Quit').triggered.connect(self.close)
         file_menu.actions()[-1].setShortcut('Ctrl+Q')
@@ -360,11 +364,12 @@ class Window(QMainWindow):
         help_menu=self.menuBar().addMenu('Help')
         help_menu.addAction('Quick start').triggered.connect(lambda:QMessageBox.information(
             self,'Build and train a PINN',
-            'Configure the connected Poisson blocks and click Train PINN.\n\n'
+            'Load Heat demo for a ready-wired monitor and reference comparison, or configure the basic Poisson blocks and train.\n\n'
+            'Canvas: wheel to zoom, middle-drag or Space+drag to pan, tap Space to fit.\n\n'
             'Rectangle previews: right-click the Rectangle block and choose Preview geometry or Preview samples.\n\n'
             'Plots are optional. Add a Training Monitor or Solution Plot, connect the PINN method to it, '
             'then double-click the output block to open its view. Views can dock or float.\n\n'
-            'A Comparison needs a model and an explicit Reference. The current analytical reference supports intervals only.'))
+            'A Comparison needs a model and an explicit Reference. References support intervals and rectangles with equal constant Dirichlet edges.'))
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
             self,'Margam','A visual builder for physics-informed neural networks.\nCurrent executable template: scalar Poisson on intervals and rectangles.'))
 
@@ -444,8 +449,8 @@ class Window(QMainWindow):
             'method':'Configure baseline full-batch Adam training. Output blocks are optional.',
             'monitor':'Connect the PINN method to request bounded loss history. Open or hide its view independently of recording.',
             'solution':'Connect the PINN method to evaluate scalar predictions at the requested resolution. No reference is assumed.',
-            'comparison':'Connect a model and an explicit Reference. The current demo reference supports interval Poisson problems only.',
-            'reference':'An explicit analytical interval Poisson reference source for Comparison; not an assumed property of a trained model.',
+            'comparison':'Connect a model and an explicit Reference. The demo reference supports intervals and equal-Dirichlet rectangles (truncated series).',
+            'reference':'An explicit Poisson reference for Comparison: analytical on intervals, truncated sine series on equal-Dirichlet rectangles.',
         }[node.kind]
         QMessageBox.information(self,node.title,text)
 
@@ -524,6 +529,24 @@ class Window(QMainWindow):
         self.populate_template();self.settings_changed();self.fit_model()
         self.log.appendPlainText('Loaded the rectangle Poisson template.')
 
+    def load_heat_template(self):
+        if self.is_running():return
+        self.reset_template()
+        self.config=heat_demo_config()
+        self.settings_changed()
+        method=next(n for n in self.scene.nodes() if n.kind=='method')
+        outputs=[]
+        for title,position in [('Training Monitor',(1000,0)),('Solution Plot',(1000,180)),('Comparison',(1000,360))]:
+            node=self.add_node(title);node.setPos(*position)
+            self.scene.connect_nodes(method,node)
+            outputs.append(node)
+        reference=self.add_node('Reference');reference.setPos(730,470)
+        self.scene.connect_nodes(reference,outputs[-1])
+        self.scene.clearSelection();method.setSelected(True)
+        self.validate_model();self.fit_model()
+        self.statusBar().showMessage('Heat demo ready · Train PINN, then open monitor, prediction or comparison blocks')
+        self.log.appendPlainText('Loaded steady heat demo: unit conductivity, constant source 2, zero edge temperature. Explicit series reference and output blocks are connected; views remain closed until requested.')
+
     def add_node(self,title):
         if self.is_running():return
         center=self.view.mapToScene(self.view.viewport().rect().center())
@@ -567,7 +590,7 @@ class Window(QMainWindow):
                  'bc':', '.join(c.bc_types[s][0] for s in c.sides),
                  'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
                  'solution':'Requested prediction plot', 'monitor':'Requested loss history',
-                 'comparison':'Model + explicit reference source', 'reference':'Analytical interval demo'}
+                 'comparison':'Model + explicit reference source', 'reference':'Explicit Poisson reference'}
         for node in self.scene.items():
             if isinstance(node,Node):
                 if node.kind=='domain':node.title=c.shape
@@ -673,12 +696,12 @@ class Window(QMainWindow):
                 count=QSpinBox();count.setRange(2,201);count.setValue(node.settings['resolution'])
                 count.valueChanged.connect(lambda value,n=node:self.change_output(n,'resolution',value))
                 self.form.addRow('Evaluation points / axis',count)
-                text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The current demo reference supports intervals only.'
+                text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
         elif node.kind=='reference':
-            note=QLabel('Explicit source: analytical interval Poisson solution. Connect it to a Comparison block. It is never evaluated for ordinary prediction plots. Other analytical/data sources are future work.');note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel('Explicit Poisson reference: analytical for intervals; 40 odd sine modes per axis for rectangles with equal constant Dirichlet edges. The rectangle reference is truncated, not an exact closed-form value. Connect it to Comparison; ordinary plots never evaluate it.');note.setWordWrap(True);self.form.addRow(note)
         old=self.property_scroll.takeWidget()
         if old is not None:old.deleteLater()
         self.property_scroll.setWidget(body)
@@ -708,7 +731,7 @@ class Window(QMainWindow):
     def set_busy(self,busy):
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
-        self.load_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
+        self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)

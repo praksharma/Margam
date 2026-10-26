@@ -83,7 +83,7 @@ selected-block properties on the right, and no default figure pane.
 Operational Messages are a separate panel, initially hidden (open it from View).
 Use **View → Theme → Light / Dark** to switch themes. Panels can be resized or docked.
 Menus are File, Edit, View, Run and Help; only implemented actions are exposed.
-File currently provides template reset and Quit; model Open/Save remains future work.
+File currently provides the basic-template reset, Heat demo and Quit; model Open/Save remains future work.
 
 ### Navigate the canvas
 
@@ -94,6 +94,21 @@ File currently provides template reset and Quit; model Open/Save remains future 
 - With canvas focus: Ctrl+Plus / Ctrl+Minus / Ctrl+0 for zoom in/out/100%.
 
 Navigation changes only the view; it does not change the PINN or its settings.
+
+### Ready-wired heat demo
+
+Click **Heat demo** on the toolbar or choose **File → Heat demo**. This loads the
+steady rectangular heat/Poisson example with **Training Monitor**, **Solution Plot**,
+**Reference**, and **Comparison** already connected. Click **Train PINN** and open
+those blocks by double-click or their right-click Open action. Views stay optional.
+
+The demo uses unit conductivity, a constant source and zero edge temperature rise.
+The Comparison shows prediction, reference and error heatmaps, RMSE and maximum
+error. Its rectangle reference is an explicitly labelled **truncated sine series**
+(40 odd modes per axis), valid for equal constant Dirichlet values on all sides.
+It is not a universal exact solution. Ordinary prediction plots still use no reference.
+The basic **Reset Poisson template** continues to load a model without output blocks.
+See [heat-demo.md](docs/heat-demo.md) for equations, parameters and reference checks.
 
 ### Train your first model
 
@@ -124,8 +139,7 @@ For an analytical correctness check, choose **Interval**, keep bounds `[0, 1]`,
 source `2`, zero Dirichlet endpoints, hidden layers `16, 16`, learning rate `0.01`
 and `1000` iterations. Set the interior grid budget to `32`. Add **Reference** and
 **Comparison** blocks. Connect PINN method → Comparison's upper (model) input and
-Reference → its lower input. The explicit reference is the analytical interval
-Poisson preset; the Comparison reports RMSE. An ordinary Solution Plot never adds
+Reference → its lower input. The explicit interval reference is analytical; the Comparison reports RMSE. An ordinary Solution Plot never adds
 that reference, even for intervals. Rectangle prediction plots need no reference.
 
 Block connections are checked against the supported Poisson template before

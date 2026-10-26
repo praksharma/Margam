@@ -437,3 +437,12 @@ figures. The rectangle previews float initially, can be hidden/reopened or docke
 and are removed when their owner disappears or changes to an unsupported shape.
 No interval/general/3D sample renderer or generic capability framework was added.
 Build further abstractions only when a concrete second use case justifies them.
+
+## Implemented: canvas navigation and ready-wired heat demo
+
+Canvas controls now include pointer-centred wheel zoom, mouse/Space panning, 100%
+and explicit fit. The separate Heat demo loads a baseline steady heat problem and
+connected optional monitor, prediction, reference and comparison blocks. Its 2D
+reference is a labelled truncated sine series for equal Dirichlet edges, not an
+assumed solution for arbitrary problems. The basic template remains output-free.
+See heat-demo.md for the formulation and ui-prototype.md for controls.

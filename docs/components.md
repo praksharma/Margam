@@ -33,8 +33,8 @@ Mixed corner regularity is not guaranteed by this validation.
 The PDE mean loss has its own weight. Each boundary mean has boundary_weight /
 number_of_sides, so the boundary weight controls the average across named sides.
 Tanh networks, Adam, fixed samples and full-batch updates use the baseline recipe.
-An analytical interval solution is available for supported BC combinations; no
-analytical rectangle error estimate is claimed.
+An analytical interval solution is available for supported BC combinations; a rectangular reference is available through an explicit truncated sine series
+for equal constant Dirichlet boundaries.
 
 Validated by `tests/test_poisson_template.py`: sampling bounds/counts/repeatability,
 outward normal sign, unsupported conditions and interval Poisson convergence.
@@ -50,6 +50,6 @@ callable reference with finite values matching those evaluation points. This fir
 contract does not provide interpolation, coordinate conversion or unit conversion.
 
 The generic UI worker no longer imports or constructs the analytical interval
-reference. That source is made explicitly by a Reference block using the Poisson
-template helper. Monitors have independent bounded UI histories; their visibility
+reference. References are made explicitly by a Reference block using the Poisson
+template helper: analytical intervals or a truncated series for supported rectangles. Monitors have independent bounded UI histories; their visibility
 is separate from recording. See ui-prototype.md for menus and view lifecycle.

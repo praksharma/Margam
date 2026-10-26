@@ -31,7 +31,8 @@ checkboxes are not claims about current Margam support.
 - [x] Create/show output views only when explicitly opened through their blocks.
   Unconnected blocks can show a placeholder; only connected outputs request data.
 - [x] Separate reference sources and comparisons from ordinary predictions; the
-  current explicit analytical demonstration source supports intervals only.
+  current sources cover analytical intervals and equal-Dirichlet rectangular
+  truncated-series references.
 - [x] Remove automatic analytical-reference construction from the generic worker.
 - [x] Keep operational status, progress, validation and failures available without
   numerical output blocks.
@@ -98,3 +99,14 @@ The searchable/grouped library and independent core sampling recipes remain next
 - [ ] Add clipboard/undo actions to context menus when those operations exist.
 
 - [x] Add pointer-centred wheel zoom, mouse/Space panning, zoom controls and fit-to-model.
+
+## Heat demo and navigation milestone
+
+- [x] Add a separately loadable steady heat demo with monitor, prediction,
+  Reference and Comparison blocks fully connected.
+- [x] Add a labelled rectangular sine-series reference and verify it against
+  finite differences and increased truncation order.
+- [x] Show 2D prediction/reference/error with shared prediction/reference colours,
+  RMSE and maximum absolute error only when comparison is explicitly requested.
+- [ ] Improve and quantify 2D training accuracy across seeds/settings; soft boundary
+  constraints and finite training can leave visible errors, which remain reported.

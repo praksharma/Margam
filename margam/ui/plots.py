@@ -108,6 +108,7 @@ class SolutionView(QWidget):
         from PySide6.QtWidgets import QStackedLayout
         self.curve=CurvePlot()
         self.field=FieldPlot()
+        self.rectangle_comparison=None
         self.stack=QStackedLayout(self)
         self.stack.addWidget(self.curve);self.stack.addWidget(self.field)
 
@@ -125,6 +126,12 @@ class SolutionView(QWidget):
                 caption+=f" · RMSE {result['rmse']:.4g}"
             self.curve.set_series(data,caption)
             self.stack.setCurrentWidget(self.curve)
+        elif result.get('reference') is not None:
+            if self.rectangle_comparison is None:
+                self.rectangle_comparison=RectangleComparison()
+                self.stack.addWidget(self.rectangle_comparison)
+            self.rectangle_comparison.set_result(result)
+            self.stack.setCurrentWidget(self.rectangle_comparison)
         else:
             self.field.set_result(result)
             self.stack.setCurrentWidget(self.field)
@@ -132,15 +139,19 @@ class SolutionView(QWidget):
 
 class FieldPlot(QWidget):
     def __init__(self,parent=None):
-        super().__init__(parent);self.result=None;self.image=None
+        super().__init__(parent)
+        self.result=None
+        self.image=None
+        self.title='Prediction'
 
-    def set_result(self,result):
-        self.result=result
-        size=result['size'];values=result['values'];lo,hi=min(values),max(values)
+    def set_result(self,result,title='Prediction',value_range=None):
+        self.result=result;self.title=title
+        size=result['size'];values=result['values']
+        lo,hi=value_range if value_range is not None else (min(values),max(values))
         self.image=QImage(size,size,QImage.Format.Format_RGB32)
         for j in range(size):
             for i in range(size):
-                t=(values[j*size+i]-lo)/(hi-lo) if hi>lo else .5
+                t=max(0.,min(1.,(values[j*size+i]-lo)/(hi-lo))) if hi>lo else .5
                 self.image.setPixelColor(i,size-j-1,QColor.fromHsvF((1-t)*.65,.75,.95))
         self.update()
 
@@ -149,14 +160,36 @@ class FieldPlot(QWidget):
         if self.result is None:
             p.drawText(20,25,'Run training to see the predicted field.');return
         c=self.result['config'];values=self.result['values']
-        p.drawText(20,22,f"Predicted u(x,y) · {self.result['steps']} steps · range [{min(values):.4g}, {max(values):.4g}] · prediction only")
+        caption=f"{self.title} · {self.result['steps']} steps\nrange [{min(values):.4g}, {max(values):.4g}]"
+        p.drawText(self.rect().adjusted(12,5,-12,-5),Qt.AlignmentFlag.AlignTop|Qt.TextFlag.TextWordWrap,caption)
         ratio=(c.x_max-c.x_min)/(c.y_max-c.y_min)
-        h=max(30,self.height()-80);w=min(max(30,self.width()-130),h*ratio);h=min(h,w/ratio)
-        rect=QRectF(65,40,w,h)
+        h=max(30,self.height()-110);w=min(max(30,self.width()-100),h*ratio);h=min(h,w/ratio)
+        rect=QRectF(50,60,w,h)
         p.drawImage(rect,self.image)
-        p.drawText(15,48,f'{c.y_max:g}')
-        p.drawText(15,int(rect.bottom()),f'{c.y_min:g}')
-        p.drawText(65,int(rect.bottom()+23),f'{c.x_min:g}')
-        p.drawText(int(rect.right()-25),int(rect.bottom()+23),f'{c.x_max:g}')
-        p.drawText(int(rect.right()+18),65,'Blue: low')
-        p.drawText(int(rect.right()+18),87,'Red: high')
+        p.drawText(8,68,f'{c.y_max:g}')
+        p.drawText(8,int(rect.bottom()),f'{c.y_min:g}')
+        p.drawText(50,int(rect.bottom()+20),f'{c.x_min:g}')
+        p.drawText(int(rect.right()-25),int(rect.bottom()+20),f'{c.x_max:g}')
+        p.drawText(12,self.height()-6,'Blue: low · red: high')
+
+
+class RectangleComparison(QWidget):
+    """The requested scalar rectangle comparison: prediction, reference, error."""
+    def __init__(self,parent=None):
+        super().__init__(parent)
+        from PySide6.QtWidgets import QLabel,QVBoxLayout,QHBoxLayout
+        self.setMinimumHeight(320)
+        layout=QVBoxLayout(self)
+        self.metrics=QLabel();self.metrics.setWordWrap(True);layout.addWidget(self.metrics)
+        row=QHBoxLayout();layout.addLayout(row)
+        self.prediction=FieldPlot();self.reference=FieldPlot();self.error=FieldPlot()
+        for view in [self.prediction,self.reference,self.error]:row.addWidget(view)
+
+    def set_result(self,result):
+        values,reference=result['values'],result['reference']
+        errors=[a-b for a,b in zip(values,reference)]
+        limits=(min(min(values),min(reference)),max(max(values),max(reference)))
+        self.prediction.set_result(result,'Prediction',limits)
+        self.reference.set_result(dict(result,values=reference),'Reference',limits)
+        self.error.set_result(dict(result,values=errors),'Prediction − reference')
+        self.metrics.setText(f"RMSE {result['rmse']:.5g} · max |error| {max(map(abs,errors)):.5g} · {result.get('reference_name','Reference')} · shared prediction/reference scale [{limits[0]:.4g}, {limits[1]:.4g}]")

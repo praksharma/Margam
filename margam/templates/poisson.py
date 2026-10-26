@@ -146,3 +146,46 @@ def make_interval_reference(config):
     if config.shape != 'Interval':
         raise ValueError('The demo analytical reference supports intervals only; prediction plots do not require it.')
     return ReferenceSource('Analytical interval Poisson', partial(interval_reference, deepcopy(config)))
+
+
+def rectangle_reference(config, points, terms=40):
+    """Constant-source rectangular Poisson reference, truncated odd sine modes.
+
+    Equal constant Dirichlet values on every side. The infinite series solves
+    the equation exactly; this explicitly labelled finite reference uses 40
+    odd modes per axis by default, not an exact closed-form solution.
+    """
+    import numpy as np
+    config.validate()
+    if config.shape != 'Rectangle' or any(config.bc_types[s]!='Dirichlet' for s in config.sides):
+        raise ValueError('Rectangle reference requires Dirichlet conditions on every side.')
+    if len({config.bc_values[s] for s in config.sides}) != 1:
+        raise ValueError('Rectangle reference requires equal constant boundary values.')
+    if type(terms) is not int or not 1 <= terms <= 160:
+        raise ValueError('Reference terms must be between 1 and 160.')
+    coordinates=np.asarray(points,dtype=float)
+    if coordinates.ndim!=2 or coordinates.shape[1]!=2 or not np.isfinite(coordinates).all():
+        raise ValueError('Reference points must be finite (N,2) coordinates.')
+    width,height=config.x_max-config.x_min,config.y_max-config.y_min
+    modes=np.arange(1,2*terms,2,dtype=float)
+    denominator=modes[:,None]*modes[None,:]*((np.pi*modes[:,None]/width)**2+(np.pi*modes[None,:]/height)**2)
+    coefficients=(16*config.source/np.pi**2)/denominator
+    result=[]
+    for start in range(0,len(coordinates),1024):
+        chunk=coordinates[start:start+1024]
+        sx=np.sin(np.pi*(chunk[:,0:1]-config.x_min)/width*modes)
+        sy=np.sin(np.pi*(chunk[:,1:2]-config.y_min)/height*modes)
+        result.extend((config.bc_values['left']+((sx@coefficients)*sy).sum(axis=1)).tolist())
+    return result
+
+
+def make_poisson_reference(config):
+    """Explicit demo reference for supported interval or rectangle conditions."""
+    from functools import partial
+    from copy import deepcopy
+    from ..components.outputs import ReferenceSource
+    if config.shape=='Interval':return make_interval_reference(config)
+    config.validate()
+    if config.shape!='Rectangle' or any(config.bc_types[s]!='Dirichlet' for s in config.sides):
+        raise ValueError('Rectangle reference requires equal constant Dirichlet conditions on all sides; prediction plots need no reference.')
+    return ReferenceSource('Rectangle sine series · 40 odd modes/axis (truncated)',partial(rectangle_reference,deepcopy(config)))

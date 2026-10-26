@@ -50,6 +50,7 @@ def evaluate_outputs(model, config, requests):
                 raise ValueError('Reference values must be finite and match the evaluation points.')
             data['reference'] = list(reference)
             data['reference_name'] = request.reference.name
+            data['max_error'] = max(abs(a-b) for a,b in zip(values, reference))
             data['rmse'] = math.sqrt(sum((a-b)**2 for a,b in zip(values, reference))/len(values))
         results[request.identifier] = data
     return results

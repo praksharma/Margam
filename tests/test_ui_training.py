@@ -133,7 +133,7 @@ w.change('shape','Rectangle')
 w.change('points',64)
 w.change_output(solution,'resolution',21)
 assert w.result is None
-with patch('margam.ui.app.make_interval_reference',side_effect=AssertionError('Implicit reference')):
+with patch('margam.ui.app.make_poisson_reference',side_effect=AssertionError('Implicit reference')):
     assert w.start_training()
     until_finished()
 assert w.result['outputs'][solution.identifier]['rmse'] is None
