@@ -71,3 +71,17 @@ checkboxes are not claims about current Margam support.
 - [ ] Keep library, ports, conditions and output views independent of heat-transfer
   terminology. Poisson is a demonstration template; future scalar/vector fields,
   multiple outputs and other physics must not inherit temperature-only assumptions.
+
+## Simulink interaction evidence
+
+- [x] Collect official, release-labelled documentation for library insertion,
+  parameter editing, wiring, navigation, outputs, diagnostics and persistence.
+  See [simulink-evidence.md](simulink-evidence.md) for sources, explicit Margam
+  adaptations, implementation order and acceptance checks.
+- [ ] Add drag/drop library insertion and canvas quick insert using the same
+  catalogue and block-instance model.
+- [ ] Define contextual double-click behaviour and shared inspector/dialog state.
+- [ ] Add instance-owned settings and typed ports before generalising graph execution.
+- [ ] Add output branching and undoable graph/parameter edits.
+- [ ] Validate interaction parity hands-on against a selected Simulink release;
+  the current evidence collection is documentation-based.

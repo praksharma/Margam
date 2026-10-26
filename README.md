@@ -221,6 +221,7 @@ The older `Model(domain, network)` API and borrowed geometry stack are retired.
 - `margam/benchmarking/`: reproducible comparison runner and metrics.
 - `margam/ui/`: Qt canvas, ports, connections, panels, and themes.
 - [Roadmap](docs/roadmap.md), [TODO](docs/todo.md), [UI guide](docs/ui-prototype.md).
+- [Simulink evidence and interaction specification](docs/simulink-evidence.md).
 - [Component catalogue](docs/components.md), [numerical engine](docs/engine.md),
   [cleanup record](docs/cleanup.md),
   [GeoSampler reuse](docs/geosampler-reuse.md).

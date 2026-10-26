@@ -405,3 +405,13 @@ floating windows or docking elsewhere, and separate closing a view from removing
 its model block or ending training. Do not automatically create result views.
 Reference comparison must remain optional across every physics template. View
 visibility and retention of sampled output data need separate policies.
+
+## Simulink evidence baseline
+
+See [simulink-evidence.md](simulink-evidence.md) for the official R2026b source
+register and proposed interaction contract, collected 26 October 2026. Modern
+Simulink's toolstrip and standalone/scope-container plots differ from our chosen
+conventional menu bar and initially bottom-docked output views. Preserve familiar
+interactions while specifying PINN dataflow independently; do not equate training
+iterations with physical simulation time. The document separates observed
+product behaviour, Margam adaptations and gaps requiring hands-on validation.
