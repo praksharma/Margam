@@ -1,17 +1,14 @@
-# Byte-compiled / optimized / DLL files
-**/__pycache__/
-# Sphinx documentation
-docs/_build/
-docs_legacy/_build/
-
-# Jupyter notebook
-**.ipynb_checkpoints
-
-# VSCode
-.vscode/
-
-# Python virtual environment
+# Root development environment and pre-existing local environment
 .venv/
-
-# Generated benchmark artefacts
+.venv313/
+# Generated Python/build files
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+# Local editor state
+.vscode/
+**/.ipynb_checkpoints/
+# Experiment outputs: retain existing runs locally
 benchmark-results/

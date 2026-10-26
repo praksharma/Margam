@@ -1,7 +1,7 @@
 """Run from the repository root: python -m examples.baseline_poisson."""
 import argparse
 import torch
-import DeepINN as dp
+import margam as dp
 
 
 def residual(x, u):

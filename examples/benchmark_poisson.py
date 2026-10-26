@@ -5,8 +5,8 @@ from pathlib import Path
 import uuid
 
 import torch
-import DeepINN as dp
-from DeepINN.benchmarking import BenchmarkCase, Recipe, run_benchmark
+import margam as dp
+from margam.benchmarking import BenchmarkCase, Recipe, run_benchmark
 from .baseline_poisson import residual
 
 

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "margam"
+version = "1.0.0"
+description = "A visual builder and numerical engine for physics-informed neural networks"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "AGPL-3.0-only"
+dependencies = ["PySide6==6.12.0", "torch>=2.9,<3", "numpy>=2,<3"]
+
+[tool.setuptools.packages.find]
+include = ["margam*"]

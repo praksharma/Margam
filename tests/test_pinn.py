@@ -1,10 +1,10 @@
-"""Behavioural checks for baseline training and the legacy entry point."""
+"""Behavioural checks for baseline PINN training."""
 import contextlib
 import io
 import unittest
 import torch
-import DeepINN as dp
-from DeepINN.components import weighted_loss
+import margam as dp
+from margam.components import weighted_loss
 
 
 def poisson_residual(x, u):
@@ -94,19 +94,6 @@ class PINNTests(unittest.TestCase):
         p.constraints = [p.constraints[0], p.constraints[0]]
         with self.assertRaises(ValueError):
             dp.PINN(p, network()).compile(device="cpu")
-
-    def test_legacy_domain_interface(self):
-        space = dp.spaces.R1('x')
-        interval = dp.domains.Interval(space, 0, 1)
-        domain = dp.domain.Generic(
-            poisson_residual,
-            dp.constraint.PDE(interval, "grid", 16),
-            dp.constraint.DirichletBC(interval, lambda x: x[:, 0]*0, "grid", 2))
-        model = dp.Model(domain, network())
-        model.compile("adam", 0.001, "MSE", "cpu")
-        model.train(iterations=3, display_every=0)
-        self.assertEqual(model.iter, 3)
-        self.assertEqual(set(model.compute_losses()), {"pde", "boundary"})
 
     def test_fully_connected_batch_invariance_and_derivatives(self):
         net = dp.nn.FullyConnected([1, 8, 1], "tanh", "Xavier normal",

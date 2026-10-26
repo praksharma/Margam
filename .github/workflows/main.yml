@@ -1,39 +1,14 @@
-name: DeepINN CI
-run-name: ${{ github.actor }} is testing the code 🚀
-on:
-  push:
-    branches:
-      - main
-      - development
+name: Margam checks
+on: [push, pull_request]
 jobs:
-  push_test:
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9"]
-    
     steps:
-      #- run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      #- run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      #- run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository
-        uses: actions/checkout@v3
-      #- run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      #- run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      #- name: List files in the repository
-      #  run: |
-      #    ls ${{ github.workspace }}
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Testing the library
-        run: |
-          python test.py
-          python geometry_test.py
-          python -m unittest discover -s tests -v
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+          python-version: '3.14'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -v
+        env:
+          QT_QPA_PLATFORM: offscreen

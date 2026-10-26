@@ -1,9 +1,3 @@
-torch==2.0.1
-matplotlib
-numpy<2
-scikit-learn
-scikit-optimize
-scipy
-shapely
-trimesh
-rtree
+PySide6==6.12.0
+torch>=2.9,<3
+numpy>=2,<3
