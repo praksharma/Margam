@@ -290,6 +290,12 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Ready · rectangle Poisson template · select blocks to edit settings')
         QTimer.singleShot(0,self.fit_model)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not getattr(self, '_initial_layout_fitted', False):
+            self._initial_layout_fitted = True
+            QTimer.singleShot(0, self.fit_model)
+
     def setup_menus(self):
         file_menu=self.menuBar().addMenu('File')
         self.load_action.setShortcut('Ctrl+N')
@@ -444,6 +450,7 @@ class Window(QMainWindow):
     def graph_changed(self):
         self.clear_run_data()
         self.output_views.sync(self.scene.nodes())
+        self.refresh_descriptions()
         self.progress_bar.setValue(0)
         self.validation.setText('Graph changed. Validate the model before training.')
 

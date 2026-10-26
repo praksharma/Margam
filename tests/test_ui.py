@@ -17,7 +17,8 @@ assert 'torch' not in sys.modules, 'UI import should not load the numerical engi
 app = QApplication([])
 w = Window()
 w.show()
-app.processEvents()
+for _ in range(3):app.processEvents()
+assert w.view.viewport().rect().contains(w.view.mapFromScene(w.scene.itemsBoundingRect()).boundingRect())
 assert len(w.scene.wires) == 7
 assert not w.output_views.entries
 assert w.tabs.count() == 2
