@@ -357,3 +357,24 @@ field heatmap without a reference error claim. Grid/random samplers are implemen
 General graph compilation, custom PDE/data adapters, persistence and broader
 sampling remain future work. See ui-prototype.md and components.md for the current
 contracts. Completed stages should be checkpointed in small, verified commits.
+
+## UI refinement: explicit output and comparison blocks
+
+The next output design should follow the model's declared intent. Training must
+be valid without a plot or results block. It produces a trained model and run
+information; connected output blocks decide which predictions to evaluate,
+visualise or export. Loss plots should also be requested explicitly. Result panes
+should be created or shown for those outputs, rather than being mandatory default
+views. Operational progress, validation messages and failures remain available.
+
+An exact solution is not assumed. A reference source may supply an analytical
+function, measurements or another solver's data. A separate comparison block
+pairs compatible reference values and predictions at explicit evaluation points
+and requests metrics such as RMSE. A solution plot can show predictions alone.
+A demo template may include reference/comparison blocks, but must make them visible
+and optional. The existing automatically constructed interval reference is demo
+behaviour to replace, not a general PINN interface contract.
+
+These are planned refinements: the current UI still pre-creates results tabs,
+requires the Solution block, and automatically compares the interval preset.
+Add standard File, Edit, View and Help menus alongside this work; see todo.md.

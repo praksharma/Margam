@@ -20,3 +20,23 @@ checkboxes are not claims about current Margam support.
 - [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
 - [ ] Integrate GeoSampler for complex geometry later; no 3D viewport in this project.
 - [ ] Validate a compatible GPU PyTorch build in the Python 3.14 environment.
+
+## Menus and explicit outputs
+
+- [ ] Add a standard File / Edit / View / Help menu bar. Organise model open/save,
+  editing, panel visibility/layout, and help actions under the relevant menus;
+  expose only implemented actions as available.
+- [ ] Allow training without any plot/results block. The current Poisson validator
+  requires a Solution block; remove that requirement as output blocks are introduced.
+- [ ] Make loss plots, solution plots and result export explicit optional output
+  blocks, with their own settings and evaluation points where appropriate.
+- [ ] Create/show result views only for connected output blocks. Do not pre-create
+  result panels or switch to them automatically when no such output is requested.
+- [ ] Separate reference data/functions from predictions. Add an optional reference
+  source and comparison block; compute RMSE/error plots only when explicitly
+  connected to compatible reference values at the evaluation points.
+- [ ] Remove automatic analytical-reference construction from the generic training
+  worker. The Poisson demo may provide it through an explicitly visible optional
+  reference block, rather than making it a property of every solve.
+- [ ] Keep operational status, progress, validation and failures available without
+  requiring numerical output blocks; distinguish these from requested result plots.
