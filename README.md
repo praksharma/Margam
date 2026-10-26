@@ -6,6 +6,8 @@ and rectangles, with editable block settings, background training and optional
 block-owned output views.
 The initial runnable template solves scalar Poisson problems.
 
+See [AGENTS.md](AGENTS.md) for agent working rules, including commit attribution.
+
 ## Development rules
 
 - Keep all project work in this repository, never in a separate ChatGPT folder.

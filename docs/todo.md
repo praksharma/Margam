@@ -110,3 +110,14 @@ The searchable/grouped library and independent core sampling recipes remain next
   RMSE and maximum absolute error only when comparison is explicitly requested.
 - [ ] Improve and quantify 2D training accuracy across seeds/settings; soft boundary
   constraints and finite training can leave visible errors, which remain reported.
+
+## Deferred: ParaView
+
+- [ ] Later, decide a ParaView-compatible result export format and implement it as
+  an explicit output request. Preserve coordinates, field names and available
+  prediction/reference/error data; define units and export scope first.
+- [ ] Revisit ParaView integration only when requested. No ParaView setup, export
+  implementation or integration is part of the current work.
+
+Existing in-app heatmaps are left as they are. Further field-plot development is
+paused; operational training monitors and basic rectangle previews remain useful.
