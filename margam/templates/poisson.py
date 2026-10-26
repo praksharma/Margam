@@ -1,7 +1,7 @@
 """Editable Poisson template; method-specific training remains in methods/pinn.py."""
 from dataclasses import dataclass, field
 import math
-from ..components.sampling import sample_box
+from ..components.sampling import sample_box, SAMPLERS
 
 
 @dataclass
@@ -35,25 +35,30 @@ class PoissonConfig:
             return [self.x_min], [self.x_max]
         return [self.x_min, self.y_min], [self.x_max, self.y_max]
 
-    def validate(self):
+    def validate_sampling(self):
         if self.shape not in ('Interval', 'Rectangle'):
             raise ValueError('Choose Interval or Rectangle.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
             raise ValueError('Domain maximums must be greater than minimums.')
-        if self.sampling not in ('grid', 'random'):
+        if self.sampling not in SAMPLERS:
             raise ValueError('Unknown sampler.')
-        for value, limit, label in [(self.points,100000,'Interior points'),(self.boundary_points,10000,'Boundary points'),(self.iterations,100000,'Iterations')]:
+        for value, limit, label in [(self.points,100000,'Interior points'),(self.boundary_points,10000,'Boundary points')]:
             if type(value) is not int or not 1 <= value <= limit:
                 raise ValueError(f'{label} must be between 1 and {limit}.')
+        if type(self.seed) is not int or not 0 <= self.seed < 2**31:
+            raise ValueError('Seed must be a non-negative 32-bit integer.')
+
+    def validate(self):
+        self.validate_sampling()
+        if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
+            raise ValueError('Iterations must be between 1 and 100000.')
         if not self.layers or len(self.layers) > 6 or any(type(n) is not int or not 1 <= n <= 256 for n in self.layers):
             raise ValueError('Use 1–6 hidden layers, with 1–256 neurons each.')
         if not math.isfinite(self.lr) or not 0 < self.lr <= 1:
             raise ValueError('Learning rate must be greater than zero and at most one.')
         if self.device not in ('cpu','auto','cuda'):
             raise ValueError('Unknown device.')
-        if type(self.seed) is not int or not 0 <= self.seed < 2**31:
-            raise ValueError('Seed must be a non-negative 32-bit integer.')
         if not math.isfinite(self.source):
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
@@ -73,7 +78,7 @@ class PoissonConfig:
 
 def sample_problem(config):
     """Return interior and named boundary coordinates, before assigning physics."""
-    config.validate()
+    config.validate_sampling()
     lower, upper = config.bounds
     interior = sample_box(lower, upper, config.points, config.sampling, config.seed)
     if config.shape == 'Interval':
@@ -90,6 +95,7 @@ def sample_problem(config):
 
 def build_pinn(config):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
+    config.validate()
     import torch
     from ..components import PINNProblem, PointConstraint
     from ..methods import PINN

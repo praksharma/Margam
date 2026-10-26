@@ -344,3 +344,16 @@ The old geometry/domain compatibility API is retired. UI source is in
 `margam/ui/`, planning documents in `docs/`, and the environment is root `.venv`.
 The migration history is recorded separately.
 See `cleanup.md` for the migration record and `todo.md` for current work.
+
+## Baseline UI integration update
+
+The block layout now runs a template-backed baseline Poisson problem on intervals
+and rectangles. Properties edit geometry, sampling, constant source, side BCs,
+network and training settings. Named point sets are generated before BC assignment.
+The UI validates the supported connections and runs the existing method in a
+background thread, with live losses, cancellation and safe close handling.
+Intervals have analytical reference curves and RMSE; rectangles have a predicted
+field heatmap without a reference error claim. Grid/random samplers are implemented.
+General graph compilation, custom PDE/data adapters, persistence and broader
+sampling remain future work. See ui-prototype.md and components.md for the current
+contracts. Completed stages should be checkpointed in small, verified commits.

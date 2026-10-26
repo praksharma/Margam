@@ -39,6 +39,14 @@ class PoissonTemplateTests(unittest.TestCase):
         reference=torch.tensor(interval_reference(config,x.tolist()))[:,None]
         self.assertLess(((model.predict(x)-reference)**2).mean().sqrt().item(),.02)
 
+    def test_boundary_points_exist_before_condition_assignment(self):
+        config=PoissonConfig()
+        config.bc_types={}
+        interior,boundaries=sample_problem(config)
+        self.assertEqual(len(interior),64)
+        self.assertEqual(len(boundaries),4)
+        with self.assertRaises(ValueError):build_pinn(config)
+
     def test_reject_undefined_problems(self):
         config=PoissonConfig(x_max=0)
         with self.assertRaises(ValueError):config.validate()

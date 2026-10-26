@@ -1,8 +1,9 @@
 # Margam
 
 A visual framework for physics-informed neural networks (formerly DeepINN).
-The baseline strong-form PINN and benchmark engine work; the desktop builder
-is an interactive layout prototype and is not connected to training yet.
+The desktop builder runs the baseline strong-form PINN on built-in intervals
+and rectangles, with editable block settings, background training and 2D results.
+The initial runnable template solves scalar Poisson problems.
 
 ## Development rules
 
@@ -15,6 +16,7 @@ is an interactive layout prototype and is not connected to training yet.
   Screenshots belong in `assets/screenshots/`. Keep the repository root minimal.
 - Keep the `dev` branch untouched unless explicitly authorized. Check the branch
   before making changes.
+- Make small, verified commits at completed milestones.
 - Keep each PINN method in one file, reusing shared components where appropriate.
   Update the component/method catalogue when adding or changing capabilities.
 
@@ -73,11 +75,47 @@ Or launch without activating the environment:
 .venv/bin/python -m margam.ui
 ```
 
-Double-click a library item to add a block, drag blocks to move them, and drag an
-output port onto an input port to connect. Select a block to inspect it. Use
-**Appearance → Light / Dark** to switch themes. Closing the window exits the app.
-The rectangle preview is illustrative; graph execution and training are not yet
-connected to the UI.
+The layout keeps the block library on the left, the connected model in the centre,
+selected-block properties on the right, and samples/losses/solutions/messages below.
+Use **Appearance → Light / Dark** to switch themes. Panels can be resized or docked.
+
+### Train your first model
+
+1. The app opens a complete rectangle Poisson template, Δu + 2 = 0, with zero
+   Dirichlet conditions on all four sides. No geometry file or mesh is needed.
+2. Select **Rectangle** to change the bounds or choose **Interval**.
+3. Select **Interior sampler** to choose grid/random sampling, point budget and seed.
+   Select **Boundary points** for the number of samples per rectangle side.
+4. Select **PDE residual** to change the constant source. This first UI supports a
+   Poisson preset; arbitrary PDE editing and pointwise forcing arrays are future work.
+5. Select **Boundary condition** to assign each named side a Dirichlet value or
+   outward normal derivative (Neumann). These are not conductivity-scaled fluxes.
+   At least one Dirichlet side is required. Adjacent Dirichlet values on a rectangle
+   must agree at shared corners; corner sampling is excluded.
+6. Select **Neural network** to edit hidden-layer sizes, or **PINN method** for Adam
+   learning rate, iteration count, PDE/BC weights and device.
+7. Click **Validate**, then **Train PINN**. The loss view updates during training;
+   the solution view opens when it finishes. **Stop** retains the partial solution.
+
+For an analytical correctness check, choose **Interval**, keep bounds `[0, 1]`,
+source `2`, zero Dirichlet endpoints, hidden layers `16, 16`, learning rate `0.01`
+and `1000` iterations. Set the interior grid budget to `32`. The solution view
+compares the prediction with `u=x(1-x)` and reports RMSE. Rectangle results are a
+predicted field heatmap; no analytical rectangle error estimate is claimed.
+
+Block connections are checked against the supported Poisson template before
+execution. Drag blocks to rearrange them, drag an output to an input to connect,
+and use **Delete selected** to remove blocks/wires. Double-clicking the library
+adds blocks, but duplicate blocks and unsupported wiring prevent training.
+**Reset Poisson template** restores the runnable default; **Fit model** fits the
+canvas. This is a template-backed workflow, not yet a general graph compiler.
+
+Training runs in a background thread. Settings and graph edits are locked during
+a run. Closing the window requests cancellation and waits for the worker to stop.
+Changing settings clears stale results. Models/results are not saved automatically;
+saved-model support and general custom PDE execution are future work.
+
+See the [UI guide](docs/ui-prototype.md) for conventions and current limitations.
 
 ## Run tests
 
@@ -93,6 +131,7 @@ Run one area at a time:
 python -m unittest discover -s tests -p 'test_pinn.py' -v
 python -m unittest discover -s tests -p 'test_benchmarking.py' -v
 python -m unittest discover -s tests -p 'test_ui.py' -v
+python -m unittest discover -s tests -p 'test_ui_training.py' -v
 ```
 
 The UI lifecycle test uses Qt's offscreen mode internally. For an entirely
@@ -182,7 +221,8 @@ The older `Model(domain, network)` API and borrowed geometry stack are retired.
 - `margam/benchmarking/`: reproducible comparison runner and metrics.
 - `margam/ui/`: Qt canvas, ports, connections, panels, and themes.
 - [Roadmap](docs/roadmap.md), [TODO](docs/todo.md), [UI guide](docs/ui-prototype.md).
-- [Numerical engine](docs/engine.md), [cleanup record](docs/cleanup.md),
+- [Component catalogue](docs/components.md), [numerical engine](docs/engine.md),
+  [cleanup record](docs/cleanup.md),
   [GeoSampler reuse](docs/geosampler-reuse.md).
 - [Third-party attribution](THIRD_PARTY.md) and [licence](LICENSE).
 

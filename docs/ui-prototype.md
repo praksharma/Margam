@@ -1,56 +1,94 @@
-# Margam desktop layout prototype
+# Baseline PINN desktop workflow
 
-PySide6 is the proposed desktop toolkit. Use Qt Widgets for the application
-shell and Graphics View for the 2D block canvas. No 3D viewport is planned.
-
-## Layout
-
-- Left: block library; search and method/template catalogues are planned.
-- Centre: movable blocks with ports and connections.
-- Right: properties of the selected block.
-- Bottom: 2D domain/sample preview, followed later by results and loss plots;
-  a separate messages tab explains validation and execution issues.
-
-For a rectangle, the eventual properties panel will provide bounds, sampling
-settings, and side selection. This prototype only displays a static domain
-preview; it does not generate a training dataset or assign boundary conditions.
-
-## Run
-
-Use an environment with PySide6 installed:
+Run from the repository root with the existing root environment:
 
 ```sh
-uv pip install --python .venv/bin/python -r requirements.txt
-.venv/bin/python -m margam.ui
+source .venv/bin/activate
+python -m margam.ui
 ```
 
-Double-click a library entry to add a block. Drag blocks to move them. Drag a
-right-hand output port onto another block's left-hand input port to connect.
-Select a block to see its name and summary. Panels can be resized and docked.
+## Layout and blocks
 
-## Deliberate prototype limits
+Left: block library. Centre: model canvas. Right: editable properties for the
+selected block. Bottom: Domain & samples, Losses, Solution and Messages tabs.
+There is no 3D viewport. The light/dark theme is adapted from GeoSampler/PyniteGUI;
+see ../THIRD_PARTY.md for provenance.
 
-This is a layout and interaction study, not a PINN implementation. Connections
-have no physics semantics yet, and the initial graph illustrates a workflow
-rather than an executable dependency specification. Ports are generic and allow
-multiple incoming connections; typed ports and connection validation need design.
-Properties are read-only. Saving, undo/redo, deletion, zoom controls, background
-training, catalogue discovery, and backend execution are not implemented.
+| Block | Editable properties / responsibility |
+| --- | --- |
+| Rectangle / Interval | Domain shape and bounds |
+| Interior sampler | Grid/random, interior point budget, seed |
+| Boundary points | Named sets; points per rectangle side; interval endpoints |
+| PDE residual | Scalar Poisson preset Δu+c=0, constant c |
+| Boundary condition | Constant Dirichlet or outward Neumann derivative per side |
+| Neural network | Hidden-layer sizes; fully connected tanh, Xavier normal |
+| PINN method | Baseline full-batch Adam, iterations, learning rate, weights, device |
+| Solution | Numerical results below the canvas |
 
-The prototype uses the repository-root `.venv` with Python 3.14.8 and PySide6 6.12.0.
-Launch from the repository root with:
+Sampling produces point sets independently of boundary-condition assignment.
+Grid rectangle counts use complete Cartesian layers, so a budget of 70 produces
+64 points. Grid boundary samples exclude corners; interval boundaries are exactly
+the two endpoints. The preview displays actual sampled coordinates, with display
+subsampling for large clouds; training still receives all generated coordinates.
 
-```sh
-.venv/bin/python -m margam.ui
-```
+Boundary targets are u for Dirichlet and ∂u/∂n for Neumann. Normals are analytical
+for built-in domains. Neumann here does not mean conductivity-scaled flux. Pure
+Neumann problems are rejected pending compatibility and gauge handling. Adjacent
+rectangle Dirichlet values must agree at shared corners. No general corner
+regularity claim is made for mixed conditions.
 
-Offscreen startup, initial connections, block movement, selection, and screenshot
-generation passed. The rendered layout was inspected. Mouse-driven interaction
-still needs a desktop check.
+## Train
 
-## Appearance
+The initial rectangle template is ready to run. Select blocks to configure the
+model, click Validate, then Train PINN. No external geometry or mesh is needed.
+For the original analytical Poisson check, choose Interval on [0,1], source 2,
+zero Dirichlet endpoints, 32 interior grid points, hidden layers 16,16, learning
+rate .01 and 1000 iterations. The default weights are one for PDE and mean BC.
 
-Use Appearance → Light or Dark to switch themes. The palette is adapted from
-GeoSampler/PyniteGUI with attribution in `../THIRD_PARTY.md`. Both themes also apply
-to blocks, ports, wires and the domain preview; both passed offscreen rendering
-checks. Theme choice is not yet persisted across launches.
+Each side has a separate named loss. Its weight is mean_boundary_weight divided
+by the number of sides. Loss plots show weighted total, raw PDE mean and the raw
+average of boundary means, on a logarithmic axis. Losses precede their updates.
+
+The UI worker calls the existing `methods/pinn.py` recipe in batches of up to 25
+updates, emits numeric progress and evaluates the final network. The UI thread
+never receives a network or live tensors. CPU thread count is set to one for these
+small examples. One job runs at a time; model edits are locked during execution.
+
+Stop requests cancellation between batches and displays the partial prediction.
+Closing during a job waits for cancellation rather than destroying a running
+thread. Errors appear in Messages and release the controls. Every new run creates
+a fresh network/optimiser; continuation is not exposed in this UI yet.
+
+Interval results include an analytical reference for supported constant-source
+D/D and D/N combinations, and RMSE. Rectangle results are a predicted field on a
+41×41 evaluation grid, with a labelled value range, not an analytical error check.
+Numerical quality still depends on samples, weights, architecture and training.
+
+## Connections and model edits
+
+The supported template needs one of each block and its prescribed dependency
+connections. Validation rejects missing/extra connections, duplicate blocks and
+unsupported configurations. Connections therefore determine whether the template
+can run; they are not silently ignored. This first implementation assembles that
+single supported template, not arbitrary graphs or custom PINN methods.
+
+Drag blocks, connect output to input, select wires/blocks and Delete selected.
+Fit model fits the canvas; Reset Poisson template restores defaults. Added library
+blocks must form a valid supported model before training. Configuration changes
+clear old plots. Graph changes invalidate the previous solution. Layout resets,
+model settings and numerical results are currently in memory only.
+
+## Validation and remaining work
+
+`tests/test_poisson_template.py` checks sampling, normal orientation, separation of
+point sets from BC assignment, invalid problems and interval convergence.
+`tests/test_ui_training.py` exercises real background interval/rectangle solves,
+responsive event processing, graph rejection, errors and close/cancel behaviour.
+Screenshots live in assets/screenshots and are generated with the real Qt widgets
+in offscreen mode. The current environment has CPU PyTorch; GPU validation remains
+outstanding.
+
+Future work: saved models/results, arbitrary PDE functions and data adapters,
+typed ports and general graph execution, additional methods, undo/redo, broader
+sampling and GeoSampler integration. The UI currently exposes only the two
+implemented small-domain sampling methods listed in components.md.
