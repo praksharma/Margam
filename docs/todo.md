@@ -40,3 +40,34 @@ checkboxes are not claims about current Margam support.
   reference block, rather than making it a property of every solve.
 - [ ] Keep operational status, progress, validation and failures available without
   requiring numerical output blocks; distinguish these from requested result plots.
+
+- [ ] Add an explicit Training Monitor output block for loss curves and other
+  selected training diagnostics; keep ordinary progress/error status independent.
+- [ ] Open output views explicitly from their blocks, initially as tabs in a
+  dockable bottom panel; support detached windows and docking elsewhere. Closing
+  a view hides it without removing the block or stopping training. Removing an
+  output block removes that output request from the model. Keep data retention
+  and view visibility as separate settings.
+
+## Left library and sampling options
+
+- [ ] Replace the flat left-hand list with a searchable, grouped component library:
+  Geometry / Data, Sampling, Physics / Conditions, Networks, PINN Methods, and
+  Outputs / Comparison. Keep runnable templates distinct from reusable components.
+- [ ] Group sampling by purpose: interior/PDE points and boundary point sets.
+  Within each, show implemented methods and their supported settings. Sampling
+  method is distinct from the target region; assigning a BC is a later operation.
+- [ ] Keep basic built-in interval/rectangle sampling in Margam: grid and seeded
+  uniform random, domain/side selection, point budget or points-per-side, seed,
+  actual count and preview. A simple problem must not require GeoSampler.
+- [ ] Let distinct point sets use independent sampling recipes, methods, counts
+  and seeds; do not force every boundary and the interior to share one selection.
+- [ ] Drive library entries and property options from the component catalogue,
+  including status, compatible targets, parameters and limitations. Do not list
+  planned sampling methods as executable options.
+- [ ] Reserve advanced geometry-aware sampling, CAD face/edge selection and richer
+  region workflows for GeoSampler. Define the integration boundary rather than
+  rebuilding its full toolbox inside Margam.
+- [ ] Keep library, ports, conditions and output views independent of heat-transfer
+  terminology. Poisson is a demonstration template; future scalar/vector fields,
+  multiple outputs and other physics must not inherit temperature-only assumptions.

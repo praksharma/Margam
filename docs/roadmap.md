@@ -378,3 +378,30 @@ behaviour to replace, not a general PINN interface contract.
 These are planned refinements: the current UI still pre-creates results tabs,
 requires the Solution block, and automatically compares the interval preset.
 Add standard File, Edit, View and Help menus alongside this work; see todo.md.
+
+## Component library and view organisation
+
+Margam is a PINN builder across physical problems, not a heat-transfer application.
+The left pane should be a searchable component library grouped by responsibility:
+Geometry / Data, Sampling, Physics / Conditions, Networks, PINN Methods, and
+Outputs / Comparison. Templates remain a separate discovery concept.
+
+Sampling has two independent choices: the point-set target/purpose (interior or
+boundary) and its numerical method. Each point set should own its recipe and
+settings. For example, a rectangle interior can use random sampling while one
+boundary uses a grid and another uses a different supported recipe. Boundary
+sampling creates coordinates; the BC block subsequently assigns the physical
+condition. Method choices and compatible targets come from the documented
+component catalogue rather than separate hard-coded UI inventories.
+
+Margam must supply basic interval/rectangle grid and random sampling directly,
+including bounds/side selection, counts, seed and preview. Advanced CAD sampling,
+face/edge selection and richer region preparation are reserved for GeoSampler.
+The current template shares one sampler selection; independent recipes are planned.
+
+Training Monitor, Solution Plot and Reference Comparison are explicit optional
+outputs. Open their views from their blocks. Start with bottom-docked tabs, allow
+floating windows or docking elsewhere, and separate closing a view from removing
+its model block or ending training. Do not automatically create result views.
+Reference comparison must remain optional across every physics template. View
+visibility and retention of sampled output data need separate policies.
