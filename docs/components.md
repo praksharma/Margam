@@ -38,3 +38,18 @@ analytical rectangle error estimate is claimed.
 
 Validated by `tests/test_poisson_template.py`: sampling bounds/counts/repeatability,
 outward normal sign, unsupported conditions and interval Poisson convergence.
+
+## Explicit output requests
+
+`margam/components/outputs.py` defines OutputRequest and ReferenceSource without Qt.
+`evaluate_outputs(model, config, requests)` evaluates only declared prediction or
+comparison requests; an empty request list or monitor-only list never calls predict.
+Each request has its own identifier and 2–201 evaluation points per coordinate axis.
+The current views support finite scalar outputs. Comparison requires an explicit
+callable reference with finite values matching those evaluation points. This first
+contract does not provide interpolation, coordinate conversion or unit conversion.
+
+The generic UI worker no longer imports or constructs the analytical interval
+reference. That source is made explicitly by a Reference block using the Poisson
+template helper. Monitors have independent bounded UI histories; their visibility
+is separate from recording. See ui-prototype.md for menus and view lifecycle.

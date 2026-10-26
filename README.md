@@ -2,7 +2,8 @@
 
 A visual framework for physics-informed neural networks (formerly DeepINN).
 The desktop builder runs the baseline strong-form PINN on built-in intervals
-and rectangles, with editable block settings, background training and 2D results.
+and rectangles, with editable block settings, background training and optional
+block-owned output views.
 The initial runnable template solves scalar Poisson problems.
 
 ## Development rules
@@ -77,7 +78,9 @@ Or launch without activating the environment:
 
 The layout keeps the block library on the left, the connected model in the centre,
 selected-block properties on the right, and samples/losses/solutions/messages below.
-Use **Appearance → Light / Dark** to switch themes. Panels can be resized or docked.
+Use **View → Theme → Light / Dark** to switch themes. Panels can be resized or docked.
+Menus are File, Edit, View, Run and Help; only implemented actions are exposed.
+File currently provides template reset and Quit; model Open/Save remains future work.
 
 ### Train your first model
 
@@ -94,26 +97,44 @@ Use **Appearance → Light / Dark** to switch themes. Panels can be resized or d
    must agree at shared corners; corner sampling is excluded.
 6. Select **Neural network** to edit hidden-layer sizes, or **PINN method** for Adam
    learning rate, iteration count, PDE/BC weights and device.
-7. Click **Validate**, then **Train PINN**. The loss view updates during training;
-   the solution view opens when it finishes. **Stop** retains the partial solution.
+7. Click **Validate**, then **Train PINN**. A model with no output blocks trains
+   without creating predictions or plot views. Progress and errors remain available.
+8. To request losses, add **Training Monitor** and connect the PINN method to it.
+   To request predictions, add **Solution Plot** and connect the PINN method to it.
+   Double-click an output block, or select it and choose **View → Open selected
+   output**, to open its view. Merely adding, connecting or training does not open it.
 
 For an analytical correctness check, choose **Interval**, keep bounds `[0, 1]`,
 source `2`, zero Dirichlet endpoints, hidden layers `16, 16`, learning rate `0.01`
-and `1000` iterations. Set the interior grid budget to `32`. The solution view
-compares the prediction with `u=x(1-x)` and reports RMSE. Rectangle results are a
-predicted field heatmap; no analytical rectangle error estimate is claimed.
+and `1000` iterations. Set the interior grid budget to `32`. Add **Reference** and
+**Comparison** blocks. Connect PINN method → Comparison's upper (model) input and
+Reference → its lower input. The explicit reference is the analytical interval
+Poisson preset; the Comparison reports RMSE. An ordinary Solution Plot never adds
+that reference, even for intervals. Rectangle prediction plots need no reference.
 
 Block connections are checked against the supported Poisson template before
-execution. Drag blocks to rearrange them, drag an output to an input to connect,
-and use **Delete selected** to remove blocks/wires. Double-clicking the library
-adds blocks, but duplicate blocks and unsupported wiring prevent training.
+execution. The seven core blocks are required; output and reference blocks are
+optional. Unconnected output blocks are ignored; partially connected comparisons
+are rejected. Drag blocks to rearrange them and drag output to input to connect.
+Use **Edit → Delete selected** for blocks/wires. Double-clicking the library adds
+blocks; core duplicates and unsupported wiring prevent training. Output instances
+have independent names, evaluation resolution or retained-history limits.
 **Reset Poisson template** restores the runnable default; **Fit model** fits the
 canvas. This is a template-backed workflow, not yet a general graph compiler.
 
 Training runs in a background thread. Settings and graph edits are locked during
-a run. Closing the window requests cancellation and waits for the worker to stop.
-Changing settings clears stale results. Models/results are not saved automatically;
-saved-model support and general custom PDE execution are future work.
+execution, but output views can still be opened, hidden or moved. Drag a view's
+panel title to detach or redock it. Closing a view hides it; its connected block
+continues requesting data. Removing the block removes the request and its view.
+Monitors retain only their configured number of updates; reopening a hidden view
+shows retained data. Training never forces plots open or switches to them.
+
+**Stop** retains the partial run. Closing the main window requests cancellation
+and waits for the worker. The numerical model remains in memory after a run until
+a model edit or new run; there is no model export/continuation UI yet. Changing
+the graph or model/evaluation settings clears stale results and requires another
+run. Models/results are not saved automatically; persistence and arbitrary PDE
+execution remain future work. Use **View → Reset panel layout** to restore docks.
 
 See the [UI guide](docs/ui-prototype.md) for conventions and current limitations.
 

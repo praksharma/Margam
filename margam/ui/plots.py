@@ -115,8 +115,12 @@ class SolutionView(QWidget):
     def show_result(self,result):
         if result['config'].shape=='Interval':
             xs=[p[0] for p in result['points']]
-            data=[('PINN',list(zip(xs,result['values'])),'#2b9d91'),('Exact',list(zip(xs,result['reference'])),'#d58b35')]
-            self.curve.set_series(data,f"Solution u(x) · {result['steps']} steps · RMSE {result['rmse']:.4g}")
+            data=[('Prediction',list(zip(xs,result['values'])),'#2b9d91')]
+            caption=f"Prediction u(x) · {result['steps']} steps"
+            if result.get('reference') is not None:
+                data.append(('Reference',list(zip(xs,result['reference'])),'#d58b35'))
+                caption+=f" · RMSE {result['rmse']:.4g}"
+            self.curve.set_series(data,caption)
             self.stack.setCurrentWidget(self.curve)
         else:
             self.field.set_result(result)
@@ -142,7 +146,7 @@ class FieldPlot(QWidget):
         if self.result is None:
             p.drawText(20,25,'Run training to see the predicted field.');return
         c=self.result['config'];values=self.result['values']
-        p.drawText(20,22,f"Predicted u(x,y) · {self.result['steps']} steps · range [{min(values):.4g}, {max(values):.4g}] · no reference error available")
+        p.drawText(20,22,f"Predicted u(x,y) · {self.result['steps']} steps · range [{min(values):.4g}, {max(values):.4g}] · prediction only")
         ratio=(c.x_max-c.x_min)/(c.y_max-c.y_min)
         h=max(30,self.height()-80);w=min(max(30,self.width()-130),h*ratio);h=min(h,w/ratio)
         rect=QRectF(65,40,w,h)

@@ -415,3 +415,15 @@ conventional menu bar and initially bottom-docked output views. Preserve familia
 interactions while specifying PINN dataflow independently; do not equate training
 iterations with physical simulation time. The document separates observed
 product behaviour, Margam adaptations and gaps requiring hands-on validation.
+
+## Implemented: explicit output ownership and standard menus
+
+The next output stage is now implemented: the default model has no plot blocks or
+views. Optional monitor/prediction/comparison requests are validated independently
+from the seven required Poisson core blocks. An explicit Reference block supplies
+the analytical interval demo; the generic worker never assumes an exact solution.
+Output views open only on request and can hide, float, redock and reopen. Per-output
+history/evaluation settings are independent; graph/model edits invalidate stale
+runs. File/Edit/View/Run/Help expose only implemented commands. Persistence, export,
+general references, a grouped catalogue and instance-owned core sampling remain
+future work. Current behaviour is documented in ui-prototype.md.

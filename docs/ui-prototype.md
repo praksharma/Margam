@@ -7,88 +7,103 @@ source .venv/bin/activate
 python -m margam.ui
 ```
 
-## Layout and blocks
+## Layout and menus
 
-Left: block library. Centre: model canvas. Right: editable properties for the
-selected block. Bottom: Domain & samples, Losses, Solution and Messages tabs.
-There is no 3D viewport. The light/dark theme is adapted from GeoSampler/PyniteGUI;
-see ../THIRD_PARTY.md for provenance.
+The block library is on the left, model canvas in the centre, and inspector on the
+right. Domain/sample previews and operational messages use the bottom dock. No
+result plots are pre-created. Optional output views have their own dock widgets,
+which can be tabbed at the bottom or detached/redocked elsewhere. There is no 3D
+viewport. Source attribution is in ../THIRD_PARTY.md.
 
-| Block | Editable properties / responsibility |
+| Menu | Implemented actions |
 | --- | --- |
-| Rectangle / Interval | Domain shape and bounds |
-| Interior sampler | Grid/random, interior point budget, seed |
-| Boundary points | Named sets; points per rectangle side; interval endpoints |
-| PDE residual | Scalar Poisson preset Δu+c=0, constant c |
-| Boundary condition | Constant Dirichlet or outward Neumann derivative per side |
-| Neural network | Hidden-layer sizes; fully connected tanh, Xavier normal |
-| PINN method | Baseline full-batch Adam, iterations, learning rate, weights, device |
-| Solution | Numerical results below the canvas |
+| File | Reset Poisson template (Ctrl+N), Quit (Ctrl+Q) |
+| Edit | Delete selected (Delete, canvas focus), select all blocks (Ctrl+A, canvas focus) |
+| View | Panel visibility, Fit model, Reset panel layout, Open selected output, Theme |
+| Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
+| Help | Quick start and About |
 
-Sampling produces point sets independently of boundary-condition assignment.
-Grid rectangle counts use complete Cartesian layers, so a budget of 70 produces
-64 points. Grid boundary samples exclude corners; interval boundaries are exactly
-the two endpoints. The preview displays actual sampled coordinates, with display
-subsampling for large clouds; training still receives all generated coordinates.
+Open/Save and undo/redo are not implemented and are not offered as working actions.
+Panel visibility/layout is not yet persisted. Fitting is explicit; selecting a
+block or resizing an inspector does not automatically reset the camera.
 
-Boundary targets are u for Dirichlet and ∂u/∂n for Neumann. Normals are analytical
-for built-in domains. Neumann here does not mean conductivity-scaled flux. Pure
-Neumann problems are rejected pending compatibility and gauge handling. Adjacent
-rectangle Dirichlet values must agree at shared corners. No general corner
-regularity claim is made for mixed conditions.
+## Core model
 
-## Train
+The Poisson template has seven required blocks: domain, interior sampler, boundary
+points, PDE residual, boundary condition, neural network, and PINN method. Output
+blocks are optional. The underlying method remains `margam/methods/pinn.py`.
 
-The initial rectangle template is ready to run. Select blocks to configure the
-model, click Validate, then Train PINN. No external geometry or mesh is needed.
-For the original analytical Poisson check, choose Interval on [0,1], source 2,
-zero Dirichlet endpoints, 32 interior grid points, hidden layers 16,16, learning
-rate .01 and 1000 iterations. The default weights are one for PDE and mean BC.
+Geometry, sampling, constant source, BCs, hidden-layer sizes, Adam settings and
+weights are edited in the selected block's inspector. Built-in interval/rectangle
+sampling needs no imported geometry or mesh. Grid/random sampling, corner policy,
+normal conventions and numerical limits are documented in components.md.
 
-Each side has a separate named loss. Its weight is mean_boundary_weight divided
-by the number of sides. Loss plots show weighted total, raw PDE mean and the raw
-average of boundary means, on a logarithmic axis. Losses precede their updates.
+Double-clicking a computational block exposes its inspector. Multiple selection
+has no arbitrary single-block parameter editor. Full parameter dialogs and general
+instance-owned core configurations remain future work.
 
-The UI worker calls the existing `methods/pinn.py` recipe in batches of up to 25
-updates, emits numeric progress and evaluates the final network. The UI thread
-never receives a network or live tensors. CPU thread count is set to one for these
-small examples. One job runs at a time; model edits are locked during execution.
+## Optional output blocks
 
-Stop requests cancellation between batches and displays the partial prediction.
-Closing during a job waits for cancellation rather than destroying a running
-thread. Errors appear in Messages and release the controls. Every new run creates
-a fresh network/optimiser; continuation is not exposed in this UI yet.
+| Block | Inputs | Output settings and behaviour |
+| --- | --- | --- |
+| Training Monitor | PINN method | Live losses; retained-update limit 25–100000, default 10000 |
+| Solution Plot | PINN method | Scalar predictions only; evaluation resolution 2–201 per axis |
+| Reference | No input | Explicit analytical interval Poisson demonstration source |
+| Comparison | Model input above; Reference input below | Prediction/reference curves and RMSE at its own evaluation points |
 
-Interval results include an analytical reference for supported constant-source
-D/D and D/N combinations, and RMSE. Rectangle results are a predicted field on a
-41×41 evaluation grid, with a labelled value range, not an analytical error check.
-Numerical quality still depends on samples, weights, architecture and training.
+Outputs have stable instance identities and independent settings. A reference
+source does nothing unless connected to a requested Comparison. The current demo
+reference rejects rectangles; ordinary prediction views work without references.
+It is not a general symbolic or imported-data reference editor.
 
-## Connections and model edits
+Connect an output block before training, then double-click it to open its view.
+Selecting it and choosing View → Open selected output is another route. A view
+can be opened before, during or after training. New or hidden views are never
+opened automatically by training. Connected outputs still collect/evaluate their
+requested data if their views are closed. An unconnected output is ignored; a
+comparison connected on only one input fails validation rather than assuming a
+reference. The trained model is evaluated separately for each prediction request.
 
-The supported template needs one of each block and its prescribed dependency
-connections. Validation rejects missing/extra connections, duplicate blocks and
-unsupported configurations. Connections therefore determine whether the template
-can run; they are not silently ignored. This first implementation assembles that
-single supported template, not arbitrary graphs or custom PINN methods.
+Close a view to hide it; reopen the same block to reuse the view and retained
+results. Removing the block deletes its view and request. Changing the graph or
+model/evaluation settings invalidates the current run. Changing a monitor's
+retention limit trims its existing display history without retraining; previously
+trimmed data cannot be recovered by increasing the limit.
 
-Drag blocks, connect output to input, select wires/blocks and Delete selected.
-Fit model fits the canvas; Reset Poisson template restores defaults. Added library
-blocks must form a valid supported model before training. Configuration changes
-clear old plots. Graph changes invalidate the previous solution. Layout resets,
-model settings and numerical results are currently in memory only.
+## Execution and diagnostics
+
+Training runs in a background thread in batches of up to 25 updates. Progress,
+current total loss and failures are operational information available without any
+output block. Only connected monitors retain UI loss history. Their plots show
+weighted total, raw PDE loss and mean raw BC loss on a logarithmic axis; losses
+are measured before updates. The numerical recipe retains its own loss history
+independently of the bounded view history.
+
+Without prediction/comparison requests, the worker never calls prediction or
+constructs a reference. A completed/partial numerical model is retained in the
+finished worker until a model edit/new run, rather than passing a network to plot
+widgets. There is no export/continuation interface for that model yet.
+
+Settings/graph edits are locked during training, while block selection and opening
+output views remain available. Stop requests cancellation between batches. Closing
+the main window waits for the worker to stop. Errors release the controls and show
+operational Messages; they do not create result views. CPU thread count is one for
+these small examples. CUDA remains unverified in this environment.
+
+## Analytical check
+
+Choose Interval on [0,1], source 2, zero Dirichlet endpoints, 32 grid interior
+points, hidden layers 16,16, learning rate .01 and 1000 iterations. Add Reference
+and Comparison, connect the method to its upper model input and Reference to its
+lower reference input, then train and explicitly open the Comparison. The reference
+is u=x(1-x). A separate Solution Plot shows predictions alone, not an assumed exact
+solution. Rectangle plots show a predicted field and value range, not reference error.
 
 ## Validation and remaining work
 
-`tests/test_poisson_template.py` checks sampling, normal orientation, separation of
-point sets from BC assignment, invalid problems and interval convergence.
-`tests/test_ui_training.py` exercises real background interval/rectangle solves,
-responsive event processing, graph rejection, errors and close/cancel behaviour.
-Screenshots live in assets/screenshots and are generated with the real Qt widgets
-in offscreen mode. The current environment has CPU PyTorch; GPU validation remains
-outstanding.
-
-Future work: saved models/results, arbitrary PDE functions and data adapters,
-typed ports and general graph execution, additional methods, undo/redo, broader
-sampling and GeoSampler integration. The UI currently exposes only the two
-implemented small-domain sampling methods listed in components.md.
+Tests cover output-free execution, no implicit reference, comparison validation,
+independent evaluation resolutions, monitor retention, closed-view recording,
+detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
+Screenshots are under assets/screenshots. General graph execution, typed core ports,
+per-set sampling instances, a grouped library, persistence, arbitrary PDE/reference
+sources and export remain in todo.md.

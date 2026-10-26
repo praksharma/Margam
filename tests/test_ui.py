@@ -18,7 +18,10 @@ app = QApplication([])
 w = Window()
 w.show()
 app.processEvents()
-assert len(w.scene.wires) == 8
+assert len(w.scene.wires) == 7
+assert not w.output_views.entries
+assert w.tabs.count() == 2
+assert [a.text() for a in w.menuBar().actions()] == ["File", "Edit", "View", "Run", "Help"]
 node = next(i for i in w.scene.items() if isinstance(i, Node))
 w.scene.clearSelection()
 node.setSelected(True)
@@ -29,6 +32,16 @@ for theme in ('dark', 'light'):
     app.processEvents()
     assert w.scene.backgroundBrush().color().name() == colors()['canvas']
     assert not w.grab().isNull()
+edit=next(a.menu() for a in w.menuBar().actions() if a.text()=='Edit')
+next(a for a in edit.actions() if a.text()=='Select all blocks').trigger()
+app.processEvents()
+assert all(n.isSelected() for n in w.scene.nodes())
+assert w.name.text()=='Multiple blocks selected'
+action=w.library_dock.toggleViewAction()
+action.trigger();app.processEvents()
+assert w.library_dock.isHidden()
+action.trigger();app.processEvents()
+assert not w.library_dock.isHidden()
 w.close()
 app.processEvents()
 """

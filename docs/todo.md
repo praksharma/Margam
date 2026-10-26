@@ -23,31 +23,22 @@ checkboxes are not claims about current Margam support.
 
 ## Menus and explicit outputs
 
-- [ ] Add a standard File / Edit / View / Help menu bar. Organise model open/save,
-  editing, panel visibility/layout, and help actions under the relevant menus;
-  expose only implemented actions as available.
-- [ ] Allow training without any plot/results block. The current Poisson validator
-  requires a Solution block; remove that requirement as output blocks are introduced.
-- [ ] Make loss plots, solution plots and result export explicit optional output
-  blocks, with their own settings and evaluation points where appropriate.
-- [ ] Create/show result views only for connected output blocks. Do not pre-create
-  result panels or switch to them automatically when no such output is requested.
-- [ ] Separate reference data/functions from predictions. Add an optional reference
-  source and comparison block; compute RMSE/error plots only when explicitly
-  connected to compatible reference values at the evaluation points.
-- [ ] Remove automatic analytical-reference construction from the generic training
-  worker. The Poisson demo may provide it through an explicitly visible optional
-  reference block, rather than making it a property of every solve.
-- [ ] Keep operational status, progress, validation and failures available without
-  requiring numerical output blocks; distinguish these from requested result plots.
-
-- [ ] Add an explicit Training Monitor output block for loss curves and other
-  selected training diagnostics; keep ordinary progress/error status independent.
-- [ ] Open output views explicitly from their blocks, initially as tabs in a
-  dockable bottom panel; support detached windows and docking elsewhere. Closing
-  a view hides it without removing the block or stopping training. Removing an
-  output block removes that output request from the model. Keep data retention
-  and view visibility as separate settings.
+- [x] Add File / Edit / View / Run / Help menus for implemented actions. File
+  currently offers template reset and Quit; model Open/Save remains future work.
+- [x] Allow training without any plot/results block.
+- [x] Make loss plots and prediction plots explicit optional output blocks, with
+  per-instance history/evaluation settings.
+- [x] Create/show output views only when explicitly opened through their blocks.
+  Unconnected blocks can show a placeholder; only connected outputs request data.
+- [x] Separate reference sources and comparisons from ordinary predictions; the
+  current explicit analytical demonstration source supports intervals only.
+- [x] Remove automatic analytical-reference construction from the generic worker.
+- [x] Keep operational status, progress, validation and failures available without
+  numerical output blocks.
+- [x] Add Training Monitor blocks with bounded recorded histories.
+- [x] Support bottom docking, floating, hide/reopen, and removal with the owning
+  block. Keep view visibility separate from data retention.
+- [ ] Add result export blocks and general imported/user-function reference sources.
 
 ## Left library and sampling options
 
@@ -85,3 +76,9 @@ checkboxes are not claims about current Margam support.
 - [ ] Add output branching and undoable graph/parameter edits.
 - [ ] Validate interaction parity hands-on against a selected Simulink release;
   the current evidence collection is documentation-based.
+
+## Output/menu milestone (26 October 2026)
+
+The first output-ownership stage in simulink-evidence.md is implemented and
+verified. See ui-prototype.md for actual menu actions, output lifecycle and limits.
+The searchable/grouped library and independent core sampling recipes remain next.
