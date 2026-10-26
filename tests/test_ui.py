@@ -21,7 +21,8 @@ for _ in range(3):app.processEvents()
 assert w.view.viewport().rect().contains(w.view.mapFromScene(w.scene.itemsBoundingRect()).boundingRect())
 assert len(w.scene.wires) == 7
 assert not w.output_views.entries
-assert w.tabs.count() == 2
+assert w.messages_dock.isHidden()
+assert not w.rectangle_previews
 assert [a.text() for a in w.menuBar().actions()] == ["File", "Edit", "View", "Run", "Help"]
 node = next(i for i in w.scene.items() if isinstance(i, Node))
 w.scene.clearSelection()

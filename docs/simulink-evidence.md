@@ -43,6 +43,14 @@ choices; those choices are not claims about Simulink.
 | E13 | Saving | Models normally save as SLX. In R2026b, personal model-view settings default to external JSON preferences; view state can instead be stored in the model. | [Save Models](https://www.mathworks.com/help/simulink/ug/save-models.html) |
 | E14 | Beginner workflow | The tutorial walks through a blank model, browsing/inserting blocks, setting parameters, wiring, saving and running. It is a useful sequence for reviewing the overall interaction. | [Create a Simple Model](https://www.mathworks.com/help/simulink/gs/create-a-simple-model.html) |
 
+## Additional context-menu evidence
+
+MathWorks documents element-specific context menus with block parameters,
+properties, help and editing actions. This supports block-owned context actions;
+it does not establish a universal sample-plot command. See [Find Simulink Context
+Menu Options](https://www.mathworks.com/help/simulink/ug/find-simulink-context-menu-options.html).
+Margam's rectangle-specific preview actions are an explicit local adaptation.
+
 ## Proposed Margam interaction contract
 
 These are proposed acceptance targets, not completed implementation claims.

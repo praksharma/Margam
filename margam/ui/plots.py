@@ -7,53 +7,56 @@ from .theme import colors
 from ..templates.poisson import sample_problem
 
 
-class DomainPreview(QWidget):
-    def __init__(self, config, parent=None):
+class RectanglePreview(QWidget):
+    """A rectangle block's local 2D view; not a general geometry renderer."""
+    def __init__(self, config, show_samples=True, parent=None):
         super().__init__(parent)
+        if config.shape != 'Rectangle':
+            raise ValueError('This preview supports rectangle blocks only.')
         self.config = config
-        self.setMinimumHeight(190)
+        self.show_samples = show_samples
+        self.setMinimumHeight(240)
 
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setPen(QColor(colors()['text']))
+        c = self.config
         try:
-            interior,boundaries = sample_problem(self.config)
+            if c.shape != 'Rectangle':
+                raise ValueError('This preview supports rectangle blocks only.')
+            if not all(math.isfinite(v) for v in (c.x_min,c.x_max,c.y_min,c.y_max)) or c.x_max<=c.x_min or c.y_max<=c.y_min:
+                raise ValueError('Rectangle bounds must be finite and strictly increasing.')
+            interior,boundaries = sample_problem(c) if self.show_samples else ([],{})
         except ValueError as error:
             p.drawText(self.rect().adjusted(20,20,-20,-20),Qt.TextFlag.TextWordWrap,str(error))
             return
-        c = self.config
-        w,h = max(80,min(650,self.width()-150)),max(40,self.height()-100)
-        if c.shape == 'Rectangle':
-            ratio=(c.x_max-c.x_min)/(c.y_max-c.y_min)
-            w=min(w,h*ratio);h=min(h,w/ratio)
-        area = QRectF(70,45,w,h)
-        p.drawText(20,22,f'{c.shape} · {len(interior)} interior points · {sum(map(len,boundaries.values()))} boundary points')
+        width,height = c.x_max-c.x_min,c.y_max-c.y_min
+        h=max(40,self.height()-110)
+        w=min(max(80,self.width()-160),h*width/height)
+        h=min(h,w*height/width)
+        area=QRectF(70,48,w,h)
+        caption=f'Rectangle · {len(interior)} interior · {sum(map(len,boundaries.values()))} boundary points' if self.show_samples else f'Rectangle · width {width:g} · height {height:g}'
+        p.drawText(18,24,caption)
+        p.setPen(QPen(QColor(colors()['border']),2));p.drawRect(area)
         def mapped(row):
-            x = area.left()+(row[0]-c.x_min)/(c.x_max-c.x_min)*w
-            y = area.bottom()-(row[1]-c.y_min)/(c.y_max-c.y_min)*h if len(row)>1 else area.center().y()
-            return QPointF(x,y)
-        p.setPen(QPen(QColor(colors()['border']),2))
-        if c.shape == 'Rectangle':
-            p.drawRect(area)
-        else:
-            p.drawLine(mapped([c.x_min]),mapped([c.x_max]))
-        p.setPen(QPen(QColor(colors()['muted']),3))
-        # Preview subsampling is display-only; every sampled point reaches training.
-        stride = max(1,math.ceil(len(interior)/1500))
-        for row in interior[::stride]: p.drawPoint(mapped(row))
-        for side,rows in boundaries.items():
-            color = '#d58b35' if c.bc_types[side]=='Neumann' else colors()['highlight']
-            p.setPen(QPen(QColor(color),4))
-            stride = max(1,math.ceil(len(rows)/500))
-            for row in rows[::stride]:p.drawPoint(mapped(row))
+            return QPointF(area.left()+(row[0]-c.x_min)/width*w,area.bottom()-(row[1]-c.y_min)/height*h)
+        if self.show_samples:
+            p.setPen(QPen(QColor(colors()['muted']),3))
+            stride=max(1,math.ceil(len(interior)/1500))
+            for row in interior[::stride]:p.drawPoint(mapped(row))
+            for side,rows in boundaries.items():
+                color='#d58b35' if c.bc_types.get(side)=='Neumann' else colors()['highlight']
+                p.setPen(QPen(QColor(color),4))
+                stride=max(1,math.ceil(len(rows)/500))
+                for row in rows[::stride]:p.drawPoint(mapped(row))
         p.setPen(QColor(colors()['text']))
         p.drawText(12,int(area.center().y()),'Left')
         p.drawText(int(area.right()+12),int(area.center().y()),'Right')
-        if c.shape=='Rectangle':
-            p.drawText(int(area.center().x()-15),int(area.top()-8),'Top')
-            p.drawText(int(area.center().x()-20),int(area.bottom()+22),'Bottom')
-        p.drawText(20,self.height()-9,'Teal: Dirichlet · orange: outward normal derivative · large clouds shown as a subset')
+        p.drawText(int(area.center().x()-15),int(area.top()-8),'Top')
+        p.drawText(int(area.center().x()-20),int(area.bottom()+22),'Bottom')
+        footer='Teal: Dirichlet · orange: outward derivative · large clouds shown as a subset' if self.show_samples else f'x: [{c.x_min:g}, {c.x_max:g}] · y: [{c.y_min:g}, {c.y_max:g}]'
+        p.drawText(18,self.height()-10,footer)
 
 
 class CurvePlot(QWidget):

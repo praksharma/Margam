@@ -17,7 +17,12 @@ class OutputViews:
             view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else SolutionView()
             dock = self.window.dock(node.title, view, Qt.DockWidgetArea.BottomDockWidgetArea)
             dock.setObjectName('output-' + node.identifier)
-            self.window.tabifyDockWidget(self.window.preview_dock, dock)
+            for other,_ in self.entries.values():
+                if not other.isFloating():
+                    hidden=other.isHidden()
+                    self.window.tabifyDockWidget(other, dock)
+                    if hidden:other.hide()
+                    break
             self.entries[node.identifier] = (dock, view)
             self.window.view_menu.addAction(dock.toggleViewAction())
         self.refresh(node)

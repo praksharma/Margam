@@ -4,7 +4,7 @@ from copy import deepcopy
 from ..templates.poisson import PoissonConfig, make_interval_reference
 from ..components.outputs import OutputRequest
 from ..components.sampling import SAMPLERS
-from .plots import DomainPreview
+from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
 from .theme import colors, configure_theme, theme_name
@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QDockWidget, QListWidget, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
-    QTabWidget, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
+    QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
     QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox,
 )
 
@@ -108,6 +108,12 @@ class Node(QGraphicsRectItem):
         painter.setPen(QColor(colors()['muted']))
         painter.drawText(14, 55, painter.fontMetrics().elidedText(self.detail, Qt.TextElideMode.ElideRight, 145))
 
+    def contextMenuEvent(self, event):
+        self.scene().clearSelection()
+        self.setSelected(True)
+        self.scene().blockContextRequested.emit(self, event.screenPos())
+        event.accept()
+
     def mouseDoubleClickEvent(self, event):
         self.scene().clearSelection()
         self.setSelected(True)
@@ -124,6 +130,7 @@ class Node(QGraphicsRectItem):
 class Canvas(QGraphicsScene):
     graphChanged = Signal()
     blockOpened = Signal(object)
+    blockContextRequested = Signal(object, object)
 
     def __init__(self):
         super().__init__()
@@ -230,6 +237,7 @@ class Window(QMainWindow):
         self.monitor_records = {}
         self.active_monitors = set()
         self.last_run = None
+        self.rectangle_previews = {}
         self._closing = False
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
@@ -272,16 +280,13 @@ class Window(QMainWindow):
         layout.addWidget(self.property_scroll)
         self.validation=QLabel('');self.validation.setWordWrap(True);layout.addWidget(self.validation)
         self.properties_dock=self.dock('Properties',properties,Qt.DockWidgetArea.RightDockWidgetArea)
-        self.tabs=QTabWidget()
-        self.preview=DomainPreview(self.config)
         self.log=QPlainTextEdit();self.log.setReadOnly(True)
-        for widget,title in [(self.preview,'Domain & samples'),(self.log,'Messages')]:
-            self.tabs.addTab(widget,title)
-        self.tabs.setMinimumHeight(285)
-        self.preview_dock=self.dock('Preview and messages',self.tabs,Qt.DockWidgetArea.BottomDockWidgetArea)
+        self.messages_dock=self.dock('Messages',self.log,Qt.DockWidgetArea.BottomDockWidgetArea)
+        self.messages_dock.hide()
         self.output_views=OutputViews(self)
         self.setup_menus()
         self.scene.blockOpened.connect(self.open_block)
+        self.scene.blockContextRequested.connect(self.show_block_menu)
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
         self.scene.graphChanged.connect(self.graph_changed)
@@ -313,7 +318,7 @@ class Window(QMainWindow):
         self.view.addAction(select_all)
         select_all.triggered.connect(self.select_all_blocks)
         self.view_menu=self.menuBar().addMenu('View')
-        for dock in [self.library_dock,self.properties_dock,self.preview_dock]:
+        for dock in [self.library_dock,self.properties_dock,self.messages_dock]:
             self.view_menu.addAction(dock.toggleViewAction())
         self.view_menu.addSeparator()
         self.view_menu.addAction('Fit model').triggered.connect(self.fit_model)
@@ -342,6 +347,7 @@ class Window(QMainWindow):
         help_menu.addAction('Quick start').triggered.connect(lambda:QMessageBox.information(
             self,'Build and train a PINN',
             'Configure the connected Poisson blocks and click Train PINN.\n\n'
+            'Rectangle previews: right-click the Rectangle block and choose Preview geometry or Preview samples.\n\n'
             'Plots are optional. Add a Training Monitor or Solution Plot, connect the PINN method to it, '
             'then double-click the output block to open its view. Views can dock or float.\n\n'
             'A Comparison needs a model and an explicit Reference. The current analytical reference supports intervals only.'))
@@ -353,15 +359,19 @@ class Window(QMainWindow):
         for node in self.scene.nodes():node.setSelected(True)
 
     def reset_panel_layout(self):
+        messages_hidden=self.messages_dock.isHidden()
         for dock,area in [(self.library_dock,Qt.DockWidgetArea.LeftDockWidgetArea),
                           (self.properties_dock,Qt.DockWidgetArea.RightDockWidgetArea),
-                          (self.preview_dock,Qt.DockWidgetArea.BottomDockWidgetArea)]:
+                          (self.messages_dock,Qt.DockWidgetArea.BottomDockWidgetArea)]:
             dock.setFloating(False);self.addDockWidget(area,dock);dock.show()
+        if messages_hidden:self.messages_dock.hide()
+        first_output=None
         for dock,_ in self.output_views.entries.values():
             hidden=dock.isHidden()
             dock.setFloating(False)
             self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,dock)
-            self.tabifyDockWidget(self.preview_dock,dock)
+            if first_output is not None:self.tabifyDockWidget(first_output,dock)
+            else:first_output=dock
             if hidden:dock.hide()
         self.resizeDocks([self.library_dock,self.properties_dock],[240,310],Qt.Orientation.Horizontal)
 
@@ -370,10 +380,88 @@ class Window(QMainWindow):
         if len(nodes)==1:self.open_block(nodes[0])
 
     def open_block(self,node):
+        if not isValid(node) or node.scene() is not self.scene:return
         if node.kind in OUTPUT_KINDS:
             return self.output_views.open(node)
         self.properties_dock.show()
         self.properties_dock.raise_()
+
+    def create_block_menu(self, node):
+        """Only existing block-specific actions; no universal plot capability."""
+        menu=QMenu(self)
+        menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        if node.kind=='domain' and self.config.shape=='Rectangle':
+            menu.addSeparator()
+            menu.addAction('Preview geometry').triggered.connect(lambda:self.open_rectangle_preview(node,False))
+            menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
+        elif node.kind in OUTPUT_KINDS:
+            label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison'}[node.kind]
+            menu.addAction(label).triggered.connect(lambda:self.open_block(node))
+        menu.addSeparator()
+        remove=menu.addAction('Delete block')
+        remove.setEnabled(not self.is_running())
+        remove.triggered.connect(lambda:self.delete_block(node))
+        menu.addAction('Help').triggered.connect(lambda:self.block_help(node))
+        return menu
+
+    def show_block_menu(self, node, position):
+        menu=self.create_block_menu(node)
+        menu.exec(position)
+        menu.deleteLater()
+
+    def show_block_properties(self, node):
+        if not isValid(node) or node.scene() is not self.scene:return
+        self.scene.clearSelection();node.setSelected(True)
+        self.properties_dock.show();self.properties_dock.raise_()
+
+    def delete_block(self, node):
+        if self.is_running() or not isValid(node) or node.scene() is not self.scene:return
+        self.show_block_properties(node)
+        self.delete_selected()
+
+    def block_help(self, node):
+        text={
+            'domain':'Configure interval or rectangle bounds. Rectangle blocks provide optional local 2D geometry and sample previews through this menu.',
+            'interior':'Choose the supported sampling method, point budget and seed for PDE points.',
+            'boundary':'Create named boundary point sets. Assign their physical conditions separately in the BC block.',
+            'pde':'The current template solves scalar Poisson with a constant source. Arbitrary residual editing is future work.',
+            'bc':'Assign Dirichlet values or outward Neumann derivatives to the named sides.',
+            'network':'Set hidden-layer sizes for the fully connected tanh network.',
+            'method':'Configure baseline full-batch Adam training. Output blocks are optional.',
+            'monitor':'Connect the PINN method to request bounded loss history. Open or hide its view independently of recording.',
+            'solution':'Connect the PINN method to evaluate scalar predictions at the requested resolution. No reference is assumed.',
+            'comparison':'Connect a model and an explicit Reference. The current demo reference supports interval Poisson problems only.',
+            'reference':'An explicit analytical interval Poisson reference source for Comparison; not an assumed property of a trained model.',
+        }[node.kind]
+        QMessageBox.information(self,node.title,text)
+
+    def open_rectangle_preview(self, node, show_samples):
+        if not isValid(node) or node.scene() is not self.scene or node.kind!='domain' or self.config.shape!='Rectangle':
+            return
+        key=(node.identifier,show_samples)
+        if key not in self.rectangle_previews:
+            title='Rectangle · samples' if show_samples else 'Rectangle · geometry'
+            view=RectanglePreview(self.config,show_samples)
+            dock=self.dock(title,view,Qt.DockWidgetArea.BottomDockWidgetArea)
+            dock.setObjectName('rectangle-'+node.identifier+('-samples' if show_samples else '-geometry'))
+            dock.setFloating(True);dock.resize(660,420)
+            self.rectangle_previews[key]=(dock,view)
+        dock,_=self.rectangle_previews[key]
+        dock.show();dock.raise_()
+        return dock
+
+    def close_rectangle_previews(self):
+        for dock,_ in self.rectangle_previews.values():
+            dock.close();self.removeDockWidget(dock);dock.deleteLater()
+        self.rectangle_previews.clear()
+
+    def sync_rectangle_previews(self):
+        owners={n.identifier for n in self.scene.nodes() if n.kind=='domain'}
+        for key in list(self.rectangle_previews):
+            if self.config.shape!='Rectangle' or key[0] not in owners:
+                dock,_=self.rectangle_previews.pop(key)
+                dock.close();self.removeDockWidget(dock);dock.deleteLater()
+
 
     def rename_output(self,node,name):
         name=name.strip()
@@ -416,8 +504,9 @@ class Window(QMainWindow):
     def reset_template(self):
         if self.is_running():return
         self.output_views.sync([])
+        self.close_rectangle_previews()
         self.scene.wires.clear();self.scene.pending=None;self.scene.clear()
-        self.config=PoissonConfig();self.preview.config=self.config
+        self.config=PoissonConfig()
         self.populate_template();self.settings_changed();self.fit_model()
         self.log.appendPlainText('Loaded the rectangle Poisson template.')
 
@@ -450,6 +539,7 @@ class Window(QMainWindow):
     def graph_changed(self):
         self.clear_run_data()
         self.output_views.sync(self.scene.nodes())
+        self.sync_rectangle_previews()
         self.refresh_descriptions()
         self.progress_bar.setValue(0)
         self.validation.setText('Graph changed. Validate the model before training.')
@@ -480,7 +570,10 @@ class Window(QMainWindow):
     def settings_changed(self):
         self.clear_run_data()
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
-        self.refresh_descriptions();self.preview.update()
+        self.refresh_descriptions()
+        self.sync_rectangle_previews()
+        for _,preview in self.rectangle_previews.values():
+            preview.config=self.config;preview.update()
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
@@ -648,8 +741,7 @@ class Window(QMainWindow):
         self.result=None
         self.statusBar().showMessage('Training failed · see Messages')
         self.log.appendPlainText('Training failed: '+message)
-        self.tabs.setCurrentWidget(self.log)
-        self.preview_dock.show();self.preview_dock.raise_()
+        self.messages_dock.show();self.messages_dock.raise_()
 
     def training_finished(self):
         worker=self.worker;self.worker=None

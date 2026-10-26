@@ -10,10 +10,12 @@ python -m margam.ui
 ## Layout and menus
 
 The block library is on the left, model canvas in the centre, and inspector on the
-right. Domain/sample previews and operational messages use the bottom dock. No
-result plots are pre-created. Optional output views have their own dock widgets,
-which can be tabbed at the bottom or detached/redocked elsewhere. There is no 3D
-viewport. Source attribution is in ../THIRD_PARTY.md.
+right. No figure or sample panel is created by default. Operational Messages have
+an independent dock, hidden until requested from View or shown for a training error.
+Rectangle geometry/sample previews are local, explicitly opened windows; they float
+by default and can be docked by the user. Output views have their own dock widgets,
+which can be grouped or detached/redocked. No global panel owns the figures and
+there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 
 | Menu | Implemented actions |
 | --- | --- |
@@ -38,9 +40,28 @@ weights are edited in the selected block's inspector. Built-in interval/rectangl
 sampling needs no imported geometry or mesh. Grid/random sampling, corner policy,
 normal conventions and numerical limits are documented in components.md.
 
+Right-clicking any supported block offers Properties, Delete block and Help.
+Rectangle adds Preview geometry and Preview samples. Output blocks add Open
+monitor, Open plot or Open comparison, according to their actual type. There is
+no universal Plot action. Copy/paste is not offered until implemented.
+
 Double-clicking a computational block exposes its inspector. Multiple selection
 has no arbitrary single-block parameter editor. Full parameter dialogs and general
 instance-owned core configurations remain future work.
+
+## Optional rectangle previews
+
+Right-click a Rectangle block and choose Preview geometry or Preview samples.
+Geometry shows the bounds and outline; samples shows the currently configured
+interior/boundary point sets. These two views are keyed to that block and reused
+when reopened. Bounds/sampling edits update existing views without opening new
+ones. Closing hides a view. Switching to Interval, deleting its owner or resetting
+the model closes/removes its previews. These actions do not evaluate a neural model.
+
+The implementation is deliberately `RectanglePreview`, not a general geometry
+renderer or plot registry. Interval and unrelated blocks have no sample-preview
+action. Complex geometry and advanced sampling visualisation belong to GeoSampler.
+Rectangle previews are available as read-only views during training.
 
 ## Optional output blocks
 
@@ -56,7 +77,8 @@ source does nothing unless connected to a requested Comparison. The current demo
 reference rejects rectangles; ordinary prediction views work without references.
 It is not a general symbolic or imported-data reference editor.
 
-Connect an output block before training, then double-click it to open its view.
+Connect an output block before training, then double-click it or use its specific
+right-click Open action to open its view.
 Selecting it and choosing View → Open selected output is another route. A view
 can be opened before, during or after training. New or hidden views are never
 opened automatically by training. Connected outputs still collect/evaluate their
@@ -102,7 +124,8 @@ solution. Rectangle plots show a predicted field and value range, not reference 
 ## Validation and remaining work
 
 Tests cover output-free execution, no implicit reference, comparison validation,
-independent evaluation resolutions, monitor retention, closed-view recording,
+independent evaluation resolutions, rectangle-only context actions and preview
+cleanup, monitor retention, closed-view recording,
 detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
 Screenshots are under assets/screenshots. General graph execution, typed core ports,
 per-set sampling instances, a grouped library, persistence, arbitrary PDE/reference

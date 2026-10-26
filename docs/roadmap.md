@@ -427,3 +427,13 @@ history/evaluation settings are independent; graph/model edits invalidate stale
 runs. File/Edit/View/Run/Help expose only implemented commands. Persistence, export,
 general references, a grouped catalogue and instance-owned core sampling remain
 future work. Current behaviour is documented in ui-prototype.md.
+
+## Implemented: narrow block context actions and rectangle previews
+
+Blocks now expose supported actions through right-click menus. Rectangle blocks
+provide optional local geometry/sample previews; output blocks provide their own
+Open actions. The default figure pane is removed. Messages are independent of
+figures. The rectangle previews float initially, can be hidden/reopened or docked,
+and are removed when their owner disappears or changes to an unsupported shape.
+No interval/general/3D sample renderer or generic capability framework was added.
+Build further abstractions only when a concrete second use case justifies them.

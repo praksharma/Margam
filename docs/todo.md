@@ -82,3 +82,17 @@ checkboxes are not claims about current Margam support.
 The first output-ownership stage in simulink-evidence.md is implemented and
 verified. See ui-prototype.md for actual menu actions, output lifecycle and limits.
 The searchable/grouped library and independent core sampling recipes remain next.
+
+## Block-owned rectangle previews and context menus
+
+- [x] Add block-specific right-click menus for Properties, Delete and Help, plus
+  only the view actions each supported block actually provides.
+- [x] Remove the default domain/sample figure pane; keep operational Messages
+  separate and initially hidden.
+- [x] Add optional Rectangle → Preview geometry / Preview samples windows, floating
+  by default and owned by that rectangle block.
+- [x] Reuse hidden previews and update them on settings changes; remove them on
+  owner deletion, shape change or template reset.
+- [x] Keep these sample previews limited to rectangles. Do not create a general
+  geometry renderer or implicit 3D preview path without a justified requirement.
+- [ ] Add clipboard/undo actions to context menus when those operations exist.

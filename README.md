@@ -18,6 +18,8 @@ The initial runnable template solves scalar Poisson problems.
 - Keep the `dev` branch untouched unless explicitly authorized. Check the branch
   before making changes.
 - Make small, verified commits at completed milestones.
+- Build concrete supported workflows first. Do not add generic extension frameworks
+  or universal plotting actions without a demonstrated need.
 - Keep each PINN method in one file, reusing shared components where appropriate.
   Update the component/method catalogue when adding or changing capabilities.
 
@@ -77,7 +79,8 @@ Or launch without activating the environment:
 ```
 
 The layout keeps the block library on the left, the connected model in the centre,
-selected-block properties on the right, and samples/losses/solutions/messages below.
+selected-block properties on the right, and no default figure pane.
+Operational Messages are a separate panel, initially hidden (open it from View).
 Use **View → Theme → Light / Dark** to switch themes. Panels can be resized or docked.
 Menus are File, Edit, View, Run and Help; only implemented actions are exposed.
 File currently provides template reset and Quit; model Open/Save remains future work.
@@ -86,7 +89,10 @@ File currently provides template reset and Quit; model Open/Save remains future 
 
 1. The app opens a complete rectangle Poisson template, Δu + 2 = 0, with zero
    Dirichlet conditions on all four sides. No geometry file or mesh is needed.
-2. Select **Rectangle** to change the bounds or choose **Interval**.
+2. Select **Rectangle** to change the bounds or choose **Interval**. Right-click
+   a rectangle block for **Preview geometry** or **Preview samples**. These local
+   2D windows open only on request and float by default; they are not available
+   for intervals or arbitrary geometry. Closing one hides it; reopening reuses it.
 3. Select **Interior sampler** to choose grid/random sampling, point budget and seed.
    Select **Boundary points** for the number of samples per rectangle side.
 4. Select **PDE residual** to change the constant source. This first UI supports a
@@ -101,8 +107,8 @@ File currently provides template reset and Quit; model Open/Save remains future 
    without creating predictions or plot views. Progress and errors remain available.
 8. To request losses, add **Training Monitor** and connect the PINN method to it.
    To request predictions, add **Solution Plot** and connect the PINN method to it.
-   Double-click an output block, or select it and choose **View → Open selected
-   output**, to open its view. Merely adding, connecting or training does not open it.
+   Double-click an output block, right-click it for its Open action, or select it
+   and choose **View → Open selected output** to open its view. Merely adding, connecting or training does not open it.
 
 For an analytical correctness check, choose **Interval**, keep bounds `[0, 1]`,
 source `2`, zero Dirichlet endpoints, hidden layers `16, 16`, learning rate `0.01`
@@ -136,6 +142,13 @@ the graph or model/evaluation settings clears stale results and requires another
 run. Models/results are not saved automatically; persistence and arbitrary PDE
 execution remain future work. Use **View → Reset panel layout** to restore docks.
 
+Right-click menus expose only supported actions: Properties, Delete block, Help,
+and the view actions belonging to that block. Output blocks offer Open monitor,
+Open plot or Open comparison. Double-clicking a computational block still opens
+its inspector. Rectangle preview windows close when the shape changes to Interval,
+the owner is deleted, or the template is reset. There is no general sample renderer
+or implicit 3D plotting path.
+
 See the [UI guide](docs/ui-prototype.md) for conventions and current limitations.
 
 ## Run tests
@@ -152,6 +165,7 @@ Run one area at a time:
 python -m unittest discover -s tests -p 'test_pinn.py' -v
 python -m unittest discover -s tests -p 'test_benchmarking.py' -v
 python -m unittest discover -s tests -p 'test_ui.py' -v
+python -m unittest discover -s tests -p 'test_block_context.py' -v
 python -m unittest discover -s tests -p 'test_ui_training.py' -v
 ```
 
