@@ -6,7 +6,8 @@ from ..components.sampling import SAMPLERS
 from .plots import DomainPreview, CurvePlot, SolutionView
 from .training import TrainingWorker
 from .theme import colors, configure_theme
-from PySide6.QtCore import Qt, QPointF, QTimer, Signal
+from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
+from shiboken6 import isValid
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QDockWidget, QListWidget, QGraphicsView,
@@ -273,7 +274,7 @@ class Window(QMainWindow):
         if not self.is_running():self.scene.delete_selection()
 
     def is_running(self):
-        return self.worker is not None and self.worker.isRunning()
+        return self.worker is not None
 
     def graph_changed(self):
         self.result=None;self.history=[];self.solution.clear()
@@ -326,7 +327,10 @@ class Window(QMainWindow):
         self.form.addRow(label,widget)
         return widget
 
+    @Slot()
     def selection_changed(self):
+        if not isValid(self.scene):
+            return
         nodes=[i for i in self.scene.selectedItems() if isinstance(i,Node)]
         node=nodes[0] if nodes else None
         self.name.setText(node.title if node else '')

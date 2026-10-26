@@ -20,6 +20,7 @@ w.show()
 app.processEvents()
 assert len(w.scene.wires) == 8
 node = next(i for i in w.scene.items() if isinstance(i, Node))
+w.scene.clearSelection()
 node.setSelected(True)
 app.processEvents()
 assert w.name.text() == node.title
