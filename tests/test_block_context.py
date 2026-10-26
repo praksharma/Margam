@@ -81,7 +81,9 @@ w.change('shape','Rectangle')
 assert not w.rectangle_previews
 w.open_rectangle_preview(owner,True)
 assert len(w.rectangle_previews)==1
+w.properties_dock.close()
 w.delete_block(owner);app.processEvents()
+assert w.properties_dock.isHidden(), "Deleting a block must not open its inspector"
 assert not w.rectangle_previews
 assert other.scene() is w.scene
 w.reset_template();app.processEvents()

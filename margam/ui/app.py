@@ -416,7 +416,7 @@ class Window(QMainWindow):
 
     def delete_block(self, node):
         if self.is_running() or not isValid(node) or node.scene() is not self.scene:return
-        self.show_block_properties(node)
+        self.scene.clearSelection();node.setSelected(True)
         self.delete_selected()
 
     def block_help(self, node):
