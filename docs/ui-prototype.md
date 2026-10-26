@@ -21,7 +21,7 @@ there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 | --- | --- |
 | File | Reset Poisson template (Ctrl+N), Quit (Ctrl+Q) |
 | Edit | Delete selected (Delete, canvas focus), select all blocks (Ctrl+A, canvas focus) |
-| View | Panel visibility, Fit model, Reset panel layout, Open selected output, Theme |
+| View | Panel visibility, zoom in/out, 100%, Fit model, Reset panel layout, Open selected output, Theme |
 | Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
 | Help | Quick start and About |
 
@@ -130,3 +130,12 @@ detach/redock, deletion, menu presence, worker failures and close/cancel behavio
 Screenshots are under assets/screenshots. General graph execution, typed core ports,
 per-set sampling instances, a grouped library, persistence, arbitrary PDE/reference
 sources and export remain in todo.md.
+
+## Canvas navigation
+
+Wheel zoom is centred on the mouse pointer, limited to 10–400%. Middle-button drag
+or Space+left-drag pans. Tapping Space fits all blocks. Toolbar/View actions offer
+zoom in/out, 100% and Fit model. Ctrl+Plus, Ctrl+Minus and Ctrl+0 are canvas-scoped
+shortcuts, so property text inputs retain their own key handling. Fitting can choose
+a smaller scale if needed to include a large diagram. Panning and zoom do not move
+blocks, alter training settings, or reset simply because selection changes.

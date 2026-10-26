@@ -85,6 +85,16 @@ Use **View → Theme → Light / Dark** to switch themes. Panels can be resized 
 Menus are File, Edit, View, Run and Help; only implemented actions are exposed.
 File currently provides template reset and Quit; model Open/Save remains future work.
 
+### Navigate the canvas
+
+- Mouse wheel: zoom around the pointer (10–400%).
+- Middle-button drag or hold Space and left-drag: pan without moving blocks.
+- Tap Space or click **Fit model**: fit the entire diagram.
+- Toolbar / View: **Zoom in**, **Zoom out**, **100%**.
+- With canvas focus: Ctrl+Plus / Ctrl+Minus / Ctrl+0 for zoom in/out/100%.
+
+Navigation changes only the view; it does not change the PINN or its settings.
+
 ### Train your first model
 
 1. The app opens a complete rectangle Poisson template, Δu + 2 = 0, with zero

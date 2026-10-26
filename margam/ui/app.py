@@ -7,6 +7,7 @@ from ..components.sampling import SAMPLERS
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
+from .canvas_view import CanvasView
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
@@ -136,7 +137,7 @@ class Canvas(QGraphicsScene):
         super().__init__()
         self.wires, self.pending = [], None
         self.locked = False
-        self.setSceneRect(-80, -80, 1300, 650)
+        self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setBackgroundBrush(QColor(colors()['canvas']))
 
     def begin_wire(self, source):
@@ -245,7 +246,15 @@ class Window(QMainWindow):
         toolbar=self.addToolBar('Model')
         self.load_action=toolbar.addAction('Reset Poisson template')
         self.load_action.triggered.connect(self.reset_template)
-        toolbar.addAction('Fit model').triggered.connect(self.fit_model)
+        self.zoom_in_action=toolbar.addAction('Zoom in')
+        self.zoom_in_action.triggered.connect(lambda:self.view.zoom_by(1.2))
+        self.zoom_out_action=toolbar.addAction('Zoom out')
+        self.zoom_out_action.triggered.connect(lambda:self.view.zoom_by(1/1.2))
+        self.fit_action=toolbar.addAction('Fit model')
+        self.fit_action.triggered.connect(self.fit_model)
+        self.actual_size_action=toolbar.addAction('100%')
+        self.actual_size_action.triggered.connect(lambda:self.view.actual_size())
+        self.zoom_label=QLabel('100%');toolbar.addWidget(self.zoom_label)
         self.delete_action=toolbar.addAction('Delete selected')
         self.delete_action.setShortcut('Delete')
         self.delete_action.triggered.connect(self.delete_selected)
@@ -262,7 +271,8 @@ class Window(QMainWindow):
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         toolbar.addWidget(self.progress_bar)
         self.scene=Canvas()
-        self.view=QGraphicsView(self.scene)
+        self.view=CanvasView(self.scene)
+        self.view.zoomChanged.connect(lambda value:self.zoom_label.setText(f"{value*100:.0f}%"))
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -321,7 +331,11 @@ class Window(QMainWindow):
         for dock in [self.library_dock,self.properties_dock,self.messages_dock]:
             self.view_menu.addAction(dock.toggleViewAction())
         self.view_menu.addSeparator()
-        self.view_menu.addAction('Fit model').triggered.connect(self.fit_model)
+        for action,shortcuts in [(self.zoom_in_action,['Ctrl++','Ctrl+=']),(self.zoom_out_action,['Ctrl+-']),(self.actual_size_action,['Ctrl+0'])]:
+            action.setShortcuts(shortcuts)
+            action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            self.view.addAction(action);self.view_menu.addAction(action)
+        self.view_menu.addAction(self.fit_action)
         self.view_menu.addAction('Reset panel layout').triggered.connect(self.reset_panel_layout)
         self.open_output_action=self.view_menu.addAction('Open selected output')
         self.open_output_action.setEnabled(False)
@@ -486,7 +500,7 @@ class Window(QMainWindow):
         return dock
 
     def fit_model(self):
-        self.view.fitInView(self.scene.itemsBoundingRect().adjusted(-35,-35,35,35),Qt.AspectRatioMode.KeepAspectRatio)
+        self.view.fit_model()
 
     def make_node(self,title,detail,x,y):
         node=Node(title,detail,x,y);self.scene.addItem(node);return node

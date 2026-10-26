@@ -14,7 +14,7 @@ checkboxes are not claims about current Margam support.
 - [ ] Add prepared-data adapters with explicit coordinate/label mapping and previews.
 - [ ] Define typed ports, connection validation and executable graph semantics.
 - [x] Add block/wire deletion and fit-to-model navigation.
-- [ ] Add saved models/results, undo/redo and zoom/pan controls.
+- [ ] Add saved models/results and undo/redo.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
 - [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
@@ -96,3 +96,5 @@ The searchable/grouped library and independent core sampling recipes remain next
 - [x] Keep these sample previews limited to rectangles. Do not create a general
   geometry renderer or implicit 3D preview path without a justified requirement.
 - [ ] Add clipboard/undo actions to context menus when those operations exist.
+
+- [x] Add pointer-centred wheel zoom, mouse/Space panning, zoom controls and fit-to-model.
