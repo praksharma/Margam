@@ -135,3 +135,14 @@ def interval_reference(config, points):
         offset = lv
         slope = (rv-lv+.5*config.source*length**2)/length if config.bc_types['right']=='Dirichlet' else rv+config.source*length
     return [-.5*config.source*(p[0]-config.x_min)**2+slope*(p[0]-config.x_min)+offset for p in points]
+
+
+def make_interval_reference(config):
+    """Create an explicit demo reference source; never selected by the trainer."""
+    from functools import partial
+    from copy import deepcopy
+    from ..components.outputs import ReferenceSource
+    config.validate()
+    if config.shape != 'Interval':
+        raise ValueError('The demo analytical reference supports intervals only; prediction plots do not require it.')
+    return ReferenceSource('Analytical interval Poisson', partial(interval_reference, deepcopy(config)))
