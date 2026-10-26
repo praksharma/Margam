@@ -293,6 +293,7 @@ class Window(QMainWindow):
         layout.addWidget(self.property_scroll)
         self.validation=QLabel('');self.validation.setWordWrap(True);layout.addWidget(self.validation)
         self.properties_dock=self.dock('Properties',properties,Qt.DockWidgetArea.RightDockWidgetArea)
+        self.properties_dock.setMinimumWidth(340)
         self.log=QPlainTextEdit();self.log.setReadOnly(True)
         self.messages_dock=self.dock('Messages',self.log,Qt.DockWidgetArea.BottomDockWidgetArea)
         self.messages_dock.hide()

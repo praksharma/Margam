@@ -143,6 +143,7 @@ class FieldPlot(QWidget):
         self.result=None
         self.image=None
         self.title='Prediction'
+        self.setMinimumHeight(230)
 
     def set_result(self,result,title='Prediction',value_range=None):
         self.result=result;self.title=title
@@ -160,7 +161,8 @@ class FieldPlot(QWidget):
         if self.result is None:
             p.drawText(20,25,'Run training to see the predicted field.');return
         c=self.result['config'];values=self.result['values']
-        caption=f"{self.title} · {self.result['steps']} steps\nrange [{min(values):.4g}, {max(values):.4g}]"
+        heading=self.title if self.title=='Reference' else f"{self.title} · {self.result['steps']} steps"
+        caption=f"{heading}\nrange [{min(values):.4g}, {max(values):.4g}]"
         p.drawText(self.rect().adjusted(12,5,-12,-5),Qt.AlignmentFlag.AlignTop|Qt.TextFlag.TextWordWrap,caption)
         ratio=(c.x_max-c.x_min)/(c.y_max-c.y_min)
         h=max(30,self.height()-110);w=min(max(30,self.width()-100),h*ratio);h=min(h,w/ratio)
@@ -180,8 +182,9 @@ class RectangleComparison(QWidget):
         from PySide6.QtWidgets import QLabel,QVBoxLayout,QHBoxLayout
         self.setMinimumHeight(320)
         layout=QVBoxLayout(self)
-        self.metrics=QLabel();self.metrics.setWordWrap(True);layout.addWidget(self.metrics)
-        row=QHBoxLayout();layout.addLayout(row)
+        self.metrics=QLabel();self.metrics.setWordWrap(True)
+        layout.addWidget(self.metrics,0,Qt.AlignmentFlag.AlignTop)
+        row=QHBoxLayout();layout.addLayout(row,1)
         self.prediction=FieldPlot();self.reference=FieldPlot();self.error=FieldPlot()
         for view in [self.prediction,self.reference,self.error]:row.addWidget(view)
 

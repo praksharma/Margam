@@ -42,6 +42,8 @@ w.open_block(comparison);app.processEvents()
 view=w.output_views.entries[comparison.identifier][1]
 assert view.rectangle_comparison is not None
 assert 'RMSE' in view.rectangle_comparison.metrics.text()
+for _ in range(3):app.processEvents()
+assert view.rectangle_comparison.prediction.height()>=230
 assert not view.grab().isNull()
 w.reset_template();app.processEvents()
 assert len(w.scene.nodes())==7 and not w.output_views.entries
