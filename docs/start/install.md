@@ -13,8 +13,25 @@ From the repository root:
 
 If your terminal already shows `(.venv)`, `python -m margam.ui` is equivalent.
 Do not create another environment inside `margam/ui` or a documentation folder.
-The [repository README](../../README.md) gives fresh-checkout setup commands;
-development currently uses Python 3.14.
+Development currently uses Python 3.14.
+
+## Set up a fresh checkout
+
+If `.venv` does not exist, create it once and install the package:
+
+```sh
+uv venv --python 3.14 .venv
+uv pip install --python .venv/bin/python -e .
+uv pip check --python .venv/bin/python
+```
+
+Keep an existing environment in place. You can also activate it with
+`source .venv/bin/activate`, run `python -m margam.ui`, and use `deactivate`
+when finished. Editable installation picks up source changes. Dependencies are
+managed with uv; a separate pip module inside the environment is not required.
+
+For CPU-specific installation and device checks, see
+[the command reference](../commands.md#devices-and-cpu-setup).
 
 ## Open this illustrated manual
 

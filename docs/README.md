@@ -39,6 +39,7 @@ replace testing the current CPU build on CUDA.
 
 ## Extending the project
 
+- [Development and experiment commands](commands.md)
 - [Numerical API and benchmark runner](engine.md)
 - [Adding a PINN method and its one-file recipe](adding-a-pinn.md)
 - [Agent/repository instructions](../AGENTS.md)
