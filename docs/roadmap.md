@@ -457,3 +457,77 @@ connected optional monitor, prediction, reference and comparison blocks. Its 2D
 reference is a labelled truncated sine series for equal Dirichlet edges, not an
 assumed solution for arbitrary problems. The basic template remains output-free.
 See heat-demo.md for the formulation and ui-prototype.md for controls.
+
+## Future vision: studies, component alternatives and sweeps
+
+Captured 27 October 2026 from the user's proposed workflow. This is planned
+scope, not an implemented iterator block, sweep engine or cluster integration.
+
+A single Margam study should describe several model configurations rather than
+requiring a separately hand-edited graph for every experiment. Proposed iterator
+or alternative-selection blocks expose multiple choices for a component: PINN
+method/recipe, neural network, sampling, compatible optimisation settings or
+training parameters. Each resolved choice must produce an ordinary, inspectable
+Margam configuration using the same numerical execution path as a single run.
+The concrete first use case is comparing supported PINN recipes and networks on
+one problem, then varying their settings.
+
+The study must say how alternatives combine: all combinations, paired choices,
+or conditional choices. Do not silently assume every list forms a Cartesian
+product. Show the proposed trial count and compute budget before execution.
+Method-specific parameters stay with their owning method; for example, SA's mask
+optimiser is distinct from the network optimiser and LRA is not an Adam-rate
+scheduler. Keep physics, data and evaluation choices explicit when comparing runs.
+
+### Compatibility is a study result
+
+Some combinations will not be compatible. Detect these before expensive work
+where possible, record the exact combination and a readable reason, and continue
+independent valid trials. Provide a dedicated study output/report for these
+records rather than silently dropping them or substituting another component.
+An unsupported combination, an invalid parameter, a runtime failure and an
+interrupted run are different outcomes. A skipped trial must not receive a fake
+loss/accuracy value or count as successful training. Broken study definitions
+should fail clearly rather than being treated as thousands of skipped trials.
+
+### One study, desktop or headless execution
+
+A local laptop should be able to configure a study in the GUI, run it within a
+chosen CPU/GPU budget and inspect progress/results. The same saved study should
+also run without Qt or a display in an HPC Slurm `sbatch` job, with results that
+can later be opened in the GUI. The GUI must not become a dependency of training,
+trial validation or export. Headless and desktop paths should share expansion,
+validation and numerical execution rather than maintain separate implementations.
+
+Every trial needs a stable identity and a fully resolved configuration: component
+choices, parameters and seeds, source/data fingerprints, software environment,
+resource settings, status/reason, logs and requested outputs/checkpoints. Resuming
+or collecting a study must not overwrite another trial or silently mix changed
+inputs. Support recovery after interruption or batch-job preemption. Preserve
+physical time separately from optimiser updates in temporal output artifacts.
+
+Evaluate **Hydra, Optuna and/or W&B sweeps** as candidate tools against these
+requirements. Configuration expansion, search/trial proposal, resource execution
+and experiment tracking are separate responsibilities; a tool choice should not
+become part of a PINN's numerical definition. No package or service is selected
+yet. Cluster/laptop operation must work with local artifacts and without a
+mandatory online tracking account. Optional integrations must not embed secrets
+in exported studies or job scripts.
+
+### Proposed implementation order
+
+1. Define a portable, reproducible single-run/headless study entry point using
+   existing model definitions and explicit input/artifact paths.
+2. Add a small finite study over existing recipes/networks, with explicit
+   combination rules, compatibility records and an optional study-results view.
+3. Add bounded local execution, cancellation, restart and collection of artifacts.
+4. Export the same study for Slurm `sbatch` execution, considering job arrays,
+   site-specific resources and preemption/checkpoint handling.
+5. Select and integrate search/tracking tools only after the underlying study and
+   execution contracts work. Add richer iterator-block editing against those
+   concrete contracts rather than invent a universal graph execution framework.
+
+Study objectives and comparison metrics must be user-selected. Analytical
+references remain optional; exports, residual statistics and training diagnostics
+can be requested independently. Correct expansion, compatibility decisions,
+reproducibility and failure isolation come before tuning for better solutions.

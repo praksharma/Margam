@@ -283,3 +283,34 @@ paused; operational training monitors and basic rectangle previews remain useful
 - [x] Add the LRA paper 2D Helmholtz problem with existing Fourier features, explicit
   forcing/reference and soft BCs; verify desktop/persistence and record CPU results.
   Paper-architecture and full stochastic benchmark reproduction remain outside this example.
+
+## Future studies, iterator blocks and laptop/HPC sweeps
+
+See [study/sweep vision](roadmap.md#future-vision-studies-component-alternatives-and-sweeps).
+These are proposed features; current execution still runs one supported problem.
+
+- [ ] Define a saved study containing alternative PINN recipes/components and
+  parameter choices, with inspectable resolved configurations for every trial.
+- [ ] Design iterator/alternative blocks for concrete existing components. Make
+  Cartesian, paired and conditional combination rules explicit; preview trial
+  counts and budgets before running.
+- [ ] Preflight each trial's component/parameter/data compatibility. Record skipped
+  combinations and reasons in a dedicated study output; continue valid trials.
+  Distinguish incompatible, invalid, failed, interrupted, pruned and completed
+  outcomes. Never fabricate objective values for non-running combinations.
+- [ ] Add a shared GUI-independent execution entry point, so identical study/model
+  definitions run from the laptop GUI or a headless command on an HPC node.
+- [ ] Persist stable trial IDs, full resolved settings, seeds, code/data provenance,
+  resource settings, status/reason, logs, requested metrics, exports and checkpoints.
+  Keep evaluation data and comparison protocols explicit across trials.
+- [ ] Add bounded local CPU/GPU scheduling, cancellation and checkpoint-safe resume;
+  isolate failures and outputs so one trial cannot overwrite or corrupt another.
+- [ ] Add Slurm sbatch study export/execution and result collection, including
+  explicit resource requests, input/artifact locations, optional job arrays,
+  preemption/restart handling and reopening results in the GUI.
+- [ ] Assess Hydra, Optuna and W&B sweep integrations against the study contract.
+  Keep configuration, search, execution and tracking separable; select tools later.
+  Preserve offline operation and avoid mandatory tracking-service credentials.
+- [ ] Add correctness tests for expansion, conditional settings, compatibility
+  reports, failure isolation, repeatability, resume and desktop/headless parity
+  before pursuing sweep-driven solution accuracy.
