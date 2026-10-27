@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from ..templates.poisson import PoissonConfig, BoundarySampling
+from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults
 from ..components.sampling import SAMPLERS
 from .ports import INPUTS, OUTPUTS
 
@@ -27,11 +27,11 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6), 'Unsupported Margam model format/version.')
     c = data['config']
-    if isinstance(c,dict) and data['version'] in (1,2,3,4):
+    if isinstance(c,dict) and data['version'] in (1,2,3,4,5):
         c=dict(c)
-        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{}),('network_seed',None),('method','baseline')):c.setdefault(key,value)
+        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{}),('network_seed',None),('method','baseline'),('physics','scalar'),('viscosity',.01),('flow_residuals',FLOW_RESIDUALS),('flow_boundary',flow_boundary_defaults()),('pressure_point',(0.,0.)),('pressure_value',0.),('pressure_weight',1.)):c.setdefault(key,value)
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
@@ -53,6 +53,14 @@ def decode_document(data):
     for source in c['boundary_data'].values():validate_mapping(source)
     require(c['network_seed'] is None or type(c['network_seed']) is int and 0<=c['network_seed']<2**31,'Invalid network seed.')
     require(c['method'] in ('baseline','hard_dirichlet'),'Unknown PINN method.')
+    require(c['physics'] in ('scalar','incompressible_2d') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
+    require(isinstance(c['flow_residuals'],(list,tuple)) and len(c['flow_residuals'])==3 and all(isinstance(text,str) and len(text)<=512 for text in c['flow_residuals']),'Invalid flow residuals.')
+    require(isinstance(c['pressure_point'],(list,tuple)) and len(c['pressure_point'])==2 and all(number(v) for v in c['pressure_point']),'Invalid pressure gauge point.')
+    require(isinstance(c['flow_boundary'],dict) and set(c['flow_boundary'])==SIDES,'Flow boundaries need named sets.')
+    for components in c['flow_boundary'].values():
+        require(isinstance(components,dict) and set(components)<={'u','v','p'},'Invalid boundary component mapping.')
+        for spec in components.values():
+            require(isinstance(spec,dict) and set(spec)=={'type','target','operator'} and spec['type'] in ('None','Dirichlet','Neumann','Custom') and all(isinstance(spec[key],str) and len(spec[key])<=512 for key in ('target','operator')),'Invalid component boundary settings.')
     recipes = c['boundary_sampling']
     require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
@@ -60,7 +68,7 @@ def decode_document(data):
         require(isinstance(recipe,dict) and set(recipe) == {'points','method','seed'}, 'Invalid boundary recipe.')
         require(recipe['method'] in SAMPLERS and type(recipe['points']) is int and 1 <= recipe['points'] <= 10000 and type(recipe['seed']) is int and 0 <= recipe['seed'] < 2**31, 'Unsupported boundary recipe settings.')
         parsed[side] = BoundarySampling(**recipe)
-    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed)
+    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']))
     config = PoissonConfig(**values)
     nodes, wires = deepcopy(data['nodes']), deepcopy(data['wires'])
     require(isinstance(nodes,list) and len(nodes) <= 2000, 'Invalid block list (maximum 2000).')
@@ -81,11 +89,14 @@ def decode_document(data):
         if 'parameters' in settings:
             from .graph_model import PARAMETERS
             parameters=settings['parameters']
+            if data['version']<6 and isinstance(parameters,dict):
+                from .graph_model import parameters_for
+                parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
             if data['version']<5 and node['kind']=='method' and isinstance(parameters,dict):parameters=dict(parameters,method=parameters.get('method','baseline'));settings=dict(settings,parameters=parameters);node['settings']=settings
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':5,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':6,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -103,7 +114,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':5, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':6, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

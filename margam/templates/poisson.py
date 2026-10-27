@@ -1,9 +1,20 @@
 """Editable Poisson template; method-specific training remains in methods/pinn.py."""
 from dataclasses import dataclass, field
 import math
+import json
 from ..components.sampling import sample_box, SAMPLERS
 from ..components.expressions import Expression
-from ..components.prepared_data import read_points, validate_mapping
+from ..components.prepared_data import read_points, validate_mapping, normal_fingerprint
+
+
+FLOW_RESIDUALS=('u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)',
+                'u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)',
+                'D(u,x)+D(v,y)')
+
+
+def flow_boundary_defaults():
+    return {side:{field:{'type':'Dirichlet','target':'y' if field=='u' else '0','operator':''}
+                  for field in ('u','v')} for side in ('left','right','bottom','top')}
 
 
 @dataclass(frozen=True)
@@ -42,6 +53,21 @@ class PoissonConfig:
     boundary_data: dict = field(default_factory=dict)
     network_seed: int | None = None
     method: str = 'baseline'
+    physics: str = 'scalar'
+    viscosity: float = .01
+    flow_residuals: tuple = FLOW_RESIDUALS
+    flow_boundary: dict = field(default_factory=flow_boundary_defaults)
+    pressure_point: tuple = (0.,0.)
+    pressure_value: float = 0.
+    pressure_weight: float = 1.
+
+    @property
+    def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
+
+    @property
+    def constraint_names(self):
+        if self.physics=='scalar':return self.sides
+        return tuple(side+':'+field for side in self.sides for field,spec in self.flow_boundary[side].items() if spec['type']!='None')+('pressure_gauge',)
 
     @property
     def sides(self):
@@ -93,6 +119,7 @@ class PoissonConfig:
 
     def validate(self):
         self.validate_sampling()
+        if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
         if self.method not in ('baseline','hard_dirichlet'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
@@ -108,6 +135,9 @@ class PoissonConfig:
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
             raise ValueError('Loss weights must be finite and positive.')
+        if self.physics=='incompressible_2d':
+            from .incompressible_flow import validate_flow_config
+            validate_flow_config(self);return
         dimension=len(self.bounds[0])
         if self.pde_expression:Expression(self.pde_expression,dimension)
         for side in self.sides:
@@ -154,6 +184,9 @@ def sample_problem(config):
 def build_pinn(config):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
+    if config.physics=='incompressible_2d':
+        from .incompressible_flow import build_flow_pinn
+        return build_flow_pinn(config)
     import torch
     from ..components import PINNProblem, PointConstraint
     from ..methods import PINN
@@ -162,15 +195,17 @@ def build_pinn(config):
     interior, boundaries = sample_problem(config)
     torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
     normals = {'left': (-1.,0.), 'right': (1.,0.), 'bottom': (0.,-1.), 'top': (0.,1.)}
-    constraints = []
+    constraints = [];normal_identities={}
     for side, rows in boundaries.items():
         imported=read_points(config.boundary_data[side],len(config.bounds[0])) if config.boundary_data.get(side) else None
         normal=normals[side][:len(rows[0])]
         if imported is not None:
+            if imported[1] is not None:normal_identities[side]=normal_fingerprint(imported[1])
             normal=imported[1].tolist() if imported[1] is not None else normal
             # Without imported normals a side label is meaningful only on that
             # box side. Do not silently use analytical normals for arbitrary CAD.
-            if imported[1] is None:
+            needs_normal=config.bc_types[side]=='Neumann' or config.bc_types[side]=='Custom' and Expression(config.bc_operators[side],len(rows[0])).uses_normal or bool(config.bc_targets.get(side)) and Expression(config.bc_targets[side],len(rows[0]),target=True).uses_normal
+            if imported[1] is None and needs_normal:
                 axis=0 if side in ('left','right') else 1
                 edge={'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
                 if any(abs(row[axis]-edge)>1e-7 for row in rows):raise ValueError('Imported off-box boundary sets require explicit unit outward normals.')
@@ -195,7 +230,7 @@ def build_pinn(config):
     expression=Expression(config.pde_expression,len(config.bounds[0])) if config.pde_expression else None
     def residual(x, u):
         return expression(x,u,source=config.source) if expression else laplacian(u,x) + config.source
-    problem = PINNProblem(residual,torch.tensor(interior),constraints)
+    problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
     network = FullyConnected([len(lower),*config.layers,1], 'tanh', 'Xavier normal',input_bounds=(lower,upper))
     weights = {'pde':config.pde_weight, **{s:config.boundary_weight/len(config.sides) for s in config.sides}}
@@ -274,6 +309,9 @@ def make_poisson_reference(config):
     from functools import partial
     from copy import deepcopy
     from ..components.outputs import ReferenceSource
+    if config.physics=='incompressible_2d':
+        from .incompressible_flow import make_flow_reference
+        return make_flow_reference(config)
     if has_custom_physics(config):
         raise ValueError('Preset references do not apply to custom expressions. Remove Reference/Comparison or use an explicit compatible source.')
     if config.shape=='Interval':return make_interval_reference(config)

@@ -37,6 +37,7 @@ class RectanglePreview(QWidget):
         h=min(h,w*height/width)
         area=QRectF(70,48,w,h)
         caption=f'Rectangle · {len(interior)} interior · {sum(map(len,boundaries.values()))} boundary points' if self.show_samples else f'Rectangle · width {width:g} · height {height:g}'
+        if c.interior_data or c.boundary_data:caption=caption.replace('Rectangle','Imported samples · box bounds')
         p.drawText(18,24,caption)
         p.setPen(QPen(QColor(colors()['border']),2));p.drawRect(area)
         def mapped(row):
@@ -46,7 +47,7 @@ class RectanglePreview(QWidget):
             stride=max(1,math.ceil(len(interior)/1500))
             for row in interior[::stride]:p.drawPoint(mapped(row))
             for side,rows in boundaries.items():
-                color='#d58b35' if c.bc_types.get(side)=='Neumann' else colors()['highlight']
+                color='#d58b35' if c.physics=='scalar' and c.bc_types.get(side)=='Neumann' else colors()['highlight']
                 p.setPen(QPen(QColor(color),4))
                 stride=max(1,math.ceil(len(rows)/500))
                 for row in rows[::stride]:p.drawPoint(mapped(row))
@@ -56,6 +57,8 @@ class RectanglePreview(QWidget):
         p.drawText(int(area.center().x()-15),int(area.top()-8),'Top')
         p.drawText(int(area.center().x()-20),int(area.bottom()+22),'Bottom')
         footer='Teal: Dirichlet · orange: outward derivative · large clouds shown as a subset' if self.show_samples else f'x: [{c.x_min:g}, {c.x_max:g}] · y: [{c.y_min:g}, {c.y_max:g}]'
+        if c.physics=='incompressible_2d' and self.show_samples:footer='Named point sets; velocity/pressure conditions are assigned per component.'
+        if c.interior_data or c.boundary_data:footer='Box = normalisation/evaluation bounds; imported geometry is not inferred.'
         p.drawText(18,self.height()-10,footer)
 
 

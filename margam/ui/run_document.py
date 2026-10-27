@@ -19,19 +19,24 @@ def validate_run(data):
     require(isinstance(result['outputs'],dict),'Invalid run outputs.')
     for identifier,output in result['outputs'].items():
         require(kinds.get(identifier) in ('solution','comparison','export') and isinstance(output,dict),'Unknown run output.')
-        require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error'},'Invalid output metadata.')
+        require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field'},'Invalid output metadata.')
         size=output['size'];require(type(size) is int and 2<=size<=201,'Invalid output resolution.')
         points,values=output['points'],output['values']
         require(isinstance(points,list) and isinstance(values,list) and len(points)==len(values)==size**len(config.bounds[0]),'Invalid output point count.')
-        require(all(isinstance(row,list) and len(row)==len(config.bounds[0]) and all(number(v) for v in row) for row in points) and all(number(v) for v in values),'Invalid output coordinates/values.')
+        vector=config.physics=='incompressible_2d'
+        require(output.get('fields',['u'])==list(config.field_names),'Invalid output field contract.')
+        finite_values=lambda rows:all(isinstance(row,list) and len(row)==3 and all(number(v) for v in row) for row in rows) if vector else all(number(v) for v in rows)
+        require(all(isinstance(row,list) and len(row)==len(config.bounds[0]) and all(number(v) for v in row) for row in points) and finite_values(values),'Invalid output coordinates/values.')
         require(output['steps']==steps,'Output steps do not match the run.')
         reference=output['reference']
-        require(reference is None or isinstance(reference,list) and len(reference)==len(values) and all(number(v) for v in reference),'Invalid reference values.')
+        require(reference is None or isinstance(reference,list) and len(reference)==len(values) and finite_values(reference),'Invalid reference values.')
         require(output['rmse'] is None or number(output['rmse']),'Invalid error metric.')
         if 'max_error' in output:require(number(output['max_error']),'Invalid maximum error.')
         if 'reference_name' in output:require(isinstance(output['reference_name'],str),'Invalid reference label.')
+        for key in ('rmse_by_field','max_error_by_field'):
+            if key in output:require(isinstance(output[key],dict) and set(output[key])=={'u','v','p'} and all(number(v) for v in output[key].values()),'Invalid component metrics.')
     monitors=data['monitors'];require(isinstance(monitors,dict),'Invalid monitor histories.')
-    names={'pde','total',*config.sides}
+    names={'pde','total',*config.constraint_names}
     def check_record(record):return isinstance(record,dict) and set(record)==names and all(number(v) for v in record.values())
     for identifier,records in monitors.items():
         require(kinds.get(identifier)=='monitor' and isinstance(records,list) and len(records)<=100000,'Invalid monitor records.')
@@ -76,14 +81,27 @@ def load_run(path):
     data=torch.load(path,map_location='cpu',weights_only=True)
     validate_run(data)
     if data['checkpoint'] is not None:
-        # Validate weights/optimiser against a disposable reconstructed recipe,
-        # before the existing UI graph or results can be replaced.
-        from ..templates.poisson import build_pinn
-        from copy import deepcopy
-        config=deepcopy(decode_document(data['model'])[0]);config.device='cpu'
-        model=build_pinn(config)
+        # Validate the architecture/Adam payload without opening external input
+        # files: archived predictions remain viewable if those files moved.
+        # Actual resume still reconstructs data and verifies the original digest.
+        from ..components import PINNProblem,PointConstraint
+        from ..methods import PINN
+        from ..nn import FullyConnected
+        config=decode_document(data['model'])[0]
+        dimension=len(config.bounds[0])
+        network=FullyConnected([dimension,*config.layers,len(config.field_names)],'tanh','Xavier normal',input_bounds=config.bounds)
+        if config.method=='hard_dirichlet':
+            from ..methods.hard_dirichlet import BoxDirichletNetwork
+            network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
+        dummy_points=torch.zeros((1,dimension))
+        problem=PINNProblem(lambda x,u:u,dummy_points,[PointConstraint(name,dummy_points,0.) for name in config.constraint_names])
+        model=PINN(problem,network).compile(lr=config.lr,device='cpu')
         if 'data_fingerprint' not in data['checkpoint']:
             require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
-            data['checkpoint']['data_fingerprint']=model.data_fingerprint()
-        model.load_training_state(data['checkpoint'])
+            from ..templates.poisson import build_pinn
+            from copy import deepcopy
+            legacy=deepcopy(config);legacy.device='cpu'
+            data['checkpoint']['data_fingerprint']=build_pinn(legacy).data_fingerprint()
+        state=dict(data['checkpoint'],data_fingerprint=model.data_fingerprint())
+        model.load_training_state(state)
     return data

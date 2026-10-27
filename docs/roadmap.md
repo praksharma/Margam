@@ -2,6 +2,15 @@
 
 Discussion roadmap · 26 October 2026
 
+This file preserves the original discussions and staged intentions. Historical
+statements below such as “not implemented” describe their discussion stage.
+For current support and limits, use [README](../README.md),
+[components](components.md), [UI implementation](ui-prototype.md), and
+[remaining TODOs](todo.md). The 27 October implementation includes owned graph
+parameters, scalar/steady-u-v-p physics, explicit outputs, model/run persistence,
+checkpoint resume, clipboard/history, recovery and a planar GeoSampler bridge.
+
+
 ## Purpose
 
 Margam will let users construct, train, and inspect physics-informed neural

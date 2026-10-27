@@ -4,21 +4,23 @@ import math
 
 
 class Expression:
-    def __init__(self, text, dimensions, *, target=False):
+    def __init__(self, text, dimensions, *, target=False, fields=('u',)):
         if not isinstance(text,str) or not 0 < len(text.strip()) <= 512:
             raise ValueError('Expressions need 1–512 characters.')
-        self.dimensions=dimensions;self.target=target
+        self.dimensions=dimensions;self.target=target;self.fields=tuple(fields)
+        if self.fields not in (('u',),('u','v','p')):raise ValueError('Unsupported field contract.')
         try:self.root=ast.parse(text,mode='eval').body
         except SyntaxError as error:raise ValueError('Invalid mathematical expression.') from error
         if sum(1 for _ in ast.walk(self.root))>128:raise ValueError('Expression is too complex.')
         self.check(self.root)
+        self.uses_normal=any(isinstance(node,ast.Name) and node.id in ('nx','ny','dn') for node in ast.walk(self.root))
 
     def check(self,node,depth=0):
         if depth>20:raise ValueError('Expression nesting is too deep.')
         if isinstance(node,ast.Constant):
             if type(node.value) not in (int,float) or not math.isfinite(node.value) or abs(node.value)>1e6:raise ValueError('Use finite numeric constants up to 1e6.')
         elif isinstance(node,ast.Name):
-            names={'x','c','nx','ny','pi'} | ({'y'} if self.dimensions==2 else set()) | (set() if self.target else {'u'})
+            names={'x','c','nx','ny','pi'} | ({'nu'} if len(self.fields)==3 else set()) | ({'y'} if self.dimensions==2 else set()) | (set() if self.target else set(self.fields))
             if node.id not in names:raise ValueError('Unknown expression name: '+node.id)
         elif isinstance(node,ast.UnaryOp) and isinstance(node.op,(ast.UAdd,ast.USub)):
             self.check(node.operand,depth+1)
@@ -36,14 +38,16 @@ class Expression:
             for arg in node.args:self.check(arg,depth+1)
         else:raise ValueError('Only arithmetic, named coordinates and supported mathematical functions are allowed.')
 
-    def __call__(self, points, u=None, *, source=0., normal=None):
+    def __call__(self, points, u=None, *, source=0., normal=None, viscosity=1.):
         import torch
         def derivative(value,index):
             if not isinstance(value,torch.Tensor) or not value.requires_grad:return points.new_zeros((len(points),1))
             grad=torch.autograd.grad(value.sum(),points,create_graph=True,retain_graph=True,allow_unused=True)[0]
             return points.new_zeros((len(points),1)) if grad is None else grad[:,index:index+1]
         normal=normal or (0.,)*self.dimensions
-        values={'x':points[:,0:1],'u':u,'c':source,'nx':normal[0],'ny':normal[1] if len(normal)>1 else 0.,'pi':math.pi}
+        values={'x':points[:,0:1],'u':u,'c':source,'nx':normal[0],'ny':normal[1] if len(normal)>1 else 0.,'pi':math.pi,'nu':viscosity}
+        if u is not None:
+            for index,field in enumerate(self.fields):values[field]=u[:,index:index+1]
         if self.dimensions==2:values['y']=points[:,1:2]
         def visit(node):
             if isinstance(node,ast.Constant):return node.value

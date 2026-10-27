@@ -3,6 +3,12 @@
 See roadmap.md for the agreed design and stages. Completed historical DeepINN
 checkboxes are not claims about current Margam support.
 
+Audit on 27 October 2026: the current implementation items below are addressed.
+The remaining unchecked entries are explicitly deferred scope or external
+validation prerequisites; they are not presented as completed work. Current
+execution is one supported problem root, not arbitrary multi-model simulation.
+
+
 - [x] Catalogue implemented methods, sampling and optimisation components with
   API/UI support and limitations in components.md.
 - [x] Reuse GeoSampler Hammersley and recursive stratified unit-domain samplers,
@@ -13,8 +19,9 @@ checkboxes are not claims about current Margam support.
 - [x] Connect PDE points to the Poisson residual preset; defer additional pointwise inputs.
 - [x] Expose restricted scalar PDE expressions in the UI, as selected by the user.
   Coordinates, u, c, arithmetic, derivatives and basic functions are supported.
-- [ ] Extend the explicit scalar expression contract to coupled/vector PDE systems
-  when field and coordinate schemas are defined.
+- [x] Extend the field contract for the user-selected steady 2D incompressible
+  case: u/v/p, editable momentum/continuity residuals, component BCs, pressure
+  gauge, explicit references, table views and multi-column CSV/run persistence.
 - [x] Add constant Dirichlet/Neumann settings, analytical normals and an explicit rectangle corner policy.
 - [x] Add restricted custom scalar BC operators (including Robin expressions)
   and coordinate-dependent targets. Retain a Dirichlet anchor requirement.
@@ -40,7 +47,9 @@ checkboxes are not claims about current Margam support.
 - [x] Reuse GeoSampler-style Qt layout/settings and per-session lock-file recovery
   patterns. Save core dock layout/theme/library groups; recover unsaved model
   drafts without reopening plot views or loading numerical state.
-- [ ] Integrate GeoSampler for complex geometry later; no 3D viewport in this project.
+- [x] Add an explicit planar GeoSampler schema-v2 NPZ bridge with label/axis
+  selection, source provenance, unit-normal checks and no CAD runtime/viewport.
+- [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
 - [ ] External prerequisite: validate GPU training when a working NVIDIA driver
   and CUDA-enabled PyTorch build are available. Audit on 27 October: installed
   torch 2.14.1+cpu, torch.version.cuda=None, CUDA unavailable; nvidia-smi cannot
@@ -66,7 +75,7 @@ checkboxes are not claims about current Margam support.
   block. Keep view visibility separate from data retention.
 - [x] Add explicit imported scalar reference data and restricted reference
   expressions; matching evaluation coordinates required, no implicit interpolation.
-- [x] Add a dedicated scalar CSV Export request block; files are written only on
+- [x] Add a dedicated scalar/u-v-p CSV Export request block; files are written only on
   explicit export after training. ParaView/VTK integration remains deferred.
 
 ## Left library and sampling options
@@ -88,9 +97,8 @@ checkboxes are not claims about current Margam support.
 - [x] Share implemented block status, parameters, compatible ports and limits
   across the library, inspector and Help. Property sampler choices come from the
   implemented sampler catalogue. Keep widgets explicit; no generic plugin registry.
-- [ ] Reserve advanced geometry-aware sampling, CAD face/edge selection and richer
-  region workflows for GeoSampler. Define the integration boundary rather than
-  rebuilding its full toolbox inside Margam.
+- [x] Define the GeoSampler ownership/import boundary in geosampler-contract.md;
+  keep CAD authoring/selection outside Margam. The planar bridge is implemented.
 - [x] Keep library, ports, conditions, data imports and output requests expressed
   as scalar fields/operators, independent of temperature. Heat remains a preset;
   vector/coupled schemas are an explicit future extension.
@@ -115,8 +123,9 @@ checkboxes are not claims about current Margam support.
 - [x] Add undoable graph/parameter edits, including grouped drag moves, restored
   block IDs/settings/wires, per-editor value coalescing and a 100-command limit.
   Training locks history. Template changes start fresh; run data/views are excluded.
-- [ ] Validate interaction parity hands-on against a selected Simulink release;
-  the current evidence collection is documentation-based.
+- [ ] External prerequisite: validate interaction parity hands-on against a
+  licensed Simulink session. No MATLAB executable was found on PATH on 27 October;
+  current evidence and native Qt tests do not constitute a licensed live comparison.
 
 ## Output/menu milestone (26 October 2026)
 
@@ -124,7 +133,7 @@ The first output-ownership stage in simulink-evidence.md is implemented and
 verified. See ui-prototype.md for actual menu actions, output lifecycle and limits.
 The searchable, collapsible library and independent rectangle-side sampling
 recipes are implemented. The component catalogue records implemented capabilities;
-structured catalogue metadata driving all library descriptions remains future work.
+supported catalogue descriptions are shared by the library, inspector and Help.
 
 ## Block-owned rectangle previews and context menus
 

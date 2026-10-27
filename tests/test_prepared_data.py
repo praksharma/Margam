@@ -27,5 +27,17 @@ class PreparedDataTests(unittest.TestCase):
             model=build_pinn(config)
             bc=model.problem.constraints[0];x=torch.tensor([[0.],[1.]],requires_grad=True)
             torch.testing.assert_close(bc.operator(x,x*x),torch.tensor([[0.],[2.]]))
+            state=model.training_state()
+            np.savez(npz,points=points,normals=[[1],[-1]],values=values)
+            with self.assertRaisesRegex(ValueError,'point data'):build_pinn(config).load_training_state(state)
             bad=Path(directory)/'bad.npz';np.savez(bad,points=points,normals=[[0],[2]])
             with self.assertRaisesRegex(ValueError,'unit'):read_points({**source,'path':str(bad),'values':''},1)
+
+    def test_off_box_dirichlet_does_not_infer_normals(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'curve.npz';np.savez(path,points=[[.2],[.4]])
+            source={'path':str(path),'coordinates':'points','normals':'','values':''}
+            config=PoissonConfig(shape='Interval',boundary_data={'left':source})
+            self.assertEqual(len(build_pinn(config).problem.constraints[0].points),2)
+            config.bc_types['left']='Neumann'
+            with self.assertRaisesRegex(ValueError,'normals'):build_pinn(config)

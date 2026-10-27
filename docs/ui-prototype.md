@@ -19,14 +19,14 @@ there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 
 | Menu | Implemented actions |
 | --- | --- |
-| File | Reset Poisson template (Ctrl+N), Heat demo, Quit (Ctrl+Q) |
-| Edit | Delete selected (Delete, canvas focus), select all blocks (Ctrl+A, canvas focus) |
+| File | Model Open/Save/Save As, run Open/Save, scalar/heat/flow templates, Quit |
+| Edit | Undo/Redo, Copy/Cut/Paste blocks, Delete selected, Select all blocks |
 | View | Panel visibility, zoom in/out, 100%, Fit model, Reset panel layout, Open selected output, Theme |
-| Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
+| Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T), Resume checkpoint |
 | Help | Quick start and About |
 
 Open/Save and Undo/Redo are implemented for model definitions/edits as described below.
-Panel visibility/layout is not yet persisted. Fitting is explicit; selecting a
+Local panel layout/theme/library groups are persisted. Fitting is explicit; selecting a
 block or resizing an inspector does not automatically reset the camera.
 
 ## Core model
@@ -43,11 +43,10 @@ normal conventions and numerical limits are documented in components.md.
 Right-clicking any supported block offers Properties, Delete block and Help.
 Rectangle adds Preview geometry and Preview samples. Output blocks add Open
 monitor, Open plot or Open comparison, according to their actual type. There is
-no universal Plot action. Copy/paste is not offered until implemented.
+no universal Plot action. Undo/Redo and Copy/Cut/Paste are implemented.
 
 Double-clicking a computational block exposes its inspector. Multiple selection
-has no arbitrary single-block parameter editor. Full parameter dialogs and general
-instance-owned core configurations remain future work.
+has no arbitrary single-block parameter editor. Parameters share one inspector; core settings are owned by block instances.
 
 ## Optional rectangle previews
 
@@ -168,17 +167,16 @@ and BC blocks define its existing loss terms.
 ## Independent boundary sampling
 
 The Sampling library group separates Interior sampler from Boundary points. The
-interior inspector exposes grid/random, budget and seed (also used for network
-initialisation). The Boundary points inspector selects a named rectangle side and
+interior inspector exposes implemented methods, budget and sampling seed. Network initialisation
+has its own seed. The Boundary points inspector selects a named rectangle side and
 exposes that side's method, exact count and independent seed. Limits match the
 sampler contract: 100000 interior points, 10000 on each side. Method choices and
 tooltips use the implemented `SAMPLERS` mapping. Changing one side does not change
 the interior or another side. The boundary block shows the total actual point count;
 the Rectangle's optional sample preview uses these recipes. BC type/target assignment
 remains in its own block. Interval endpoints have no sampling controls. Shape changes
-retain rectangle recipes, while template reset clears overrides. These are recipes
-inside the current template-backed core, not arbitrary independently executable
-sampler block instances or a general graph compiler.
+retain rectangle recipes, while template reset clears overrides. These recipes and their settings are owned by the actual sampler blocks and
+assembled through the supported typed graph; multiple roots remain unsupported.
 
 ## Drag/drop and quick insertion
 
@@ -200,9 +198,8 @@ both insertion paths. Property-editor Tab remains ordinary focus navigation.
 `block_catalogue.py` is a small shared list of supported UI titles and kinds,
 not a general solver/plugin registry or a replacement for the component capability
 document. All insertion paths call `Window.add_node`, so output instance settings,
-selection, graph invalidation and validation rules remain consistent. Current core
-settings are still template-backed; arbitrary independent core instances and typed
-execution are future work. Verified native Qt drop events, placement under camera
+selection, graph invalidation and validation rules remain consistent. Core settings are instance-owned and the supported one-root scalar/flow graph
+is assembled from actual connections. Verified native Qt drop events, placement under camera
 transforms, keyboard routing, invalid payloads and popup lifecycle are covered by
 `tests/test_block_insertion.py`. A real platform drag gesture should also be checked
 on the target desktop; automated offscreen events do not prove OS drag appearance.
@@ -278,7 +275,7 @@ A restored view can be explicitly opened again; no plot is created by history.
 ## Model files and unsaved changes
 
 File → Open model (Ctrl+O), Save model (Ctrl+S) and Save model as (Ctrl+Shift+S)
-use `.margam.json` documents. Version 2 is readable JSON (v1 files migrate with blank expression defaults) with a fixed format marker,
+use `.margam.json` documents. Version 6 is readable JSON (v1–v5 migrate with their compatible defaults) with a fixed format marker,
 version, template configuration, node IDs/kinds/names/positions/settings, and wire
 source/target IDs plus target port name. Named boundary recipes and output-instance
 settings are included. No Python callables, executable code, pickle data, trained
@@ -309,7 +306,8 @@ menu/toolbar actions route through the unsaved guard. Templates are clean Untitl
 models and reset history. Opening clears history/run data and leaves optional views
 closed, with the loaded graph fitted to the canvas. Save/Open/template actions are
 locked during training; a close request waits for safe worker cancellation before
-the unsaved decision. Panel persistence, recent files and crash recovery remain TODO.
+the unsaved decision. Local panel preferences and draft recovery are implemented
+separately from model files.
 
 ## Saved runs and baseline resume
 
@@ -331,19 +329,41 @@ current total-update limit remains 100000. Tests verify bitwise-identical CPU
 predictions for 25+25 resumed versus 50 uninterrupted Adam updates. No claim of
 GPU equivalence or cross-version optimiser compatibility follows from that check.
 
-## Owned core parameters and scalar graph assembly
+## Owned core parameters and supported graph assembly
 
 `graph_model.py` defines which fields each implemented core kind owns and follows
 one PINN method's pde/boundary/network inputs upstream to interior/boundary point
-sources and their common geometry instance. Assembly produces the numerical scalar
+sources and their common geometry instance. Assembly produces the numerical scalar/steady-flow
 recipe from the connected block records. The inspector configuration is a view/cache,
 not executable state. Network initialisation seeds are separate from interior
 sampling seeds. Copied core records keep independent parameters and stable undo
 behaviour; old model files receive owned records from their saved template defaults.
 
-This concrete scalar executor still requires one complete core subgraph, a shared
-geometry source, and one method root. It does not execute arbitrary cycles, multiple
-PINNs or vector/coupled systems. Unconnected core instances remain editable drafts
+This concrete executor requires one complete core subgraph, a shared geometry
+source, and one method root. It supports the scalar and explicit steady-u/v/p
+contracts, and does not execute arbitrary cycles or multiple PINNs. Unconnected core instances remain editable drafts
 and prevent training rather than being silently executed. Outputs remain explicit.
 Local geometry previews use their owner's settings, not whichever block was last
-selected. v4 models persist parameter records; v1–v3 migrate on opening.
+selected. Current models persist parameter records and migrate earlier formats.
+
+## Current coupled flow support
+
+The supported second field contract is steady 2D incompressible u/v/p. The PDE
+inspector exposes kinematic viscosity, momentum-x/y and continuity residuals.
+BC properties choose a named set and component None/Dirichlet/Neumann/Custom
+operator/target, plus an explicit pressure gauge point/value/weight. The demo
+prescribes Couette flow and explicitly wires its reference; other edited flow does
+not receive an assumed exact solution. Vector result docks contain a bounded table,
+per-field comparison metrics and full CSV export. Training Monitor includes a
+separate pressure-gauge series. No field heatmaps or 3D renderer were added.
+
+CSV/NPZ adapters accept explicit three-component reference values only for this
+contract; geometry, units, interpolation and physical-time semantics are not
+inferred. General flow well-posedness, non-axis-aligned geometry, unsteady physics,
+turbulence and multiple method roots are not implemented. See components.md and
+geosampler-contract.md for precise boundaries and reproduction commands.
+
+Archived predictions/history remain readable if external source files moved. Actual
+resume still rebuilds the problem and verifies its original data fingerprint; it
+requires compatible source files. Static archive loading checks architecture and
+Adam payloads using disposable data, without touching the current model.

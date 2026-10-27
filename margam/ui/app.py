@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.heat import heat_demo_config
+from ..templates.incompressible_flow import flow_demo_config
 from ..components.outputs import OutputRequest, ReferenceSource
 from ..components.expressions import Expression
 from ..components.prepared_data import reference_values
@@ -236,7 +237,7 @@ class Canvas(QGraphicsScene):
         nodes = self.nodes()
         for kind in CORE_KINDS:
             if sum(n.kind == kind for n in nodes) != 1:
-                raise ValueError(f'The scalar graph needs exactly one {kind} block.')
+                raise ValueError(f'The graph needs exactly one {kind} block.')
         core_edges = set()
         destinations = set()
         for wire in self.wires:
@@ -280,14 +281,17 @@ class Canvas(QGraphicsScene):
                 data=source.settings.get('reference_data',{})
                 if text and data:raise ValueError('Choose an expression or imported reference data, not both.')
                 if text:
-                    expression=Expression(text,len(config.bounds[0]),target=True)
-                    def evaluate(points,expression=expression):
+                    texts=[part.strip() for part in text.split(';')]
+                    if len(texts)!=len(config.field_names):raise ValueError('Provide one reference expression per field, separated by semicolons.')
+                    expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names) for part in texts]
+                    def evaluate(points,expressions=expressions):
                         import torch
-                        return expression(torch.tensor(points),source=config.source).detach().reshape(-1).tolist()
+                        values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
+                        return values[:,0].tolist() if len(expressions)==1 else values.tolist()
                     reference=ReferenceSource('User reference expression',evaluate)
                 elif data:
                     from functools import partial
-                    reference=ReferenceSource('Imported scalar reference',partial(reference_values,deepcopy(data)))
+                    reference=ReferenceSource('Imported reference fields',partial(reference_values,deepcopy(data),components=len(config.field_names)))
                 else:reference=make_poisson_reference(config)
             if node.kind=='monitor':
                 if not 25 <= node.settings['history_limit'] <= 100000:
@@ -445,6 +449,7 @@ class Window(QMainWindow):
         self.load_action.setShortcut('Ctrl+N')
         file_menu.addAction(self.load_action)
         file_menu.addAction(self.heat_action)
+        self.flow_action=file_menu.addAction('Incompressible flow demo');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
         file_menu.addSeparator()
         file_menu.addAction('Quit').triggered.connect(self.close)
         file_menu.actions()[-1].setShortcut('Ctrl+Q')
@@ -517,7 +522,7 @@ class Window(QMainWindow):
             'then double-click the output block to open its view. Views can dock or float.\n\n'
             'A Comparison needs a model and an explicit Reference. References support intervals and rectangles with equal constant Dirichlet edges.'))
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
-            self,'Margam','A visual builder for physics-informed neural networks.\nCurrent executable template: scalar Poisson on intervals and rectangles.'))
+            self,'Margam','A visual builder for physics-informed neural networks.\nSupported: scalar residuals and steady 2D incompressible flow, explicit outputs and baseline/hard-Dirichlet methods.'))
 
     def update_clipboard_actions(self):
         if not hasattr(self,'copy_action'):return
@@ -587,7 +592,7 @@ class Window(QMainWindow):
 
     def update_document_title(self,*args):
         name=Path(self.model_path).name if self.model_path else 'Untitled'
-        self.setWindowTitle('Margam · '+name+'[*] · baseline PINN builder')
+        self.setWindowTitle('Margam · '+name+'[*] · PINN builder')
         self.setWindowModified(not self.undo_stack.isClean())
 
     def commit_inspector(self):
@@ -606,7 +611,8 @@ class Window(QMainWindow):
 
     def request_template(self,heat=False):
         if self.is_running() or self.scene.locked or not self.confirm_discard():return False
-        if heat:self.load_heat_template()
+        if heat=='flow':self.load_flow_template()
+        elif heat:self.load_heat_template()
         else:self.reset_template()
         return True
 
@@ -960,6 +966,22 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Heat demo ready · Train PINN, then open monitor, prediction or comparison blocks')
         self.log.appendPlainText('Loaded steady heat demo: unit conductivity, constant source 2, zero edge temperature. Explicit series reference and output blocks are connected; views remain closed until requested.')
 
+    def load_flow_template(self):
+        if self.is_running():return
+        self.reset_template();self._resetting=True;self.config=flow_demo_config()
+        for node in self.scene.nodes():
+            if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,self.config)
+        self.settings_changed()
+        method=next(node for node in self.scene.nodes() if node.kind=='method');comparison=None
+        for index,title in enumerate(('Training Monitor','Solution Plot','Comparison','CSV Export')):
+            node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
+            if node.kind=='comparison':comparison=node
+        reference=self.add_node('Reference');reference.setPos(730,500);self.scene.connect_nodes(reference,comparison)
+        self.scene.clearSelection();method.setSelected(True)
+        self._resetting=False;self.undo_stack.clear();self.undo_stack.setClean()
+        self.validate_model();self.fit_model();self.update_document_title()
+        self.statusBar().showMessage('Steady incompressible Couette demo · u, v, p · explicit reference and pressure gauge · views stay closed')
+
     def show_quick_insert(self,position,screen_position):
         if self.is_running() or self.scene.locked:return
         if self.quick_insert is not None:self.quick_insert.reject()
@@ -1024,11 +1046,11 @@ class Window(QMainWindow):
             actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
             details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
-                     'bc':', '.join(c.bc_types[s][0] for s in c.sides),
+                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
-                     'solution':'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
-                     'comparison':'Model + explicit reference source', 'reference':'Explicit Poisson reference'}
+                     'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
+                     'comparison':'Model + explicit reference source', 'reference':'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if node.kind=='domain':node.title=c.shape
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
@@ -1056,7 +1078,7 @@ class Window(QMainWindow):
             if node is not None:node.settings['parameters'][attribute]=encode_parameter(attribute,current)
             setattr(self.config,attribute,deepcopy(current))
             self.settings_changed()
-            if attribute=='shape':self.selection_changed()
+            if edit_token is None or attribute in ('shape','physics'):self.selection_changed()
         merge=(node.identifier if node else None,attribute,edit_token) if edit_token is not None else None
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
@@ -1075,7 +1097,7 @@ class Window(QMainWindow):
     def edit_point_data(self,side=None,reference=None):
         if self.is_running() or self.scene.locked:return
         source=reference.settings.get('reference_data',{}) if reference is not None else self.config.boundary_data.get(side,{}) if side else self.config.interior_data
-        dialog=DataMappingDialog(len(self.config.bounds[0]),source,self,coordinate_only=reference is None and side is None)
+        dialog=DataMappingDialog(len(self.config.bounds[0]),source,self,coordinate_only=reference is None and side is None,components=len(self.config.field_names) if reference is not None else 1,allow_values=reference is not None or self.config.physics=='scalar',require_values=reference is not None)
         if dialog.exec()!=DataMappingDialog.DialogCode.Accepted:return
         if reference is not None:self.change_output(reference,'reference_data',dialog.source())
         elif side:
@@ -1173,30 +1195,60 @@ class Window(QMainWindow):
             note=QLabel('Named point sets: '+', '.join(self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
             note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='pde':
-            note=QLabel('Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
-            self.field('Constant c','source')
-            edit=QLineEdit(self.config.pde_expression);edit.setObjectName('pde_expression')
-            edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
-            edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
-            self.form.addRow('Residual = 0',edit)
-            note=QLabel('Scalar expressions: x, y (rectangle), u, c, pi; D(u,x), laplace(u), sin/cos/exp/tanh/sqrt/abs. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
+            physics=QComboBox();physics.addItem('Scalar residual','scalar');physics.addItem('Steady incompressible 2D flow','incompressible_2d')
+            physics.setCurrentIndex(max(0,physics.findData(self.config.physics)))
+            physics.currentIndexChanged.connect(lambda index,w=physics:self.change('physics',w.itemData(index)))
+            self.form.addRow('Physics',physics)
+            if self.config.physics=='incompressible_2d':
+                self.form.addRow(QLabel('Fields: u, v, p · steady, density-normalised pressure\nMomentum x / y and incompressibility; no physical time axis.'))
+                self.field('Kinematic viscosity ν','viscosity',minimum=.000001,maximum=100000)
+                self.field('Optional coefficient c','source')
+                for index,label in enumerate(('Momentum x = 0','Momentum y = 0','Continuity = 0')):
+                    edit=QLineEdit(self.config.flow_residuals[index]);edit.setObjectName('flow_residual_'+str(index))
+                    edit.editingFinished.connect(lambda i=index,e=edit:self.change_flow_residual(i,e.text().strip()))
+                    self.form.addRow(label,edit)
+            else:
+                note=QLabel('Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
+                self.field('Constant c','source')
+                edit=QLineEdit(self.config.pde_expression);edit.setObjectName('pde_expression')
+                edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
+                edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
+                self.form.addRow('Residual = 0',edit)
+                note=QLabel('Scalar expressions: x, y (rectangle), u, c, pi; D(u,x), laplace(u), sin/cos/exp/tanh/sqrt/abs. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='bc':
-            for side in self.config.sides:
-                row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
-                combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types[side])
-                value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
-                combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
-                value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
-                layout.addWidget(combo);layout.addWidget(value);self.form.addRow(side.capitalize(),row)
-                target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
-                target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
-                target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
-                self.form.addRow(side+' target expression',target)
-                operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
-                operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
-                operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
-                self.form.addRow(side+' custom operator',operator)
-            note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
+            if self.config.physics=='incompressible_2d':
+                side=getattr(self,'flow_bc_side','left');choice=QComboBox();choice.addItems(list(self.config.sides));choice.setCurrentText(side)
+                choice.currentTextChanged.connect(self.select_flow_side);self.form.addRow('Boundary set',choice)
+                for field in ('u','v','p'):
+                    spec=self.config.flow_boundary[side].get(field,{'type':'None','target':'0','operator':''})
+                    kind=QComboBox();kind.addItems(['None','Dirichlet','Neumann','Custom']);kind.setCurrentText(spec['type'])
+                    kind.currentTextChanged.connect(lambda value,s=side,f=field:self.change_flow_boundary(s,f,'type',value));self.form.addRow(field+' type',kind)
+                    for key,label in [('target',' target expression'),('operator',' Custom operator')]:
+                        edit=QLineEdit(spec[key]);edit.setObjectName('flow_'+side+'_'+field+'_'+key)
+                        edit.editingFinished.connect(lambda s=side,f=field,k=key,e=edit:self.change_flow_boundary(s,f,k,e.text().strip()))
+                        self.form.addRow(field+label,edit)
+                for index,label in enumerate(('Gauge x','Gauge y')):
+                    spin=QDoubleSpinBox();spin.setDecimals(6);spin.setRange(-1000000,1000000);spin.setValue(self.config.pressure_point[index]);spin.setKeyboardTracking(False)
+                    spin.valueChanged.connect(lambda value,i=index:self.change_pressure_point(i,value));self.form.addRow(label,spin)
+                self.field('Pressure gauge p','pressure_value');self.field('Gauge loss weight','pressure_weight',minimum=.000001,maximum=100000)
+                note=QLabel('Each velocity component needs a Dirichlet anchor. Pressure has one explicit point gauge. None leaves a component unconstrained on this set. Target expressions use coordinates; Custom operators can use u, v, p and dn(...).');note.setWordWrap(True);self.form.addRow(note)
+            else:
+                for side in self.config.sides:
+                    row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
+                    combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types[side])
+                    value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
+                    combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
+                    value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
+                    layout.addWidget(combo);layout.addWidget(value);self.form.addRow(side.capitalize(),row)
+                    target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
+                    target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
+                    target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
+                    self.form.addRow(side+' target expression',target)
+                    operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
+                    operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
+                    operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
+                    self.form.addRow(side+' custom operator',operator)
+                note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             note=QLabel('Fully connected · tanh · Xavier normal\nFixed input bounds follow the domain.');note.setWordWrap(True);self.form.addRow(note)
             edit=QLineEdit(', '.join(map(str,self.config.layers)))
@@ -1204,11 +1256,13 @@ class Window(QMainWindow):
             token=object()
             edit.textChanged.connect(lambda text:self.change_layers(text,token))
             self.form.addRow('Hidden layers',edit)
+            if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: x, y · outputs: u, v, p'))
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
         elif node.kind=='method':
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
+            if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
             self.form.addRow('Method variant',variant)
             self.form.addRow(QLabel('Method: baseline PINN\nFixed samples · full-batch Adam'))
@@ -1238,7 +1292,7 @@ class Window(QMainWindow):
             self.form.addRow(button)
         elif node.kind=='reference':
             expression=QLineEdit(node.settings.get('reference_expression',''))
-            expression.setPlaceholderText('Blank: preset; e.g. x*(1-x)')
+            expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')
             expression.editingFinished.connect(lambda n=node,e=expression:self.change_output(n,'reference_expression',e.text().strip()))
             self.form.addRow('Reference expression',expression)
             imported=QPushButton('Map / preview imported reference values…');imported.clicked.connect(lambda checked=False,n=node:self.edit_point_data(reference=n));self.form.addRow(imported)
@@ -1260,6 +1314,20 @@ class Window(QMainWindow):
         if recipe==updated:return
         recipes=deepcopy(self.config.boundary_sampling);recipes[side]=updated
         self.change('boundary_sampling',recipes,edit_token)
+
+    def change_flow_residual(self,index,text):
+        values=list(self.config.flow_residuals);values[index]=text;self.change('flow_residuals',tuple(values))
+
+    def select_flow_side(self,side):
+        self.flow_bc_side=side;self.selection_changed()
+
+    def change_flow_boundary(self,side,field,key,value):
+        values=deepcopy(self.config.flow_boundary)
+        values[side].setdefault(field,{'type':'None','target':'0','operator':''})[key]=value
+        self.change('flow_boundary',values)
+
+    def change_pressure_point(self,index,value):
+        point=list(self.config.pressure_point);point[index]=value;self.change('pressure_point',tuple(point))
 
     def change_bc_expression(self,side,attribute,text):
         values=deepcopy(getattr(self.config,attribute))
@@ -1291,8 +1359,8 @@ class Window(QMainWindow):
             self.log.appendPlainText('Validation: '+message)
             self.statusBar().showMessage('Model needs attention · see Properties or Messages')
             return False
-        self.validation.setText(f'Valid scalar PINN model. {len(requests)} connected output request(s).')
-        self.statusBar().showMessage('Valid · scalar PINN graph')
+        self.validation.setText(f'Valid PINN graph ({", ".join(self.config.field_names)}). {len(requests)} connected output request(s).')
+        self.statusBar().showMessage('Valid · PINN graph fields: '+', '.join(self.config.field_names))
         return True
 
     def set_busy(self,busy):
@@ -1302,6 +1370,7 @@ class Window(QMainWindow):
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
+        self.flow_action.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():

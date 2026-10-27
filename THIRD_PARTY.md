@@ -25,3 +25,7 @@ remain unchanged.
 QLockFile-per-recovery-file patterns (`app.py`, `recovery.py`, same revision above).
 The implementation is specific to Margam JSON model drafts; no CAD caches, worker
 protocols or GeoSampler project payloads are copied.
+
+The planar import adapter consumes the GeoSampler schema-v2 NPZ manifest contract
+from `src/geosampler/export.py` at the same recorded revision. It is a Margam data
+adapter; no CAD import, Gmsh worker or 3D viewport implementation is included.

@@ -64,3 +64,17 @@
 
   This includes documentation-only commits. Preserve the human author's identity.
   Do not rewrite existing history unless explicitly authorized for that purpose.
+
+## Current data and desktop contracts
+
+- Core parameters are owned by blocks. Assemble supported physics through the
+  typed graph; the inspector cache is not numerical source-of-truth.
+- Keep restricted expressions interpreted through the allowlisted AST. Do not
+  replace this with Python eval or executable model-file payloads.
+- Run archives load with weights_only=True and verify architecture, Adam options
+  and data fingerprints. Do not silently resume against changed external data.
+- Unit tests must use Window(state_directory=False), or a dedicated temporary
+  directory when testing desktop state. Do not overwrite personal layout/recovery
+  files during validation. Release test clipboard data before offscreen Qt teardown.
+- Coupled u/v/p results currently use tables/CSV. Preserve the pause on heatmap
+  development. Full 3D/non-planar GeoSampler and ParaView remain deferred.

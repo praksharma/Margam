@@ -98,7 +98,7 @@ def _snapshot(case):
     if evaluation.shape[1] != collocation.shape[1]:
         raise ValueError("Evaluation and collocation points must have the same input dimension.")
     arrays.update(evaluation_points=evaluation, reference=reference)
-    return PINNProblem(problem.residual, collocation, constraints, residual_target), arrays, names
+    return PINNProblem(problem.residual, collocation, constraints, residual_target, data_identity=getattr(problem,'data_identity','')), arrays, names
 
 
 def _fingerprint(arrays):

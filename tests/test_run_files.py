@@ -54,3 +54,23 @@ w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),capture_output=True,text=True,timeout=40)
         self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_archived_data_can_open_without_external_inputs(self):
+        from dataclasses import asdict
+        from tempfile import TemporaryDirectory
+        import torch
+        from margam.templates.poisson import PoissonConfig,build_pinn
+        from margam.ui.run_document import save_run,load_run
+        torch.set_num_threads(1)
+        with TemporaryDirectory() as directory:
+            points=Path(directory)/'points.csv';points.write_text('x\n0.2\n0.5\n0.8\n')
+            config=PoissonConfig(shape='Interval',interior_data={'path':str(points),'coordinates':'x','normals':'','values':''})
+            model=build_pinn(config);model.train(5,display_every=0);state=model.training_state()
+            data={'format':'margam-run','version':2,
+                  'model':{'format':'margam-model','version':6,'config':asdict(config),'nodes':[],'wires':[]},
+                  'result':{'outputs':{},'steps':5,'cancelled':False,'device':'cpu'},'monitors':{},'checkpoint':state}
+            archive=Path(directory)/'run.pt';save_run(archive,data);points.unlink()
+            loaded=load_run(archive)
+            self.assertEqual(loaded['result']['steps'],5)
+            self.assertEqual(loaded['checkpoint']['data_fingerprint'],state['data_fingerprint'])
+            with self.assertRaises(FileNotFoundError):build_pinn(config)

@@ -30,6 +30,8 @@ class PINN:
         Closure-based optimisers require a different training procedure.
         """
         self._compiled = False
+        if not isinstance(getattr(self.problem,'data_identity',''),str):raise ValueError("Problem data identity must be text.")
+        self._data_identity=getattr(self.problem,'data_identity','')
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(device)
@@ -138,6 +140,7 @@ class PINN:
             value=value.detach().cpu().contiguous()
             digest.update(str((tuple(value.shape),str(value.dtype))).encode())
             digest.update(value.numpy().tobytes())
+        if self._data_identity:digest.update(self._data_identity.encode())
         return digest.hexdigest()
 
     def training_state(self):

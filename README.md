@@ -4,7 +4,8 @@ A visual framework for physics-informed neural networks (formerly DeepINN).
 The desktop builder runs the baseline strong-form PINN on built-in intervals
 and rectangles, with editable block settings, background training and optional
 block-owned output views.
-The initial runnable template solves scalar Poisson problems.
+Built-in graphs cover scalar residual problems and steady 2D incompressible flow
+(u, v, p), with explicit pressure gauges, table/CSV results and saved checkpoints.
 
 See [AGENTS.md](AGENTS.md) for agent working rules, including commit attribution.
 
@@ -126,7 +127,7 @@ See [heat-demo.md](docs/heat-demo.md) for equations, parameters and reference ch
    interior unchanged. Interval boundaries are fixed endpoints. Grid seeds are
    retained for switching methods; grids themselves are deterministic.
 4. Select **PDE residual** to change the constant source. Use the Poisson preset or a restricted scalar expression; additional pointwise
-   forcing arrays and coupled/vector systems remain future work.
+   forcing arrays and other coupled systems remain future work.
 5. Select **Boundary condition** to assign each named side a Dirichlet value or
    outward normal derivative (Neumann). These are not conductivity-scaled fluxes.
    At least one Dirichlet side is required. Adjacent Dirichlet values on a rectangle
@@ -199,7 +200,8 @@ Use **Edit → Delete selected** for blocks/wires. Double-clicking the library a
 blocks; core duplicates and unsupported wiring prevent training. Output instances
 have independent names, evaluation resolution or retained-history limits.
 **Reset Poisson template** restores the runnable default; **Fit model** fits the
-canvas. This is a template-backed workflow, not yet a general graph compiler.
+canvas. Execution assembles one supported problem from owned block parameters;
+multiple roots and arbitrary cyclic graphs are not supported.
 
 Training runs in a background thread. Settings and graph edits are locked during
 execution, but output views can still be opened, hidden or moved. Drag a view's
@@ -212,7 +214,7 @@ shows retained data. Training never forces plots open or switches to them.
 and waits for the worker. The numerical model remains in memory after a run until
 a model edit or new run; there is no model export/continuation UI yet. Changing
 the graph or model/evaluation settings clears stale results and requires another
-run. Model definitions can be saved explicitly from File; trained results/checkpoints can be saved explicitly using the separate run archive. Arbitrary PDE execution remains future work. Use **View → Reset panel layout** to restore docks.
+run. Model definitions can be saved explicitly from File; trained results/checkpoints can be saved explicitly using the separate run archive. Other field contracts and transient execution remain future work. Use **View → Reset panel layout** to restore docks.
 
 Right-click menus expose only supported actions: Properties, Delete block, Help,
 and the view actions belonging to that block. Output blocks offer Open monitor,
@@ -321,8 +323,8 @@ The older `Model(domain, network)` API and borrowed geometry stack are retired.
 
 ## Project layout and documentation
 
-- `margam/methods/`: method implementations, currently the baseline PINN.
-- `margam/components/`: problem definitions and named loss aggregation.
+- `margam/methods/`: baseline and hard-Dirichlet method implementations.
+- `margam/components/`: problem/loss definitions, expressions, sampling, prepared-data adapters and export.
 - `margam/nn/`, `margam/backend/`, `margam/utils/`: networks, optimisation helpers,
   and differentiation operators.
 - `margam/benchmarking/`: reproducible comparison runner and metrics.
@@ -349,8 +351,7 @@ operator such as `u + dn(u)` for Robin conditions. Use `x`, rectangle `y`, `u`,
 constant `c`, `pi`, `D(value,x/y)`, `laplace(value)`, and basic mathematical functions.
 Target expressions cannot reference `u` or derivatives. There is no Python eval or
 code import. Preset analytical references reject custom physics; ordinary prediction
-and monitor blocks work without a reference. Model format v2 stores expressions;
-older v1 model files still open with the preset defaults.
+and monitor blocks work without a reference. Current model files retain expressions; older files migrate with preset defaults.
 
 Saved runs: after training, choose **File → Save run and checkpoint…** for a
 `.margam-run.pt` archive containing the model definition, requested predictions,
@@ -375,7 +376,7 @@ mappings name arrays (e.g. `points`). Optional boundary normals must be unit out
 vectors; target values must be one scalar per row. PDE point imports accept only
 coordinates. External files are referenced by absolute path, not embedded in model
 JSON. Changing file contents invalidates checkpoint compatibility through sample
-and target fingerprints. Imported off-box boundary sets require explicit normals;
+target and imported-normal fingerprints. Imported off-box sets with normal-dependent operators require explicit normals;
 no CAD geometry is inferred or displayed. BC corner compatibility for imported sets
 is the data provider's responsibility.
 
@@ -383,16 +384,16 @@ Reference blocks can explicitly use a restricted coordinate expression or import
 scalar values. Imported reference coordinates must match the requested evaluation
 grid (row order can differ); no interpolation is performed. Clear the expression
 before selecting imported values. Blank expression/data retains the supported
-preset reference. Model format v3 and run archive v2 retain older-file migrations.
+preset reference. Current models and run archives retain earlier-file migrations.
 
 Core settings now belong to their block instances, including a separate network
-initialisation seed. The scalar executor follows the PINN method's typed inputs
+initialisation seed. The supported executor follows the PINN method's typed inputs
 through the samplers/conditions to the geometry and assembles the training recipe
 from those blocks. It supports one method root and one consistent scalar problem;
 unconnected/duplicate core blocks must be resolved before Run. Editing a copied
 network or sampler does not change its original. Templates are initial graphs,
-not a hidden source of runtime settings. Model format v4 stores these owned
-parameters and migrates earlier global-template models on opening.
+not a hidden source of runtime settings. Current models store these owned parameters and migrate earlier global-template
+models on opening.
 
 For a plain data file, add **CSV Export**, connect the PINN method, and train.
 Double-click/right-click that block for **Export CSV…**. It requests scalar
@@ -405,3 +406,18 @@ Method variants: **PINN method → Method variant** offers the original baseline
 Dirichlet values on all built-in sides; mixed/custom/imported boundary targets are
 rejected. It shares the full-batch Adam engine and does not need an exact solution.
 Each variant lives in its own method file. Templates still default to baseline.
+
+**File → Incompressible flow demo** loads a steady 2D Couette example with velocity
+`u,v` and density-normalised pressure `p`. PDE properties expose kinematic viscosity
+and the two momentum residuals plus continuity. BC properties select a named side
+and component operator/target; pressure has an explicit point gauge. The ready-wired
+monitor, prediction/comparison table, reference and CSV Export remain closed until
+opened. Coupled results use a table (first 200 rows) and full CSV, not new heatmaps.
+Reference expressions for these fields are ordered `u; v; p`, e.g. `y; 0; 0`.
+Imported references explicitly map three value columns/array components. This is
+steady 2D flow with fixed samples, not a transient or turbulence solver. Model v6
+migrates earlier formats; the baseline scalar workflow remains supported.
+
+Planar GeoSampler exports can be prepared using the explicit adapter in
+[geosampler-contract.md](docs/geosampler-contract.md). Full 3D/non-planar import
+and domain masking remain outside the current planar field contract.

@@ -8,21 +8,23 @@ A Python API capability is not automatically an executable UI block option.
 
 | Component | Implementation | Current support and limits |
 | --- | --- | --- |
+| Hard Dirichlet PINN | `margam/methods/hard_dirichlet.py` | Equal constant Dirichlet boxes; exact boundary transform; baseline Adam reused; mixed/imported/spatial BCs rejected |
+| Steady incompressible template | `margam/templates/incompressible_flow.py` | Explicit u/v/p momentum/continuity residuals, component BCs and pressure gauge; no transient/turbulence model |
 | Baseline PINN | `margam/methods/pinn.py` | Strong-form residuals; fixed samples; full-batch updates; named constraints; no adaptive resampling, weak form or closure-based LBFGS |
 | Problem / constraint | `margam/components/problem.py` | Point arrays or callable sources; residual and optional constraint operators; scalar/matching tensor/callable targets; arbitrary user functions currently require Python |
-| Grid / uniform random | `margam/components/sampling.py` | Intervals and axis-aligned rectangles; physical coordinates; no CAD, mesh loading, low-discrepancy or adaptive samplers |
+| Grid / random / Hammersley / stratified | `margam/components/sampling.py` | Intervals and axis-aligned rectangles; physical coordinates; no CAD runtime or adaptive samplers |
 | Loss aggregation | `margam/components/losses.py` | Fixed weighted sum of named scalar terms; Python supports finite non-negative weights; UI currently requires positive PDE/BC weights |
 | Loss metric / optimiser | `margam/backend/utils.py` | Built-in MSE and Adam only; method accepts an optimiser factory in Python; no standalone optimiser block, scheduler or UI optimiser selection |
 | Fully connected network | `margam/nn/FCNN.py` | UI uses tanh and Xavier normal with domain-bound coordinate normalisation; hidden-layer widths editable; no UI activation/architecture selection |
 | Poisson template | `margam/templates/poisson.py` | Scalar constant-source interval/rectangle problem; constant Dirichlet or outward derivative BCs; independent rectangle-side sampling |
 | Heat demo | `margam/templates/heat.py` | Configures the same Poisson method and explicit outputs; no transient heat solver |
-| Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; current display handles scalar fields; reference required only for comparison; ParaView/export deferred |
+| Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; scalar plots or u/v/p tables; explicit CSV export; reference required only for comparison; ParaView deferred |
 
 The dock, drag/drop and quick-insert popup share the supported title/kind list in
 `margam/ui/block_catalogue.py`. That list is specific to the current builder; it
 does not describe arbitrary solver capabilities. Sampler property choices come
-from `SAMPLERS` in the sampler module and include descriptive tooltips. Broader
-machine-readable component metadata and library capability panels remain TODO;
+from `SAMPLERS` in the sampler module and include descriptive tooltips. Implemented capabilities and limits are shared across the current library,
+inspector and Help;
 this document does not imply a generic component registry.
 
 ## Sampling
@@ -101,7 +103,7 @@ outward normal sign, unsupported conditions and interval Poisson convergence.
 `evaluate_outputs(model, config, requests)` evaluates only declared prediction or
 comparison requests; an empty request list or monitor-only list never calls predict.
 Each request has its own identifier and 2–201 evaluation points per coordinate axis.
-The current views support finite scalar outputs. Comparison requires an explicit
+Views support finite scalar outputs and the explicit u/v/p field contract. Comparison requires an explicit
 callable reference with finite values matching those evaluation points. This first
 contract does not provide interpolation, coordinate conversion or unit conversion.
 
@@ -134,7 +136,7 @@ PDE expressions define a scalar residual equal to zero. BC Custom expressions
 define the operator equated to the target, e.g. u + dn(u); target expressions depend
 on coordinates/constants only. The current scalar template retains a Dirichlet
 anchor and checks adjacent rectangular Dirichlet target values at corners. Preset
-references are unavailable for custom physics. Vector systems and pointwise input
+references are unavailable for custom physics. Other vector systems and additional pointwise input
 arrays remain separate future work. Tests cover manufactured residuals, derivatives,
 normal signs, Robin operators, corner compatibility and actual custom-PDE training.
 
@@ -153,18 +155,19 @@ port roles and implementation limits. Sampler dropdowns still derive from SAMPLE
 
 `components/prepared_data.py` reads CSV with explicit header names or NPZ with
 `allow_pickle=False` and explicit array keys. It validates finite (N,D) coordinates,
-optional unit normals with matching rows, and optional (N,1) scalar targets. Files
+optional unit normals with matching rows, and optional scalar targets or declared
+three-component flow reference values. Files
 and expanded NPZs are capped at 64 MiB; 100000 rows maximum. DataMappingDialog shows
 a mapped row preview before applying it. PDE points import coordinates only.
-Boundary imports can supply targets and normals; off-box points without normals
-are rejected. Imported targets and expression targets cannot both be active.
+Boundary imports can supply targets and normals; normal-dependent off-box
+operators without explicit normals are rejected. Imported targets and expression targets cannot both be active.
 No boundary geometry, orientation, physical units or CAD topology is inferred.
 
 Imported references match and reorder explicit evaluation coordinates with
 scale-aware floating-point tolerance; duplicates/mismatches fail instead of
 silently interpolating. External paths remain dependencies, not embedded arrays
-in model JSON. Run checkpoints fingerprint the compiled points and targets and
-reject changed external data. v3 model files migrate v1/v2 defaults; v2 run files
+in model JSON. Run checkpoints fingerprint the compiled points, targets and imported normals and
+reject changed external data. Current model files migrate prior defaults; v2 run files
 include fingerprints, while v1 builtin-only checkpoints can be migrated.
 
 ## Method variants and CSV output
@@ -181,3 +184,37 @@ only when connected; opening the block writes CSV only after a user-selected pat
 It never creates a plot view or automatic output file. File replacement is atomic.
 The initial CSV columns are x[,y],u; no units, extra fields or ParaView assumptions
 are inferred. Export requests participate in saved models and run archives.
+
+## Steady incompressible 2D flow
+
+The selected coupled contract is fields u,v,p over coordinates x,y, with positive
+kinematic viscosity nu and density-normalised pressure. The residual preset is
+u*u_x + v*u_y + p_x - nu*laplace(u),
+u*v_x + v*v_y + p_y - nu*laplace(v), and u_x+v_y. Restricted expressions expose
+u/v/p components without Python execution. Targets remain coordinate-only.
+`templates/incompressible_flow.py` assembles a 3-output network and reuses the
+baseline method; it is a new physics template, not a duplicate training engine.
+
+Each named set has optional u/v/p None/Dirichlet/Neumann/Custom operators. Each
+velocity component currently requires a Dirichlet anchor. A separate pressure point
+and positive gauge weight remove pressure's constant ambiguity. The PDE loss is
+the mean across the three residual components; velocity/pressure boundary terms
+remain named, and the pressure gauge has its own term/weight. Checks cover syntax,
+finite settings and shared built-in corner values, not general flow well-posedness.
+
+The Couette demo explicitly prescribes u=y, v=0 and a pressure gauge. Its optional
+Reference source is valid only for that unchanged residual/BC preset; edited flow
+requires an explicit compatible expression/data reference. Vector results retain
+field names, per-field RMSE/max errors, table presentation and full CSV output.
+No extra heatmap, 3D renderer, turbulence model, transient time or automatic units
+are introduced. Tests verify analytic residuals/constraints, actual training,
+pressure-gauge validation and UI/model/run/CSV round trips.
+
+Flow inputs and residuals must be consistently scaled or nondimensionalised. No
+automatic units or equation balancing are inferred; vector comparisons report
+per-field errors so velocity and density-normalised pressure remain distinguishable.
+
+Imported normal arrays participate in checkpoint identities, even when coordinates
+and targets are unchanged. Earlier imported-normal checkpoints without that identity
+remain viewable but may require restarting training; no cross-build checkpoint
+compatibility is claimed beyond validated state/data contracts.

@@ -39,18 +39,28 @@ def evaluate_outputs(model, config, requests):
             ys = [lower[1] + i*(upper[1]-lower[1])/(count-1) for i in range(count)]
             points = [[x, y] for y in ys for x in xs]
         import torch
-        values = model.predict(torch.tensor(points)).detach().cpu().reshape(-1).tolist()
-        if len(values) != len(points) or not all(math.isfinite(v) for v in values):
-            raise ValueError('The current output view requires finite scalar predictions.')
+        import numpy as np
+        prediction=model.predict(torch.tensor(points)).detach().cpu().numpy()
+        fields=tuple(getattr(config,'field_names',('u',)))
+        if prediction.ndim==1:prediction=prediction[:,None]
+        if prediction.shape!=(len(points),len(fields)) or not np.isfinite(prediction).all():
+            raise ValueError('Predictions must be finite and match the explicit output field contract.')
+        values=prediction[:,0].tolist() if len(fields)==1 else prediction.tolist()
         data = {'points': points, 'values': values, 'size': count, 'config': config,
                 'steps': model.iter, 'reference': None, 'rmse': None}
+        if len(fields)>1:data['fields']=list(fields)
         if request.kind == 'comparison':
-            reference = request.reference.evaluate(points)
-            if reference is None or len(reference) != len(values) or not all(math.isfinite(v) for v in reference):
-                raise ValueError('Reference values must be finite and match the evaluation points.')
-            data['reference'] = list(reference)
-            data['reference_name'] = request.reference.name
-            data['max_error'] = max(abs(a-b) for a,b in zip(values, reference))
-            data['rmse'] = math.sqrt(sum((a-b)**2 for a,b in zip(values, reference))/len(values))
+            reference=np.asarray(request.reference.evaluate(points),dtype=float)
+            if reference.ndim==1:reference=reference[:,None]
+            if reference.shape!=prediction.shape or not np.isfinite(reference).all():
+                raise ValueError('Reference values must be finite and match evaluation coordinates and fields.')
+            error=prediction-reference
+            data['reference']=reference[:,0].tolist() if len(fields)==1 else reference.tolist()
+            data['reference_name']=request.reference.name
+            data['max_error']=float(np.max(np.abs(error)))
+            data['rmse']=float(np.sqrt(np.mean(error**2)))
+            if len(fields)>1:
+                data['rmse_by_field']={name:float(np.sqrt(np.mean(error[:,i]**2))) for i,name in enumerate(fields)}
+                data['max_error_by_field']={name:float(np.max(np.abs(error[:,i]))) for i,name in enumerate(fields)}
         results[request.identifier] = data
     return results
