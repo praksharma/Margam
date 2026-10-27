@@ -9,9 +9,13 @@ checkboxes are not claims about current Margam support.
 - [x] Add built-in intervals, squares and rectangles with grid/random meshless sampling.
 - [x] Create named rectangle-side point sets, then assign constant Dirichlet/Neumann BCs.
 - [x] Connect PDE points to the Poisson residual preset; defer additional pointwise inputs.
-- [ ] Expose arbitrary PDE residual functions through the UI.
+- [x] Expose restricted scalar PDE expressions in the UI, as selected by the user.
+  Coordinates, u, c, arithmetic, derivatives and basic functions are supported.
+- [ ] Extend the explicit scalar expression contract to coupled/vector PDE systems
+  when field and coordinate schemas are defined.
 - [x] Add constant Dirichlet/Neumann settings, analytical normals and an explicit rectangle corner policy.
-- [ ] Add broader BC operators and spatially varying targets.
+- [x] Add restricted custom scalar BC operators (including Robin expressions)
+  and coordinate-dependent targets. Retain a Dirichlet anchor requirement.
 - [ ] Add prepared-data adapters with explicit coordinate/label mapping and previews.
 - [x] Define typed editor ports and reject incompatible/occupied inputs before
   adding wires. Validate stored wire endpoints again before training.

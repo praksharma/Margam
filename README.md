@@ -125,8 +125,8 @@ See [heat-demo.md](docs/heat-demo.md) for equations, parameters and reference ch
    method, point count and seed. Changing one side leaves the other sides and
    interior unchanged. Interval boundaries are fixed endpoints. Grid seeds are
    retained for switching methods; grids themselves are deterministic.
-4. Select **PDE residual** to change the constant source. This first UI supports a
-   Poisson preset; arbitrary PDE editing and pointwise forcing arrays are future work.
+4. Select **PDE residual** to change the constant source. Use the Poisson preset or a restricted scalar expression; additional pointwise
+   forcing arrays and coupled/vector systems remain future work.
 5. Select **Boundary condition** to assign each named side a Dirichlet value or
    outward normal derivative (Neumann). These are not conductivity-scaled fluxes.
    At least one Dirichlet side is required. Adjacent Dirichlet values on a rectangle
@@ -342,3 +342,13 @@ Ctrl+C/X/V are scoped to the canvas so property editors keep normal text editing
 Paste creates fresh block IDs, preserves internal wires and output settings, and
 is one undo step. Pasted core blocks still use the current template configuration;
 duplicate core blocks must be resolved before training.
+
+Custom scalar physics: PDE residual accepts a restricted expression such as
+`D(D(u,x),x) + u - x*x - 2` (equal to zero). Blank keeps the Poisson preset.
+Boundary conditions support coordinate-dependent target expressions and a Custom
+operator such as `u + dn(u)` for Robin conditions. Use `x`, rectangle `y`, `u`,
+constant `c`, `pi`, `D(value,x/y)`, `laplace(value)`, and basic mathematical functions.
+Target expressions cannot reference `u` or derivatives. There is no Python eval or
+code import. Preset analytical references reject custom physics; ordinary prediction
+and monitor blocks work without a reference. Model format v2 stores expressions;
+older v1 model files still open with the preset defaults.

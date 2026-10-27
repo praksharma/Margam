@@ -119,3 +119,21 @@ units or a general execution engine. Every destination has one source; method an
 reference outputs can branch to distinct consumers. See ui-prototype.md for the
 full port table. Numerical execution still assembles the validated Poisson template
 through `build_pinn`, not by evaluating arbitrary block graphs.
+
+## Restricted scalar expressions
+
+`components/expressions.py` interprets an allowlisted AST directly. It accepts
+finite constants, x/y, u (operators only), c, pi, nx/ny, arithmetic, constant powers
+from -8 through 8, sin/cos/exp/tanh/sqrt/abs, D(value, coordinate), laplace(value)
+and dn(value). Expressions are capped at 512 characters, 128 AST nodes and nesting
+20. Attributes, indexing, imports, Python execution, comprehensions and arbitrary
+calls are rejected. These structural limits are not a mathematical well-posedness
+proof: singular or non-finite evaluations still fail numerical validation/training.
+
+PDE expressions define a scalar residual equal to zero. BC Custom expressions
+define the operator equated to the target, e.g. u + dn(u); target expressions depend
+on coordinates/constants only. The current scalar template retains a Dirichlet
+anchor and checks adjacent rectangular Dirichlet target values at corners. Preset
+references are unavailable for custom physics. Vector systems and pointwise input
+arrays remain separate future work. Tests cover manufactured residuals, derivatives,
+normal signs, Robin operators, corner compatibility and actual custom-PDE training.

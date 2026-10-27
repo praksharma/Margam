@@ -740,8 +740,8 @@ class Window(QMainWindow):
             'domain':'Configure interval or rectangle bounds. Rectangle blocks provide optional local 2D geometry and sample previews through this menu.',
             'interior':'Choose the supported sampling method, point budget and seed for PDE points.',
             'boundary':'Choose a named rectangle side and configure its independent grid/random sampler, count and seed. Interval boundaries are fixed endpoints. Assign physical conditions separately in the BC block.',
-            'pde':'The current template solves scalar Poisson with a constant source. Arbitrary residual editing is future work.',
-            'bc':'Assign Dirichlet values or outward Neumann derivatives to the named sides.',
+            'pde':'Use the scalar Poisson preset or a restricted mathematical residual expression. Expressions are interpreted without Python eval; coupled/vector systems remain future work.',
+            'bc':'Assign Dirichlet values, outward derivatives or a restricted Custom operator. Coordinate-dependent target expressions are optional; retain at least one Dirichlet side.',
             'network':'Set hidden-layer sizes for the fully connected tanh network.',
             'method':'Configure baseline full-batch Adam training. Output blocks are optional.',
             'monitor':'Connect the PINN method to request bounded loss history. Open or hide its view independently of recording.',
@@ -922,7 +922,7 @@ class Window(QMainWindow):
         actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
         details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                  'interior':f'{actual} points · {c.sampling}',
-                 'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':f'Δu + {c.source:g} = 0',
+                 'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
                  'bc':', '.join(c.bc_types[s][0] for s in c.sides),
                  'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
                  'solution':'Requested prediction plot', 'monitor':'Requested loss history',
@@ -1028,15 +1028,27 @@ class Window(QMainWindow):
         elif node.kind=='pde':
             note=QLabel('Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
             self.field('Constant c','source')
-            note=QLabel('Custom residual editing and additional pointwise PDE inputs are future work.');note.setWordWrap(True);self.form.addRow(note)
+            edit=QLineEdit(self.config.pde_expression);edit.setObjectName('pde_expression')
+            edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
+            edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
+            self.form.addRow('Residual = 0',edit)
+            note=QLabel('Scalar expressions: x, y (rectangle), u, c, pi; D(u,x), laplace(u), sin/cos/exp/tanh/sqrt/abs. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='bc':
             for side in self.config.sides:
                 row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
-                combo=QComboBox();combo.addItems(['Dirichlet','Neumann']);combo.setCurrentText(self.config.bc_types[side])
+                combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types[side])
                 value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
                 combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
                 value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
                 layout.addWidget(combo);layout.addWidget(value);self.form.addRow(side.capitalize(),row)
+                target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
+                target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
+                target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
+                self.form.addRow(side+' target expression',target)
+                operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
+                operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
+                operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
+                self.form.addRow(side+' custom operator',operator)
             note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             note=QLabel('Fully connected · tanh · Xavier normal\nFixed input bounds follow the domain.');note.setWordWrap(True);self.form.addRow(note)
@@ -1087,6 +1099,12 @@ class Window(QMainWindow):
         if recipe==updated:return
         recipes=deepcopy(self.config.boundary_sampling);recipes[side]=updated
         self.change('boundary_sampling',recipes,edit_token)
+
+    def change_bc_expression(self,side,attribute,text):
+        values=deepcopy(getattr(self.config,attribute))
+        if text:values[side]=text
+        else:values.pop(side,None)
+        self.change(attribute,values)
 
     def change_bc(self,side,kind,value,edit_token=None):
         attribute='bc_types' if kind=='type' else 'bc_values'

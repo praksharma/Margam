@@ -38,6 +38,13 @@ class ModelDocumentTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(),original)
             self.assertEqual(list(Path(directory).iterdir()),[path])
 
+    def test_version_one_defaults(self):
+        data=draft()
+        for key in ('pde_expression','bc_targets','bc_operators'):data['config'].pop(key)
+        config,_,_=decode_document(data)
+        self.assertEqual(config.pde_expression,'')
+        self.assertEqual(config.bc_targets,{})
+
     def test_reject_unsupported_and_malformed_documents(self):
         cases=[]
         def add(change):

@@ -26,8 +26,11 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] == 1, 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2), 'Unsupported Margam model format/version.')
     c = data['config']
+    if isinstance(c,dict) and data['version']==1:
+        c=dict(c)
+        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{})):c.setdefault(key,value)
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
@@ -38,8 +41,11 @@ def decode_document(data):
     require(isinstance(c['layers'], (list,tuple)) and len(c['layers']) <= 256 and all(type(v) is int and abs(v) <= 1000000 for v in c['layers']), 'Invalid network layers.')
     for key in ('bc_types','bc_values'):
         require(isinstance(c[key],dict) and set(c[key]) == SIDES, 'Boundary settings need all four named sides.')
-    require(all(v in ('Dirichlet','Neumann') for v in c['bc_types'].values()), 'Unsupported boundary condition.')
+    require(all(v in ('Dirichlet','Neumann','Custom') for v in c['bc_types'].values()), 'Unsupported boundary condition.')
     require(all(number(v) for v in c['bc_values'].values()), 'Boundary targets must be finite.')
+    require(isinstance(c['pde_expression'],str) and len(c['pde_expression'])<=512, 'Invalid PDE expression.')
+    for key in ('bc_targets','bc_operators'):
+        require(isinstance(c[key],dict) and set(c[key])<=SIDES and all(isinstance(v,str) and len(v)<=512 for v in c[key].values()), 'Invalid boundary expression data.')
     recipes = c['boundary_sampling']
     require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
@@ -80,7 +86,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':1, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':2, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':dict(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

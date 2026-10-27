@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 import math
 from ..components.sampling import sample_box, SAMPLERS
+from ..components.expressions import Expression
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,9 @@ class PoissonConfig:
     bc_types: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 'Dirichlet'))
     bc_values: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 0.0))
     boundary_sampling: dict = field(default_factory=dict)
+    pde_expression: str = ''
+    bc_targets: dict = field(default_factory=dict)
+    bc_operators: dict = field(default_factory=dict)
 
     @property
     def sides(self):
@@ -91,17 +95,27 @@ class PoissonConfig:
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
             raise ValueError('Loss weights must be finite and positive.')
+        dimension=len(self.bounds[0])
+        if self.pde_expression:Expression(self.pde_expression,dimension)
         for side in self.sides:
-            if self.bc_types.get(side) not in ('Dirichlet','Neumann') or not math.isfinite(self.bc_values.get(side,float('nan'))):
+            if self.bc_targets.get(side):Expression(self.bc_targets[side],dimension,target=True)
+            if self.bc_types.get(side)=='Custom':Expression(self.bc_operators.get(side,''),dimension)
+            if self.bc_types.get(side) not in ('Dirichlet','Neumann','Custom') or not math.isfinite(self.bc_values.get(side,float('nan'))):
                 raise ValueError(f'Assign a valid type and finite target to {side}.')
-        if all(self.bc_types[s] == 'Neumann' for s in self.sides):
-            raise ValueError('Pure Neumann problems need a compatibility check and solution gauge; use at least one Dirichlet side for now.')
+        if not any(self.bc_types[s] == 'Dirichlet' for s in self.sides):
+            raise ValueError('Pure Neumann/custom-only problems need a compatibility check and solution gauge; use at least one Dirichlet side for now.')
         # Sampling excludes corners, but incompatible endpoint values still make
         # the prescribed continuous Dirichlet problem ambiguous at those corners.
         if self.shape == 'Rectangle':
             for a,b in [('left','bottom'),('left','top'),('right','bottom'),('right','top')]:
-                if self.bc_types[a] == self.bc_types[b] == 'Dirichlet' and self.bc_values[a] != self.bc_values[b]:
-                    raise ValueError(f'Dirichlet targets on {a} and {b} conflict at their shared corner.')
+                if self.bc_types[a] == self.bc_types[b] == 'Dirichlet':
+                    if self.bc_targets.get(a) or self.bc_targets.get(b):
+                        import torch
+                        corner=torch.tensor([[self.x_min if a=='left' else self.x_max,self.y_min if b=='bottom' else self.y_max]])
+                        values=[float(Expression(self.bc_targets[s],2,target=True)(corner,source=self.source,normal={'left':(-1.,0.),'right':(1.,0.),'bottom':(0.,-1.),'top':(0.,1.)}[s])) if self.bc_targets.get(s) else self.bc_values[s] for s in (a,b)]
+                        agree=all(math.isfinite(v) for v in values) and math.isclose(*values,rel_tol=1e-6,abs_tol=1e-6)
+                    else:agree=self.bc_values[a]==self.bc_values[b]
+                    if not agree:raise ValueError(f'Dirichlet targets on {a} and {b} conflict at their shared corner.')
 
 
 def sample_problem(config):
@@ -141,9 +155,19 @@ def build_pinn(config):
             def operator(x, u, normal=normal):
                 derivative = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
                 return (derivative * x.new_tensor(normal)).sum(dim=1,keepdim=True)
-        constraints.append(PointConstraint(side, torch.tensor(rows), config.bc_values[side], operator))
+        if config.bc_types[side]=='Custom':
+            expression=Expression(config.bc_operators[side],len(rows[0]))
+            def operator(x,u,expression=expression,normal=normals[side][:len(rows[0])]):
+                return expression(x,u,source=config.source,normal=normal)
+        target=config.bc_values[side]
+        if config.bc_targets.get(side):
+            expression=Expression(config.bc_targets[side],len(rows[0]),target=True)
+            def target(x,expression=expression,normal=normals[side][:len(rows[0])]):
+                return expression(x,source=config.source,normal=normal)
+        constraints.append(PointConstraint(side, torch.tensor(rows), target, operator))
+    expression=Expression(config.pde_expression,len(config.bounds[0])) if config.pde_expression else None
     def residual(x, u):
-        return laplacian(u,x) + config.source
+        return expression(x,u,source=config.source) if expression else laplacian(u,x) + config.source
     problem = PINNProblem(residual,torch.tensor(interior),constraints)
     lower,upper = config.bounds
     network = FullyConnected([len(lower),*config.layers,1], 'tanh', 'Xavier normal',input_bounds=(lower,upper))
@@ -151,9 +175,14 @@ def build_pinn(config):
     return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
 
 
+def has_custom_physics(config):
+    return bool(config.pde_expression or any(config.bc_targets.values()) or
+                any(config.bc_types[s]=='Custom' for s in config.sides))
+
+
 def interval_reference(config, points):
     """Exact solution for constant-source interval problems with D/D or D/N BCs."""
-    if config.shape != 'Interval':
+    if config.shape != 'Interval' or has_custom_physics(config):
         return None
     length = config.x_max-config.x_min
     lv,rv = config.bc_values['left'],config.bc_values['right']
@@ -172,6 +201,7 @@ def make_interval_reference(config):
     from copy import deepcopy
     from ..components.outputs import ReferenceSource
     config.validate()
+    if has_custom_physics(config):raise ValueError('Preset references do not apply to custom expressions.')
     if config.shape != 'Interval':
         raise ValueError('The demo analytical reference supports intervals only; prediction plots do not require it.')
     return ReferenceSource('Analytical interval Poisson', partial(interval_reference, deepcopy(config)))
@@ -186,6 +216,7 @@ def rectangle_reference(config, points, terms=40):
     """
     import numpy as np
     config.validate()
+    if has_custom_physics(config):raise ValueError('Preset references do not apply to custom expressions.')
     if config.shape != 'Rectangle' or any(config.bc_types[s]!='Dirichlet' for s in config.sides):
         raise ValueError('Rectangle reference requires Dirichlet conditions on every side.')
     if len({config.bc_values[s] for s in config.sides}) != 1:
@@ -213,6 +244,8 @@ def make_poisson_reference(config):
     from functools import partial
     from copy import deepcopy
     from ..components.outputs import ReferenceSource
+    if has_custom_physics(config):
+        raise ValueError('Preset references do not apply to custom expressions. Remove Reference/Comparison or use an explicit compatible source.')
     if config.shape=='Interval':return make_interval_reference(config)
     config.validate()
     if config.shape!='Rectangle' or any(config.bc_types[s]!='Dirichlet' for s in config.sides):
