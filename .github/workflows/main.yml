@@ -3,12 +3,37 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-      - run: python -m pip install -r requirements.txt
-      - run: python -m unittest discover -s tests -v
-        env:
-          QT_QPA_PLATFORM: offscreen
+      - name: Install Qt system libraries
+        # PySide6 wheels still link EGL/GL libraries with the offscreen plugin.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libegl1 libgl1 libopengl0
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Check headless Qt startup
+        run: |
+          python - <<'PY'
+          from PySide6.QtCore import qVersion
+          from PySide6.QtTest import QTest
+          from PySide6.QtWidgets import QApplication, QWidget
+
+          app = QApplication([])
+          assert app.platformName() == 'offscreen'
+          widget = QWidget()
+          widget.resize(160, 80)
+          widget.show()
+          app.processEvents()
+          assert not widget.grab().isNull(), 'Qt could not render an offscreen widget'
+          widget.close()
+          app.processEvents()
+          print(f'Qt {qVersion()}: offscreen imports, startup and rendering passed')
+          PY
+      - name: Run regression suite
+        run: python -m unittest discover -s tests -v

@@ -4,12 +4,16 @@
 
 ## Latest implementation suite
 
-27 October 2026: **100 tests: 97 passed, 3 CUDA skips**, full suite after
-ParaView export (142.8 seconds), with the optional real VTK reader available only
-in an isolated temporary validation directory. Without VTK, that one reader test
-also skips. Prior milestones: Helmholtz 95 tests (92 passed, 3 CUDA skips); LRA 93;
-networks 88; SA-only 78. Runtime: Python 3.14.8, Torch 2.14.1+cpu,
-PySide6 6.12.0, NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
+27 October 2026: **106 tests: 102 passed, 4 skips**, full local CPU suite in
+offscreen mode after the GitHub dependency fix (145.8 seconds). Skips: three CUDA
+checks and the optional VTK reader, which is not installed in the project environment.
+The Qt import/startup/render preflight also passed locally. The Ubuntu workflow
+change still needs confirmation on the next GitHub run.
+
+Previous ParaView milestone: 100 tests, 97 passed and 3 CUDA skips, with VTK
+available only in an isolated validation directory. Earlier milestones: Helmholtz
+95 tests; LRA 93; networks 88; SA-only 78. Runtime: Python 3.14.8,
+Torch 2.14.1+cpu, PySide6 6.12.0, NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
@@ -158,3 +162,21 @@ file URLs; direct-file offline search was therefore not exercised. The bundled
 shim and offline configuration are verified locally. The 22 UI captures come
 from a state-isolated helper that runs the default baseline tutorial and saves
 both model and checkpoint. This is workflow evidence, not a new accuracy study.
+
+## GitHub runner Qt dependencies
+
+The Linux workflow installs Ubuntu `libegl1`, `libgl1` and `libopengl0` before
+running the Python suite. PySide6 wheels depend on system graphics libraries even
+when tests use `QT_QPA_PLATFORM=offscreen`; selecting that plugin does not remove
+the dynamic-linker requirements.
+
+The supplied failing GitHub log had 33 UI failures, each caused by the same missing
+`libEGL.so.1` import, before application checks could run. The workflow now performs
+a QtWidgets/QtTest import, QApplication startup and offscreen widget-render check
+before running the full suite. It fails immediately with the dependency error
+rather than repeating it through every desktop test. UI coverage remains enabled.
+
+CUDA and optional VTK-reader skips remain conditional on those runtimes being
+available; they are separate from missing Qt system libraries. A local passing
+suite does not itself confirm a remote GitHub run; verify the next workflow run
+after the change is pushed.
