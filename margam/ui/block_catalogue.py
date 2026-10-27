@@ -6,7 +6,8 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Self-adaptive trainer','sa_method'), ('Learning-rate annealing PINN','lra_recipe'), ('LRA trainer','lra_method')),
+    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe')),
+    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
 }

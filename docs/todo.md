@@ -81,7 +81,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
 ## Left library and sampling options
 
 - [x] Replace the flat left-hand list with a searchable, collapsible component
-  library: Geometry, Sampling, Neural networks, Loss / Physics, Optimisation / PINN,
+  library: Geometry, Sampling, Neural networks, Loss / Physics, PINN recipes, Training,
   and Results. Template actions remain separate in File/the toolbar. Search matches
   block/category names and restores collapsed groups when cleared. Only implemented
   blocks are listed; Enter and double-click add a block.
@@ -249,3 +249,6 @@ paused; operational training monitors and basic rectangle previews remain useful
 
 - [x] Separate PINN method, Optimisation and Trainer inspector groups in compact
   and expanded recipes; distinguish network Adam descent and SA mask Adam ascent.
+
+- [x] Split library categories into PINN recipes (compact constructions) and Training
+  (expanded trainers). Optimisation remains inspector settings until standalone blocks exist.

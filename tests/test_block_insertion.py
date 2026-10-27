@@ -23,7 +23,7 @@ from margam.ui.app import Window
 from margam.ui.block_catalogue import BLOCK_MIME
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 tree=w.library.tree
-results=tree.topLevelItem(5)
+results=next(tree.topLevelItem(i) for i in range(tree.topLevelItemCount()) if tree.topLevelItem(i).text(0)=='Results')
 mime=tree.mimeData([results.child(1)])
 assert bytes(mime.data(BLOCK_MIME))==b'Training Monitor'
 assert not tree.mimeData([results]).hasFormat(BLOCK_MIME)

@@ -77,3 +77,10 @@ to numerical training, recipe ownership or checkpoint format. LRA balancing
 settings belong to the method; they do not decay Adam's base learning rate.
 
 ![PINN method, optimisation and trainer sections](../assets/screenshots/trainer-control-groups.png)
+
+The collapsible block library separates **PINN recipes** (Baseline, SA and LRA
+compact constructions) from **Training** (their expanded method/trainer blocks).
+Optimisation settings remain in the inspector; no standalone optimiser block is
+currently implemented. Existing block names, saved models and connections stay valid.
+
+![Separate PINN recipes and Training library categories](../assets/screenshots/library-pinn-recipes-training.png)

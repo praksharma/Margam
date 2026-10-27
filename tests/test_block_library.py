@@ -18,7 +18,10 @@ app = QApplication([])
 w = Window(state_directory=False); w.show(); app.processEvents()
 library = w.library; tree = library.tree
 assert sorted(title for titles in BLOCK_GROUPS.values() for title in titles) == sorted(KINDS)
-assert tree.topLevelItemCount() == 6
+assert tree.topLevelItemCount() == 7
+assert BLOCK_GROUPS['PINN recipes']==('Baseline PINN','Self-adaptive PINN','Learning-rate annealing PINN')
+assert BLOCK_GROUPS['Training']==('PINN method','Self-adaptive trainer','LRA trainer')
+assert 'Optimisation / PINN' not in BLOCK_GROUPS
 geometry = tree.topLevelItem(0)
 before = len(w.scene.nodes())
 QTest.mouseClick(tree.viewport(), Qt.MouseButton.LeftButton, pos=tree.visualItemRect(geometry).center())
@@ -26,7 +29,7 @@ QTest.mouseDClick(tree.viewport(), Qt.MouseButton.LeftButton, pos=tree.visualIte
 assert not geometry.isExpanded()
 assert len(w.scene.nodes()) == before
 library.search.setText('monitor')
-results = tree.topLevelItem(5)
+results = next(tree.topLevelItem(i) for i in range(tree.topLevelItemCount()) if tree.topLevelItem(i).text(0)=='Results')
 assert geometry.isHidden() and not results.isHidden() and results.isExpanded()
 assert [results.child(i).text(0) for i in range(results.childCount()) if not results.child(i).isHidden()] == ['Training Monitor']
 monitor = results.child(1)
@@ -42,10 +45,10 @@ library.search.setText('SAMPLING')
 sampling = tree.topLevelItem(1)
 assert not sampling.isHidden() and all(not sampling.child(i).isHidden() for i in range(2))
 library.search.setText('no matching component')
-assert all(tree.topLevelItem(i).isHidden() for i in range(6))
+assert all(tree.topLevelItem(i).isHidden() for i in range(tree.topLevelItemCount()))
 library.search.clear()
 assert not geometry.isHidden() and not geometry.isExpanded()
-assert all(not tree.topLevelItem(i).isHidden() for i in range(6))
+assert all(not tree.topLevelItem(i).isHidden() for i in range(tree.topLevelItemCount()))
 w.set_busy(True)
 assert not library.search.isEnabled() and not tree.isEnabled()
 w.set_busy(False)
