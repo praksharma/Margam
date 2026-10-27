@@ -43,9 +43,11 @@ checkboxes are not claims about current Margam support.
 
 ## Left library and sampling options
 
-- [ ] Replace the flat left-hand list with a searchable, grouped component library:
-  Geometry / Data, Sampling, Physics / Conditions, Networks, PINN Methods, and
-  Outputs / Comparison. Keep runnable templates distinct from reusable components.
+- [x] Replace the flat left-hand list with a searchable, collapsible component
+  library: Geometry, Sampling, Neural networks, Loss / Physics, Optimisation / PINN,
+  and Results. Template actions remain separate in File/the toolbar. Search matches
+  block/category names and restores collapsed groups when cleared. Only implemented
+  blocks are listed; Enter and double-click add a block.
 - [ ] Group sampling by purpose: interior/PDE points and boundary point sets.
   Within each, show implemented methods and their supported settings. Sampling
   method is distinct from the target region; assigning a BC is a later operation.
@@ -82,7 +84,8 @@ checkboxes are not claims about current Margam support.
 
 The first output-ownership stage in simulink-evidence.md is implemented and
 verified. See ui-prototype.md for actual menu actions, output lifecycle and limits.
-The searchable/grouped library and independent core sampling recipes remain next.
+The searchable, collapsible library is implemented. Independent core sampling
+recipes and catalogue-backed capability descriptions remain future work.
 
 ## Block-owned rectangle previews and context menus
 

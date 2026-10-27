@@ -132,7 +132,7 @@ independent evaluation resolutions, rectangle-only context actions and preview
 cleanup, monitor retention, closed-view recording,
 detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
 Screenshots are under assets/screenshots. General graph execution, typed core ports,
-per-set sampling instances, a grouped library, persistence, arbitrary PDE/reference
+per-set sampling instances, persistence, arbitrary PDE/reference
 sources and export remain in todo.md.
 
 ## Canvas navigation
@@ -152,3 +152,15 @@ Reference and Comparison blocks. No view is forced open. The current configurati
 uses 144 interior points, 24 samples per side, hidden layers 32,32, Adam learning
 rate .005, 2500 updates, PDE weight 1 and mean BC weight 10. These are editable demo
 settings, not universal defaults or an accuracy guarantee. See heat-demo.md.
+
+## Collapsible block library
+
+The left dock groups the existing blocks under Geometry, Sampling, Neural networks,
+Loss / Physics, Optimisation / PINN, and Results. Each group collapses independently.
+Search matches category and block names without case sensitivity, temporarily
+expands matches, and restores previous expansion states when cleared. Double-click
+a block or press Enter to add it; category headings only toggle expansion. The
+whole library, including search, is disabled while training. The dock can still be
+hidden/reopened from View. No new solver, loss or optimiser implementations are
+implied by these categories: the PINN method still owns Adam settings and the PDE
+and BC blocks define its existing loss terms.

@@ -148,6 +148,13 @@ Block connections are checked against the supported Poisson template before
 execution. The seven core blocks are required; output and reference blocks are
 optional. Unconnected output blocks are ignored; partially connected comparisons
 are rejected. Drag blocks to rearrange them and drag output to input to connect.
+The left library has collapsible **Geometry**, **Sampling**, **Neural networks**,
+**Loss / Physics**, **Optimisation / PINN**, and **Results** groups. Click an arrow
+to collapse a group; search by block or category name. Clearing search restores
+your collapsed groups. Double-click a block or select it and press Enter to add it.
+Optimiser settings currently belong to the PINN method; PDE and boundary-condition
+blocks supply its loss terms.
+
 Use **Edit → Delete selected** for blocks/wires. Double-clicking the library adds
 blocks; core duplicates and unsupported wiring prevent training. Output instances
 have independent names, evaluation resolution or retained-history limits.

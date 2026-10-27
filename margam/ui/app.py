@@ -9,12 +9,13 @@ from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
 from .canvas_view import CanvasView
+from .block_library import BlockLibrary
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QDockWidget, QListWidget, QGraphicsView,
+    QApplication, QMainWindow, QDockWidget, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
@@ -281,9 +282,9 @@ class Window(QMainWindow):
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.setCentralWidget(self.view)
-        self.library=QListWidget();self.library.addItems(list(KINDS))
-        self.library.itemDoubleClicked.connect(lambda item:self.add_node(item.text()))
-        self.library_dock=self.dock('Block library · double-click to add',self.library,Qt.DockWidgetArea.LeftDockWidgetArea)
+        self.library=BlockLibrary()
+        self.library.blockActivated.connect(self.add_node)
+        self.library_dock=self.dock('Block library',self.library,Qt.DockWidgetArea.LeftDockWidgetArea)
         properties=QWidget();layout=QVBoxLayout(properties)
         self.name=QLineEdit();self.name.setReadOnly(True)
         self.detail=QLineEdit();self.detail.setReadOnly(True)
