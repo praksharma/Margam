@@ -359,9 +359,9 @@ class Window(QMainWindow):
         configure_theme(QApplication.instance(),'light')
         toolbar=self.addToolBar('Model');self.model_toolbar=toolbar
         toolbar.setIconSize(QSize(20,20));toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.load_action=QAction('Reset Poisson template',self)
+        self.load_action=QAction('2D Poisson — rectangle (reset)',self)
         self.load_action.triggered.connect(lambda:self.request_template(False))
-        self.heat_action=QAction('Heat demo',self)
+        self.heat_action=QAction('2D steady heat conduction',self)
         self.heat_action.triggered.connect(lambda:self.request_template(True))
         self.zoom_in_action=toolbar.addAction('Zoom in')
         self.zoom_in_action.triggered.connect(lambda:self.view.zoom_by(1.2))
@@ -489,10 +489,13 @@ class Window(QMainWindow):
         self.examples_menu=file_menu.addMenu('Examples')
         self.examples_menu.addAction(self.load_action)
         self.examples_menu.addAction(self.heat_action)
-        self.flow_action=self.examples_menu.addAction('Incompressible flow demo');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
-        self.examples_menu.addSeparator();self.example_actions={}
+        self.flow_action=self.examples_menu.addAction('2D incompressible flow');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
+        self.examples_menu.addSeparator()
+        self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
+        self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            action=self.examples_menu.addAction(example.label);action.setToolTip(example.description)
+            menu=self.examples_1d_menu if example_config(identifier).shape=='Interval' else self.examples_menu
+            action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
         for recipe in COMPACT_RECIPES.values():

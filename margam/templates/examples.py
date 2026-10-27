@@ -11,12 +11,12 @@ class ExampleProblem:
 
 
 EXAMPLE_PROBLEMS = {
-    'lra_poisson':ExampleProblem('Learning-rate annealing · interval Poisson','Gradient-statistic constraint balancing; coefficient cap 100; existing FCNN and explicit reference.','x*(1-x)'),
-    'self_adaptive_poisson':ExampleProblem('Self-adaptive PINN · interval Poisson','Pointwise squared PDE masks with Adam ascent; explicit reference.','x*(1-x)'),
-    'interval_poisson':ExampleProblem('Poisson · interval','Constant-source Poisson; zero endpoints.','x*(1-x)'),
-    'reaction_diffusion':ExampleProblem('Reaction–diffusion · interval','Positive reaction coefficient; sine manufactured forcing.','sin(pi*x)'),
-    'advection_diffusion':ExampleProblem('Advection–diffusion · interval','Unit advection, diffusivity 0.1, unequal Dirichlet endpoints.','x'),
-    'poisson_sine_2d':ExampleProblem('Poisson · 2D sine forcing','Manufactured rectangular solution; zero edges.','sin(pi*x)*sin(pi*y)'),
+    'lra_poisson':ExampleProblem('Poisson — LRA-PINN','Gradient-statistic constraint balancing; coefficient cap 100; existing FCNN and explicit reference.','x*(1-x)'),
+    'self_adaptive_poisson':ExampleProblem('Poisson — SA-PINN','Pointwise squared PDE masks with Adam ascent; explicit reference.','x*(1-x)'),
+    'interval_poisson':ExampleProblem('Poisson — baseline','Constant-source Poisson; zero endpoints.','x*(1-x)'),
+    'reaction_diffusion':ExampleProblem('Reaction–diffusion','Positive reaction coefficient; sine manufactured forcing.','sin(pi*x)'),
+    'advection_diffusion':ExampleProblem('Advection–diffusion','Unit advection, diffusivity 0.1, unequal Dirichlet endpoints.','x'),
+    'poisson_sine_2d':ExampleProblem('2D Poisson — sinusoidal forcing','Manufactured rectangular solution; zero edges.','sin(pi*x)*sin(pi*y)'),
 }
 
 

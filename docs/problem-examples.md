@@ -36,10 +36,19 @@ The tests check manufactured residuals and train each new example for 700 CPU
 updates with RMS prediction error below 0.05. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.
 
-File → Examples also includes Self-adaptive PINN · interval Poisson, using its
+File → Examples also includes Poisson — SA-PINN, using its
 separate trainer and the same explicit interval reference. See self-adaptive-pinn.md.
 
-**Learning-rate annealing · interval Poisson** uses the same explicit reference,
+**Poisson — LRA-PINN** uses the same explicit reference,
 FCNN 16×16, 32 points, Adam rate 0.001, 2,000 updates, alpha 0.9, interval 10 and
 cap 100 (an explicit practical guard). Its 700-update regression also requires
 RMSE <0.05. See [algorithm and measured comparison](lra-pinn.md).
+
+File → Examples → **1D examples** groups the five line-domain cases: baseline,
+SA and LRA Poisson, reaction–diffusion and advection–diffusion. The 2D rectangle,
+heat, incompressible flow and sinusoidal Poisson cases stay in the parent menu
+with explicit 2D names. No new dimension or physics support is implied.
+
+![Dimension-labelled Examples menu](../assets/screenshots/examples-dimensions.png)
+
+![1D example submenu](../assets/screenshots/examples-1d.png)

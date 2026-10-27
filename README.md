@@ -48,8 +48,8 @@ Follow the [screenshot walkthrough](docs/visual-guide.md) for an actual SIREN/SA
 example: choose a network, set training separately, expand/collapse, and explicitly
 open losses and a reference comparison.
 
-1. Choose **File → Examples**. Start with **Poisson · interval**, **Heat demo**, or
-   **Self-adaptive PINN · interval Poisson**. Loading an example offers the usual
+1. Choose **File → Examples → 1D examples → Poisson — baseline**, or start
+   with **File → Examples → 2D steady heat conduction**. Loading an example offers the usual
    Save / Discard / Cancel choice for unsaved edits.
 2. Select blocks to edit their owned settings. Built-in intervals/rectangles need
    no geometry file or mesh. Sampling and BC assignments are separate.

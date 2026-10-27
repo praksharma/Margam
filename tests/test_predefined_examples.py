@@ -52,6 +52,14 @@ app=QApplication([])
 w=Window(state_directory=False)
 assert w.examples_menu.title()=='Examples'
 assert len(w.example_actions)==len(EXAMPLE_PROBLEMS)
+assert w.examples_1d_menu.title()=='1D examples'
+assert len(w.examples_1d_menu.actions())==5
+from margam.templates.examples import example_config
+for key,action in w.example_actions.items():
+    expected=w.examples_1d_menu if example_config(key).shape=='Interval' else w.examples_menu
+    assert action in expected.actions()
+    if expected is w.examples_1d_menu:assert action not in w.examples_menu.actions()
+assert all(a.text().startswith('2D ') for a in (w.load_action,w.heat_action,w.flow_action))
 for key in EXAMPLE_PROBLEMS:
     assert w.load_example(key)
     config=w.scene.compile_config()

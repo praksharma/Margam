@@ -62,7 +62,7 @@ paper benchmark reproduction is claimed. CPU validation does not verify CUDA.
 
 ## Desktop use
 
-1. Open **File → Examples → Learning-rate annealing · interval Poisson**.
+1. Open **File → Examples → 1D examples → Poisson — LRA-PINN**.
 2. Select **LRA trainer** to edit steps, base rate, static weights, alpha, update
    interval, cap and gradient floor. Select the separate Neural network to replace
    its architecture. The example uses FCNN 16×16, 32 grid points and 2,000 updates.

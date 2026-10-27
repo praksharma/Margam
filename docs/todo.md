@@ -252,3 +252,6 @@ paused; operational training monitors and basic rectangle previews remain useful
 
 - [x] Split library categories into PINN recipes (compact constructions) and Training
   (expanded trainers). Optimisation remains inspector settings until standalone blocks exist.
+
+- [x] Group five 1D problems in File → Examples → 1D examples, with explicit
+  2D labels on the parent-menu cases.

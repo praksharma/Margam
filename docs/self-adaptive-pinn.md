@@ -55,7 +55,7 @@ an explicit interval reference comparison.
 - One method file: `margam/methods/self_adaptive.py`.
 - One recipe file: `margam/recipes/self_adaptive.py`.
 - File → Insert PINN recipe → Self-adaptive PINN · compact / expanded.
-- File → Examples → Self-adaptive PINN · interval Poisson is a ready-wired problem.
+- File → Examples → 1D examples → Poisson — SA-PINN is a ready-wired problem.
 - Compact settings expose steps, network learning rate, device and mask ascent rate.
 - Expand to edit the network, mask initial value/cap, BC adaptation and loss weights.
 - Right-click the SA trainer to collapse it, retaining all parameters/connections.
