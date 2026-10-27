@@ -367,3 +367,8 @@ Archived predictions/history remain readable if external source files moved. Act
 resume still rebuilds the problem and verifies its original data fingerprint; it
 requires compatible source files. Static archive loading checks architecture and
 Adam payloads using disposable data, without touching the current model.
+
+Toolbar/View → Pan toggles a persistent open-hand cursor and left-drag navigation,
+including over blocks. Dragging shows a closed hand; Escape or toggling Pan off
+returns to selection. Pan remains available during training. Middle-drag and
+Space+drag keep their temporary behaviour; no model/history edits are recorded.

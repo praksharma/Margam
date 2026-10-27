@@ -175,3 +175,6 @@ supported catalogue descriptions are shared by the library, inspector and Help.
 
 Existing in-app heatmaps are left as they are. Further field-plot development is
 paused; operational training monitors and basic rectangle previews remain useful.
+
+- [x] Add a toolbar/View Pan toggle with open/closed hand cursors and Escape to
+  return to block selection. Existing temporary pan gestures remain supported.

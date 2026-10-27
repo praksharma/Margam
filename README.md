@@ -90,6 +90,10 @@ File provides model Open/Save/Save As, the basic-template reset, Heat demo and Q
 
 ### Navigate the canvas
 
+Toggle **Pan** in the toolbar or View menu for a hand cursor and left-drag panning.
+The hand closes while dragging. Click Pan again or press Escape on the canvas to
+return to block selection. Middle-drag and Space+drag remain available.
+
 - Mouse wheel: zoom around the pointer (10–400%).
 - Middle-button drag or hold Space and left-drag: pan without moving blocks.
 - Tap Space or click **Fit model**: fit the entire diagram.
