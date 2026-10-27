@@ -40,7 +40,7 @@ class ModelDocumentTests(unittest.TestCase):
 
     def test_version_one_defaults(self):
         data=draft()
-        for key in ('pde_expression','bc_targets','bc_operators'):data['config'].pop(key)
+        for key in ('pde_expression','bc_targets','bc_operators','interior_data','boundary_data'):data['config'].pop(key)
         config,_,_=decode_document(data)
         self.assertEqual(config.pde_expression,'')
         self.assertEqual(config.bc_targets,{})

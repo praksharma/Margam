@@ -148,3 +148,21 @@ THIRD_PARTY.md for the upstream revision and licence.
 The current block capability descriptions in `ui/block_catalogue.py` drive library
 selection details, tooltips, the inspector summary and Help, including parameters,
 port roles and implementation limits. Sampler dropdowns still derive from SAMPLERS.
+
+## Prepared point/reference data
+
+`components/prepared_data.py` reads CSV with explicit header names or NPZ with
+`allow_pickle=False` and explicit array keys. It validates finite (N,D) coordinates,
+optional unit normals with matching rows, and optional (N,1) scalar targets. Files
+and expanded NPZs are capped at 64 MiB; 100000 rows maximum. DataMappingDialog shows
+a mapped row preview before applying it. PDE points import coordinates only.
+Boundary imports can supply targets and normals; off-box points without normals
+are rejected. Imported targets and expression targets cannot both be active.
+No boundary geometry, orientation, physical units or CAD topology is inferred.
+
+Imported references match and reorder explicit evaluation coordinates with
+scale-aware floating-point tolerance; duplicates/mismatches fail instead of
+silently interpolating. External paths remain dependencies, not embedded arrays
+in model JSON. Run checkpoints fingerprint the compiled points and targets and
+reject changed external data. v3 model files migrate v1/v2 defaults; v2 run files
+include fingerprints, while v1 builtin-only checkpoints can be migrated.

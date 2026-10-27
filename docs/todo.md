@@ -18,7 +18,9 @@ checkboxes are not claims about current Margam support.
 - [x] Add constant Dirichlet/Neumann settings, analytical normals and an explicit rectangle corner policy.
 - [x] Add restricted custom scalar BC operators (including Robin expressions)
   and coordinate-dependent targets. Retain a Dirichlet anchor requirement.
-- [ ] Add prepared-data adapters with explicit coordinate/label mapping and previews.
+- [x] Add CSV/NPZ point adapters with explicit coordinate, unit-normal and scalar
+  value mappings and row previews. Interior imports are coordinates only; imported
+  boundary normals/targets are supported. NetCDF/other formats need adapters.
 - [x] Define typed editor ports and reject incompatible/occupied inputs before
   adding wires. Validate stored wire endpoints again before training.
 - [ ] Define executable graph semantics beyond the current template-backed core.
@@ -59,7 +61,10 @@ checkboxes are not claims about current Margam support.
 - [x] Add Training Monitor blocks with bounded recorded histories.
 - [x] Support bottom docking, floating, hide/reopen, and removal with the owning
   block. Keep view visibility separate from data retention.
-- [ ] Add result export blocks and general imported/user-function reference sources.
+- [x] Add explicit imported scalar reference data and restricted reference
+  expressions; matching evaluation coordinates required, no implicit interpolation.
+- [ ] Add dedicated result export blocks (ParaView remains deferred). Saved-run
+  archives are implemented independently of field export blocks.
 
 ## Left library and sampling options
 

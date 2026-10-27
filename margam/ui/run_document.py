@@ -10,7 +10,7 @@ LIMIT=256*1024*1024
 
 def validate_run(data):
     require(isinstance(data,dict) and set(data)=={'format','version','model','result','monitors','checkpoint'},'Invalid run archive.')
-    require(data['format']=='margam-run' and type(data['version']) is int and data['version']==1,'Unsupported run version.')
+    require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2),'Unsupported run version.')
     config,nodes,_=decode_document(data['model']);kinds={n['id']:n['kind'] for n in nodes}
     result=data['result']
     require(isinstance(result,dict) and set(result)=={'outputs','steps','cancelled','device'},'Invalid run result.')
@@ -41,9 +41,10 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and set(checkpoint)=={'network','optimiser','iter','loss_history','training_history'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(isinstance(checkpoint['loss_history'],list) and len(checkpoint['loss_history'])==steps and all(check_record(v) for v in checkpoint['loss_history']),'Invalid checkpoint losses.')
         require(isinstance(checkpoint['training_history'],list) and len(checkpoint['training_history'])==steps and all(number(v) for v in checkpoint['training_history']),'Invalid checkpoint total losses.')
+        if data['version']==2:require(isinstance(checkpoint.get('data_fingerprint'),str),'Checkpoint data fingerprint is missing.')
     return config
 
 
@@ -51,7 +52,7 @@ def capture_run(window):
     result={key:value for key,value in window.result.items() if key!='config'}
     result['outputs']={identifier:{key:value for key,value in output.items() if key!='config'} for identifier,output in result['outputs'].items()}
     checkpoint=window.last_run.model.training_state() if window.last_run is not None and window.last_run.model is not None else window.loaded_checkpoint
-    return {'format':'margam-run','version':1,'model':capture_model(window),'result':result,
+    return {'format':'margam-run','version':2,'model':capture_model(window),'result':result,
             'monitors':window.monitor_records,'checkpoint':checkpoint}
 
 
@@ -80,5 +81,9 @@ def load_run(path):
         from ..templates.poisson import build_pinn
         from copy import deepcopy
         config=deepcopy(decode_document(data['model'])[0]);config.device='cpu'
-        build_pinn(config).load_training_state(data['checkpoint'])
+        model=build_pinn(config)
+        if 'data_fingerprint' not in data['checkpoint']:
+            require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
+            data['checkpoint']['data_fingerprint']=model.data_fingerprint()
+        model.load_training_state(data['checkpoint'])
     return data

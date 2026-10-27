@@ -5,6 +5,7 @@ here. Other methods can reuse components without branching this trainer.
 """
 import torch
 from copy import deepcopy
+import hashlib
 from ..backend import choose_optimiser, loss_metric
 from ..components import weighted_loss
 
@@ -129,17 +130,28 @@ class PINN:
                 print(f"Iteration: {self.iter}\t Loss: {record['total']:.6g}")
         return self.training_history
 
+    def data_fingerprint(self):
+        digest=hashlib.sha256()
+        arrays=[self.collocation_point_sample,self.collocation_point_labels]
+        for _,points,target in self._constraints:arrays.extend((points,target))
+        for value in arrays:
+            value=value.detach().cpu().contiguous()
+            digest.update(str((tuple(value.shape),str(value.dtype))).encode())
+            digest.update(value.numpy().tobytes())
+        return digest.hexdigest()
+
     def training_state(self):
         """Tensor/primitive checkpoint for this baseline recipe, not a pickled model."""
         self._require_compiled()
         if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
         return deepcopy({'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
-                         'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history})
+                         'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history})
 
     def load_training_state(self,state):
         self._require_compiled()
-        if not isinstance(state,dict) or set(state)!={'network','optimiser','iter','loss_history','training_history'}:
+        if not isinstance(state,dict) or set(state)!={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}:
             raise ValueError('Invalid baseline checkpoint.')
+        if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets differ from the current files or sampling recipe.')
         steps=state['iter']
         if type(steps) is not int or not 0<=steps<=100000 or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
             raise ValueError('Checkpoint history does not match its step count.')

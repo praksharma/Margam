@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import math
 from ..components.sampling import sample_box, SAMPLERS
 from ..components.expressions import Expression
+from ..components.prepared_data import read_points, validate_mapping
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,8 @@ class PoissonConfig:
     pde_expression: str = ''
     bc_targets: dict = field(default_factory=dict)
     bc_operators: dict = field(default_factory=dict)
+    interior_data: dict = field(default_factory=dict)
+    boundary_data: dict = field(default_factory=dict)
 
     @property
     def sides(self):
@@ -57,6 +60,11 @@ class PoissonConfig:
             side, BoundarySampling(self.boundary_points, 'grid', 8 + sides.index(side)))
 
     def validate_sampling(self):
+        if self.interior_data:
+            validate_mapping(self.interior_data)
+            if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
+        if not isinstance(self.boundary_data,dict) or set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown imported boundary set.')
+        for source in self.boundary_data.values():validate_mapping(source)
         if self.shape not in ('Interval', 'Rectangle'):
             raise ValueError('Choose Interval or Rectangle.')
         lower, upper = self.bounds
@@ -108,7 +116,7 @@ class PoissonConfig:
         # the prescribed continuous Dirichlet problem ambiguous at those corners.
         if self.shape == 'Rectangle':
             for a,b in [('left','bottom'),('left','top'),('right','bottom'),('right','top')]:
-                if self.bc_types[a] == self.bc_types[b] == 'Dirichlet':
+                if self.bc_types[a] == self.bc_types[b] == 'Dirichlet' and not self.boundary_data.get(a) and not self.boundary_data.get(b):
                     if self.bc_targets.get(a) or self.bc_targets.get(b):
                         import torch
                         corner=torch.tensor([[self.x_min if a=='left' else self.x_max,self.y_min if b=='bottom' else self.y_max]])
@@ -122,11 +130,13 @@ def sample_problem(config):
     """Return interior and named boundary coordinates, before assigning physics."""
     config.validate_sampling()
     lower, upper = config.bounds
-    interior = sample_box(lower, upper, config.points, config.sampling, config.seed)
+    interior = read_points(config.interior_data,len(lower))[0].tolist() if config.interior_data else sample_box(lower, upper, config.points, config.sampling, config.seed)
     if config.shape == 'Interval':
-        return interior, {'left': [[config.x_min]], 'right': [[config.x_max]]}
+        return interior, {side:read_points(config.boundary_data[side],1)[0].tolist() if config.boundary_data.get(side) else [[config.x_min if side=='left' else config.x_max]] for side in config.sides}
     boundaries = {}
     for side in config.sides:
+        if config.boundary_data.get(side):
+            boundaries[side]=read_points(config.boundary_data[side],2)[0].tolist();continue
         vertical = side in ('left','right')
         a,b = (config.y_min,config.y_max) if vertical else (config.x_min,config.x_max)
         recipe = config.boundary_recipe(side)
@@ -149,21 +159,33 @@ def build_pinn(config):
     normals = {'left': (-1.,0.), 'right': (1.,0.), 'bottom': (0.,-1.), 'top': (0.,1.)}
     constraints = []
     for side, rows in boundaries.items():
+        imported=read_points(config.boundary_data[side],len(config.bounds[0])) if config.boundary_data.get(side) else None
+        normal=normals[side][:len(rows[0])]
+        if imported is not None:
+            normal=imported[1].tolist() if imported[1] is not None else normal
+            # Without imported normals a side label is meaningful only on that
+            # box side. Do not silently use analytical normals for arbitrary CAD.
+            if imported[1] is None:
+                axis=0 if side in ('left','right') else 1
+                edge={'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
+                if any(abs(row[axis]-edge)>1e-7 for row in rows):raise ValueError('Imported off-box boundary sets require explicit unit outward normals.')
         operator = None
         if config.bc_types[side] == 'Neumann':
-            normal = normals[side][:len(rows[0])]
             def operator(x, u, normal=normal):
                 derivative = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
                 return (derivative * x.new_tensor(normal)).sum(dim=1,keepdim=True)
         if config.bc_types[side]=='Custom':
             expression=Expression(config.bc_operators[side],len(rows[0]))
-            def operator(x,u,expression=expression,normal=normals[side][:len(rows[0])]):
-                return expression(x,u,source=config.source,normal=normal)
+            def operator(x,u,expression=expression,normal=normal):
+                return expression(x,u,source=config.source,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
         target=config.bc_values[side]
         if config.bc_targets.get(side):
             expression=Expression(config.bc_targets[side],len(rows[0]),target=True)
-            def target(x,expression=expression,normal=normals[side][:len(rows[0])]):
-                return expression(x,source=config.source,normal=normal)
+            def target(x,expression=expression,normal=normal):
+                return expression(x,source=config.source,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
+        if imported is not None and imported[2] is not None:
+            if config.bc_targets.get(side):raise ValueError('Choose imported target values or a target expression, not both.')
+            target=torch.tensor(imported[2])
         constraints.append(PointConstraint(side, torch.tensor(rows), target, operator))
     expression=Expression(config.pde_expression,len(config.bounds[0])) if config.pde_expression else None
     def residual(x, u):
@@ -176,7 +198,7 @@ def build_pinn(config):
 
 
 def has_custom_physics(config):
-    return bool(config.pde_expression or any(config.bc_targets.values()) or
+    return bool(config.interior_data or config.boundary_data or config.pde_expression or any(config.bc_targets.values()) or
                 any(config.bc_types[s]=='Custom' for s in config.sides))
 
 

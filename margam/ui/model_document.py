@@ -26,11 +26,11 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3), 'Unsupported Margam model format/version.')
     c = data['config']
-    if isinstance(c,dict) and data['version']==1:
+    if isinstance(c,dict) and data['version'] in (1,2):
         c=dict(c)
-        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{})):c.setdefault(key,value)
+        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{})):c.setdefault(key,value)
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
@@ -46,6 +46,10 @@ def decode_document(data):
     require(isinstance(c['pde_expression'],str) and len(c['pde_expression'])<=512, 'Invalid PDE expression.')
     for key in ('bc_targets','bc_operators'):
         require(isinstance(c[key],dict) and set(c[key])<=SIDES and all(isinstance(v,str) and len(v)<=512 for v in c[key].values()), 'Invalid boundary expression data.')
+    from ..components.prepared_data import validate_mapping
+    if c['interior_data']:validate_mapping(c['interior_data'])
+    require(isinstance(c['boundary_data'],dict) and set(c['boundary_data'])<=SIDES,'Invalid imported boundary mappings.')
+    for source in c['boundary_data'].values():validate_mapping(source)
     recipes = c['boundary_sampling']
     require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
@@ -67,8 +71,10 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and set(settings) == {'resolution','history_limit'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data'}, 'Invalid output settings.')
         require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
+        require(isinstance(settings.get('reference_expression',''),str) and len(settings.get('reference_expression',''))<=512,'Invalid reference expression.')
+        if settings.get('reference_data'):validate_mapping(settings['reference_data'])
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -86,7 +92,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':2, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':3, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':dict(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

@@ -368,3 +368,19 @@ locked recovery files there. On restart you can recover an abandoned draft as an
 unsaved model. Active sessions are skipped; clean close removes that session's
 recovery file. Recovery contains model definitions, not training results, and does
 not reopen plots. Use View → Reset panel layout to restore the standard arrangement.
+
+Prepared points: Interior sampler and Boundary points offer **Map / preview** for
+CSV/NPZ data. CSV mappings explicitly name coordinate columns (e.g. `x,y`); NPZ
+mappings name arrays (e.g. `points`). Optional boundary normals must be unit outward
+vectors; target values must be one scalar per row. PDE point imports accept only
+coordinates. External files are referenced by absolute path, not embedded in model
+JSON. Changing file contents invalidates checkpoint compatibility through sample
+and target fingerprints. Imported off-box boundary sets require explicit normals;
+no CAD geometry is inferred or displayed. BC corner compatibility for imported sets
+is the data provider's responsibility.
+
+Reference blocks can explicitly use a restricted coordinate expression or imported
+scalar values. Imported reference coordinates must match the requested evaluation
+grid (row order can differ); no interpolation is performed. Clear the expression
+before selecting imported values. Blank expression/data retains the supported
+preset reference. Model format v3 and run archive v2 retain older-file migrations.

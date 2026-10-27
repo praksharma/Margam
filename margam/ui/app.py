@@ -6,7 +6,9 @@ from pathlib import Path
 import json
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.heat import heat_demo_config
-from ..components.outputs import OutputRequest
+from ..components.outputs import OutputRequest, ReferenceSource
+from ..components.expressions import Expression
+from ..components.prepared_data import reference_values
 from ..components.sampling import SAMPLERS
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
@@ -17,6 +19,7 @@ from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
 from .desktop_state import DesktopState
+from .data_mapping import DataMappingDialog
 from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
@@ -265,7 +268,20 @@ class Canvas(QGraphicsScene):
             if node.kind=='comparison':
                 if {w.target.name for w in incoming} != {'model','reference'}:
                     raise ValueError('Comparison needs both a trained-model connection and a Reference connection.')
-                reference=make_poisson_reference(config)
+                source=next(w.source.parentItem() for w in incoming if w.target.name=='reference')
+                text=source.settings.get('reference_expression','')
+                data=source.settings.get('reference_data',{})
+                if text and data:raise ValueError('Choose an expression or imported reference data, not both.')
+                if text:
+                    expression=Expression(text,len(config.bounds[0]),target=True)
+                    def evaluate(points,expression=expression):
+                        import torch
+                        return expression(torch.tensor(points),source=config.source).detach().reshape(-1).tolist()
+                    reference=ReferenceSource('User reference expression',evaluate)
+                elif data:
+                    from functools import partial
+                    reference=ReferenceSource('Imported scalar reference',partial(reference_values,deepcopy(data)))
+                else:reference=make_poisson_reference(config)
             if node.kind=='monitor':
                 if not 25 <= node.settings['history_limit'] <= 100000:
                     raise ValueError('Monitor history limit must be between 25 and 100000.')
@@ -843,17 +859,19 @@ class Window(QMainWindow):
         self.push_edit('Rename output',lambda:apply(name),lambda:apply(old))
 
     def change_output(self,node,key,value,edit_token=None):
-        if value==node.settings[key]:return
-        old=node.settings[key]
-        def apply(number):
-            node.settings[key]=number
+        existed=key in node.settings;old=deepcopy(node.settings.get(key))
+        if existed and old==value:return
+        value=deepcopy(value)
+        def apply(number,present=True):
+            if present:node.settings[key]=deepcopy(number)
+            else:node.settings.pop(key,None)
             if key=='history_limit':
                 records=self.monitor_records.get(node.identifier,[])
                 del records[:-number]
                 self.output_views.refresh(node)
             else:self.graph_changed()
         merge=(node.identifier,key,edit_token) if edit_token is not None else None
-        self.push_edit('Change output '+key.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
+        self.push_edit('Change output '+key.replace('_',' '),lambda:apply(value),lambda:apply(old,existed),merge)
 
 
     def dock(self,title,widget,area):
@@ -975,7 +993,7 @@ class Window(QMainWindow):
         c=self.config
         actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
         details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
-                 'interior':f'{actual} points · {c.sampling}',
+                 'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
                  'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
                  'bc':', '.join(c.bc_types[s][0] for s in c.sides),
                  'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
@@ -1009,6 +1027,24 @@ class Window(QMainWindow):
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
+
+    def edit_point_data(self,side=None,reference=None):
+        if self.is_running() or self.scene.locked:return
+        source=reference.settings.get('reference_data',{}) if reference is not None else self.config.boundary_data.get(side,{}) if side else self.config.interior_data
+        dialog=DataMappingDialog(len(self.config.bounds[0]),source,self,coordinate_only=reference is None and side is None)
+        if dialog.exec()!=DataMappingDialog.DialogCode.Accepted:return
+        if reference is not None:self.change_output(reference,'reference_data',dialog.source())
+        elif side:
+            values=deepcopy(self.config.boundary_data);values[side]=dialog.source();self.change('boundary_data',values)
+        else:self.change('interior_data',dialog.source())
+        self.selection_changed()
+
+    def clear_point_data(self,side=None,reference=None):
+        if reference is not None:self.change_output(reference,'reference_data',{})
+        elif side:
+            values=deepcopy(self.config.boundary_data);values.pop(side,None);self.change('boundary_data',values)
+        else:self.change('interior_data',{})
+        self.selection_changed()
 
     def field(self,label,attribute,kind='float',choices=None,minimum=-1000000,maximum=1000000):
         value=getattr(self.config,attribute)
@@ -1050,6 +1086,10 @@ class Window(QMainWindow):
                 self.field('y minimum','y_min');self.field('y maximum','y_max')
             note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='interior':
+            imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
+            if self.config.interior_data:
+                label=QLabel(self.config.interior_data['path']);label.setWordWrap(True);self.form.addRow('Imported source',label)
+                clear=QPushButton('Use built-in sampler');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
             self.field('Sampler','sampling','choice',choices=list(SAMPLERS))
             self.field('Point budget','points','int',minimum=1,maximum=100000)
             self.field('Seed','seed','int',minimum=0,maximum=2147483647)
@@ -1061,6 +1101,10 @@ class Window(QMainWindow):
                 side_choice.setCurrentText(side);side_choice.setObjectName('boundary_side')
                 side_choice.currentTextChanged.connect(self.select_boundary_side)
                 self.form.addRow('Named point set',side_choice)
+                imported=QPushButton('Map / preview this set from CSV or NPZ…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
+                if self.config.boundary_data.get(side):
+                    label=QLabel(self.config.boundary_data[side]['path']);label.setWordWrap(True);self.form.addRow('Imported source',label)
+                    clear=QPushButton('Use built-in side sampler');clear.clicked.connect(lambda checked=False,s=side:self.clear_point_data(s));self.form.addRow(clear)
                 recipe=self.config.boundary_recipe(side)
                 method=QComboBox();method.addItems(list(SAMPLERS));method.setCurrentText(recipe.method)
                 method.setObjectName('boundary_method')
@@ -1078,6 +1122,8 @@ class Window(QMainWindow):
                 note=QLabel('Each side has an independent recipe. All implemented side methods return exactly the selected count on that side. Grid points exclude corners. The seed is retained but unused for a grid. Interior settings do not change boundary recipes.')
             else:
                 note=QLabel('Interval point sets are the left and right endpoints: one point each. Rectangle-side recipes are retained but do not apply to an interval.')
+                for side in self.config.sides:
+                    imported=QPushButton('Map '+side+' prepared point set…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
             note.setWordWrap(True);self.form.addRow(note)
             note=QLabel('Named point sets: '+', '.join(self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
             note.setWordWrap(True);self.form.addRow(note)
@@ -1139,6 +1185,13 @@ class Window(QMainWindow):
             button=QPushButton('Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
         elif node.kind=='reference':
+            expression=QLineEdit(node.settings.get('reference_expression',''))
+            expression.setPlaceholderText('Blank: preset; e.g. x*(1-x)')
+            expression.editingFinished.connect(lambda n=node,e=expression:self.change_output(n,'reference_expression',e.text().strip()))
+            self.form.addRow('Reference expression',expression)
+            imported=QPushButton('Map / preview imported reference values…');imported.clicked.connect(lambda checked=False,n=node:self.edit_point_data(reference=n));self.form.addRow(imported)
+            if node.settings.get('reference_data'):
+                clear=QPushButton('Clear imported reference');clear.clicked.connect(lambda checked=False,n=node:self.clear_point_data(reference=n));self.form.addRow(clear)
             note=QLabel('Explicit Poisson reference: analytical for intervals; 40 odd sine modes per axis for rectangles with equal constant Dirichlet edges. The rectangle reference is truncated, not an exact closed-form value. Connect it to Comparison; ordinary plots never evaluate it.');note.setWordWrap(True);self.form.addRow(note)
         old=self.property_scroll.takeWidget()
         if old is not None:old.deleteLater()
