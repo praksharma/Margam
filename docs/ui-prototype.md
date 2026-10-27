@@ -330,3 +330,20 @@ layout/renaming preserve it. Model history does not undo numerical training. The
 current total-update limit remains 100000. Tests verify bitwise-identical CPU
 predictions for 25+25 resumed versus 50 uninterrupted Adam updates. No claim of
 GPU equivalence or cross-version optimiser compatibility follows from that check.
+
+## Owned core parameters and scalar graph assembly
+
+`graph_model.py` defines which fields each implemented core kind owns and follows
+one PINN method's pde/boundary/network inputs upstream to interior/boundary point
+sources and their common geometry instance. Assembly produces the numerical scalar
+recipe from the connected block records. The inspector configuration is a view/cache,
+not executable state. Network initialisation seeds are separate from interior
+sampling seeds. Copied core records keep independent parameters and stable undo
+behaviour; old model files receive owned records from their saved template defaults.
+
+This concrete scalar executor still requires one complete core subgraph, a shared
+geometry source, and one method root. It does not execute arbitrary cycles, multiple
+PINNs or vector/coupled systems. Unconnected core instances remain editable drafts
+and prevent training rather than being silently executed. Outputs remain explicit.
+Local geometry previews use their owner's settings, not whichever block was last
+selected. v4 models persist parameter records; v1–v3 migrate on opening.

@@ -23,7 +23,7 @@ count=len(w.scene.nodes());edges=len(w.scene.wires);config=w.config
 assert w.paste_blocks()
 pasted=[n for n in w.scene.nodes() if n.isSelected()]
 assert len(pasted)==2 and not {n.identifier for n in pasted}&{method.identifier,monitor.identifier}
-assert len(w.scene.wires)==edges+1 and w.config is config
+assert len(w.scene.wires)==edges+1 and w.config==config
 assert next(n for n in pasted if n.kind=='monitor').settings['history_limit']==80
 assert not w.output_views.entries
 w.undo_edit();assert len(w.scene.nodes())==count and len(w.scene.wires)==edges

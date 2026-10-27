@@ -40,6 +40,7 @@ class PoissonConfig:
     bc_operators: dict = field(default_factory=dict)
     interior_data: dict = field(default_factory=dict)
     boundary_data: dict = field(default_factory=dict)
+    network_seed: int | None = None
 
     @property
     def sides(self):
@@ -91,6 +92,7 @@ class PoissonConfig:
 
     def validate(self):
         self.validate_sampling()
+        if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
             raise ValueError('Iterations must be between 1 and 100000.')
         if not self.layers or len(self.layers) > 6 or any(type(n) is not int or not 1 <= n <= 256 for n in self.layers):
@@ -155,7 +157,7 @@ def build_pinn(config):
     from ..nn import FullyConnected
     from ..utils import laplacian
     interior, boundaries = sample_problem(config)
-    torch.manual_seed(config.seed)
+    torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
     normals = {'left': (-1.,0.), 'right': (1.,0.), 'bottom': (0.,-1.), 'top': (0.,1.)}
     constraints = []
     for side, rows in boundaries.items():

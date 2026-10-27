@@ -23,7 +23,10 @@ checkboxes are not claims about current Margam support.
   boundary normals/targets are supported. NetCDF/other formats need adapters.
 - [x] Define typed editor ports and reject incompatible/occupied inputs before
   adding wires. Validate stored wire endpoints again before training.
-- [ ] Define executable graph semantics beyond the current template-backed core.
+- [x] Define executable scalar graph semantics: follow one PINN root's typed
+  residual/BC/network dependencies, require a common geometry source and assemble
+  the training recipe from owned block parameters rather than the inspector cache.
+  Multiple roots/coupled systems remain an explicit future extension.
 - [x] Add block/wire deletion and fit-to-model navigation.
 - [x] Add versioned model Save / Save As / Open, including graph/configuration,
   block IDs/settings/positions, named sampling recipes, atomic replacement,
@@ -105,8 +108,8 @@ checkboxes are not claims about current Margam support.
 - [x] Define contextual double-click behaviour: core/reference blocks use the
   shared inspector; output blocks open/reuse their owned views. No separate
   parameter-dialog state is introduced.
-- [ ] Add instance-owned core settings before generalising graph execution.
-  Outputs already own their settings; typed editor ports are implemented.
+- [x] Store core parameters on their block instances, including independent network
+  initialisation seeds; editing/copying one instance does not overwrite another.
 - [x] Support output branching from one method/reference to distinct consumers,
   with one source per typed input and no implicit view creation.
 - [x] Add undoable graph/parameter edits, including grouped drag moves, restored

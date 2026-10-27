@@ -20,6 +20,7 @@ from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
+from .graph_model import PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
 from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
@@ -95,6 +96,7 @@ class Node(QGraphicsRectItem):
         self.kind = KINDS[title]
         self.identifier = uuid4().hex
         self.settings = {"resolution": 101, "history_limit": 10000}
+        if self.kind in PARAMETERS:self.settings["parameters"]=parameters_for(self.kind)
         self.setBrush(QColor(colors()['base']))
         self.setPen(QPen(QColor(colors()['border']), 1.5))
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable |
@@ -233,7 +235,7 @@ class Canvas(QGraphicsScene):
         nodes = self.nodes()
         for kind in CORE_KINDS:
             if sum(n.kind == kind for n in nodes) != 1:
-                raise ValueError(f'The Poisson template needs exactly one {kind} block.')
+                raise ValueError(f'The scalar graph needs exactly one {kind} block.')
         core_edges = set()
         destinations = set()
         for wire in self.wires:
@@ -256,6 +258,10 @@ class Canvas(QGraphicsScene):
         missing=REQUIRED_EDGES-core_edges
         if missing:
             raise ValueError('Missing connections: '+', '.join(f'{a} → {b}' for a,b in sorted(missing)))
+
+    def compile_config(self):
+        self.validate_graph()
+        return assemble(self.nodes(),self.wires)
 
     def output_requests(self, config):
         self.validate_graph()
@@ -559,6 +565,7 @@ class Window(QMainWindow):
             point=QPointF(*record['position'])+center-origin
             node=Node(titles[record['kind']],'',point.x(),point.y())
             node.title=record['title'];node.settings=deepcopy(record['settings'])
+            if node.kind in PARAMETERS:node.settings.setdefault('parameters',parameters_for(node.kind,decode_document(data)[0]))
             staged.addItem(node);nodes[record['id']]=node
         for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
         wires=list(staged.wires);staged.wires.clear()
@@ -649,7 +656,8 @@ class Window(QMainWindow):
         titles={kind:title for title,kind in KINDS.items()}
         for record in records:
             node=Node(titles[record['kind']],'',*record['position'])
-            node.identifier=record['id'];node.title=record['title'];node.settings=dict(record['settings'])
+            node.identifier=record['id'];node.title=record['title'];node.settings=deepcopy(record['settings'])
+            if node.kind in PARAMETERS:node.settings.setdefault('parameters',parameters_for(node.kind,config))
             staged.addItem(node);nodes[node.identifier]=node
         for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
         if self.quick_insert is not None:self.quick_insert.reject()
@@ -783,7 +791,7 @@ class Window(QMainWindow):
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
-        if node.kind=='domain' and self.config.shape=='Rectangle':
+        if node.kind=='domain' and self.config_for_node(node).shape=='Rectangle':
             menu.addSeparator()
             menu.addAction('Preview geometry').triggered.connect(lambda:self.open_rectangle_preview(node,False))
             menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
@@ -820,12 +828,12 @@ class Window(QMainWindow):
         QMessageBox.information(self,node.title,text)
 
     def open_rectangle_preview(self, node, show_samples):
-        if not isValid(node) or node.scene() is not self.scene or node.kind!='domain' or self.config.shape!='Rectangle':
+        if not isValid(node) or node.scene() is not self.scene or node.kind!='domain' or self.config_for_node(node).shape!='Rectangle':
             return
         key=(node.identifier,show_samples)
         if key not in self.rectangle_previews:
             title='Rectangle · samples' if show_samples else 'Rectangle · geometry'
-            view=RectanglePreview(self.config,show_samples)
+            view=RectanglePreview(self.config_for_node(node),show_samples)
             dock=self.dock(title,view,Qt.DockWidgetArea.BottomDockWidgetArea)
             dock.setObjectName('rectangle-'+node.identifier+('-samples' if show_samples else '-geometry'))
             dock.setFloating(True);dock.resize(660,420)
@@ -840,9 +848,9 @@ class Window(QMainWindow):
         self.rectangle_previews.clear()
 
     def sync_rectangle_previews(self):
-        owners={n.identifier for n in self.scene.nodes() if n.kind=='domain'}
+        owners={n.identifier:n for n in self.scene.nodes() if n.kind=='domain'}
         for key in list(self.rectangle_previews):
-            if self.config.shape!='Rectangle' or key[0] not in owners:
+            if key[0] not in owners or self.config_for_node(owners[key[0]]).shape!='Rectangle':
                 dock,_=self.rectangle_previews.pop(key)
                 dock.close();self.removeDockWidget(dock);dock.deleteLater()
 
@@ -883,7 +891,9 @@ class Window(QMainWindow):
         self.view.fit_model()
 
     def make_node(self,title,detail,x,y):
-        node=Node(title,detail,x,y);self.scene.addItem(node);return node
+        node=Node(title,detail,x,y)
+        if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,self.config)
+        self.scene.addItem(node);return node
 
     def populate_template(self):
         definitions=[('Rectangle','Unit square',0,160),('Interior sampler','PDE points',240,40),
@@ -915,6 +925,8 @@ class Window(QMainWindow):
         self.reset_template()
         self._resetting=True
         self.config=heat_demo_config()
+        for node in self.scene.nodes():
+            if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,self.config)
         self.settings_changed()
         method=next(n for n in self.scene.nodes() if n.kind=='method')
         outputs=[]
@@ -990,31 +1002,45 @@ class Window(QMainWindow):
         self.validation.setText('Graph changed. Validate the model before training.')
 
     def refresh_descriptions(self):
-        c=self.config
-        actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
-        details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
-                 'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                 'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
-                 'bc':', '.join(c.bc_types[s][0] for s in c.sides),
-                 'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
-                 'solution':'Requested prediction plot', 'monitor':'Requested loss history',
-                 'comparison':'Model + explicit reference source', 'reference':'Explicit Poisson reference'}
-        for node in self.scene.items():
-            if isinstance(node,Node):
-                if node.kind=='domain':node.title=c.shape
-                node.detail=details[node.kind];node.update()
-                if node.isSelected():
-                    self.name.setText(node.title);self.detail.setText(node.detail)
+        for node in self.scene.nodes():
+            c=self.config_for_node(node)
+            actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
+            details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+                     'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
+                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'bc':', '.join(c.bc_types[s][0] for s in c.sides),
+                     'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
+                     'solution':'Requested prediction plot', 'monitor':'Requested loss history',
+                     'comparison':'Model + explicit reference source', 'reference':'Explicit Poisson reference'}
+            if node.kind=='domain':node.title=c.shape
+            node.detail=details[node.kind]
+            if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
+            node.update()
+            if node.isSelected():
+                self.name.setText(node.title);self.detail.setText(node.detail)
+
+    def parameter_owner(self,attribute):
+        kind=OWNERS[attribute]
+        selected=[n for n in self.scene.nodes() if n.isSelected() and n.kind==kind]
+        candidates=selected or [n for n in self.scene.nodes() if n.kind==kind]
+        return candidates[0] if candidates else None
+
+    def config_for_node(self,node):
+        try:base=assemble(self.scene.nodes(),self.scene.wires,require_all=False)
+        except ValueError:base=self.config
+        return overlay(base,node.kind,node.settings['parameters']) if node.kind in PARAMETERS else deepcopy(base)
 
     def change(self,attribute,value,edit_token=None):
-        old=deepcopy(getattr(self.config,attribute))
+        node=self.parameter_owner(attribute)
+        old=deepcopy(getattr(self.config_for_node(node),attribute)) if node else deepcopy(getattr(self.config,attribute))
         if old==value:return
         value=deepcopy(value)
         def apply(current):
+            if node is not None:node.settings['parameters'][attribute]=encode_parameter(attribute,current)
             setattr(self.config,attribute,deepcopy(current))
             self.settings_changed()
             if attribute=='shape':self.selection_changed()
-        merge=(attribute,edit_token) if edit_token is not None else None
+        merge=(node.identifier if node else None,attribute,edit_token) if edit_token is not None else None
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
     def settings_changed(self):
@@ -1022,8 +1048,9 @@ class Window(QMainWindow):
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         self.refresh_descriptions()
         self.sync_rectangle_previews()
-        for _,preview in self.rectangle_previews.values():
-            preview.config=self.config;preview.update()
+        owners={node.identifier:node for node in self.scene.nodes()}
+        for (identifier,_),(_,preview) in self.rectangle_previews.items():
+            preview.config=self.config_for_node(owners[identifier]);preview.update()
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
@@ -1069,6 +1096,7 @@ class Window(QMainWindow):
             return
         nodes=[i for i in self.scene.selectedItems() if isinstance(i,Node)]
         node=nodes[0] if len(nodes)==1 else None
+        if node is not None:self.config=self.config_for_node(node)
         self.name.setText(node.title if node else ('Multiple blocks selected' if len(nodes)>1 else ''))
         self.update_clipboard_actions()
         self.open_output_action.setEnabled(node is not None and node.kind in OUTPUT_KINDS)
@@ -1159,6 +1187,7 @@ class Window(QMainWindow):
             token=object()
             edit.textChanged.connect(lambda text:self.change_layers(text,token))
             self.form.addRow('Hidden layers',edit)
+            self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
         elif node.kind=='method':
             self.form.addRow(QLabel('Method: baseline PINN\nFixed samples · full-batch Adam'))
             self.field('Iterations','iterations','int',minimum=1,maximum=100000)
@@ -1231,14 +1260,16 @@ class Window(QMainWindow):
         self.log.appendPlainText('Connection: '+message)
 
     def validate_model(self):
-        try:self.config.validate();requests=self.scene.output_requests(self.config)
+        try:
+            self.config=self.scene.compile_config()
+            self.config.validate();requests=self.scene.output_requests(self.config)
         except ValueError as error:
             message=str(error);self.validation.setText(message)
             self.log.appendPlainText('Validation: '+message)
             self.statusBar().showMessage('Model needs attention · see Properties or Messages')
             return False
-        self.validation.setText(f'Valid Poisson model. {len(requests)} connected output request(s).')
-        self.statusBar().showMessage('Valid · baseline Poisson model')
+        self.validation.setText(f'Valid scalar PINN model. {len(requests)} connected output request(s).')
+        self.statusBar().showMessage('Valid · scalar PINN graph')
         return True
 
     def set_busy(self,busy):

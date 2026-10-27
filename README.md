@@ -339,7 +339,7 @@ Existing benchmark results remain in the ignored `benchmark-results/` folder.
 Block clipboard: select blocks, then use Edit or their context menu for Copy/Cut/Paste.
 Ctrl+C/X/V are scoped to the canvas so property editors keep normal text editing.
 Paste creates fresh block IDs, preserves internal wires and output settings, and
-is one undo step. Pasted core blocks still use the current template configuration;
+is one undo step. Pasted core blocks retain independent copied settings;
 duplicate core blocks must be resolved before training.
 
 Custom scalar physics: PDE residual accepts a restricted expression such as
@@ -384,3 +384,12 @@ scalar values. Imported reference coordinates must match the requested evaluatio
 grid (row order can differ); no interpolation is performed. Clear the expression
 before selecting imported values. Blank expression/data retains the supported
 preset reference. Model format v3 and run archive v2 retain older-file migrations.
+
+Core settings now belong to their block instances, including a separate network
+initialisation seed. The scalar executor follows the PINN method's typed inputs
+through the samplers/conditions to the geometry and assembles the training recipe
+from those blocks. It supports one method root and one consistent scalar problem;
+unconnected/duplicate core blocks must be resolved before Run. Editing a copied
+network or sampler does not change its original. Templates are initial graphs,
+not a hidden source of runtime settings. Model format v4 stores these owned
+parameters and migrates earlier global-template models on opening.

@@ -37,11 +37,11 @@ CAPABILITIES = {
     'boundary': ('Named side, method, count, seed', 'Independent rectangle-side recipes; interval endpoints are fixed. BC assignment is separate.'),
     'pde': ('Constant c, scalar residual expression', 'Poisson preset or restricted scalar expressions. No coupled/vector system or extra pointwise inputs.'),
     'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
-    'network': ('Hidden-layer widths', 'Fully connected tanh / Xavier normal, fixed domain normalisation. No architecture selector.'),
+    'network': ('Hidden-layer widths, initialisation seed', 'Fully connected tanh / Xavier normal, fixed domain normalisation. No architecture selector.'),
     'method': ('Updates, learning rate, loss weights, device', 'Baseline fixed-sample, full-batch Adam. No LBFGS or adaptive sampling.'),
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction request; no reference assumed.'),
     'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),
-    'reference': ('Preset source', 'Analytical intervals or truncated equal-Dirichlet rectangles. Preset sources reject custom physics.'),
+    'reference': ('Preset, coordinate expression or mapped values', 'Explicit scalar source. Imported data requires matching coordinates; preset sources reject custom physics.'),
     'comparison': ('Name, evaluation points per axis', 'Requires a PINN run and explicit compatible reference; scalar outputs only.'),
 }
 

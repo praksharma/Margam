@@ -1,5 +1,6 @@
 """Versioned, data-only model documents for the current Poisson builder."""
 from dataclasses import asdict, fields
+from copy import deepcopy
 import json
 import math
 import os
@@ -26,11 +27,11 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4), 'Unsupported Margam model format/version.')
     c = data['config']
-    if isinstance(c,dict) and data['version'] in (1,2):
+    if isinstance(c,dict) and data['version'] in (1,2,3):
         c=dict(c)
-        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{})):c.setdefault(key,value)
+        for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{}),('network_seed',None)):c.setdefault(key,value)
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
@@ -50,6 +51,7 @@ def decode_document(data):
     if c['interior_data']:validate_mapping(c['interior_data'])
     require(isinstance(c['boundary_data'],dict) and set(c['boundary_data'])<=SIDES,'Invalid imported boundary mappings.')
     for source in c['boundary_data'].values():validate_mapping(source)
+    require(c['network_seed'] is None or type(c['network_seed']) is int and 0<=c['network_seed']<2**31,'Invalid network seed.')
     recipes = c['boundary_sampling']
     require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
@@ -71,10 +73,17 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters'}, 'Invalid output settings.')
         require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
         require(isinstance(settings.get('reference_expression',''),str) and len(settings.get('reference_expression',''))<=512,'Invalid reference expression.')
         if settings.get('reference_data'):validate_mapping(settings['reference_data'])
+        if 'parameters' in settings:
+            from .graph_model import PARAMETERS
+            parameters=settings['parameters']
+            require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
+            if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
+            trial=asdict(config);trial.update(parameters)
+            decode_document({'format':'margam-model','version':4,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -92,9 +101,9 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':3, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':4, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
-                      'position':[n.pos().x(),n.pos().y()],'settings':dict(n.settings)}
+                      'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],
             'wires':[{'source':w.source.parentItem().identifier,'target':w.target.parentItem().identifier,'input':w.target.name}
                      for w in window.scene.wires]}
