@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import json
-from ..recipes import baseline
+from ..recipes import baseline, self_adaptive, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
-    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox, QFileDialog, QInputDialog,
+    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QCheckBox, QMessageBox, QFileDialog, QInputDialog,
 )
 
 
@@ -239,7 +239,7 @@ class Canvas(QGraphicsScene):
 
     def validate_graph(self):
         nodes = self.nodes()
-        compact=any(n.kind=='recipe' for n in nodes)
+        compact=any(n.kind in COMPACT_RECIPES for n in nodes)
         expected=CORE_KINDS-{'network'} if compact else CORE_KINDS
         required=REQUIRED_EDGES-{('network','method')} if compact else REQUIRED_EDGES
         if compact and any(n.kind=='network' for n in nodes):raise ValueError('A compact recipe owns its network. Expand it before replacing the network.')
@@ -494,8 +494,9 @@ class Window(QMainWindow):
             action=self.examples_menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
-        recipes.addAction('Baseline PINN · compact').triggered.connect(lambda:self.add_node(baseline.NAME))
-        recipes.addAction('Baseline PINN · expanded').triggered.connect(lambda:self.insert_expanded_recipe())
+        for recipe in COMPACT_RECIPES.values():
+            recipes.addAction(recipe.NAME+' · compact').triggered.connect(lambda checked=False,r=recipe:self.add_node(r.NAME))
+            recipes.addAction(recipe.NAME+' · expanded').triggered.connect(lambda checked=False,r=recipe:self.insert_expanded_recipe(r))
         self.recipe_menu=recipes
         file_menu.addSeparator()
         file_menu.addAction('Quit').triggered.connect(self.close)
@@ -750,7 +751,7 @@ class Window(QMainWindow):
         if not path:return False
         try:save_run(path,capture_run(self))
         except Exception as error:QMessageBox.warning(self,'Run could not be saved',str(error));return False
-        self.statusBar().showMessage('Saved run and baseline checkpoint · '+Path(path).name)
+        self.statusBar().showMessage('Saved run and method checkpoint · '+Path(path).name)
         return True
 
     def open_saved_run(self,path=None):
@@ -852,7 +853,7 @@ class Window(QMainWindow):
 
     def open_block(self,node):
         if not isValid(node) or node.scene() is not self.scene:return
-        if node.kind=='recipe':return self.expand_recipe(node)
+        if node.kind in COMPACT_RECIPES:return self.expand_recipe(node)
         if node.kind=='export':return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
             return self.output_views.open(node)
@@ -863,11 +864,12 @@ class Window(QMainWindow):
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
-        if node.kind=='recipe':
+        if node.kind in COMPACT_RECIPES:
             action=menu.addAction('Expand into components');action.setEnabled(not self.is_running())
             action.triggered.connect(lambda:self.expand_recipe(node))
-        elif node.kind=='method':
-            action=menu.addAction('Collapse as Baseline PINN');action.setEnabled(not self.is_running() and self.config_for_node(node).method=='baseline')
+        elif node.kind in TRAINER_RECIPES:
+            recipe=TRAINER_RECIPES[node.kind]
+            action=menu.addAction('Collapse as '+recipe.NAME);action.setEnabled(not self.is_running() and self.config_for_node(node).method==recipe.DEFAULTS['method'])
             action.triggered.connect(lambda:self.collapse_recipe(node))
         if node.kind=='domain' and self.config_for_node(node).shape=='Rectangle':
             menu.addSeparator()
@@ -876,6 +878,10 @@ class Window(QMainWindow):
         elif node.kind in OUTPUT_KINDS:
             label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…'}[node.kind]
             menu.addAction(label).triggered.connect(lambda:self.open_block(node))
+        if node.kind in ('sa_recipe','sa_method'):
+            summary=menu.addAction('Adaptive weight summary')
+            summary.setEnabled(not self.is_running() and self.result is not None)
+            summary.triggered.connect(self.show_adaptive_summary)
         menu.addSeparator()
         remove=menu.addAction('Delete block')
         remove.setEnabled(not self.is_running())
@@ -885,6 +891,17 @@ class Window(QMainWindow):
         menu.addAction(self.undo_action);menu.addAction(self.redo_action)
         menu.addAction('Help').triggered.connect(lambda:self.block_help(node))
         return menu
+
+    def adaptive_summary(self):
+        if self.last_run is not None and self.last_run.model is not None and hasattr(self.last_run.model,'adaptive_summary'):return self.last_run.model.adaptive_summary()
+        if self.loaded_checkpoint and 'adaptive' in self.loaded_checkpoint:
+            return {name:dict(minimum=w.min().item(),mean=w.mean().item(),maximum=w.max().item()) for name,w in self.loaded_checkpoint['adaptive']['weights'].items()}
+        return {}
+
+    def show_adaptive_summary(self):
+        summary=self.adaptive_summary()
+        text='Per-point λ values; the loss mask is λ².\n\n'+'\n'.join(f'{name}: min {v["minimum"]:.5g}, mean {v["mean"]:.5g}, max {v["maximum"]:.5g}' for name,v in summary.items())
+        QMessageBox.information(self,'Adaptive weight summary',text if summary else 'Train the self-adaptive recipe first.')
 
     def show_block_menu(self, node, position):
         menu=self.create_block_menu(node)
@@ -1053,6 +1070,13 @@ class Window(QMainWindow):
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
         pde=self.make_node('Predefined PDE','',480,40)
+        if config.method=='self_adaptive':
+            old_method=method;method=self.make_node('Self-adaptive trainer','',old_method.pos().x(),old_method.pos().y())
+            for wire in list(self.scene.wires):
+                if wire.target.parentItem() is old_method:
+                    self.scene.wires.remove(wire);self.scene.removeItem(wire)
+                    self.scene.connect_nodes(wire.source.parentItem(),method,wire.target.name)
+            self.scene.removeItem(old_method)
         for node in self.scene.nodes():
             if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,config)
         self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(pde,method)
@@ -1107,39 +1131,40 @@ class Window(QMainWindow):
             lambda:swap(old_nodes,old_wires,new_nodes,new_wires,selected,changed_wires),
             lambda:swap(new_nodes,new_wires,old_nodes,old_wires,old_nodes,original_wires))
 
-    def recipe_components(self,parameters,position):
-        parts=baseline.split(parameters);nodes={}
-        for kind,title,offset,_ in baseline.COMPONENTS:
+    def recipe_components(self,parameters,position,recipe=baseline):
+        parts=recipe.split(parameters);nodes={}
+        for kind,title,offset,_ in recipe.COMPONENTS:
             node=Node(title,'',position.x()+offset[0],position.y()+offset[1])
             node.settings['parameters']=parts[kind];nodes[kind]=node
         wires=[Wire(nodes[source].output,nodes[target].inputs[port])
-               for source,target,port in baseline.CONNECTIONS]
+               for source,target,port in recipe.CONNECTIONS]
         return nodes,wires
 
-    def insert_expanded_recipe(self):
+    def insert_expanded_recipe(self,recipe=baseline):
         if self.is_running() or self.scene.locked:return False
         position=self.view.mapToScene(self.view.viewport().rect().center())-QPointF(85,40)
-        nodes,wires=self.recipe_components(deepcopy(baseline.DEFAULTS),position)
-        self.replace_recipe_parts('Insert expanded Baseline PINN',[],[],list(nodes.values()),wires,list(nodes.values()))
-        self.statusBar().showMessage('Baseline recipe inserted · connect PDE and BC inputs · replace the network through its typed input')
-        return nodes['method']
+        nodes,wires=self.recipe_components(deepcopy(recipe.DEFAULTS),position,recipe)
+        self.replace_recipe_parts('Insert expanded '+recipe.NAME,[],[],list(nodes.values()),wires,list(nodes.values()))
+        self.statusBar().showMessage(recipe.NAME+' inserted · connect PDE and BC inputs · replace the network through its typed input')
+        return nodes[recipe.ROOT]
 
     def expand_recipe(self,node):
-        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind!='recipe':return False
+        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind not in COMPACT_RECIPES:return False
         self.commit_inspector()
-        nodes,wires=self.recipe_components(node.settings['parameters'],node.pos())
-        root=nodes['method'];root.identifier=node.identifier
+        recipe=COMPACT_RECIPES[node.kind]
+        nodes,wires=self.recipe_components(node.settings['parameters'],node.pos(),recipe)
+        root=nodes[recipe.ROOT];root.identifier=node.identifier
         external=[w for w in self.scene.wires if w.source.parentItem() is node or w.target.parentItem() is node]
         for wire in external:
             source=root.output if wire.source.parentItem() is node else wire.source
             target=root.inputs[wire.target.name] if wire.target.parentItem() is node else wire.target
             wires.append(Wire(source,target))
-        self.replace_recipe_parts('Expand Baseline PINN',[node],external,list(nodes.values()),wires,[root])
-        self.statusBar().showMessage('Baseline recipe expanded · edit or replace the network · right-click the trainer to collapse')
+        self.replace_recipe_parts('Expand '+recipe.NAME,[node],external,list(nodes.values()),wires,[root])
+        self.statusBar().showMessage(recipe.NAME+' expanded · edit or replace the network · right-click the trainer to collapse')
         return root
 
     def collapse_recipe(self,node):
-        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind!='method':return False
+        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind not in TRAINER_RECIPES:return False
         self.commit_inspector()
         incoming=[w for w in self.scene.wires if w.target is node.inputs['network']]
         if len(incoming)!=1 or incoming[0].source.parentItem().kind!='network':
@@ -1147,9 +1172,10 @@ class Window(QMainWindow):
         internal=incoming[0];network=internal.source.parentItem()
         if any(w.source.parentItem() is network and w is not internal for w in self.scene.wires):
             self.statusBar().showMessage('This network is shared. Keep it expanded or connect a private network before collapsing.');return False
-        try:parameters=baseline.combine(network.settings['parameters'],node.settings['parameters'])
+        recipe=TRAINER_RECIPES[node.kind]
+        try:parameters=recipe.combine(network.settings['parameters'],node.settings['parameters'])
         except ValueError as error:self.statusBar().showMessage(str(error));return False
-        compact=Node(baseline.NAME,'',node.pos().x(),node.pos().y())
+        compact=Node(recipe.NAME,'',node.pos().x(),node.pos().y())
         compact.identifier=node.identifier;compact.settings['parameters']=parameters
         old=[w for w in self.scene.wires if w.source.parentItem() in (node,network) or w.target.parentItem() in (node,network)]
         wires=[]
@@ -1158,8 +1184,8 @@ class Window(QMainWindow):
             source=compact.output if wire.source.parentItem() is node else wire.source
             target=compact.inputs[wire.target.name] if wire.target.parentItem() is node else wire.target
             wires.append(Wire(source,target))
-        self.replace_recipe_parts('Collapse Baseline PINN',[network,node],old,[compact],wires,[compact])
-        self.statusBar().showMessage('Baseline recipe collapsed · component settings retained · double-click to expand')
+        self.replace_recipe_parts('Collapse '+recipe.NAME,[network,node],old,[compact],wires,[compact])
+        self.statusBar().showMessage(recipe.NAME+' collapsed · component settings retained · double-click to expand')
         return compact
 
     def add_node(self,title,position=None):
@@ -1212,6 +1238,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
@@ -1225,8 +1252,8 @@ class Window(QMainWindow):
 
     def parameter_owner(self,attribute):
         kind=OWNERS[attribute]
-        selected=[n for n in self.scene.nodes() if n.isSelected() and (role(n.kind)==kind or n.kind=='recipe') and attribute in PARAMETERS.get(n.kind,())]
-        candidates=selected or [n for n in self.scene.nodes() if (role(n.kind)==kind or n.kind=='recipe') and attribute in PARAMETERS.get(n.kind,())]
+        selected=[n for n in self.scene.nodes() if n.isSelected() and (role(n.kind)==kind or n.kind in COMPACT_RECIPES) and attribute in PARAMETERS.get(n.kind,())]
+        candidates=selected or [n for n in self.scene.nodes() if (role(n.kind)==kind or n.kind in COMPACT_RECIPES) and attribute in PARAMETERS.get(n.kind,())]
         return candidates[0] if candidates else None
 
     def config_for_node(self,node):
@@ -1439,21 +1466,32 @@ class Window(QMainWindow):
             self.form.addRow('Hidden layers',edit)
             if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: x, y · outputs: u, v, p'))
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
-        elif node.kind=='recipe':
-            note=QLabel('Baseline PINN recipe · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
-            for attribute in baseline.EXPOSED:
+        elif node.kind in COMPACT_RECIPES:
+            recipe=COMPACT_RECIPES[node.kind]
+            note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
+            for attribute in recipe.EXPOSED:
                 if attribute=='iterations':self.field('Training steps',attribute,'int',minimum=1,maximum=100000)
                 elif attribute=='lr':self.field('Learning rate',attribute,minimum=.000001,maximum=1)
                 elif attribute=='device':self.field('Device',attribute,'choice',choices=['cpu','auto','cuda'])
+                elif attribute=='sa_lr':self.field('Mask ascent rate',attribute,minimum=.000001,maximum=1)
             button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
-        elif node.kind=='method':
+        elif node.kind in TRAINER_RECIPES:
+            if node.kind=='sa_method':
+                self.form.addRow(QLabel('Self-adaptive PINN · squared per-point masks\nNetwork Adam descent / mask Adam ascent'))
+                self.field('Mask ascent rate','sa_lr',minimum=.000001,maximum=1)
+                self.field('Initial mask weight','sa_initial',minimum=.000001,maximum=1000000)
+                self.field('Maximum mask weight','sa_max',minimum=.000001,maximum=1000000)
+                adaptive=QCheckBox('Adapt boundary/constraint weights');adaptive.setChecked(self.config.sa_boundary)
+                adaptive.toggled.connect(lambda value:self.change('sa_boundary',value));self.form.addRow(adaptive)
+                note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show raw MSE; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
+            if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
             if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
             self.form.addRow('Method variant',variant)
-            self.form.addRow(QLabel('Method: baseline PINN\nFixed samples · full-batch Adam'))
+            self.form.addRow(QLabel('Fixed samples · full-batch Adam'))
             self.field('Iterations','iterations','int',minimum=1,maximum=100000)
             self.field('Learning rate','lr',minimum=.000001,maximum=1)
             self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)

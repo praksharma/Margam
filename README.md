@@ -447,3 +447,13 @@ Double-click a compact recipe to edit its network/trainer on the canvas; right-c
 its trainer to collapse it again. Network and training settings survive both forms.
 One file defines each recipe under `margam/recipes/`; physics examples remain
 separate. See [PINN recipes](docs/pinn-recipes.md) for supported edits and limits.
+
+Self-adaptive PINN (McClenny/Braga-Neto) is available as its own compact/expanded
+recipe under **File → Insert PINN recipe**, and as an interval Poisson example in
+**File → Examples**. Its per-point squared masks use Adam ascent alongside network
+Adam descent; BC adaptation is optional. Both optimisers and masks are saved for
+resume. See [SA-PINN equations, checks and limits](docs/self-adaptive-pinn.md).
+
+```bash
+.venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19
+```

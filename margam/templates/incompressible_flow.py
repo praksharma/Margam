@@ -10,7 +10,7 @@ from ..components.prepared_data import read_points,normal_fingerprint
 
 
 def validate_flow_config(config):
-    if config.shape!='Rectangle' or config.method!='baseline':raise ValueError('2D flow requires a rectangle/bounding box and the baseline method.')
+    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline or self-adaptive method.')
     if not math.isfinite(config.viscosity) or config.viscosity<=0:raise ValueError('Kinematic viscosity must be positive and finite.')
     if len(config.flow_residuals)!=3:raise ValueError('Flow needs momentum-x, momentum-y and continuity residuals.')
     for text in config.flow_residuals:Expression(text,2,fields=('u','v','p'))
@@ -80,7 +80,10 @@ def build_flow_pinn(config):
     constraints.append(PointConstraint('pressure_gauge',torch.tensor([config.pressure_point]),config.pressure_value,lambda x,u:u[:,2:3]))
     problem=PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     network=FullyConnected([2,*config.layers,3],'tanh','Xavier normal',input_bounds=config.bounds)
-    weights={'pde':config.pde_weight,**{c.name:config.boundary_weight/(len(constraints)-1) for c in constraints[:-1]},'pressure_gauge':config.pressure_weight}
+    weights=config.loss_weights
+    if config.method=='self_adaptive':
+        from ..methods.self_adaptive import SelfAdaptivePINN
+        return SelfAdaptivePINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
     return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
 
 

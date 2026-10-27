@@ -74,7 +74,7 @@ class PINN:
         target = source(points) if callable(source) else source
         return torch.as_tensor(target, device=self.device, dtype=self.dtype).detach().clone()
 
-    def _term(self, values, target, rows):
+    def _aligned(self, values, target, rows):
         if values.ndim == 1:
             values = values.unsqueeze(1)
         if values.ndim != 2 or values.shape[0] != rows:
@@ -85,21 +85,28 @@ class PINN:
             target = target.unsqueeze(1)
         if target.shape != values.shape:
             raise ValueError(f"Target shape {tuple(target.shape)} does not match {tuple(values.shape)}.")
-        return self.metric(values, target)
+        return values, target
 
-    def compute_losses(self):
-        """Build fresh derivative graphs; return named, unweighted terms."""
+    def _term(self, values, target, rows):
+        return self.metric(*self._aligned(values,target,rows))
+
+    def loss_samples(self):
+        """Shared fresh derivative graphs and shape data for each physical term."""
         self._require_compiled()
         points = self.collocation_point_sample.detach().requires_grad_(True)
         residual = self.problem.residual(points, self.network(points))
-        terms = {"pde": self._term(residual, self.collocation_point_labels, len(points))}
+        terms = {"pde": (residual, self.collocation_point_labels, len(points))}
         for condition, sample, target in self._constraints:
             points = sample.detach().requires_grad_(condition.operator is not None)
             values = self.network(points)
             if condition.operator is not None:
                 values = condition.operator(points, values)
-            terms[condition.name] = self._term(values, target, len(points))
+            terms[condition.name] = (values, target, len(points))
         return terms
+
+    def compute_losses(self):
+        """Return named, unweighted physical losses."""
+        return {name:self._term(*sample) for name,sample in self.loss_samples().items()}
 
     def train(self, iterations, display_every=1):
         """Run exactly iterations additional updates; return total-loss history.

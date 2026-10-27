@@ -11,6 +11,7 @@ class ExampleProblem:
 
 
 EXAMPLE_PROBLEMS = {
+    'self_adaptive_poisson':ExampleProblem('Self-adaptive PINN · interval Poisson','Pointwise squared PDE masks with Adam ascent; explicit reference.','x*(1-x)'),
     'interval_poisson':ExampleProblem('Poisson · interval','Constant-source Poisson; zero endpoints.','x*(1-x)'),
     'reaction_diffusion':ExampleProblem('Reaction–diffusion · interval','Positive reaction coefficient; sine manufactured forcing.','sin(pi*x)'),
     'advection_diffusion':ExampleProblem('Advection–diffusion · interval','Unit advection, diffusivity 0.1, unequal Dirichlet endpoints.','x'),
@@ -21,7 +22,8 @@ EXAMPLE_PROBLEMS = {
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
     config=PoissonConfig(shape='Interval',points=32,iterations=1500,lr=.005,layers=(16,16),boundary_weight=10.,pde_preset='poisson')
-    if identifier=='reaction_diffusion':
+    if identifier=='self_adaptive_poisson':config.method='self_adaptive'
+    elif identifier=='reaction_diffusion':
         config.pde_preset='reaction_diffusion';config.source=1.;config.pde_forcing='(pi*pi+1)*sin(pi*x)';config.method='hard_dirichlet'
     elif identifier=='advection_diffusion':
         config.pde_preset='advection_diffusion_1d';config.source=1.;config.viscosity=.1;config.pde_forcing='1';config.bc_values['right']=1.

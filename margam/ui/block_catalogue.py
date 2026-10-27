@@ -6,7 +6,7 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe')),
+    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Self-adaptive trainer','sa_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
 }
@@ -32,6 +32,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'sa_recipe': ('Self-adaptive recipe · compact or expanded', 'Per-point squared masks; Adam descent for the network and ascent for masks. Fixed samples; PDE adaptation by default; optional BC adaptation. No GP resampling or L-BFGS phase.'),
+    'sa_method': ('Pointwise adaptive weights and Adam min/max', 'Independent positive initial mask weights and ascent learning rate; optional BC masks. Squared mask, finite cap. Raw term losses plus adaptive total; increasing total is not an accuracy metric.'),
     'recipe': ('Baseline recipe · compact or expanded', 'Contains a replaceable tanh network and full-batch Adam trainer. Exposes steps, learning rate and device. Connect PDE and BC inputs; double-click to expand. Collapse a baseline trainer and its private network to retain edits.'),
     'domain': ('Bounds and shape', 'Interval or axis-aligned rectangle. Advanced CAD belongs to GeoSampler.'),
     'interior': ('Method, budget, seed', 'Fixed meshless PDE points. Grid may use fewer than the budget; other implemented methods return the exact count.'),

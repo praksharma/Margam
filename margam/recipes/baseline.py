@@ -5,6 +5,7 @@ Physics, sampling, BCs and result requests connect externally. The numerical
 implementation remains margam.methods.pinn.PINN; shared components stay shared.
 """
 NAME = 'Baseline PINN'
+ROOT = 'method'
 NETWORK_FIELDS = ('layers', 'network_seed')
 TRAINING_FIELDS = ('method', 'iterations', 'lr', 'device', 'pde_weight', 'boundary_weight')
 PARAMETERS = NETWORK_FIELDS + TRAINING_FIELDS

@@ -198,3 +198,14 @@ paused; operational training monitors and basic rectangle previews remain useful
   collapse a baseline trainer with its private network.
 - [x] Preserve network/training parameters, external connections, history,
   clipboard and saved-model compatibility; verify actual training equivalence.
+
+## Self-adaptive PINN
+
+- [x] Read the supplied McClenny/Braga-Neto paper and verify the pointwise mask
+  objective and ascent/descent updates against primary sources.
+- [x] Add a separate method and one-file compact/expanded SA recipe; fixed samples,
+  squared mask, configurable ascent rate/initial weight/cap, optional adaptive BCs.
+- [x] Add a runnable File → Examples problem, explicit weight summary, full adaptive
+  checkpoint/resume, equation/gradient checks and an equal-budget CPU comparison.
+- [ ] Reproduce a stiff benchmark protocol from the paper before claiming an
+  advantage there; L-BFGS and GP-resampled minibatches remain unsupported.

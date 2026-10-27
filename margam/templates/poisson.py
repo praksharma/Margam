@@ -62,6 +62,10 @@ class PoissonConfig:
     pressure_weight: float = 1.
     pde_preset: str = ''
     pde_forcing: str = '0'
+    sa_lr: float = .005
+    sa_initial: float = 1.
+    sa_max: float = 1000.
+    sa_boundary: bool = False
 
     @property
     def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
@@ -70,6 +74,12 @@ class PoissonConfig:
     def constraint_names(self):
         if self.physics=='scalar':return self.sides
         return tuple(side+':'+field for side in self.sides for field,spec in self.flow_boundary[side].items() if spec['type']!='None')+('pressure_gauge',)
+
+    @property
+    def loss_weights(self):
+        if self.physics=='scalar':return {'pde':self.pde_weight,**{s:self.boundary_weight/len(self.sides) for s in self.sides}}
+        names=self.constraint_names
+        return {'pde':self.pde_weight,**{name:self.boundary_weight/(len(names)-1) for name in names if name!='pressure_gauge'},'pressure_gauge':self.pressure_weight}
 
     @property
     def sides(self):
@@ -124,8 +134,9 @@ class PoissonConfig:
             from .predefined_pdes import resolve_predefined,validate_predefined
             resolve_predefined(self);validate_predefined(self)
         self.validate_sampling()
+        if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
-        if self.method not in ('baseline','hard_dirichlet'):raise ValueError('Unknown PINN method.')
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -238,10 +249,13 @@ def build_pinn(config):
     problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
     network = FullyConnected([len(lower),*config.layers,1], 'tanh', 'Xavier normal',input_bounds=(lower,upper))
-    weights = {'pde':config.pde_weight, **{s:config.boundary_weight/len(config.sides) for s in config.sides}}
+    weights = config.loss_weights
     if config.method=='hard_dirichlet':
         from ..methods.hard_dirichlet import HardDirichletPINN
         return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights).compile(lr=config.lr,device=config.device)
+    if config.method=='self_adaptive':
+        from ..methods.self_adaptive import SelfAdaptivePINN
+        return SelfAdaptivePINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
     return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
 
 

@@ -14,6 +14,8 @@ class PortSpec:
 
 
 INPUTS = {
+    'sa_recipe':tuple(PortSpec(*spec) for spec in baseline.INPUTS),
+    'sa_method':(PortSpec('pde','PDE residual','residual'),PortSpec('boundary','Boundary conditions','constraints'),PortSpec('network','Neural network','network')),
     'recipe':tuple(PortSpec(*spec) for spec in baseline.INPUTS),
     'domain': (),
     'interior': (PortSpec('input', 'Geometry', 'geometry'),),
@@ -33,6 +35,8 @@ INPUTS = {
                    PortSpec('reference', 'Reference source', 'reference')),
 }
 OUTPUTS = {
+    'sa_recipe':PortSpec(*baseline.OUTPUT),
+    'sa_method':PortSpec(*baseline.OUTPUT),
     'recipe':PortSpec(*baseline.OUTPUT),
     'domain': PortSpec('output', 'Geometry', 'geometry'),
     'interior': PortSpec('output', 'Interior points', 'interior_points'),

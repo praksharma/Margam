@@ -46,7 +46,15 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
+        if config.method=='self_adaptive':
+            import torch
+            adaptive=checkpoint['adaptive']
+            require(isinstance(adaptive,dict) and set(adaptive)=={'settings','weights','optimiser'},'Invalid adaptive checkpoint.')
+            adaptive_names={'pde',*(config.constraint_names if config.sa_boundary else ())}
+            require(isinstance(adaptive['weights'],dict) and set(adaptive['weights'])==adaptive_names,'Invalid adaptive terms.')
+            require(all(isinstance(v,torch.Tensor) and v.ndim==2 and v.shape[1]==1 and 1<=v.shape[0]<=100000 for v in adaptive['weights'].values()),'Invalid adaptive point counts.')
         require(isinstance(checkpoint['loss_history'],list) and len(checkpoint['loss_history'])==steps and all(check_record(v) for v in checkpoint['loss_history']),'Invalid checkpoint losses.')
         require(isinstance(checkpoint['training_history'],list) and len(checkpoint['training_history'])==steps and all(number(v) for v in checkpoint['training_history']),'Invalid checkpoint total losses.')
         if data['version']==2:require(isinstance(checkpoint.get('data_fingerprint'),str),'Checkpoint data fingerprint is missing.')
@@ -93,9 +101,13 @@ def load_run(path):
         if config.method=='hard_dirichlet':
             from ..methods.hard_dirichlet import BoxDirichletNetwork
             network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
-        dummy_points=torch.zeros((1,dimension))
-        problem=PINNProblem(lambda x,u:u,dummy_points,[PointConstraint(name,dummy_points,0.) for name in config.constraint_names])
-        model=PINN(problem,network).compile(lr=config.lr,device='cpu')
+        adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
+        def dummy(name):return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
+        problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
+        if config.method=='self_adaptive':
+            from ..methods.self_adaptive import SelfAdaptivePINN
+            model=SelfAdaptivePINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+        else:model=PINN(problem,network).compile(lr=config.lr,device='cpu')
         if 'data_fingerprint' not in data['checkpoint']:
             require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
             from ..templates.poisson import build_pinn

@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
-from ..recipes import baseline
+from ..recipes import baseline, self_adaptive, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
@@ -14,11 +14,13 @@ PARAMETERS = {
     'network':baseline.NETWORK_FIELDS,
     'method':baseline.TRAINING_FIELDS,
     'recipe':baseline.PARAMETERS,
+    'sa_method':self_adaptive.TRAINING_FIELDS,
+    'sa_recipe':self_adaptive.PARAMETERS,
 }
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','recipe') for attribute in attributes}
-OWNERS.update(pde_preset='pde',pde_forcing='pde')
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in self_adaptive.ADAPTIVE_FIELDS})
 
-def role(kind):return {'predefined_pde':'pde','recipe':'method'}.get(kind,kind)
+def role(kind):return {'predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -31,7 +33,8 @@ def parameters_for(kind,config=None):
     config=config or PoissonConfig()
     result={key:encode_parameter(key,getattr(config,key)) for key in PARAMETERS.get(kind,())}
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
-    if kind=='recipe':return deepcopy(baseline.DEFAULTS)
+    if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
+    if kind=='sa_method':result['method']='self_adaptive'
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result
 
@@ -61,8 +64,8 @@ def assemble(nodes,wires,*,require_all=True):
         return result
     method=methods[0]
     pde=source(method,'pde','pde');bc=source(method,'boundary','bc')
-    network=source(method,'network','network') if method.kind=='method' else None
-    if method.kind=='recipe':baseline.split(method.settings['parameters'])
+    network=source(method,'network','network') if method.kind in TRAINER_RECIPES else None
+    if method.kind in COMPACT_RECIPES:COMPACT_RECIPES[method.kind].split(method.settings['parameters'])
     interior=source(pde,'input','interior');boundary=source(bc,'input','boundary')
     domain=source(interior,'input','domain')
     if source(boundary,'input','domain') is not domain:raise ValueError('Interior and boundary sets must use the same geometry instance for this problem.')

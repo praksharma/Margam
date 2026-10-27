@@ -31,7 +31,10 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 8 persists block settings and compact recipes and reads earlier formats 1–7.
+Model format 9 persists block settings and compact recipes and reads earlier formats 1–8.
 The tests check manufactured residuals and train each new example for 700 CPU
 updates with RMS prediction error below 0.05. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.
+
+File → Examples also includes Self-adaptive PINN · interval Poisson, using its
+separate trainer and the same explicit interval reference. See self-adaptive-pinn.md.
