@@ -1,20 +1,62 @@
 """2D model navigation: pointer-centred wheel zoom, pan, and explicit fitting."""
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtWidgets import QGraphicsView
+from .block_catalogue import dropped_block
 
 
 class CanvasView(QGraphicsView):
     zoomChanged = Signal(float)
+    blockInsertRequested = Signal(str, object)
+    quickInsertRequested = Signal(object, object)
 
     def __init__(self, scene):
         super().__init__(scene)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAcceptDrops(True)
         self._space = False
         self._panning = False
         self._pan_moved = False
         self._pan_position = None
+
+    def dragEnterEvent(self, event):
+        self.dragMoveEvent(event)
+
+    def dragMoveEvent(self, event):
+        if not self.scene().locked and dropped_block(event.mimeData()):
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        title = dropped_block(event.mimeData())
+        if self.scene().locked or not title:
+            event.ignore()
+            return
+        self.blockInsertRequested.emit(title, self.mapToScene(event.position().toPoint()))
+        event.setDropAction(Qt.DropAction.CopyAction)
+        event.accept()
+
+    def request_quick_insert(self, point):
+        if not self.scene().locked and not self.scene().pending:
+            self.quickInsertRequested.emit(self.mapToScene(point), self.viewport().mapToGlobal(point))
+
+    def event(self, event):
+        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Tab and event.modifiers() == Qt.KeyboardModifier.NoModifier:
+            self.request_quick_insert(self.viewport().rect().center())
+            event.accept()
+            return True
+        return super().event(event)
+
+    def mouseDoubleClickEvent(self, event):
+        point = event.position().toPoint()
+        if event.button() == Qt.MouseButton.LeftButton and self.itemAt(point) is None and not self._space and not self._panning:
+            self.request_quick_insert(point)
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
 
     def zoom_by(self, factor, position=None):
         if position is None:position = self.viewport().rect().center()

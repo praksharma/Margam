@@ -179,3 +179,30 @@ remains in its own block. Interval endpoints have no sampling controls. Shape ch
 retain rectangle recipes, while template reset clears overrides. These are recipes
 inside the current template-backed core, not arbitrary independently executable
 sampler block instances or a general graph compiler.
+
+## Drag/drop and quick insertion
+
+Library leaves can be dragged into the canvas; headings cannot. Only a known
+block title in Margam's block MIME payload is accepted, not text/files. The block
+centre lands at the drop's scene coordinate, accounting for pan and zoom. New
+blocks remain unconnected. Core duplicates are permitted for editing but continue
+to fail the existing template validation; optional outputs never auto-open.
+
+Double-click an empty canvas location or press Tab with canvas focus for the Add
+block popup. Double-clicks on blocks retain their existing Properties/Open view
+actions. Tab inserts at the visible canvas centre; mouse insertion uses the clicked
+position. Popup search uses the same groups and titles as the dock. Enter in search
+adds the first matching block; Down focuses the results for arrow-key selection and
+Enter insertion. An empty result does nothing. Escape or clicking outside dismisses
+the popup. Training and template reset dismiss pending insertion; training locks
+both insertion paths. Property-editor Tab remains ordinary focus navigation.
+
+`block_catalogue.py` is a small shared list of supported UI titles and kinds,
+not a general solver/plugin registry or a replacement for the component capability
+document. All insertion paths call `Window.add_node`, so output instance settings,
+selection, graph invalidation and validation rules remain consistent. Current core
+settings are still template-backed; arbitrary independent core instances and typed
+execution are future work. Verified native Qt drop events, placement under camera
+transforms, keyboard routing, invalid payloads and popup lifecycle are covered by
+`tests/test_block_insertion.py`. A real platform drag gesture should also be checked
+on the target desktop; automated offscreen events do not prove OS drag appearance.

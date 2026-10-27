@@ -1,20 +1,31 @@
 """Collapsible library of the blocks currently supported by the builder."""
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem
-
-
-BLOCK_GROUPS = {
-    'Geometry': ('Rectangle',),
-    'Sampling': ('Interior sampler', 'Boundary points'),
-    'Neural networks': ('Neural network',),
-    'Loss / Physics': ('PDE residual', 'Boundary condition'),
-    'Optimisation / PINN': ('PINN method',),
-    'Results': ('Solution Plot', 'Training Monitor', 'Reference', 'Comparison'),
-}
+from PySide6.QtCore import Qt, Signal, QMimeData, QEvent
+from PySide6.QtGui import QDrag
+from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel
 
 
 class LibraryTree(QTreeWidget):
     enterPressed = Signal(object)
+
+    def mimeTypes(self):
+        return [BLOCK_MIME]
+
+    def mimeData(self, items):
+        mime = QMimeData()
+        if len(items) == 1:
+            title = items[0].data(0, Qt.ItemDataRole.UserRole)
+            if title:
+                mime.setData(BLOCK_MIME, title.encode('utf-8'))
+        return mime
+
+    def startDrag(self, supported_actions):
+        mime = self.mimeData(self.selectedItems())
+        if not self.isEnabled() or not mime.hasFormat(BLOCK_MIME):
+            return
+        drag = QDrag(self)
+        drag.setMimeData(mime)
+        drag.exec(Qt.DropAction.CopyAction)
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and self.currentItem():
@@ -39,15 +50,18 @@ class BlockLibrary(QWidget):
         self.tree = LibraryTree()
         self.tree.setHeaderHidden(True)
         self.tree.setColumnCount(1)
+        self.tree.setDragEnabled(True)
+        self.tree.setDragDropMode(QTreeWidget.DragDropMode.DragOnly)
         self.tree.setExpandsOnDoubleClick(False)
         self.tree.setAccessibleName('Block categories')
         layout.addWidget(self.tree)
         for name, blocks in BLOCK_GROUPS.items():
             group = QTreeWidgetItem(self.tree, [name])
+            group.setFlags(group.flags() & ~Qt.ItemFlag.ItemIsDragEnabled)
             for title in blocks:
                 item = QTreeWidgetItem(group, [title])
                 item.setData(0, Qt.ItemDataRole.UserRole, title)
-                item.setToolTip(0, 'Double-click or press Enter to add ' + title)
+                item.setToolTip(0, 'Drag, double-click or press Enter to add ' + title)
             group.setExpanded(True)
         self._expanded_before_search = None
         self.search.textChanged.connect(self.filter_blocks)
@@ -80,3 +94,53 @@ class BlockLibrary(QWidget):
             for group, expanded in zip(groups, self._expanded_before_search):
                 group.setExpanded(expanded)
             self._expanded_before_search = None
+
+
+class QuickInsert(QDialog):
+    """Small canvas popup using the same supported catalogue as the library."""
+    blockChosen = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.WindowType.Popup)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.setWindowTitle('Add block')
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel('Add block · search, then Enter · Esc to cancel'))
+        self.library = BlockLibrary()
+        # Drag insertion belongs to the dock, not a popup that owns focus/grabs.
+        self.library.tree.setDragEnabled(False)
+        layout.addWidget(self.library)
+        self.resize(350, 430)
+        self.library.blockActivated.connect(self.choose)
+        self.library.search.returnPressed.connect(self.choose_first)
+        self.library.search.installEventFilter(self)
+
+    def first_match(self):
+        tree = self.library.tree
+        for index in range(tree.topLevelItemCount()):
+            group = tree.topLevelItem(index)
+            if group.isHidden():
+                continue
+            for child in range(group.childCount()):
+                item = group.child(child)
+                if not item.isHidden():
+                    return item
+        return None
+
+    def choose(self, title):
+        self.blockChosen.emit(title)
+        self.accept()
+
+    def choose_first(self):
+        item = self.first_match()
+        if item is not None:
+            self.choose(item.data(0, Qt.ItemDataRole.UserRole))
+
+    def eventFilter(self, watched, event):
+        if watched is self.library.search and event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Down:
+            item = self.first_match()
+            if item is not None:
+                self.library.tree.setCurrentItem(item)
+                self.library.tree.setFocus()
+            return True
+        return super().eventFilter(watched, event)

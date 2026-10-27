@@ -18,7 +18,9 @@ A Python API capability is not automatically an executable UI block option.
 | Heat demo | `margam/templates/heat.py` | Configures the same Poisson method and explicit outputs; no transient heat solver |
 | Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; current display handles scalar fields; reference required only for comparison; ParaView/export deferred |
 
-The grouped library lists only supported blocks. Sampler property choices come
+The dock, drag/drop and quick-insert popup share the supported title/kind list in
+`margam/ui/block_catalogue.py`. That list is specific to the current builder; it
+does not describe arbitrary solver capabilities. Sampler property choices come
 from `SAMPLERS` in the sampler module and include descriptive tooltips. Broader
 machine-readable component metadata and library capability panels remain TODO;
 this document does not imply a generic component registry.

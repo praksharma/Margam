@@ -10,7 +10,8 @@ from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
 from .canvas_view import CanvasView
-from .block_library import BlockLibrary
+from .block_library import BlockLibrary, QuickInsert
+from .block_catalogue import KINDS
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
@@ -67,12 +68,6 @@ class Wire(QGraphicsPathItem):
         path.cubicTo(a + QPointF(bend, 0), b - QPointF(bend, 0), b)
         self.setPath(path)
 
-
-KINDS = {"Rectangle": "domain", "Interior sampler": "interior",
-         "Boundary points": "boundary", "PDE residual": "pde",
-         "Boundary condition": "bc", "Neural network": "network",
-         "PINN method": "method", "Solution Plot": "solution",
-         "Training Monitor": "monitor", "Reference": "reference", "Comparison": "comparison"}
 
 REQUIRED_EDGES = {("domain","interior"),("domain","boundary"),
                   ("interior","pde"),("boundary","bc"),("pde","method"),
@@ -242,6 +237,7 @@ class Window(QMainWindow):
         self.active_monitors = set()
         self.last_run = None
         self.rectangle_previews = {}
+        self.quick_insert = None
         self._closing = False
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
@@ -277,6 +273,8 @@ class Window(QMainWindow):
         toolbar.addWidget(self.progress_bar)
         self.scene=Canvas()
         self.view=CanvasView(self.scene)
+        self.view.blockInsertRequested.connect(self.add_node)
+        self.view.quickInsertRequested.connect(self.show_quick_insert)
         self.view.zoomChanged.connect(lambda value:self.zoom_label.setText(f"{value*100:.0f}%"))
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -525,6 +523,7 @@ class Window(QMainWindow):
 
     def reset_template(self):
         if self.is_running():return
+        if self.quick_insert is not None:self.quick_insert.reject()
         self.output_views.sync([])
         self.close_rectangle_previews()
         self.scene.wires.clear();self.scene.pending=None;self.scene.clear()
@@ -550,10 +549,27 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Heat demo ready · Train PINN, then open monitor, prediction or comparison blocks')
         self.log.appendPlainText('Loaded steady heat demo: unit conductivity, constant source 2, zero edge temperature. Explicit series reference and output blocks are connected; views remain closed until requested.')
 
-    def add_node(self,title):
-        if self.is_running():return
-        center=self.view.mapToScene(self.view.viewport().rect().center())
-        node=self.make_node(title,'Not configured',center.x(),center.y())
+    def show_quick_insert(self,position,screen_position):
+        if self.is_running() or self.scene.locked:return
+        if self.quick_insert is not None:self.quick_insert.reject()
+        popup=QuickInsert(self)
+        self.quick_insert=popup
+        popup.blockChosen.connect(lambda title:self.add_node(title,position))
+        def finished():
+            if self.quick_insert is popup:self.quick_insert=None
+            self.view.setFocus()
+        popup.finished.connect(finished)
+        popup.move(screen_position)
+        popup.show()
+        screen=popup.screen().availableGeometry()
+        popup.move(max(screen.left(),min(screen_position.x(),screen.right()-popup.width()+1)),
+                   max(screen.top(),min(screen_position.y(),screen.bottom()-popup.height()+1)))
+        popup.library.search.setFocus()
+
+    def add_node(self,title,position=None):
+        if self.is_running() or self.scene.locked or title not in KINDS:return
+        center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
+        node=self.make_node(title,'Not configured',center.x()-85,center.y()-40)
         if node.kind in OUTPUT_KINDS:
             node.settings['resolution']=101 if self.config.shape=='Interval' else 41
             node.title=title+' '+str(sum(n.kind==node.kind for n in self.scene.nodes()))
@@ -768,6 +784,7 @@ class Window(QMainWindow):
         return True
 
     def set_busy(self,busy):
+        if busy and self.quick_insert is not None:self.quick_insert.reject()
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)

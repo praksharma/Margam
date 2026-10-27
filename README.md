@@ -158,6 +158,15 @@ your collapsed groups. Double-click a block or select it and press Enter to add 
 Optimiser settings currently belong to the PINN method; PDE and boundary-condition
 blocks supply its loss terms.
 
+Drag a library block onto the canvas to place its centre under the pointer, even
+after zooming or panning. Double-click empty canvas space for **Add block**, or
+press **Tab** with the canvas focused to insert at the visible canvas centre.
+Search, then press Enter to add the first match; Down moves into the results so
+you can choose another block. Escape or clicking outside cancels. New blocks are
+unconnected and their plot windows stay closed. These insertion controls are
+locked during training. Tab in property editors keeps its normal focus behaviour.
+
+
 Use **Edit → Delete selected** for blocks/wires. Double-clicking the library adds
 blocks; core duplicates and unsupported wiring prevent training. Output instances
 have independent names, evaluation resolution or retained-history limits.

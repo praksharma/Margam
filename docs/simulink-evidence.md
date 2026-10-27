@@ -165,3 +165,14 @@ what is actually implemented today.
   are Margam design work; the sources do not settle them.
 - Before claiming visual/behavioural parity, run a hands-on comparison checklist
   for the selected Simulink release and the actual target desktop platform.
+
+## Margam insertion milestone (27 October 2026)
+
+The current builder supports library drag/drop and a searchable popup on empty
+canvas double-click, plus canvas-only Tab. These are Margam's explicit interaction
+choices informed by the insertion references above; this is not a claim of full
+Simulink shortcut/behaviour parity. Dock and popup share supported titles and block
+creation. Placement follows the scene coordinate under the pointer; optional views
+remain closed. Native Qt event tests cover placement, search, cancellation and
+training locks. Core blocks remain template-backed and require the existing exact
+core graph; this stage does not complete instance-based execution or typed ports.

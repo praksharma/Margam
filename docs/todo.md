@@ -74,8 +74,10 @@ checkboxes are not claims about current Margam support.
   parameter editing, wiring, navigation, outputs, diagnostics and persistence.
   See [simulink-evidence.md](simulink-evidence.md) for sources, explicit Margam
   adaptations, implementation order and acceptance checks.
-- [ ] Add drag/drop library insertion and canvas quick insert using the same
-  catalogue and block-instance model.
+- [x] Add library drag/drop and searchable canvas quick insert, sharing the
+  supported UI catalogue and existing block creation path. Placement respects
+  pan/zoom; empty-canvas double-click and canvas-only Tab open quick insert.
+  This does not generalise the template-backed core execution model.
 - [ ] Define contextual double-click behaviour and shared inspector/dialog state.
 - [ ] Add instance-owned settings and typed ports before generalising graph execution.
 - [ ] Add output branching and undoable graph/parameter edits.
