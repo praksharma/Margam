@@ -60,6 +60,8 @@ class PoissonConfig:
     pressure_point: tuple = (0.,0.)
     pressure_value: float = 0.
     pressure_weight: float = 1.
+    pde_preset: str = ''
+    pde_forcing: str = '0'
 
     @property
     def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
@@ -118,6 +120,9 @@ class PoissonConfig:
                 raise ValueError(f'{side}: seed must be a non-negative 32-bit integer.')
 
     def validate(self):
+        if self.pde_preset:
+            from .predefined_pdes import resolve_predefined,validate_predefined
+            resolve_predefined(self);validate_predefined(self)
         self.validate_sampling()
         if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
         if self.method not in ('baseline','hard_dirichlet'):raise ValueError('Unknown PINN method.')

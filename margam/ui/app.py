@@ -5,6 +5,8 @@ from dataclasses import replace
 from pathlib import Path
 import json
 from ..templates.poisson import PoissonConfig, make_poisson_reference
+from ..templates.predefined_pdes import PREDEFINED_PDES
+from ..templates.examples import EXAMPLE_PROBLEMS,example_config
 from ..templates.heat import heat_demo_config
 from ..templates.incompressible_flow import flow_demo_config
 from ..components.outputs import OutputRequest, ReferenceSource
@@ -22,7 +24,7 @@ from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
-from .graph_model import PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
+from .graph_model import role, PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
 from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
@@ -236,7 +238,7 @@ class Canvas(QGraphicsScene):
     def validate_graph(self):
         nodes = self.nodes()
         for kind in CORE_KINDS:
-            if sum(n.kind == kind for n in nodes) != 1:
+            if sum(role(n.kind) == kind for n in nodes) != 1:
                 raise ValueError(f'The graph needs exactly one {kind} block.')
         core_edges = set()
         destinations = set()
@@ -244,8 +246,8 @@ class Canvas(QGraphicsScene):
             error=self.connection_error(wire.source,wire.target,ignore=wire)
             if error:raise ValueError(error)
             source,target = wire.source.parentItem(),wire.target.parentItem()
-            edge = (source.kind,target.kind)
-            if source.kind in CORE_KINDS and target.kind in CORE_KINDS:
+            edge = (role(source.kind),role(target.kind))
+            if role(source.kind) in CORE_KINDS and role(target.kind) in CORE_KINDS:
                 if edge not in REQUIRED_EDGES or edge in core_edges:
                     raise ValueError('Unsupported or duplicate core connection.')
                 core_edges.add(edge)
@@ -451,9 +453,14 @@ class Window(QMainWindow):
         self.save_run_action.setEnabled(False)
         file_menu.addSeparator()
         self.load_action.setShortcut('Ctrl+N')
-        file_menu.addAction(self.load_action)
-        file_menu.addAction(self.heat_action)
-        self.flow_action=file_menu.addAction('Incompressible flow demo');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
+        self.examples_menu=file_menu.addMenu('Examples')
+        self.examples_menu.addAction(self.load_action)
+        self.examples_menu.addAction(self.heat_action)
+        self.flow_action=self.examples_menu.addAction('Incompressible flow demo');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
+        self.examples_menu.addSeparator();self.example_actions={}
+        for identifier,example in EXAMPLE_PROBLEMS.items():
+            action=self.examples_menu.addAction(example.label);action.setToolTip(example.description)
+            action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         file_menu.addSeparator()
         file_menu.addAction('Quit').triggered.connect(self.close)
         file_menu.actions()[-1].setShortcut('Ctrl+Q')
@@ -987,6 +994,37 @@ class Window(QMainWindow):
         self.validate_model();self.fit_model();self.update_document_title()
         self.statusBar().showMessage('Steady incompressible Couette demo · u, v, p · explicit reference and pressure gauge · views stay closed')
 
+    def request_example(self,identifier):
+        if self.is_running() or self.scene.locked or not self.confirm_discard():return False
+        self.load_example(identifier);return True
+
+    def load_example(self,identifier):
+        config=example_config(identifier);example=EXAMPLE_PROBLEMS[identifier]
+        if self.is_running() or self.scene.locked:return False
+        self.reset_template();self._resetting=True;self.config=config
+        old=next(n for n in self.scene.nodes() if n.kind=='pde')
+        interior=next(n for n in self.scene.nodes() if n.kind=='interior')
+        method=next(n for n in self.scene.nodes() if n.kind=='method')
+        for wire in list(self.scene.wires):
+            if wire.source.parentItem() is old or wire.target.parentItem() is old:
+                self.scene.wires.remove(wire);self.scene.removeItem(wire)
+        self.scene.removeItem(old)
+        pde=self.make_node('Predefined PDE','',480,40)
+        for node in self.scene.nodes():
+            if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,config)
+        self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(pde,method)
+        comparison=None
+        for index,title in enumerate(('Training Monitor','Solution Plot','Comparison','CSV Export')):
+            node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
+            if node.kind=='comparison':comparison=node
+        reference=self.add_node('Reference');reference.setPos(730,500)
+        reference.settings['reference_expression']=example.reference;self.scene.connect_nodes(reference,comparison)
+        self._resetting=False;self.scene.clearSelection();pde.setSelected(True)
+        self.settings_changed();self.validate_model();self.fit_model()
+        self.undo_stack.clear();self.undo_stack.setClean();self.update_document_title()
+        self.statusBar().showMessage(example.label+' · '+example.description+' · views remain closed')
+        return True
+
     def show_quick_insert(self,position,screen_position):
         if self.is_running() or self.scene.locked:return
         if self.quick_insert is not None:self.quick_insert.reject()
@@ -1054,6 +1092,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
+                     'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if node.kind=='domain':node.title=c.shape
@@ -1065,8 +1104,8 @@ class Window(QMainWindow):
 
     def parameter_owner(self,attribute):
         kind=OWNERS[attribute]
-        selected=[n for n in self.scene.nodes() if n.isSelected() and n.kind==kind]
-        candidates=selected or [n for n in self.scene.nodes() if n.kind==kind]
+        selected=[n for n in self.scene.nodes() if n.isSelected() and role(n.kind)==kind and attribute in PARAMETERS[n.kind]]
+        candidates=selected or [n for n in self.scene.nodes() if role(n.kind)==kind and attribute in PARAMETERS[n.kind]]
         return candidates[0] if candidates else None
 
     def config_for_node(self,node):
@@ -1199,6 +1238,22 @@ class Window(QMainWindow):
             note.setWordWrap(True);self.form.addRow(note)
             note=QLabel('Named point sets: '+', '.join(self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
             note.setWordWrap(True);self.form.addRow(note)
+        elif node.kind=='predefined_pde':
+            choices=QComboBox()
+            for identifier,preset in PREDEFINED_PDES.items():choices.addItem(preset.label,identifier)
+            choices.setCurrentIndex(choices.findData(self.config.pde_preset));choices.setObjectName('predefined_pde_choice')
+            choices.currentIndexChanged.connect(lambda index,w=choices:self.change('pde_preset',w.itemData(index)))
+            self.form.addRow('Predefined PDE',choices)
+            preset=PREDEFINED_PDES[self.config.pde_preset]
+            equation=QLabel(preset.equation);equation.setWordWrap(True);self.form.addRow(equation)
+            note=QLabel('Domains: '+', '.join(preset.shapes)+'. Boundary conditions and reference values are configured separately. Use PDE residual for editable equations.');note.setWordWrap(True);self.form.addRow(note)
+            if self.config.pde_preset!='incompressible_2d':
+                self.field('Coefficient c','source')
+                forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
+                forcing.editingFinished.connect(lambda e=forcing:self.change('pde_forcing',e.text().strip()))
+                self.form.addRow('Forcing f',forcing)
+            if self.config.pde_preset in ('advection_diffusion_1d','incompressible_2d'):
+                self.field('Diffusivity / viscosity ν','viscosity',minimum=.000001,maximum=100000)
         elif node.kind=='pde':
             physics=QComboBox();physics.addItem('Scalar residual','scalar');physics.addItem('Steady incompressible 2D flow','incompressible_2d')
             physics.setCurrentIndex(max(0,physics.findData(self.config.physics)))
@@ -1376,6 +1431,7 @@ class Window(QMainWindow):
         self.cancel_button.setEnabled(busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
         self.flow_action.setEnabled(not busy)
+        self.examples_menu.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():

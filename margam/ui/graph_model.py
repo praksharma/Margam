@@ -7,12 +7,16 @@ PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
     'interior':('points','sampling','seed','interior_data'),
     'boundary':('boundary_points','boundary_sampling','boundary_data'),
+    'predefined_pde':('pde_preset','pde_forcing','source','viscosity'),
     'pde':('source','pde_expression','physics','viscosity','flow_residuals'),
     'bc':('bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight'),
     'network':('layers','network_seed'),
     'method':('method','iterations','lr','device','pde_weight','boundary_weight'),
 }
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() for attribute in attributes}
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind!='predefined_pde' for attribute in attributes}
+OWNERS.update(pde_preset='pde',pde_forcing='pde')
+
+def role(kind):return 'pde' if kind=='predefined_pde' else kind
 
 
 def encode_parameter(attribute,value):
@@ -24,6 +28,7 @@ def encode_parameter(attribute,value):
 def parameters_for(kind,config=None):
     config=config or PoissonConfig()
     result={key:encode_parameter(key,getattr(config,key)) for key in PARAMETERS.get(kind,())}
+    if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result
 
@@ -35,6 +40,10 @@ def overlay(config,kind,parameters):
         if key=='boundary_sampling':value={side:BoundarySampling(**recipe) for side,recipe in value.items()}
         if key in ('layers','flow_residuals','pressure_point'):value=tuple(value)
         setattr(config,key,value)
+    if kind=='predefined_pde':
+        from ..templates.predefined_pdes import resolve_predefined
+        resolve_predefined(config)
+    elif kind=='pde':config.pde_preset=''
     return config
 
 
@@ -45,7 +54,7 @@ def assemble(nodes,wires,*,require_all=True):
     incoming={(wire.target.parentItem().identifier,wire.target.name):wire.source.parentItem() for wire in wires}
     def source(node,port,kind):
         result=incoming.get((node.identifier,port))
-        if result is None or result.kind!=kind:raise ValueError('Missing compatible '+port+' input on '+node.title)
+        if result is None or role(result.kind)!=kind:raise ValueError('Missing compatible '+port+' input on '+node.title)
         return result
     method=methods[0]
     pde=source(method,'pde','pde');bc=source(method,'boundary','bc');network=source(method,'network','network')

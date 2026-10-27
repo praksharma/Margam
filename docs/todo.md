@@ -178,3 +178,11 @@ paused; operational training monitors and basic rectangle previews remain useful
 
 - [x] Add a toolbar/View Pan toggle with open/closed hand cursors and Escape to
   return to block selection. Existing temporary pan gestures remain supported.
+
+## Problem catalogue and PDE presets
+
+- [x] Group all runnable desktop problem templates under File → Examples.
+- [x] Retain editable PDE residual and add alternative Predefined PDE block.
+- [x] Add manufactured interval Poisson, reaction–diffusion,
+  advection–diffusion and 2D sine Poisson examples with explicit references.
+- [x] Check manufactured equations, CPU training, graph assembly and model format.

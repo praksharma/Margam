@@ -425,3 +425,15 @@ migrates earlier formats; the baseline scalar workflow remains supported.
 Planar GeoSampler exports can be prepared using the explicit adapter in
 [geosampler-contract.md](docs/geosampler-contract.md). Full 3D/non-planar import
 and domain masking remain outside the current planar field contract.
+
+All desktop problem templates are available under **File → Examples**, including
+Poisson, steady heat, incompressible Couette flow, interval Poisson,
+reaction–diffusion, interval advection–diffusion, and a manufactured 2D sine
+Poisson problem. Loading an example replaces the current graph after the usual
+unsaved-changes prompt. Result windows remain closed until requested.
+
+Use **Predefined PDE** for a tested equation family, or the existing **PDE residual**
+for editable mathematical expressions. These are alternative blocks connected to
+the same PINN residual input; choose one per problem. Presets supply equations,
+not boundary conditions or analytical solutions. Examples supply complete graphs
+with explicit reference and output blocks. See [problem examples](docs/problem-examples.md).
