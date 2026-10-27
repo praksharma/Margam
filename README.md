@@ -9,7 +9,8 @@ Baseline and self-adaptive methods also have compact/expanded recipes. Built-in
 problems cover scalar interval/rectangle physics and steady 2D incompressible flow
 (u, v, p). The current executor runs one supported problem root at a time.
 
-[Documentation index](docs/README.md) · [Desktop guide](docs/ui-prototype.md) ·
+[Documentation index](docs/README.md) · [Illustrated walkthrough](docs/visual-guide.md) ·
+[Desktop guide](docs/ui-prototype.md) ·
 [Methods and components](docs/components.md) · [Recorded results](docs/results.md) ·
 [Remaining work](docs/todo.md)
 
@@ -42,6 +43,10 @@ The editable install picks up source changes. The environment uses `uv` and does
 not require a `pip` module inside `.venv`. Keep an existing environment in place.
 
 ## First run
+
+Follow the [screenshot walkthrough](docs/visual-guide.md) for an actual SIREN/SA
+example: choose a network, set training separately, expand/collapse, and explicitly
+open losses and a reference comparison.
 
 1. Choose **File → Examples**. Start with **Poisson · interval**, **Heat demo**, or
    **Self-adaptive PINN · interval Poisson**. Loading an example offers the usual
@@ -202,3 +207,13 @@ licence: [LICENSE](LICENSE).
 Full 3D/non-planar geometry, ParaView, transient UI physics, multiple simultaneous
 method roots, standalone optimiser blocks and neural-operator architectures remain
 outside current support. [TODO](docs/todo.md) records deferred work.
+
+## Documentation screenshots
+
+Documentation screenshots can be reproduced without personal UI state:
+
+```sh
+.venv/bin/python -m examples.capture_ui_docs --output-dir assets/screenshots/guide-recapture
+```
+
+Use a new directory, or explicitly pass `--overwrite` to refresh that guide's captures.

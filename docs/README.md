@@ -7,6 +7,7 @@ Current implementation and recorded evidence, reviewed 27 October 2026. Start wi
 
 | Question | Read |
 | --- | --- |
+| Can I follow a screenshot walkthrough? | [Illustrated network/PINN walkthrough](visual-guide.md) |
 | How do I build, train, inspect and save a model? | [Desktop guide](ui-prototype.md) |
 | Which complete problems are available? | [Examples and predefined PDEs](problem-examples.md) |
 | How do compact/expanded PINNs work? | [Recipes](pinn-recipes.md) |

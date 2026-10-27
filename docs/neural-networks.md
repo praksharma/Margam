@@ -1,11 +1,31 @@
 # Pointwise neural networks for PINNs
 
-[Documentation index](README.md) · [Components](components.md) · [Results](results.md#pointwise-network-compatibility)
+[Documentation index](README.md) · [Illustrated walkthrough](visual-guide.md) · [Components](components.md) · [Results](results.md#pointwise-network-compatibility)
 
 Select a **Neural network** block and choose **Architecture** in Properties.
 The same block/port works with baseline and self-adaptive PINN. No PhysicsNeMo
 installation or new dependency is needed. Library search for Fourier, DGM, SIREN
 or Gabor finds the network component; select the architecture in its properties.
+
+## Choose and edit a network
+
+1. Load a problem from **File → Examples**. The existing examples start with FCNN.
+2. If the PINN is compact, double-click it to expose the network/trainer pair.
+3. Select **Neural network → Architecture**, then choose the implementation.
+4. Edit its own frequency/gate/omega settings and hidden widths/seed. Equal-width
+   restrictions are listed below; changing architecture resets its options.
+5. Select the trainer separately for learning rate, update budget and loss/mask
+   settings. Architecture selection does not retune these automatically.
+6. Validate/train and open only the connected output views you need. Save the run
+   before changing architecture if you want to retain its weights/results.
+
+![Actual Architecture selector with all ten implemented choices](../assets/screenshots/guide-architectures.png)
+
+The [worked example](visual-guide.md#3-configure-the-siren-worked-example) separates
+SIREN omega controls from the SA trainer controls. For example, `omega=10` belongs
+to the network; `lr=0.001` belongs to training. [Fourier control screenshot](visual-guide.md#example-highway-fourier-controls)
+shows the different options for the highway architecture. These screenshots are
+UI evidence; the measured comparisons and their settings are in [results](results.md).
 
 ## Scope and common contract
 

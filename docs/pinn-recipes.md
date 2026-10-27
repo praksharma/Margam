@@ -9,6 +9,10 @@ is `pinn.py`. Shared networks, samplers and losses remain in their existing modu
 A recipe composes them instead of copying their implementations. Physics examples
 live under `margam/templates/` and appear in File → Examples.
 
+For actual screenshots of a configured SIREN/SA pair before and after collapse,
+see the [compact/expanded walkthrough](visual-guide.md#4-understand-expanded-and-compact-recipes).
+It also shows that optimiser controls and network controls belong to different blocks.
+
 ## Using the baseline recipe
 
 Choose **File → Insert PINN recipe → Baseline PINN · compact** or **expanded**.

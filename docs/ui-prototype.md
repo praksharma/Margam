@@ -1,7 +1,8 @@
 # Desktop guide
 
 Despite this file's historical name, this describes the current connected builder.
-[Documentation index](README.md) · [Commands](../README.md) · [Capabilities](components.md)
+[Documentation index](README.md) · [Illustrated walkthrough](visual-guide.md) ·
+[Commands](../README.md) · [Capabilities](components.md)
 
 ## Start with a problem
 

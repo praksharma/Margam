@@ -48,6 +48,10 @@ weights. Consequently, rates and results are not a literal paper reproduction.
 
 ## Desktop and recipe
 
+The [illustrated walkthrough](visual-guide.md) demonstrates SIREN with SA-PINN,
+including separate mask/network settings, both recipe forms, optional losses and
+an explicit interval reference comparison.
+
 - One method file: `margam/methods/self_adaptive.py`.
 - One recipe file: `margam/recipes/self_adaptive.py`.
 - File → Insert PINN recipe → Self-adaptive PINN · compact / expanded.

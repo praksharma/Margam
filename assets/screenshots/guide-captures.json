@@ -1,0 +1,178 @@
+{
+  "recorded_utc": "2026-10-27T17:22:43.615999+00:00",
+  "application_commit": "e0fde2303cc75e966b187a5fc59ae2da9cff7d34",
+  "application_tracked_changes": false,
+  "qt_platform": "offscreen",
+  "torch": "2.14.1+cpu",
+  "pyside": "6.12.0",
+  "theme": "light",
+  "window_size": [
+    1480,
+    950
+  ],
+  "capture_tool": {
+    "file": "examples/capture_ui_docs.py",
+    "sha256": "95e6df2bae8ee99fc0454ecfbcd342eed6c9ada459e61d24681f82b37daec273"
+  },
+  "configuration": {
+    "shape": "Interval",
+    "x_min": 0.0,
+    "x_max": 1.0,
+    "y_min": 0.0,
+    "y_max": 1.0,
+    "points": 32,
+    "boundary_points": 16,
+    "sampling": "grid",
+    "seed": 7,
+    "source": 2.0,
+    "layers": [
+      16,
+      16
+    ],
+    "iterations": 700,
+    "lr": 0.001,
+    "device": "cpu",
+    "pde_weight": 1.0,
+    "boundary_weight": 10.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {},
+    "pde_expression": "",
+    "bc_targets": {},
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": 7,
+    "method": "self_adaptive",
+    "physics": "scalar",
+    "viscosity": 0.01,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "poisson",
+    "pde_forcing": "0",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "network_type": "siren",
+    "network_options": {
+      "first_omega": 10.0,
+      "omega": 10.0
+    }
+  },
+  "comparison": {
+    "steps": 700,
+    "evaluation_points": 201,
+    "rmse": 0.0005324119964730962,
+    "reference": "x*(1-x)",
+    "reference_expression": "x*(1-x)"
+  },
+  "numerical_scope": "One actual CPU screenshot demonstration; not a new multi-seed architecture benchmark.",
+  "captures": {
+    "file-menu": {
+      "file": "guide-file-menu.png",
+      "sha256": "df1ae950be3a4e14a17d9189e2498b2255d57d55dab75e6a32d197f3341e0704"
+    },
+    "architectures": {
+      "file": "guide-architectures.png",
+      "sha256": "3042d125c95edb4a9760b13f1d38fc6e913a5bb0b8d543d24d4d5f27fa764e35"
+    },
+    "highway-settings": {
+      "file": "guide-highway-settings.png",
+      "sha256": "b729f0a1d9d83cc62e769a5891c950a952c05a0bddb39f41c63e805050aea3f0"
+    },
+    "siren-settings": {
+      "file": "guide-siren-settings.png",
+      "sha256": "5976d8601db3675a4f2af55ab8d4cd163711fe48fe4adc8ab4adcacaee57cf88"
+    },
+    "training-settings": {
+      "file": "guide-training-settings.png",
+      "sha256": "4dcd1e834d7c564f69d13ae4de84bf96968ba4ad39e12609a894d287ca69136d"
+    },
+    "recipe-expanded": {
+      "file": "guide-recipe-expanded.png",
+      "sha256": "8201bcc34bcea3ff15b9209930ba4af0b4fe6cef5d28b2c4234a7a305f688ddb"
+    },
+    "recipe-compact": {
+      "file": "guide-recipe-compact.png",
+      "sha256": "48c69d67090666d899483b667d8e58affe1eafd97ff413b5ee744e9c7e77799d"
+    },
+    "training-monitor": {
+      "file": "guide-training-monitor.png",
+      "sha256": "6dfaec1bad5a01fb6eed8b78282c08602dc5aeeeeda06489905352bf48259948"
+    },
+    "interval-comparison": {
+      "file": "guide-interval-comparison.png",
+      "sha256": "082b6a900ed2af14f2bbbd877576195651479ee139a3c4b3d1c235f725151afe"
+    }
+  }
+}

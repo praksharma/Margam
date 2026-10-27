@@ -230,3 +230,11 @@ paused; operational training monitors and basic rectangle previews remain useful
   original FCNN identity, real scalar/flow training and all-architecture archives.
 - [x] Record a twenty-run CPU compatibility study with configs, predictions and
   provenance; retain Apache notices and keep neural operators out of scope.
+
+## Illustrated documentation
+
+- [x] Add a coherent network/PINN screenshot walkthrough with native menus,
+  architecture-specific settings, compact/expanded views and explicit losses and
+  interval reference comparison; keep numerical evidence separate.
+- [x] Provide repeatable state-isolated screenshot capture with a real CPU run,
+  configuration assertions, source/settings manifest and no silent overwrites.

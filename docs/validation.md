@@ -81,3 +81,17 @@ contains predictions as well as metrics. Their errors and rounded documentation
 table were recomputed/checked; selected source hashes and local documentation links
 were verified. This one-seed CPU study is separate from regression thresholds and
 from any architecture-quality or CUDA-equivalence claim.
+
+## Illustrated guide capture
+
+The [walkthrough](visual-guide.md) uses nine native UI captures, individually
+inspected for readable controls, complete menus and visible graph/output content.
+The [manifest](../assets/screenshots/guide-captures.json) records application source
+`e0fde23`, unchanged application tree, offscreen/light rendering and hashes/settings.
+The helper trains one real SIREN/SA interval case for 700 CPU updates, verifies
+configuration preservation across recipe conversion and that output views remain
+closed until requested. Captured comparison RMSE is approximately 5.32e-4 on 201
+points. This documents a working UI example, not another architecture benchmark.
+Only documentation and capture tooling changed in this update; the earlier 88-test
+implementation result remains a dated record rather than a claim of rerunning that
+full suite for screenshots.
