@@ -198,3 +198,12 @@ list unsupported/deferred behaviour.
 All network options are documented in the [network guide](neural-networks.md),
 including smooth-derivative requirements, equal-width restrictions and the recorded
 compatibility study. Changing architecture resets its options as one undoable edit.
+
+### Inspector control groups
+
+Compact recipes and expanded trainers separate **PINN method** (variant, loss
+weights and method-specific adaptation), **Optimisation** (network Adam learning
+rate and, for SA, its separate mask Adam ascent rate), and **Trainer** (update
+budget and device). These are inspector labels, not new graph blocks or a change
+to numerical training, recipe ownership or checkpoint format. LRA balancing
+settings belong to the method; they do not decay Adam's base learning rate.

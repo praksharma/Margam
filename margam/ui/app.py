@@ -1328,6 +1328,11 @@ class Window(QMainWindow):
         else:self.change('interior_data',{})
         self.selection_changed()
 
+    def property_section(self,title):
+        heading=QLabel(title);heading.setObjectName('section_'+title.lower().replace(' ','_'))
+        font=heading.font();font.setBold(True);heading.setFont(font)
+        heading.setContentsMargins(0,10,0,2);self.form.addRow(heading)
+
     def field(self,label,attribute,kind='float',choices=None,minimum=-1000000,maximum=1000000):
         value=getattr(self.config,attribute)
         token=object()
@@ -1499,15 +1504,31 @@ class Window(QMainWindow):
         elif node.kind in COMPACT_RECIPES:
             recipe=COMPACT_RECIPES[node.kind]
             note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
+            self.property_section('PINN method')
+            self.form.addRow(QLabel(recipe.NAME))
             for attribute in recipe.EXPOSED:
-                if attribute=='iterations':self.field('Training steps',attribute,'int',minimum=1,maximum=100000)
-                elif attribute=='lr':self.field('Learning rate',attribute,minimum=.000001,maximum=1)
-                elif attribute=='device':self.field('Device',attribute,'choice',choices=['cpu','auto','cuda'])
-                elif attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
+                if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
                 elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
-                elif attribute=='sa_lr':self.field('Mask ascent rate',attribute,minimum=.000001,maximum=1)
+            self.property_section('Optimisation')
+            self.form.addRow('Network optimiser',QLabel('Adam · descent'))
+            self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
+            if 'sa_lr' in recipe.EXPOSED:
+                self.form.addRow('Mask optimiser',QLabel('Adam · ascent'))
+                self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
+            self.property_section('Trainer')
+            self.field('Training updates','iterations','int',minimum=1,maximum=100000)
+            self.field('Device','device','choice',choices=['cpu','auto','cuda'])
             button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
         elif node.kind in TRAINER_RECIPES:
+            self.property_section('PINN method')
+            variant=QComboBox()
+            for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
+            if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='lra_method':variant.addItem('Learning-rate annealing PINN','lra');variant.setEnabled(False)
+            variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
+            if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
+            variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
+            self.form.addRow('Method variant',variant)
             if node.kind=='lra_method':
                 self.form.addRow(QLabel('LRA · max PDE / mean constraint gradients\nScalar loss balancing; no base-rate decay'))
                 self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
@@ -1519,25 +1540,22 @@ class Window(QMainWindow):
                 note=QLabel('One scalar per constraint term. Alpha weights the new estimate. Raw gradient denominator, before LRA weighting; tiny constraint gradients hold the prior coefficient. Existing architecture is unchanged.');note.setWordWrap(True);self.form.addRow(note)
             if node.kind=='sa_method':
                 self.form.addRow(QLabel('Self-adaptive PINN · squared per-point masks\nNetwork Adam descent / mask Adam ascent'))
-                self.field('Mask ascent rate','sa_lr',minimum=.000001,maximum=1)
                 self.field('Initial mask weight','sa_initial',minimum=.000001,maximum=1000000)
                 self.field('Maximum mask weight','sa_max',minimum=.000001,maximum=1000000)
                 adaptive=QCheckBox('Adapt boundary/constraint weights');adaptive.setChecked(self.config.sa_boundary)
                 adaptive.toggled.connect(lambda value:self.change('sa_boundary',value));self.form.addRow(adaptive)
                 note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show raw MSE; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
-            variant=QComboBox()
-            for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
-            if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
-            if node.kind=='lra_method':variant.addItem('Learning-rate annealing PINN','lra');variant.setEnabled(False)
-            variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
-            if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
-            variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
-            self.form.addRow('Method variant',variant)
-            self.form.addRow(QLabel('Fixed samples · full-batch Adam'))
-            self.field('Iterations','iterations','int',minimum=1,maximum=100000)
-            self.field('Learning rate','lr',minimum=.000001,maximum=1)
             self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)
             self.field('Mean BC weight','boundary_weight',minimum=.000001,maximum=100000)
+            self.property_section('Optimisation')
+            self.form.addRow('Network optimiser',QLabel('Adam · descent'))
+            self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
+            if node.kind=='sa_method':
+                self.form.addRow('Mask optimiser',QLabel('Adam · ascent'))
+                self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
+            self.property_section('Trainer')
+            self.form.addRow(QLabel('Fixed samples · full-batch updates'))
+            self.field('Training updates','iterations','int',minimum=1,maximum=100000)
             self.field('Device','device','choice',choices=['cpu','auto','cuda'])
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))
         elif node.kind in OUTPUT_KINDS:

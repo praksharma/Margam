@@ -246,3 +246,6 @@ paused; operational training monitors and basic rectangle previews remain useful
 - [x] Reuse all existing pointwise networks and scalar/coupled builders; validate checkpoint continuation.
 - [x] Record equal-budget CPU baseline/LRA results including coefficient-cap sensitivity.
 - [ ] Deferred: reproduce a paper benchmark with its full sampling/training protocol; current small Poisson evidence is not that reproduction.
+
+- [x] Separate PINN method, Optimisation and Trainer inspector groups in compact
+  and expanded recipes; distinguish network Adam descent and SA mask Adam ascent.

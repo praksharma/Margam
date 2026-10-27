@@ -74,6 +74,10 @@ Fourier/Gabor. The same choices work with baseline, SA-PINN and LRA. Each has it
 settings, preserved inside compact recipes. No neural operators or PhysicsNeMo
 runtime dependency are included. [Network guide](docs/neural-networks.md).
 
+The recipe/trainer inspector groups controls under **PINN method**,
+**Optimisation** and **Trainer**. Network and SA mask Adam rates are labelled
+separately; LRA balancing belongs to the method section.
+
 ### Compact or expanded PINNs
 
 Use **File → Insert PINN recipe** to insert baseline, self-adaptive or learning-rate annealing PINN compact

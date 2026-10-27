@@ -66,3 +66,14 @@ mask settings, checkpoint contract and numerical evidence.
 
 Learning-rate annealing also has dedicated compact/expanded forms. Its trainer
 reuses existing networks and adds scalar gradient balancing; see [LRA](lra-pinn.md).
+
+### Inspector control groups
+
+Compact recipes and expanded trainers separate **PINN method** (variant, loss
+weights and method-specific adaptation), **Optimisation** (network Adam learning
+rate and, for SA, its separate mask Adam ascent rate), and **Trainer** (update
+budget and device). These are inspector labels, not new graph blocks or a change
+to numerical training, recipe ownership or checkpoint format. LRA balancing
+settings belong to the method; they do not decay Adam's base learning rate.
+
+![PINN method, optimisation and trainer sections](../assets/screenshots/trainer-control-groups.png)
