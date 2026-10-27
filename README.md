@@ -441,3 +441,9 @@ with explicit reference and output blocks. See [problem examples](docs/problem-e
 The desktop toolbar and block library use built-in vector icons that follow the
 light/dark theme. Text labels remain visible; example loading lives in
 **File → Examples**, while the toolbar groups navigation and training controls.
+
+**File → Insert PINN recipe** offers compact or expanded Baseline PINN insertion.
+Double-click a compact recipe to edit its network/trainer on the canvas; right-click
+its trainer to collapse it again. Network and training settings survive both forms.
+One file defines each recipe under `margam/recipes/`; physics examples remain
+separate. See [PINN recipes](docs/pinn-recipes.md) for supported edits and limits.

@@ -3,6 +3,7 @@
 These describe editor connections, not tensor shapes or a general graph executor.
 """
 from dataclasses import dataclass
+from ..recipes import baseline
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,7 @@ class PortSpec:
 
 
 INPUTS = {
+    'recipe':tuple(PortSpec(*spec) for spec in baseline.INPUTS),
     'domain': (),
     'interior': (PortSpec('input', 'Geometry', 'geometry'),),
     'boundary': (PortSpec('input', 'Geometry', 'geometry'),),
@@ -31,6 +33,7 @@ INPUTS = {
                    PortSpec('reference', 'Reference source', 'reference')),
 }
 OUTPUTS = {
+    'recipe':PortSpec(*baseline.OUTPUT),
     'domain': PortSpec('output', 'Geometry', 'geometry'),
     'interior': PortSpec('output', 'Interior points', 'interior_points'),
     'boundary': PortSpec('output', 'Boundary point sets', 'boundary_points'),

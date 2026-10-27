@@ -31,7 +31,7 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 7 persists the new block settings and reads earlier formats 1–6.
+Model format 8 persists block settings and compact recipes and reads earlier formats 1–7.
 The tests check manufactured residuals and train each new example for 700 CPU
 updates with RMS prediction error below 0.05. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.

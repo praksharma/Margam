@@ -6,7 +6,7 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'Optimisation / PINN': (('PINN method', 'method'),),
+    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
 }
@@ -32,6 +32,7 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'recipe': ('Baseline recipe · compact or expanded', 'Contains a replaceable tanh network and full-batch Adam trainer. Exposes steps, learning rate and device. Connect PDE and BC inputs; double-click to expand. Collapse a baseline trainer and its private network to retain edits.'),
     'domain': ('Bounds and shape', 'Interval or axis-aligned rectangle. Advanced CAD belongs to GeoSampler.'),
     'interior': ('Method, budget, seed', 'Fixed meshless PDE points. Grid may use fewer than the budget; other implemented methods return the exact count.'),
     'boundary': ('Named side, method, count, seed', 'Independent rectangle-side recipes; interval endpoints are fixed. BC assignment is separate.'),

@@ -189,3 +189,12 @@ paused; operational training monitors and basic rectangle previews remain useful
 
 - [x] Add palette-aware vector icons to the toolbar, menus and collapsible block
   library; retain labels and keep demo shortcuts in File → Examples.
+
+## PINN recipes
+
+- [x] Define the baseline recipe in one file with shared components, exposed
+  settings, ports and internal connections.
+- [x] Insert compact or expanded; expand by double-click/context action and
+  collapse a baseline trainer with its private network.
+- [x] Preserve network/training parameters, external connections, history,
+  clipboard and saved-model compatibility; verify actual training equivalence.

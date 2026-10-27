@@ -8,6 +8,7 @@ A Python API capability is not automatically an executable UI block option.
 
 | Component | Implementation | Current support and limits |
 | --- | --- | --- |
+| Baseline recipe | `margam/recipes/baseline.py` | One definition for compact/expanded network + trainer; Adam only, replaceable supported tanh network; physics and outputs external; see pinn-recipes.md |
 | Hard Dirichlet PINN | `margam/methods/hard_dirichlet.py` | Equal constant Dirichlet boxes; exact boundary transform; baseline Adam reused; mixed/imported/spatial BCs rejected |
 | Steady incompressible template | `margam/templates/incompressible_flow.py` | Explicit u/v/p momentum/continuity residuals, component BCs and pressure gauge; no transient/turbulence model |
 | Baseline PINN | `margam/methods/pinn.py` | Strong-form residuals; fixed samples; full-batch updates; named constraints; no adaptive resampling, weak form or closure-based LBFGS |

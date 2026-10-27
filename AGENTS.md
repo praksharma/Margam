@@ -17,6 +17,9 @@
 
 - Source: `margam/`; numerical methods: `margam/methods/`; shared components:
   `margam/components/`; configured examples: `margam/templates/`; desktop: `margam/ui/`.
+- Keep one file per PINN recipe under `margam/recipes/`. That file defines its
+  components, connections, defaults, ports and compact settings. Compact and
+  expanded insertion must share that definition; physics examples stay separate.
 - Keep one file per PINN method. Reuse shared sampling, optimisation, networks and
   loss components, while allowing a method to own its distinctive behaviour.
 - Tests belong in `tests/`, runnable examples in `examples/`, documentation and

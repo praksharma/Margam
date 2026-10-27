@@ -23,6 +23,7 @@ PATHS = {
     'check':'M4 12l5 5L20 5',
     'play':'M7 3l14 9-14 9z',
     'stop':'M5 5h14v14H5z',
+    'recipe':'M3 3h18v18H3z M7 7h10v10H7z M3 12h4 M17 12h4',
     'domain':'M3 4h18v16H3z M3 16h4 M7 20v-4',
     'interior':'M5 5h1 M11 5h1 M17 5h1 M5 11h1 M11 11h1 M17 11h1 M5 17h1 M11 17h1 M17 17h1',
     'boundary':'M4 4h16v16H4z M2 4h4 M18 4h4 M2 20h4 M18 20h4 M4 10v4 M20 10v4',

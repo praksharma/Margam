@@ -2,6 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
+from ..recipes import baseline
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
@@ -10,13 +11,14 @@ PARAMETERS = {
     'predefined_pde':('pde_preset','pde_forcing','source','viscosity'),
     'pde':('source','pde_expression','physics','viscosity','flow_residuals'),
     'bc':('bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight'),
-    'network':('layers','network_seed'),
-    'method':('method','iterations','lr','device','pde_weight','boundary_weight'),
+    'network':baseline.NETWORK_FIELDS,
+    'method':baseline.TRAINING_FIELDS,
+    'recipe':baseline.PARAMETERS,
 }
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind!='predefined_pde' for attribute in attributes}
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','recipe') for attribute in attributes}
 OWNERS.update(pde_preset='pde',pde_forcing='pde')
 
-def role(kind):return 'pde' if kind=='predefined_pde' else kind
+def role(kind):return {'predefined_pde':'pde','recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -29,6 +31,7 @@ def parameters_for(kind,config=None):
     config=config or PoissonConfig()
     result={key:encode_parameter(key,getattr(config,key)) for key in PARAMETERS.get(kind,())}
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
+    if kind=='recipe':return deepcopy(baseline.DEFAULTS)
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result
 
@@ -49,7 +52,7 @@ def overlay(config,kind,parameters):
 
 def assemble(nodes,wires,*,require_all=True):
     """Follow one method's typed dependencies; no implicit hidden model inputs."""
-    methods=[node for node in nodes if node.kind=='method']
+    methods=[node for node in nodes if role(node.kind)=='method']
     if len(methods)!=1:raise ValueError('Select a graph with exactly one PINN method root for this executor.')
     incoming={(wire.target.parentItem().identifier,wire.target.name):wire.source.parentItem() for wire in wires}
     def source(node,port,kind):
@@ -57,11 +60,13 @@ def assemble(nodes,wires,*,require_all=True):
         if result is None or role(result.kind)!=kind:raise ValueError('Missing compatible '+port+' input on '+node.title)
         return result
     method=methods[0]
-    pde=source(method,'pde','pde');bc=source(method,'boundary','bc');network=source(method,'network','network')
+    pde=source(method,'pde','pde');bc=source(method,'boundary','bc')
+    network=source(method,'network','network') if method.kind=='method' else None
+    if method.kind=='recipe':baseline.split(method.settings['parameters'])
     interior=source(pde,'input','interior');boundary=source(bc,'input','boundary')
     domain=source(interior,'input','domain')
     if source(boundary,'input','domain') is not domain:raise ValueError('Interior and boundary sets must use the same geometry instance for this problem.')
-    used=[domain,interior,boundary,pde,bc,network,method]
+    used=[domain,interior,boundary,pde,bc]+([network] if network else [])+[method]
     if require_all and any(node.kind in PARAMETERS and node not in used for node in nodes):raise ValueError('Unconnected core blocks are not executable; remove them or wire a single supported problem.')
     config=PoissonConfig()
     for node in used:config=overlay(config,node.kind,node.settings['parameters'])

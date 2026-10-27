@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import json
+from ..recipes import baseline
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -238,7 +239,11 @@ class Canvas(QGraphicsScene):
 
     def validate_graph(self):
         nodes = self.nodes()
-        for kind in CORE_KINDS:
+        compact=any(n.kind=='recipe' for n in nodes)
+        expected=CORE_KINDS-{'network'} if compact else CORE_KINDS
+        required=REQUIRED_EDGES-{('network','method')} if compact else REQUIRED_EDGES
+        if compact and any(n.kind=='network' for n in nodes):raise ValueError('A compact recipe owns its network. Expand it before replacing the network.')
+        for kind in expected:
             if sum(role(n.kind) == kind for n in nodes) != 1:
                 raise ValueError(f'The graph needs exactly one {kind} block.')
         core_edges = set()
@@ -249,18 +254,18 @@ class Canvas(QGraphicsScene):
             source,target = wire.source.parentItem(),wire.target.parentItem()
             edge = (role(source.kind),role(target.kind))
             if role(source.kind) in CORE_KINDS and role(target.kind) in CORE_KINDS:
-                if edge not in REQUIRED_EDGES or edge in core_edges:
+                if edge not in required or edge in core_edges:
                     raise ValueError('Unsupported or duplicate core connection.')
                 core_edges.add(edge)
             else:
-                allowed = source.kind == 'method' and target.kind in OUTPUT_KINDS
+                allowed = role(source.kind) == 'method' and target.kind in OUTPUT_KINDS
                 allowed = allowed and wire.target.name == ('model' if target.kind=='comparison' else 'input')
                 allowed = allowed or (source.kind=='reference' and target.kind=='comparison' and wire.target.name=='reference')
                 if not allowed:raise ValueError('Unsupported output connection: '+source.title+' → '+target.title)
                 key=(target.identifier,wire.target.name)
                 if key in destinations:raise ValueError('Each output input accepts only one source.')
                 destinations.add(key)
-        missing=REQUIRED_EDGES-core_edges
+        missing=required-core_edges
         if missing:
             raise ValueError('Missing connections: '+', '.join(f'{a} → {b}' for a,b in sorted(missing)))
 
@@ -488,6 +493,10 @@ class Window(QMainWindow):
         for identifier,example in EXAMPLE_PROBLEMS.items():
             action=self.examples_menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
+        recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
+        recipes.addAction('Baseline PINN · compact').triggered.connect(lambda:self.add_node(baseline.NAME))
+        recipes.addAction('Baseline PINN · expanded').triggered.connect(lambda:self.insert_expanded_recipe())
+        self.recipe_menu=recipes
         file_menu.addSeparator()
         file_menu.addAction('Quit').triggered.connect(self.close)
         file_menu.actions()[-1].setShortcut('Ctrl+Q')
@@ -843,6 +852,7 @@ class Window(QMainWindow):
 
     def open_block(self,node):
         if not isValid(node) or node.scene() is not self.scene:return
+        if node.kind=='recipe':return self.expand_recipe(node)
         if node.kind=='export':return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
             return self.output_views.open(node)
@@ -853,6 +863,12 @@ class Window(QMainWindow):
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        if node.kind=='recipe':
+            action=menu.addAction('Expand into components');action.setEnabled(not self.is_running())
+            action.triggered.connect(lambda:self.expand_recipe(node))
+        elif node.kind=='method':
+            action=menu.addAction('Collapse as Baseline PINN');action.setEnabled(not self.is_running() and self.config_for_node(node).method=='baseline')
+            action.triggered.connect(lambda:self.collapse_recipe(node))
         if node.kind=='domain' and self.config_for_node(node).shape=='Rectangle':
             menu.addSeparator()
             menu.addAction('Preview geometry').triggered.connect(lambda:self.open_rectangle_preview(node,False))
@@ -1069,6 +1085,83 @@ class Window(QMainWindow):
                    max(screen.top(),min(screen_position.y(),screen.bottom()-popup.height()+1)))
         popup.library.search.setFocus()
 
+    def replace_recipe_parts(self,text,old_nodes,old_wires,new_nodes,new_wires,selected):
+        """One reversible structural edit; retain objects and external block IDs."""
+        original_wires=list(self.scene.wires)
+        changed_wires=[w for w in original_wires if w not in old_wires]+new_wires
+        def swap(remove_nodes,remove_wires,add_nodes,add_wires,selection,order):
+            self.scene.cancel_wire();self.scene.blockSignals(True)
+            try:
+                self.scene.clearSelection()
+                for wire in remove_wires:
+                    self.scene.wires.remove(wire);self.scene.removeItem(wire)
+                for node in remove_nodes:self.scene.removeItem(node)
+                for node in add_nodes:self.scene.addItem(node)
+                for wire in add_wires:
+                    self.scene.addItem(wire);self.scene.wires.append(wire);wire.update_path()
+                self.scene.wires[:]=order
+                for node in selection:node.setSelected(True)
+            finally:self.scene.blockSignals(False)
+            self.graph_changed();self.selection_changed()
+        self.push_edit(text,
+            lambda:swap(old_nodes,old_wires,new_nodes,new_wires,selected,changed_wires),
+            lambda:swap(new_nodes,new_wires,old_nodes,old_wires,old_nodes,original_wires))
+
+    def recipe_components(self,parameters,position):
+        parts=baseline.split(parameters);nodes={}
+        for kind,title,offset,_ in baseline.COMPONENTS:
+            node=Node(title,'',position.x()+offset[0],position.y()+offset[1])
+            node.settings['parameters']=parts[kind];nodes[kind]=node
+        wires=[Wire(nodes[source].output,nodes[target].inputs[port])
+               for source,target,port in baseline.CONNECTIONS]
+        return nodes,wires
+
+    def insert_expanded_recipe(self):
+        if self.is_running() or self.scene.locked:return False
+        position=self.view.mapToScene(self.view.viewport().rect().center())-QPointF(85,40)
+        nodes,wires=self.recipe_components(deepcopy(baseline.DEFAULTS),position)
+        self.replace_recipe_parts('Insert expanded Baseline PINN',[],[],list(nodes.values()),wires,list(nodes.values()))
+        self.statusBar().showMessage('Baseline recipe inserted · connect PDE and BC inputs · replace the network through its typed input')
+        return nodes['method']
+
+    def expand_recipe(self,node):
+        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind!='recipe':return False
+        self.commit_inspector()
+        nodes,wires=self.recipe_components(node.settings['parameters'],node.pos())
+        root=nodes['method'];root.identifier=node.identifier
+        external=[w for w in self.scene.wires if w.source.parentItem() is node or w.target.parentItem() is node]
+        for wire in external:
+            source=root.output if wire.source.parentItem() is node else wire.source
+            target=root.inputs[wire.target.name] if wire.target.parentItem() is node else wire.target
+            wires.append(Wire(source,target))
+        self.replace_recipe_parts('Expand Baseline PINN',[node],external,list(nodes.values()),wires,[root])
+        self.statusBar().showMessage('Baseline recipe expanded · edit or replace the network · right-click the trainer to collapse')
+        return root
+
+    def collapse_recipe(self,node):
+        if self.is_running() or self.scene.locked or node.scene() is not self.scene or node.kind!='method':return False
+        self.commit_inspector()
+        incoming=[w for w in self.scene.wires if w.target is node.inputs['network']]
+        if len(incoming)!=1 or incoming[0].source.parentItem().kind!='network':
+            self.statusBar().showMessage('Collapse needs one connected supported neural network.');return False
+        internal=incoming[0];network=internal.source.parentItem()
+        if any(w.source.parentItem() is network and w is not internal for w in self.scene.wires):
+            self.statusBar().showMessage('This network is shared. Keep it expanded or connect a private network before collapsing.');return False
+        try:parameters=baseline.combine(network.settings['parameters'],node.settings['parameters'])
+        except ValueError as error:self.statusBar().showMessage(str(error));return False
+        compact=Node(baseline.NAME,'',node.pos().x(),node.pos().y())
+        compact.identifier=node.identifier;compact.settings['parameters']=parameters
+        old=[w for w in self.scene.wires if w.source.parentItem() in (node,network) or w.target.parentItem() in (node,network)]
+        wires=[]
+        for wire in old:
+            if wire is internal:continue
+            source=compact.output if wire.source.parentItem() is node else wire.source
+            target=compact.inputs[wire.target.name] if wire.target.parentItem() is node else wire.target
+            wires.append(Wire(source,target))
+        self.replace_recipe_parts('Collapse Baseline PINN',[network,node],old,[compact],wires,[compact])
+        self.statusBar().showMessage('Baseline recipe collapsed · component settings retained · double-click to expand')
+        return compact
+
     def add_node(self,title,position=None):
         if self.is_running() or self.scene.locked or title not in KINDS:return
         center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
@@ -1118,6 +1211,7 @@ class Window(QMainWindow):
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
+                     'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
@@ -1131,8 +1225,8 @@ class Window(QMainWindow):
 
     def parameter_owner(self,attribute):
         kind=OWNERS[attribute]
-        selected=[n for n in self.scene.nodes() if n.isSelected() and role(n.kind)==kind and attribute in PARAMETERS[n.kind]]
-        candidates=selected or [n for n in self.scene.nodes() if role(n.kind)==kind and attribute in PARAMETERS[n.kind]]
+        selected=[n for n in self.scene.nodes() if n.isSelected() and (role(n.kind)==kind or n.kind=='recipe') and attribute in PARAMETERS.get(n.kind,())]
+        candidates=selected or [n for n in self.scene.nodes() if (role(n.kind)==kind or n.kind=='recipe') and attribute in PARAMETERS.get(n.kind,())]
         return candidates[0] if candidates else None
 
     def config_for_node(self,node):
@@ -1345,6 +1439,13 @@ class Window(QMainWindow):
             self.form.addRow('Hidden layers',edit)
             if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: x, y · outputs: u, v, p'))
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
+        elif node.kind=='recipe':
+            note=QLabel('Baseline PINN recipe · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
+            for attribute in baseline.EXPOSED:
+                if attribute=='iterations':self.field('Training steps',attribute,'int',minimum=1,maximum=100000)
+                elif attribute=='lr':self.field('Learning rate',attribute,minimum=.000001,maximum=1)
+                elif attribute=='device':self.field('Device',attribute,'choice',choices=['cpu','auto','cuda'])
+            button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
         elif node.kind=='method':
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
@@ -1459,6 +1560,7 @@ class Window(QMainWindow):
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
         self.flow_action.setEnabled(not busy)
         self.examples_menu.setEnabled(not busy)
+        self.recipe_menu.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
