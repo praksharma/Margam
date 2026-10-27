@@ -25,7 +25,7 @@ there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 | Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
 | Help | Quick start and About |
 
-Open/Save and undo/redo are not implemented and are not offered as working actions.
+Open/Save is not implemented. Undo/Redo is available for model edits as described below.
 Panel visibility/layout is not yet persisted. Fitting is explicit; selecting a
 block or resizing an inspector does not automatically reset the camera.
 
@@ -247,3 +247,30 @@ used by Properties. There is no independent parameter-dialog state to synchronis
 Double-clicking an output opens/reuses its owned dock. Tests cover these actions,
 per-output branching, rejected native wire gestures, endpoint checks, preservation
 of run data on rejection, and cleanup of incomplete gestures.
+
+## Undo and redo
+
+Edit and block context menus offer Undo/Redo with the next operation's name.
+With canvas focus, Ctrl+Z undoes and Ctrl+Y or Ctrl+Shift+Z redoes. Property/text
+editors keep their local shortcuts; use the Edit menu to replay model history
+while an inspector field has focus. Actions are disabled while training, including
+through public undo/redo wrappers. Templates start a fresh, empty history.
+
+The bounded Qt undo stack retains at most 100 commands. Additions, valid
+connections, deletion of selected nodes/wires, grouped mouse-drag moves, template
+settings (including BC and per-side sampling recipes), output settings and output
+names are reversible. Consecutive changes from the same inspector control are
+coalesced until another command or inspector reconstruction; programmatic setting
+calls are separate steps. A new edit after undo discards the previous redo branch.
+No-op values, rejected connections, navigation and selection do not create steps.
+Direct low-level scene/item manipulation is not an editor command.
+
+Deleted nodes keep their IDs and instance settings. Undo deletion restores the
+same nodes and their incident wires together. Deleting an owner removes its
+optional views; undo restores its model state without reopening those views.
+Opening, hiding, docking and closing views, camera movement and library search are
+outside model history. Layout-only block moves and output renaming preserve run
+data. Semantic graph/settings edits and their replay invalidate old results;
+undo never restores model weights, predictions or discarded monitor records.
+Increasing a restored retention limit does not recover already trimmed samples.
+A restored view can be explicitly opened again; no plot is created by history.

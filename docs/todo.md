@@ -17,7 +17,8 @@ checkboxes are not claims about current Margam support.
   adding wires. Validate stored wire endpoints again before training.
 - [ ] Define executable graph semantics beyond the current template-backed core.
 - [x] Add block/wire deletion and fit-to-model navigation.
-- [ ] Add saved models/results and undo/redo.
+- [ ] Add saved models/results.
+- [x] Add bounded model undo/redo for add/move/connect/delete and settings.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
 - [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
@@ -87,7 +88,9 @@ checkboxes are not claims about current Margam support.
   Outputs already own their settings; typed editor ports are implemented.
 - [x] Support output branching from one method/reference to distinct consumers,
   with one source per typed input and no implicit view creation.
-- [ ] Add undoable graph/parameter edits.
+- [x] Add undoable graph/parameter edits, including grouped drag moves, restored
+  block IDs/settings/wires, per-editor value coalescing and a 100-command limit.
+  Training locks history. Template changes start fresh; run data/views are excluded.
 - [ ] Validate interaction parity hands-on against a selected Simulink release;
   the current evidence collection is documentation-based.
 
@@ -111,7 +114,8 @@ structured catalogue metadata driving all library descriptions remains future wo
   owner deletion, shape change or template reset.
 - [x] Keep these sample previews limited to rectangles. Do not create a general
   geometry renderer or implicit 3D preview path without a justified requirement.
-- [ ] Add clipboard/undo actions to context menus when those operations exist.
+- [x] Add Undo/Redo actions to block context menus.
+- [ ] Add clipboard actions when those operations exist.
 
 - [x] Add pointer-centred wheel zoom, mouse/Space panning, zoom controls and fit-to-model.
 

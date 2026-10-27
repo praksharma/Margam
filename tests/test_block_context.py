@@ -25,8 +25,8 @@ other=next(n for n in w.scene.nodes() if n.kind=='network')
 
 def labels(node):
     return [a.text() for a in w.create_block_menu(node).actions() if not a.isSeparator()]
-assert labels(owner)==['Properties','Preview geometry','Preview samples','Delete block','Help']
-assert labels(other)==['Properties','Delete block','Help']
+assert labels(owner)==['Properties','Preview geometry','Preview samples','Delete block','Undo','Redo','Help']
+assert labels(other)==['Properties','Delete block','Undo','Redo','Help']
 
 # Exercise Qt's actual viewport context-menu event rather than only the helper.
 captured=[]

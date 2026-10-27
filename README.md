@@ -173,6 +173,15 @@ does not clear previous results. These insertion controls are
 locked during training. Tab in property editors keeps its normal focus behaviour.
 
 
+Use **Edit → Undo / Redo** or the block context menu to reverse model edits.
+With canvas focus, **Ctrl+Z** undoes; **Ctrl+Y** or **Ctrl+Shift+Z** redoes.
+Text/property editors retain their own shortcuts; use the Edit menu for model undo
+while editing a field. History covers block insertion, grouped drag moves, wires,
+deletion, settings and output names, up to 100 commands. Templates reset history
+and training locks it. Undo restores deleted block settings and wires without
+opening its views. Model/settings changes clear stale results; undo does not
+restore old training data. Moving blocks preserves results.
+
 Use **Edit → Delete selected** for blocks/wires. Double-clicking the library adds
 blocks; core duplicates and unsupported wiring prevent training. Output instances
 have independent names, evaluation resolution or retained-history limits.

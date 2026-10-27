@@ -13,10 +13,11 @@ from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS
 from .ports import INPUTS, OUTPUTS
+from .edit_history import EditCommand
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QDockWidget, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
@@ -135,8 +136,28 @@ class Canvas(QGraphicsScene):
         super().__init__()
         self.wires, self.pending = [], None
         self.locked = False
+        self.edit_handler = None
+        self._move_start = {}
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setBackgroundBrush(QColor(colors()['canvas']))
+
+    def edit(self,text,redo,undo):
+        if self.edit_handler is None:redo()
+        else:self.edit_handler(text,redo,undo)
+
+    def mousePressEvent(self,event):
+        self._move_start={node:QPointF(node.pos()) for node in self.nodes()} if event.button()==Qt.MouseButton.LeftButton and not self.locked else {}
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self,event):
+        super().mouseReleaseEvent(event)
+        moves=[(node,old,QPointF(node.pos())) for node,old in self._move_start.items()
+               if node.scene() is self and node.pos()!=old]
+        self._move_start={}
+        if moves and not self.locked:
+            def place(use_new):
+                for node,old,new in moves:node.setPos(new if use_new else old)
+            self.edit('Move blocks',lambda:place(True),lambda:place(False))
 
     def cancel_wire(self):
         if self.pending is not None:
@@ -172,8 +193,13 @@ class Canvas(QGraphicsScene):
         error=self.connection_error(source,target)
         if error:raise ValueError(error)
         wire=Wire(source,target)
-        self.addItem(wire);self.wires.append(wire)
-        self.graphChanged.emit()
+        def add():
+            self.addItem(wire);self.wires.append(wire);wire.update_path()
+            self.graphChanged.emit()
+        def remove():
+            self.wires.remove(wire);self.removeItem(wire)
+            self.graphChanged.emit()
+        self.edit('Connect blocks',add,remove)
         return wire
 
     def finish_wire(self, position):
@@ -247,18 +273,34 @@ class Canvas(QGraphicsScene):
         if self.locked:return
         self.cancel_wire()
         selected = set(self.selectedItems())
-        for wire in list(self.wires):
-            if wire in selected or wire.source.parentItem() in selected or wire.target.parentItem() in selected:
-                self.wires.remove(wire)
-                self.removeItem(wire)
-        for item in selected:
-            if isinstance(item, Node):self.removeItem(item)
-        self.graphChanged.emit()
+        nodes=[item for item in selected if isinstance(item,Node)]
+        wires=[wire for wire in self.wires if wire in selected or
+               wire.source.parentItem() in selected or wire.target.parentItem() in selected]
+        if not nodes and not wires:return
+        def remove():
+            self.cancel_wire()
+            for wire in wires:self.wires.remove(wire);self.removeItem(wire)
+            for node in nodes:self.removeItem(node)
+            self.graphChanged.emit()
+        def restore():
+            self.clearSelection()
+            for node in nodes:self.addItem(node);node.setSelected(True)
+            for wire in wires:
+                self.addItem(wire);self.wires.append(wire);wire.update_path()
+                wire.setSelected(wire in selected)
+            self.graphChanged.emit()
+        self.edit('Delete selection',remove,restore)
+
 
 
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.undo_stack=QUndoStack(self)
+        self.undo_stack.setUndoLimit(100)
+        self._resetting=False
+        self._history_replaying=False
+        self._history_epoch=0
         self.config = PoissonConfig()
         self.worker = None
         self.result = None
@@ -334,6 +376,7 @@ class Window(QMainWindow):
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
         self.scene.graphChanged.connect(self.graph_changed)
+        self.scene.edit_handler=self.push_edit
         self.scene.selectionChanged.emit()
         self.log.appendPlainText('Poisson template: Δu + c = 0. Select a block to configure it, validate, then train. Plot views are optional; add and connect an output block, then double-click it to open its view.\nBoundary sets are sampled first; assign a constant condition to each side in the BC block.')
         self.statusBar().showMessage('Ready · rectangle Poisson template · select blocks to edit settings')
@@ -354,6 +397,16 @@ class Window(QMainWindow):
         file_menu.addAction('Quit').triggered.connect(self.close)
         file_menu.actions()[-1].setShortcut('Ctrl+Q')
         edit=self.menuBar().addMenu('Edit')
+        self.undo_action=edit.addAction('Undo');self.undo_action.setShortcut('Ctrl+Z')
+        self.redo_action=edit.addAction('Redo');self.redo_action.setShortcuts(['Ctrl+Y','Ctrl+Shift+Z'])
+        for action,callback in [(self.undo_action,self.undo_edit),(self.redo_action,self.redo_edit)]:
+            action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            self.view.addAction(action);action.triggered.connect(callback)
+        self.undo_stack.indexChanged.connect(self.update_history_actions)
+        self.undo_stack.undoTextChanged.connect(self.update_history_actions)
+        self.undo_stack.redoTextChanged.connect(self.update_history_actions)
+        self.update_history_actions()
+        edit.addSeparator()
         edit.addAction(self.delete_action)
         self.delete_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.view.addAction(self.delete_action)
@@ -404,6 +457,35 @@ class Window(QMainWindow):
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
             self,'Margam','A visual builder for physics-informed neural networks.\nCurrent executable template: scalar Poisson on intervals and rectangles.'))
 
+    def push_edit(self,text,redo,undo,merge_key=None):
+        if self.is_running() or self.scene.locked or self._history_replaying:return
+        if self._resetting:redo();return
+        key=(self._history_epoch,merge_key) if merge_key is not None else None
+        self.undo_stack.push(EditCommand(text,redo,undo,self.selection_changed,key))
+
+    def update_history_actions(self,*args):
+        locked=self.is_running() or self.scene.locked
+        self.undo_action.setEnabled(not locked and self.undo_stack.canUndo())
+        self.redo_action.setEnabled(not locked and self.undo_stack.canRedo())
+        self.undo_action.setText('Undo '+self.undo_stack.undoText() if self.undo_stack.canUndo() else 'Undo')
+        self.redo_action.setText('Redo '+self.undo_stack.redoText() if self.undo_stack.canRedo() else 'Redo')
+
+    def undo_edit(self):
+        if self.is_running() or self.scene.locked:return
+        self.scene.cancel_wire()
+        if self.quick_insert is not None:self.quick_insert.reject()
+        self._history_replaying=True
+        try:self.undo_stack.undo()
+        finally:self._history_replaying=False
+
+    def redo_edit(self):
+        if self.is_running() or self.scene.locked:return
+        self.scene.cancel_wire()
+        if self.quick_insert is not None:self.quick_insert.reject()
+        self._history_replaying=True
+        try:self.undo_stack.redo()
+        finally:self._history_replaying=False
+
     def select_all_blocks(self):
         self.view.setFocus()
         for node in self.scene.nodes():node.setSelected(True)
@@ -451,6 +533,8 @@ class Window(QMainWindow):
         remove=menu.addAction('Delete block')
         remove.setEnabled(not self.is_running())
         remove.triggered.connect(lambda:self.delete_block(node))
+        menu.addSeparator()
+        menu.addAction(self.undo_action);menu.addAction(self.redo_action)
         menu.addAction('Help').triggered.connect(lambda:self.block_help(node))
         return menu
 
@@ -515,19 +599,27 @@ class Window(QMainWindow):
 
     def rename_output(self,node,name):
         name=name.strip()
-        if not name:return
-        node.title=name;node.update();self.name.setText(name)
-        entry=self.output_views.entries.get(node.identifier)
-        if entry:entry[0].setWindowTitle(name)
+        if not name or name==node.title or node.scene() is not self.scene:return
+        old=node.title
+        def apply(value):
+            node.title=value;node.update()
+            if node.isSelected():self.name.setText(value)
+            entry=self.output_views.entries.get(node.identifier)
+            if entry:entry[0].setWindowTitle(value)
+        self.push_edit('Rename output',lambda:apply(name),lambda:apply(old))
 
-    def change_output(self,node,key,value):
-        if self.is_running():return
-        node.settings[key]=value
-        if key=='history_limit':
-            records=self.monitor_records.get(node.identifier,[])
-            del records[:-value]
-            self.output_views.refresh(node)
-        else:self.graph_changed()
+    def change_output(self,node,key,value,edit_token=None):
+        if value==node.settings[key]:return
+        old=node.settings[key]
+        def apply(number):
+            node.settings[key]=number
+            if key=='history_limit':
+                records=self.monitor_records.get(node.identifier,[])
+                del records[:-number]
+                self.output_views.refresh(node)
+            else:self.graph_changed()
+        merge=(node.identifier,key,edit_token) if edit_token is not None else None
+        self.push_edit('Change output '+key.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
 
     def dock(self,title,widget,area):
@@ -554,16 +646,21 @@ class Window(QMainWindow):
     def reset_template(self):
         if self.is_running():return
         if self.quick_insert is not None:self.quick_insert.reject()
+        self._resetting=True
+        self.undo_stack.clear()
         self.output_views.sync([])
         self.close_rectangle_previews()
         self.scene.wires.clear();self.scene.pending=None;self.scene.clear()
         self.config=PoissonConfig()
         self.populate_template();self.settings_changed();self.fit_model()
         self.log.appendPlainText('Loaded the rectangle Poisson template.')
+        self._resetting=False
+        self.update_history_actions()
 
     def load_heat_template(self):
         if self.is_running():return
         self.reset_template()
+        self._resetting=True
         self.config=heat_demo_config()
         self.settings_changed()
         method=next(n for n in self.scene.nodes() if n.kind=='method')
@@ -576,6 +673,8 @@ class Window(QMainWindow):
         self.scene.connect_nodes(reference,outputs[-1])
         self.scene.clearSelection();method.setSelected(True)
         self.validate_model();self.fit_model()
+        self._resetting=False
+        self.undo_stack.clear();self.update_history_actions()
         self.statusBar().showMessage('Heat demo ready · Train PINN, then open monitor, prediction or comparison blocks')
         self.log.appendPlainText('Loaded steady heat demo: unit conductivity, constant source 2, zero edge temperature. Explicit series reference and output blocks are connected; views remain closed until requested.')
 
@@ -599,11 +698,16 @@ class Window(QMainWindow):
     def add_node(self,title,position=None):
         if self.is_running() or self.scene.locked or title not in KINDS:return
         center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
-        node=self.make_node(title,'Not configured',center.x()-85,center.y()-40)
+        node=Node(title,'Not configured',center.x()-85,center.y()-40)
         if node.kind in OUTPUT_KINDS:
             node.settings['resolution']=101 if self.config.shape=='Interval' else 41
-            node.title=title+' '+str(sum(n.kind==node.kind for n in self.scene.nodes()))
-        self.scene.clearSelection();node.setSelected(True);self.graph_changed()
+            node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
+        def add():
+            self.scene.addItem(node)
+            self.scene.clearSelection();node.setSelected(True);self.graph_changed()
+        def remove():
+            self.scene.removeItem(node);self.graph_changed()
+        self.push_edit('Add '+title,add,remove)
         return node
 
     def delete_selected(self):
@@ -647,11 +751,16 @@ class Window(QMainWindow):
                 if node.isSelected():
                     self.name.setText(node.title);self.detail.setText(node.detail)
 
-    def change(self,attribute,value):
-        if self.is_running():return
-        setattr(self.config,attribute,value)
-        self.settings_changed()
-        if attribute=='shape':self.selection_changed()
+    def change(self,attribute,value,edit_token=None):
+        old=deepcopy(getattr(self.config,attribute))
+        if old==value:return
+        value=deepcopy(value)
+        def apply(current):
+            setattr(self.config,attribute,deepcopy(current))
+            self.settings_changed()
+            if attribute=='shape':self.selection_changed()
+        merge=(attribute,edit_token) if edit_token is not None else None
+        self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
     def settings_changed(self):
         self.clear_run_data()
@@ -666,17 +775,18 @@ class Window(QMainWindow):
 
     def field(self,label,attribute,kind='float',choices=None,minimum=-1000000,maximum=1000000):
         value=getattr(self.config,attribute)
+        token=object()
         if kind=='choice':
             widget=QComboBox();widget.addItems(choices);widget.setCurrentText(str(value))
             if attribute=='sampling':
                 for i,method in enumerate(choices):widget.setItemData(i,SAMPLERS[method],Qt.ItemDataRole.ToolTipRole)
-            widget.currentTextChanged.connect(lambda text:self.change(attribute,text))
+            widget.currentTextChanged.connect(lambda text:self.change(attribute,text,token))
         elif kind=='int':
             widget=QSpinBox();widget.setKeyboardTracking(False);widget.setRange(int(minimum),int(maximum));widget.setValue(value)
-            widget.valueChanged.connect(lambda number:self.change(attribute,number))
+            widget.valueChanged.connect(lambda number:self.change(attribute,number,token))
         else:
             widget=QDoubleSpinBox();widget.setKeyboardTracking(False);widget.setDecimals(6);widget.setRange(minimum,maximum);widget.setValue(value)
-            widget.valueChanged.connect(lambda number:self.change(attribute,number))
+            widget.valueChanged.connect(lambda number:self.change(attribute,number,token))
         self.form.addRow(label,widget)
         return widget
 
@@ -715,15 +825,15 @@ class Window(QMainWindow):
                 method=QComboBox();method.addItems(list(SAMPLERS));method.setCurrentText(recipe.method)
                 method.setObjectName('boundary_method')
                 for i,key in enumerate(SAMPLERS):method.setItemData(i,SAMPLERS[key],Qt.ItemDataRole.ToolTipRole)
-                method.currentTextChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'method',value))
+                method.currentTextChanged.connect(lambda value,s=side,t=object():self.change_boundary_sampling(s,'method',value,t))
                 self.form.addRow('Sampler',method)
                 count=QSpinBox();count.setKeyboardTracking(False);count.setRange(1,10000);count.setValue(recipe.points)
                 count.setObjectName('boundary_count')
-                count.valueChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'points',value))
+                count.valueChanged.connect(lambda value,s=side,t=object():self.change_boundary_sampling(s,'points',value,t))
                 self.form.addRow('Points on this side',count)
                 seed=QSpinBox();seed.setKeyboardTracking(False);seed.setRange(0,2147483647);seed.setValue(recipe.seed)
                 seed.setObjectName('boundary_seed')
-                seed.valueChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'seed',value))
+                seed.valueChanged.connect(lambda value,s=side,t=object():self.change_boundary_sampling(s,'seed',value,t))
                 self.form.addRow('Seed',seed)
                 note=QLabel('Each side has an independent recipe. Grid and seeded uniform random return exactly the selected count on that side. Grid points exclude corners. The seed is retained but unused for a grid. Interior settings do not change boundary recipes.')
             else:
@@ -739,16 +849,17 @@ class Window(QMainWindow):
             for side in self.config.sides:
                 row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
                 combo=QComboBox();combo.addItems(['Dirichlet','Neumann']);combo.setCurrentText(self.config.bc_types[side])
-                value=QDoubleSpinBox();value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
-                combo.currentTextChanged.connect(lambda text,s=side:self.change_bc(s,'type',text))
-                value.valueChanged.connect(lambda number,s=side:self.change_bc(s,'value',number))
+                value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
+                combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
+                value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
                 layout.addWidget(combo);layout.addWidget(value);self.form.addRow(side.capitalize(),row)
             note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             note=QLabel('Fully connected · tanh · Xavier normal\nFixed input bounds follow the domain.');note.setWordWrap(True);self.form.addRow(note)
             edit=QLineEdit(', '.join(map(str,self.config.layers)))
             edit.setPlaceholderText('16, 16')
-            edit.textChanged.connect(self.change_layers)
+            token=object()
+            edit.textChanged.connect(lambda text:self.change_layers(text,token))
             self.form.addRow('Hidden layers',edit)
         elif node.kind=='method':
             self.form.addRow(QLabel('Method: baseline PINN\nFixed samples · full-batch Adam'))
@@ -763,13 +874,13 @@ class Window(QMainWindow):
             name.editingFinished.connect(lambda n=node,e=name:self.rename_output(n,e.text()))
             self.form.addRow('Name',name)
             if node.kind=='monitor':
-                count=QSpinBox();count.setRange(25,100000);count.setValue(node.settings['history_limit'])
-                count.valueChanged.connect(lambda value,n=node:self.change_output(n,'history_limit',value))
+                count=QSpinBox();count.setKeyboardTracking(False);count.setRange(25,100000);count.setValue(node.settings['history_limit'])
+                count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'history_limit',value,t))
                 self.form.addRow('Retained updates',count)
                 text='Connect PINN method → monitor to record losses. Closing the view does not stop recording. Removing the block removes the request.'
             else:
-                count=QSpinBox();count.setRange(2,201);count.setValue(node.settings['resolution'])
-                count.valueChanged.connect(lambda value,n=node:self.change_output(n,'resolution',value))
+                count=QSpinBox();count.setKeyboardTracking(False);count.setRange(2,201);count.setValue(node.settings['resolution'])
+                count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
                 self.form.addRow('Evaluation points / axis',count)
                 text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
@@ -786,21 +897,22 @@ class Window(QMainWindow):
         self.boundary_side=side
         self.selection_changed()
 
-    def change_boundary_sampling(self,side,attribute,value):
-        if self.is_running():return
+    def change_boundary_sampling(self,side,attribute,value,edit_token=None):
         recipe=self.config.boundary_recipe(side)
-        self.config.boundary_sampling[side]=replace(recipe,**{attribute:value})
-        self.settings_changed()
+        updated=replace(recipe,**{attribute:value})
+        if recipe==updated:return
+        recipes=deepcopy(self.config.boundary_sampling);recipes[side]=updated
+        self.change('boundary_sampling',recipes,edit_token)
 
-    def change_bc(self,side,kind,value):
-        if self.is_running():return
-        target=self.config.bc_types if kind=='type' else self.config.bc_values
-        target[side]=value;self.settings_changed()
+    def change_bc(self,side,kind,value,edit_token=None):
+        attribute='bc_types' if kind=='type' else 'bc_values'
+        values=deepcopy(getattr(self.config,attribute));values[side]=value
+        self.change(attribute,values,edit_token)
 
-    def change_layers(self,text):
+    def change_layers(self,text,edit_token=None):
         try:layers=tuple(int(n.strip()) for n in text.split(','))
         except ValueError:layers=()
-        self.change('layers',layers)
+        self.change('layers',layers,edit_token)
 
     def connection_rejected(self,message):
         self.validation.setText(message)
@@ -830,9 +942,11 @@ class Window(QMainWindow):
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
+        self.update_history_actions()
 
     def start_training(self):
         if self.is_running() or not self.validate_model():return False
+        self._history_epoch+=1
         self.clear_run_data()
         requests=self.scene.output_requests(self.config)
         self.active_monitors={r.identifier for r in requests if r.kind=='monitor'}
