@@ -66,8 +66,8 @@ checkboxes are not claims about current Margam support.
   block. Keep view visibility separate from data retention.
 - [x] Add explicit imported scalar reference data and restricted reference
   expressions; matching evaluation coordinates required, no implicit interpolation.
-- [ ] Add dedicated result export blocks (ParaView remains deferred). Saved-run
-  archives are implemented independently of field export blocks.
+- [x] Add a dedicated scalar CSV Export request block; files are written only on
+  explicit export after training. ParaView/VTK integration remains deferred.
 
 ## Left library and sampling options
 
@@ -91,9 +91,9 @@ checkboxes are not claims about current Margam support.
 - [ ] Reserve advanced geometry-aware sampling, CAD face/edge selection and richer
   region workflows for GeoSampler. Define the integration boundary rather than
   rebuilding its full toolbox inside Margam.
-- [ ] Keep library, ports, conditions and output views independent of heat-transfer
-  terminology. Poisson is a demonstration template; future scalar/vector fields,
-  multiple outputs and other physics must not inherit temperature-only assumptions.
+- [x] Keep library, ports, conditions, data imports and output requests expressed
+  as scalar fields/operators, independent of temperature. Heat remains a preset;
+  vector/coupled schemas are an explicit future extension.
 
 ## Simulink interaction evidence
 
@@ -152,8 +152,9 @@ structured catalogue metadata driving all library descriptions remains future wo
   finite differences and increased truncation order.
 - [x] Show 2D prediction/reference/error with shared prediction/reference colours,
   RMSE and maximum absolute error only when comparison is explicitly requested.
-- [ ] Improve and quantify 2D training accuracy across seeds/settings; soft boundary
-  constraints and finite training can leave visible errors, which remain reported.
+- [x] Quantify rectangular training error for three seeds and two soft BC weights,
+  and add/verify an optional hard-Dirichlet method that improves field error in
+  every tested seed. See heat-accuracy.md; no field plots were changed.
 
 ## Deferred: ParaView
 

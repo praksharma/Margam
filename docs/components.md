@@ -166,3 +166,18 @@ silently interpolating. External paths remain dependencies, not embedded arrays
 in model JSON. Run checkpoints fingerprint the compiled points and targets and
 reject changed external data. v3 model files migrate v1/v2 defaults; v2 run files
 include fingerprints, while v1 builtin-only checkpoints can be migrated.
+
+## Method variants and CSV output
+
+`methods/hard_dirichlet.py` defines HardDirichletPINN and its bounded-domain output
+transform: boundary value + product(4*t_i*(1-t_i))*network(x). It enforces equal
+constant Dirichlet targets for intervals/rectangles exactly, without reference
+solution data. The shared baseline training loop is reused. Mixed operators,
+imported boundary sets and spatial targets are rejected for this variant; use the
+baseline for those cases. The variant is chosen explicitly in the method block.
+
+CSV Export is an explicit scalar output request. Prediction data is evaluated
+only when connected; opening the block writes CSV only after a user-selected path.
+It never creates a plot view or automatic output file. File replacement is atomic.
+The initial CSV columns are x[,y],u; no units, extra fields or ParaView assumptions
+are inferred. Export requests participate in saved models and run archives.

@@ -24,7 +24,7 @@ def evaluate_outputs(model, config, requests):
     for request in requests:
         if request.kind == 'monitor':
             continue
-        if request.kind not in ('solution', 'comparison'):
+        if request.kind not in ('solution', 'comparison', 'export'):
             raise ValueError('Unknown output request.')
         if request.kind == 'comparison' and request.reference is None:
             raise ValueError('Comparison requires an explicit reference source.')

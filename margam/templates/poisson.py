@@ -41,6 +41,7 @@ class PoissonConfig:
     interior_data: dict = field(default_factory=dict)
     boundary_data: dict = field(default_factory=dict)
     network_seed: int | None = None
+    method: str = 'baseline'
 
     @property
     def sides(self):
@@ -92,6 +93,8 @@ class PoissonConfig:
 
     def validate(self):
         self.validate_sampling()
+        if self.method not in ('baseline','hard_dirichlet'):raise ValueError('Unknown PINN method.')
+        if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
             raise ValueError('Iterations must be between 1 and 100000.')
@@ -196,6 +199,9 @@ def build_pinn(config):
     lower,upper = config.bounds
     network = FullyConnected([len(lower),*config.layers,1], 'tanh', 'Xavier normal',input_bounds=(lower,upper))
     weights = {'pde':config.pde_weight, **{s:config.boundary_weight/len(config.sides) for s in config.sides}}
+    if config.method=='hard_dirichlet':
+        from ..methods.hard_dirichlet import HardDirichletPINN
+        return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights).compile(lr=config.lr,device=config.device)
     return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
 
 

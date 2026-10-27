@@ -8,7 +8,7 @@ BLOCK_CATEGORIES = {
     'Loss / Physics': (('PDE residual', 'pde'), ('Boundary condition', 'bc')),
     'Optimisation / PINN': (('PINN method', 'method'),),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
-                ('Reference', 'reference'), ('Comparison', 'comparison')),
+                ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
 }
 KINDS = {title: kind for entries in BLOCK_CATEGORIES.values() for title, kind in entries}
 BLOCK_GROUPS = {group: tuple(title for title, _ in entries)
@@ -38,10 +38,11 @@ CAPABILITIES = {
     'pde': ('Constant c, scalar residual expression', 'Poisson preset or restricted scalar expressions. No coupled/vector system or extra pointwise inputs.'),
     'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
     'network': ('Hidden-layer widths, initialisation seed', 'Fully connected tanh / Xavier normal, fixed domain normalisation. No architecture selector.'),
-    'method': ('Updates, learning rate, loss weights, device', 'Baseline fixed-sample, full-batch Adam. No LBFGS or adaptive sampling.'),
+    'method': ('Variant, updates, learning rate, loss weights, device', 'Baseline or equal-constant hard Dirichlet PINN; fixed-sample full-batch Adam. No LBFGS or adaptive sampling.'),
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction request; no reference assumed.'),
     'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),
     'reference': ('Preset, coordinate expression or mapped values', 'Explicit scalar source. Imported data requires matching coordinates; preset sources reject custom physics.'),
+    'export': ('Name, evaluation points per axis', 'Explicit scalar prediction request. Export CSV only after training and on user action; no plot window.'),
     'comparison': ('Name, evaluation points per axis', 'Requires a PINN run and explicit compatible reference; scalar outputs only.'),
 }
 

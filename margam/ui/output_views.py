@@ -2,7 +2,7 @@
 from PySide6.QtCore import Qt
 from .plots import CurvePlot, SolutionView
 
-OUTPUT_KINDS = {'monitor', 'solution', 'comparison'}
+OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export'}
 
 
 class OutputViews:
@@ -11,7 +11,7 @@ class OutputViews:
         self.entries = {}
 
     def open(self, node):
-        if node.kind not in OUTPUT_KINDS:
+        if node.kind not in OUTPUT_KINDS or node.kind=='export':
             return
         if node.identifier not in self.entries:
             view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else SolutionView()

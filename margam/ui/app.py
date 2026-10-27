@@ -9,6 +9,7 @@ from ..templates.heat import heat_demo_config
 from ..components.outputs import OutputRequest, ReferenceSource
 from ..components.expressions import Expression
 from ..components.prepared_data import reference_values
+from ..components.export import export_csv
 from ..components.sampling import SAMPLERS
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
@@ -776,12 +777,28 @@ class Window(QMainWindow):
             if hidden:dock.hide()
         self.resizeDocks([self.library_dock,self.properties_dock],[240,310],Qt.Orientation.Horizontal)
 
+    def export_block_data(self,node,path=None):
+        if self.is_running():return False
+        data=(self.result or {}).get('outputs',{}).get(node.identifier)
+        if data is None:
+            self.statusBar().showMessage('Connect this CSV Export block and train before exporting.');return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(self,'Export scalar predictions','prediction.csv','CSV (*.csv)')
+            if path and not path.lower().endswith('.csv'):
+                path+='.csv'
+                if Path(path).exists() and QMessageBox.question(self,'Replace CSV?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+        if not path:return False
+        try:export_csv(path,data)
+        except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'CSV could not be exported',str(error));return False
+        self.statusBar().showMessage('Exported scalar predictions · '+Path(path).name);return True
+
     def open_selected_output(self):
         nodes=[node for node in self.scene.nodes() if node.isSelected()]
         if len(nodes)==1:self.open_block(nodes[0])
 
     def open_block(self,node):
         if not isValid(node) or node.scene() is not self.scene:return
+        if node.kind=='export':return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
             return self.output_views.open(node)
         self.properties_dock.show()
@@ -796,7 +813,7 @@ class Window(QMainWindow):
             menu.addAction('Preview geometry').triggered.connect(lambda:self.open_rectangle_preview(node,False))
             menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
         elif node.kind in OUTPUT_KINDS:
-            label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison'}[node.kind]
+            label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…'}[node.kind]
             menu.addAction(label).triggered.connect(lambda:self.open_block(node))
         menu.addSeparator()
         remove=menu.addAction('Delete block')
@@ -1009,8 +1026,8 @@ class Window(QMainWindow):
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':', '.join(c.bc_types[s][0] for s in c.sides),
-                     'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
-                     'solution':'Requested prediction plot', 'monitor':'Requested loss history',
+                     'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
+                     'solution':'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit Poisson reference'}
             if node.kind=='domain':node.title=c.shape
             node.detail=details[node.kind]
@@ -1189,6 +1206,11 @@ class Window(QMainWindow):
             self.form.addRow('Hidden layers',edit)
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
         elif node.kind=='method':
+            variant=QComboBox()
+            for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
+            variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
+            variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
+            self.form.addRow('Method variant',variant)
             self.form.addRow(QLabel('Method: baseline PINN\nFixed samples · full-batch Adam'))
             self.field('Iterations','iterations','int',minimum=1,maximum=100000)
             self.field('Learning rate','lr',minimum=.000001,maximum=1)
@@ -1210,8 +1232,9 @@ class Window(QMainWindow):
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
                 self.form.addRow('Evaluation points / axis',count)
                 text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
+            if node.kind=='export':text='Connect PINN method, train, then explicitly export scalar x/y/u rows. No plot or file is created automatically.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
-            button=QPushButton('Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
+            button=QPushButton('Export CSV…' if node.kind=='export' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
         elif node.kind=='reference':
             expression=QLineEdit(node.settings.get('reference_expression',''))

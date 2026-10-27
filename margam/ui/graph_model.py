@@ -10,7 +10,7 @@ PARAMETERS = {
     'pde':('source','pde_expression'),
     'bc':('bc_types','bc_values','bc_targets','bc_operators'),
     'network':('layers','network_seed'),
-    'method':('iterations','lr','device','pde_weight','boundary_weight'),
+    'method':('method','iterations','lr','device','pde_weight','boundary_weight'),
 }
 OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() for attribute in attributes}
 

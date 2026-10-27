@@ -393,3 +393,15 @@ unconnected/duplicate core blocks must be resolved before Run. Editing a copied
 network or sampler does not change its original. Templates are initial graphs,
 not a hidden source of runtime settings. Model format v4 stores these owned
 parameters and migrates earlier global-template models on opening.
+
+For a plain data file, add **CSV Export**, connect the PINN method, and train.
+Double-click/right-click that block for **Export CSV…**. It requests scalar
+predictions at its evaluation resolution and writes x/y/u rows only on this action;
+it creates no plot. Its output can be mapped back as an explicit reference dataset.
+No VTK, ParaView setup or 3D export integration is implemented.
+
+Method variants: **PINN method → Method variant** offers the original baseline and
+**Hard Dirichlet PINN**. The latter owns an output transform enforcing equal constant
+Dirichlet values on all built-in sides; mixed/custom/imported boundary targets are
+rejected. It shares the full-batch Adam engine and does not need an exact solution.
+Each variant lives in its own method file. Templates still default to baseline.
