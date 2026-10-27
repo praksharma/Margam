@@ -15,7 +15,7 @@ from margam.ui.app import Window, Node
 from margam.ui.theme import configure_theme, colors
 assert 'torch' not in sys.modules, 'UI import should not load the numerical engine'
 app = QApplication([])
-w = Window()
+w = Window(state_directory=False)
 w.show()
 for _ in range(3):app.processEvents()
 assert w.view.viewport().rect().contains(w.view.mapFromScene(w.scene.itemsBoundingRect()).boundingRect())

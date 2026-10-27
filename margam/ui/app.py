@@ -16,6 +16,7 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
+from .desktop_state import DesktopState
 from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
@@ -298,7 +299,7 @@ class Canvas(QGraphicsScene):
 
 
 class Window(QMainWindow):
-    def __init__(self):
+    def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
         self.undo_stack.setUndoLimit(100)
@@ -390,6 +391,13 @@ class Window(QMainWindow):
         self.update_document_title()
         self.statusBar().showMessage('Ready · rectangle Poisson template · select blocks to edit settings')
         QTimer.singleShot(0,self.fit_model)
+        self.desktop_state=None
+        if state_directory is not False:
+            try:
+                self.desktop_state=DesktopState(self,state_directory)
+                self.desktop_state.restore()
+                QTimer.singleShot(0,self.desktop_state.offer_recovery)
+            except OSError as error:self.statusBar().showMessage('Local preferences unavailable: '+str(error))
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -1269,6 +1277,7 @@ class Window(QMainWindow):
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        if self.desktop_state is not None:self.desktop_state.close()
         if not getattr(self,'_selection_disconnected',False):
             self.scene.selectionChanged.disconnect(self.selection_changed)
             self._selection_disconnected=True

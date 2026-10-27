@@ -12,7 +12,7 @@ class ClipboardTests(unittest.TestCase):
 from PySide6.QtCore import QMimeData
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 w.load_heat_template()
 method=next(n for n in w.scene.nodes() if n.kind=='method')
 monitor=next(n for n in w.scene.nodes() if n.kind=='monitor')

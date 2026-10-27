@@ -20,3 +20,8 @@ The Hammersley and equal-volume recursive stratified algorithms in
 AGPL-3.0-only. They are restricted to intervals/rectangles and do not import
 GeoSampler, SciPy, Gmsh or any CAD/UI code. Existing Margam grid/random sequences
 remain unchanged.
+
+`margam/ui/desktop_state.py` follows GeoSampler's QSettings/saveState layout and
+QLockFile-per-recovery-file patterns (`app.py`, `recovery.py`, same revision above).
+The implementation is specific to Margam JSON model drafts; no CAD caches, worker
+protocols or GeoSampler project payloads are copied.

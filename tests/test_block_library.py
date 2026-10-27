@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window, KINDS
 from margam.ui.block_library import BLOCK_GROUPS
 app = QApplication([])
-w = Window(); w.show(); app.processEvents()
+w = Window(state_directory=False); w.show(); app.processEvents()
 library = w.library; tree = library.tree
 assert sorted(title for titles in BLOCK_GROUPS.values() for title in titles) == sorted(KINDS)
 assert tree.topLevelItemCount() == 6

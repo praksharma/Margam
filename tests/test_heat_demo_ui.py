@@ -12,7 +12,7 @@ class HeatDemoUITests(unittest.TestCase):
 import time
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show()
+app=QApplication([]);w=Window(state_directory=False);w.show()
 for _ in range(3):app.processEvents()
 assert len(w.scene.nodes())==7
 w.heat_action.trigger();app.processEvents()

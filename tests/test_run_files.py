@@ -17,7 +17,7 @@ import torch
 from PySide6.QtWidgets import QApplication,QMessageBox
 from margam.ui.app import Window
 from margam.templates.poisson import build_pinn
-app=QApplication([]);w=Window();w.show();w.change('shape','Interval');w.change('iterations',25)
+app=QApplication([]);w=Window(state_directory=False);w.show();w.change('shape','Interval');w.change('iterations',25)
 method=next(n for n in w.scene.nodes() if n.kind=='method')
 monitor=w.add_node('Training Monitor');solution=w.add_node('Solution Plot')
 monitor_id=monitor.identifier;solution_id=solution.identifier

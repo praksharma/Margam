@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication, QMenu
 from margam.ui.app import Window
 from margam.ui.plots import RectanglePreview
 app=QApplication([])
-w=Window();w.show()
+w=Window(state_directory=False);w.show()
 for _ in range(3):app.processEvents()
 assert not w.findChildren(RectanglePreview)
 assert not w.rectangle_previews

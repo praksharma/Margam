@@ -12,7 +12,7 @@ class SamplingInspectorTests(unittest.TestCase):
 from PySide6.QtWidgets import QApplication, QComboBox, QSpinBox
 from margam.ui.app import Window
 from margam.templates.poisson import sample_problem
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 node=next(n for n in w.scene.nodes() if n.kind=='boundary')
 owner=next(n for n in w.scene.nodes() if n.kind=='domain')
 w.show_block_properties(node)

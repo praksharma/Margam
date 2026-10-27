@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication,QLineEdit
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();w.change('shape','Interval')
+app=QApplication([]);w=Window(state_directory=False);w.show();w.change('shape','Interval')
 pde=next(n for n in w.scene.nodes() if n.kind=='pde');w.show_block_properties(pde)
 edit=w.property_scroll.widget().findChild(QLineEdit,'pde_expression')
 edit.setText('D(D(u,x),x) + u - x*x - 2');QTest.keyClick(edit,Qt.Key.Key_Return)

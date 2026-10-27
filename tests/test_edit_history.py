@@ -17,7 +17,7 @@ class EditHistoryTests(unittest.TestCase):
         self.run_ui(r'''
 from PySide6.QtWidgets import QApplication, QComboBox, QSpinBox
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 history=w.undo_stack
 assert history.count()==0 and not w.undo_action.isEnabled() and not w.redo_action.isEnabled()
 method=next(n for n in w.scene.nodes() if n.kind=='method')
@@ -96,7 +96,7 @@ from PySide6.QtCore import Qt, QPoint
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLineEdit
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 w.actual_size_action.trigger();w.view.centerOn(450,250);app.processEvents()
 network=next(n for n in w.scene.nodes() if n.kind=='network')
 pde=next(n for n in w.scene.nodes() if n.kind=='pde')
@@ -149,7 +149,7 @@ w.undo_stack.setClean();w.close();app.processEvents()
 import time
 from PySide6.QtWidgets import QApplication, QSpinBox
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 w.change('iterations',25)
 node=next(n for n in w.scene.nodes() if n.kind=='interior')
 w.show_block_properties(node)

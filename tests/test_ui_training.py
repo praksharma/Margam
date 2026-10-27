@@ -16,7 +16,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
 app = QApplication([])
-w = Window()
+w = Window(state_directory=False)
 w.show()
 app.processEvents()
 

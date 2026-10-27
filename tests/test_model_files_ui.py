@@ -16,7 +16,7 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication, QMessageBox
 from margam.ui.app import Window
 from margam.ui.model_document import capture_model
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 B=QMessageBox.StandardButton
 with TemporaryDirectory() as directory:
     path=Path(directory)/'heat.margam.json'
@@ -114,7 +114,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QSpinBox
 from margam.ui.app import Window
 from margam.ui.model_document import read_model
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 node=next(n for n in w.scene.nodes() if n.kind=='interior')
 w.show_block_properties(node)
 spin=w.property_scroll.widget().findChild(QSpinBox)

@@ -21,7 +21,7 @@ from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
 from margam.ui.block_catalogue import BLOCK_MIME
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 tree=w.library.tree
 results=tree.topLevelItem(5)
 mime=tree.mimeData([results.child(1)])
@@ -75,7 +75,7 @@ from PySide6.QtCore import Qt, QPoint
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 view=w.view;position=QPoint(120,120)
 assert view.itemAt(position) is None
 expected=view.mapToScene(position)

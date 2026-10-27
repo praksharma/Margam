@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window, Wire
 from margam.ui.ports import INPUTS, OUTPUTS
 from margam.ui.block_catalogue import KINDS
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 scene=w.scene
 nodes={n.kind:n for n in scene.nodes()}
 method=nodes['method'];network=nodes['network'];pde=nodes['pde']
@@ -100,7 +100,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLineEdit
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show();app.processEvents()
+app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 def double_click(node):
     w.view.centerOn(node);app.processEvents()
     point=w.view.mapFromScene(node.mapToScene(node.rect().center()))

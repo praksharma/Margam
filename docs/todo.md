@@ -32,8 +32,9 @@ checkboxes are not claims about current Margam support.
 - [x] Add bounded model undo/redo for add/move/connect/delete and settings.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
-- [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
-  Model document persistence is implemented; panel layout and crash recovery remain.
+- [x] Reuse GeoSampler-style Qt layout/settings and per-session lock-file recovery
+  patterns. Save core dock layout/theme/library groups; recover unsaved model
+  drafts without reopening plot views or loading numerical state.
 - [ ] Integrate GeoSampler for complex geometry later; no 3D viewport in this project.
 - [ ] External prerequisite: validate GPU training when a working NVIDIA driver
   and CUDA-enabled PyTorch build are available. Audit on 27 October: installed

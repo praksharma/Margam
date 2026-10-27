@@ -14,7 +14,7 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication
 from PySide6.QtTest import QTest
 from margam.ui.app import Window
-app=QApplication([]);w=Window();w.show()
+app=QApplication([]);w=Window(state_directory=False);w.show()
 for _ in range(3):app.processEvents()
 view=w.view
 positions={n.identifier:n.pos() for n in w.scene.nodes()}

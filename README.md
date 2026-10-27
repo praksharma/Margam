@@ -360,3 +360,11 @@ additional updates and continues the fixed-sample baseline recipe on CPU. Changi
 the model invalidates its loaded checkpoint; moving blocks and renaming outputs do
 not. Loading uses PyTorch's restricted `weights_only=True` mode, validates the
 architecture and maps tensors to CPU. This is run persistence, not ParaView export.
+
+Local desktop state: core dock layout, theme, window geometry and collapsed library
+groups persist under the user data directory `Margam/desktop.ini` (normally
+`~/.local/share/Margam` on Linux). Unsaved model drafts are debounced into per-session,
+locked recovery files there. On restart you can recover an abandoned draft as an
+unsaved model. Active sessions are skipped; clean close removes that session's
+recovery file. Recovery contains model definitions, not training results, and does
+not reopen plots. Use View → Reset panel layout to restore the standard arrangement.
