@@ -1,6 +1,7 @@
 """Block-based baseline Poisson workflow with background training."""
 from uuid import uuid4
 from copy import deepcopy
+from dataclasses import replace
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.heat import heat_demo_config
 from ..components.outputs import OutputRequest
@@ -444,7 +445,7 @@ class Window(QMainWindow):
         text={
             'domain':'Configure interval or rectangle bounds. Rectangle blocks provide optional local 2D geometry and sample previews through this menu.',
             'interior':'Choose the supported sampling method, point budget and seed for PDE points.',
-            'boundary':'Create named boundary point sets. Assign their physical conditions separately in the BC block.',
+            'boundary':'Choose a named rectangle side and configure its independent grid/random sampler, count and seed. Interval boundaries are fixed endpoints. Assign physical conditions separately in the BC block.',
             'pde':'The current template solves scalar Poisson with a constant source. Arbitrary residual editing is future work.',
             'bc':'Assign Dirichlet values or outward Neumann derivatives to the named sides.',
             'network':'Set hidden-layer sizes for the fully connected tanh network.',
@@ -588,7 +589,7 @@ class Window(QMainWindow):
         actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
         details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                  'interior':f'{actual} points · {c.sampling}',
-                 'boundary':f'{len(c.sides)} named sets', 'pde':f'Δu + {c.source:g} = 0',
+                 'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':f'Δu + {c.source:g} = 0',
                  'bc':', '.join(c.bc_types[s][0] for s in c.sides),
                  'network':' → '.join(map(str,c.layers)), 'method':f'Adam · {c.iterations} steps',
                  'solution':'Requested prediction plot', 'monitor':'Requested loss history',
@@ -621,6 +622,8 @@ class Window(QMainWindow):
         value=getattr(self.config,attribute)
         if kind=='choice':
             widget=QComboBox();widget.addItems(choices);widget.setCurrentText(str(value))
+            if attribute=='sampling':
+                for i,method in enumerate(choices):widget.setItemData(i,SAMPLERS[method],Qt.ItemDataRole.ToolTipRole)
             widget.currentTextChanged.connect(lambda text:self.change(attribute,text))
         elif kind=='int':
             widget=QSpinBox();widget.setKeyboardTracking(False);widget.setRange(int(minimum),int(maximum));widget.setValue(value)
@@ -652,12 +655,36 @@ class Window(QMainWindow):
             note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='interior':
             self.field('Sampler','sampling','choice',choices=list(SAMPLERS))
-            self.field('Point budget','points','int',minimum=1,maximum=10000)
+            self.field('Point budget','points','int',minimum=1,maximum=100000)
             self.field('Seed','seed','int',minimum=0,maximum=2147483647)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='boundary':
-            if self.config.shape=='Rectangle':self.field('Points per side','boundary_points','int',minimum=1,maximum=1000)
-            note=QLabel('Named point sets: '+', '.join(self.config.sides)+'.\nTypes and targets are assigned in the Boundary condition block. Grid samples exclude corners; interval sets are the endpoints.');note.setWordWrap(True);self.form.addRow(note)
+            if self.config.shape=='Rectangle':
+                side_choice=QComboBox();side_choice.addItems(list(self.config.sides))
+                side=getattr(self,'boundary_side','left')
+                side_choice.setCurrentText(side);side_choice.setObjectName('boundary_side')
+                side_choice.currentTextChanged.connect(self.select_boundary_side)
+                self.form.addRow('Named point set',side_choice)
+                recipe=self.config.boundary_recipe(side)
+                method=QComboBox();method.addItems(list(SAMPLERS));method.setCurrentText(recipe.method)
+                method.setObjectName('boundary_method')
+                for i,key in enumerate(SAMPLERS):method.setItemData(i,SAMPLERS[key],Qt.ItemDataRole.ToolTipRole)
+                method.currentTextChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'method',value))
+                self.form.addRow('Sampler',method)
+                count=QSpinBox();count.setKeyboardTracking(False);count.setRange(1,10000);count.setValue(recipe.points)
+                count.setObjectName('boundary_count')
+                count.valueChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'points',value))
+                self.form.addRow('Points on this side',count)
+                seed=QSpinBox();seed.setKeyboardTracking(False);seed.setRange(0,2147483647);seed.setValue(recipe.seed)
+                seed.setObjectName('boundary_seed')
+                seed.valueChanged.connect(lambda value,s=side:self.change_boundary_sampling(s,'seed',value))
+                self.form.addRow('Seed',seed)
+                note=QLabel('Each side has an independent recipe. Grid and seeded uniform random return exactly the selected count on that side. Grid points exclude corners. The seed is retained but unused for a grid. Interior settings do not change boundary recipes.')
+            else:
+                note=QLabel('Interval point sets are the left and right endpoints: one point each. Rectangle-side recipes are retained but do not apply to an interval.')
+            note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel('Named point sets: '+', '.join(self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
+            note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='pde':
             note=QLabel('Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
             self.field('Constant c','source')
@@ -708,6 +735,16 @@ class Window(QMainWindow):
         if old is not None:old.deleteLater()
         self.property_scroll.setWidget(body)
         self.property_scroll.setEnabled(not self.is_running())
+
+    def select_boundary_side(self,side):
+        self.boundary_side=side
+        self.selection_changed()
+
+    def change_boundary_sampling(self,side,attribute,value):
+        if self.is_running():return
+        recipe=self.config.boundary_recipe(side)
+        self.config.boundary_sampling[side]=replace(recipe,**{attribute:value})
+        self.settings_changed()
 
     def change_bc(self,side,kind,value):
         if self.is_running():return

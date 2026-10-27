@@ -1,7 +1,7 @@
 """Physical sampling, Neumann orientation and template convergence checks."""
 import unittest
 import torch
-from margam.templates.poisson import PoissonConfig, sample_problem, build_pinn, interval_reference
+from margam.templates.poisson import BoundarySampling, PoissonConfig, sample_problem, build_pinn, interval_reference
 
 
 class PoissonTemplateTests(unittest.TestCase):
@@ -16,6 +16,44 @@ class PoissonTemplateTests(unittest.TestCase):
         config.sampling='random'
         self.assertEqual(sample_problem(config),sample_problem(config))
         self.assertEqual(len(sample_problem(config)[0]),70)
+
+    def test_independent_side_recipes_reach_training(self):
+        config=PoissonConfig(points=70, boundary_points=9, x_min=-2, x_max=3, y_min=4, y_max=7)
+        interior, original=sample_problem(config)
+        config.boundary_sampling['left']=BoundarySampling(13, 'random', 23)
+        after, boundaries=sample_problem(config)
+        self.assertEqual(interior, after)
+        self.assertEqual(len(boundaries['left']), 13)
+        self.assertTrue(all(x==-2 and 4<=y<7 for x,y in boundaries['left']))
+        for side in ('right','bottom','top'):
+            self.assertEqual(boundaries[side], original[side])
+        self.assertEqual(sample_problem(config), sample_problem(config))
+        config.sampling='random';config.seed=100
+        self.assertEqual(sample_problem(config)[1], boundaries)
+        config.boundary_sampling['left']=BoundarySampling(13, 'random', 24)
+        changed=sample_problem(config)[1]
+        self.assertNotEqual(changed['left'],boundaries['left'])
+        self.assertEqual(changed['right'],boundaries['right'])
+        model=build_pinn(config)
+        constraints={c.name:c.points.tolist() for c in model.problem.constraints}
+        self.assertEqual({side:len(rows) for side,rows in constraints.items()},
+                         {'left':13,'right':9,'bottom':9,'top':9})
+        torch.testing.assert_close(model.problem.constraints[0].points, torch.tensor(changed['left']))
+        config.shape='Interval'
+        self.assertEqual(sample_problem(config)[1], {'left':[[-2]],'right':[[3]]})
+        config.shape='Rectangle'
+        self.assertEqual(sample_problem(config)[1], changed)
+
+    def test_invalid_boundary_recipes(self):
+        for recipe in (BoundarySampling(0), BoundarySampling(True),
+                       BoundarySampling(method='missing'), BoundarySampling(seed=-1),
+                       BoundarySampling(seed=2**31), {'points':5}):
+            with self.subTest(recipe=recipe):
+                config=PoissonConfig(boundary_sampling={'left':recipe})
+                with self.assertRaisesRegex(ValueError,'left'):
+                    sample_problem(config)
+        with self.assertRaisesRegex(ValueError,'named rectangle sides'):
+            sample_problem(PoissonConfig(boundary_sampling={'unknown':BoundarySampling()}))
 
     def test_mixed_neumann_reference_and_operator(self):
         config=PoissonConfig(shape='Interval')

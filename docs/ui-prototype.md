@@ -132,7 +132,7 @@ independent evaluation resolutions, rectangle-only context actions and preview
 cleanup, monitor retention, closed-view recording,
 detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
 Screenshots are under assets/screenshots. General graph execution, typed core ports,
-per-set sampling instances, persistence, arbitrary PDE/reference
+multiple arbitrary sampling blocks, persistence, arbitrary PDE/reference
 sources and export remain in todo.md.
 
 ## Canvas navigation
@@ -164,3 +164,18 @@ whole library, including search, is disabled while training. The dock can still 
 hidden/reopened from View. No new solver, loss or optimiser implementations are
 implied by these categories: the PINN method still owns Adam settings and the PDE
 and BC blocks define its existing loss terms.
+
+## Independent boundary sampling
+
+The Sampling library group separates Interior sampler from Boundary points. The
+interior inspector exposes grid/random, budget and seed (also used for network
+initialisation). The Boundary points inspector selects a named rectangle side and
+exposes that side's method, exact count and independent seed. Limits match the
+sampler contract: 100000 interior points, 10000 on each side. Method choices and
+tooltips use the implemented `SAMPLERS` mapping. Changing one side does not change
+the interior or another side. The boundary block shows the total actual point count;
+the Rectangle's optional sample preview uses these recipes. BC type/target assignment
+remains in its own block. Interval endpoints have no sampling controls. Shape changes
+retain rectangle recipes, while template reset clears overrides. These are recipes
+inside the current template-backed core, not arbitrary independently executable
+sampler block instances or a general graph compiler.

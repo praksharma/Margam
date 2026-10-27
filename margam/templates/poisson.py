@@ -4,6 +4,14 @@ import math
 from ..components.sampling import sample_box, SAMPLERS
 
 
+@dataclass(frozen=True)
+class BoundarySampling:
+    """One rectangle side's fixed sampling recipe, independent of interior points."""
+    points: int = 16
+    method: str = 'grid'
+    seed: int = 8
+
+
 @dataclass
 class PoissonConfig:
     shape: str = 'Rectangle'
@@ -12,7 +20,7 @@ class PoissonConfig:
     y_min: float = 0.0
     y_max: float = 1.0
     points: int = 64
-    boundary_points: int = 16
+    boundary_points: int = 16  # Default count for sides without an explicit recipe.
     sampling: str = 'grid'
     seed: int = 7
     source: float = 2.0
@@ -24,6 +32,7 @@ class PoissonConfig:
     boundary_weight: float = 1.0
     bc_types: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 'Dirichlet'))
     bc_values: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 0.0))
+    boundary_sampling: dict = field(default_factory=dict)
 
     @property
     def sides(self):
@@ -34,6 +43,14 @@ class PoissonConfig:
         if self.shape == 'Interval':
             return [self.x_min], [self.x_max]
         return [self.x_min, self.y_min], [self.x_max, self.y_max]
+
+    def boundary_recipe(self, side):
+        """Unconfigured sides use grid, the template count, and stable side seeds."""
+        sides = ('left', 'right', 'bottom', 'top')
+        if side not in sides:
+            raise ValueError('Unknown boundary side.')
+        return self.boundary_sampling.get(
+            side, BoundarySampling(self.boundary_points, 'grid', 8 + sides.index(side)))
 
     def validate_sampling(self):
         if self.shape not in ('Interval', 'Rectangle'):
@@ -48,6 +65,17 @@ class PoissonConfig:
                 raise ValueError(f'{label} must be between 1 and {limit}.')
         if type(self.seed) is not int or not 0 <= self.seed < 2**31:
             raise ValueError('Seed must be a non-negative 32-bit integer.')
+        if not isinstance(self.boundary_sampling, dict) or set(self.boundary_sampling) - {'left', 'right', 'bottom', 'top'}:
+            raise ValueError('Boundary sampling recipes must use named rectangle sides.')
+        for side, recipe in self.boundary_sampling.items():
+            if not isinstance(recipe, BoundarySampling):
+                raise ValueError(f'{side}: expected a BoundarySampling recipe.')
+            if recipe.method not in SAMPLERS:
+                raise ValueError(f'{side}: unknown boundary sampler.')
+            if type(recipe.points) is not int or not 1 <= recipe.points <= 10000:
+                raise ValueError(f'{side}: point count must be between 1 and 10000.')
+            if type(recipe.seed) is not int or not 0 <= recipe.seed < 2**31:
+                raise ValueError(f'{side}: seed must be a non-negative 32-bit integer.')
 
     def validate(self):
         self.validate_sampling()
@@ -84,10 +112,11 @@ def sample_problem(config):
     if config.shape == 'Interval':
         return interior, {'left': [[config.x_min]], 'right': [[config.x_max]]}
     boundaries = {}
-    for i,side in enumerate(config.sides):
+    for side in config.sides:
         vertical = side in ('left','right')
         a,b = (config.y_min,config.y_max) if vertical else (config.x_min,config.x_max)
-        rows = sample_box([a],[b],config.boundary_points,config.sampling,config.seed+i+1)
+        recipe = config.boundary_recipe(side)
+        rows = sample_box([a], [b], recipe.points, recipe.method, recipe.seed)
         fixed = {'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
         boundaries[side] = [[fixed,t[0]] if vertical else [t[0],fixed] for t in rows]
     return interior, boundaries

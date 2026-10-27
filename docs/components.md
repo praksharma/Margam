@@ -1,5 +1,28 @@
 # Implemented components and templates
 
+## Capability index
+
+This is the implemented component catalogue. Check this index before adding a
+method or sampler; record new capabilities and their limits here in the same change.
+A Python API capability is not automatically an executable UI block option.
+
+| Component | Implementation | Current support and limits |
+| --- | --- | --- |
+| Baseline PINN | `margam/methods/pinn.py` | Strong-form residuals; fixed samples; full-batch updates; named constraints; no adaptive resampling, weak form or closure-based LBFGS |
+| Problem / constraint | `margam/components/problem.py` | Point arrays or callable sources; residual and optional constraint operators; scalar/matching tensor/callable targets; arbitrary user functions currently require Python |
+| Grid / uniform random | `margam/components/sampling.py` | Intervals and axis-aligned rectangles; physical coordinates; no CAD, mesh loading, low-discrepancy or adaptive samplers |
+| Loss aggregation | `margam/components/losses.py` | Fixed weighted sum of named scalar terms; Python supports finite non-negative weights; UI currently requires positive PDE/BC weights |
+| Loss metric / optimiser | `margam/backend/utils.py` | Built-in MSE and Adam only; method accepts an optimiser factory in Python; no standalone optimiser block, scheduler or UI optimiser selection |
+| Fully connected network | `margam/nn/FCNN.py` | UI uses tanh and Xavier normal with domain-bound coordinate normalisation; hidden-layer widths editable; no UI activation/architecture selection |
+| Poisson template | `margam/templates/poisson.py` | Scalar constant-source interval/rectangle problem; constant Dirichlet or outward derivative BCs; independent rectangle-side sampling |
+| Heat demo | `margam/templates/heat.py` | Configures the same Poisson method and explicit outputs; no transient heat solver |
+| Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; current display handles scalar fields; reference required only for comparison; ParaView/export deferred |
+
+The grouped library lists only supported blocks. Sampler property choices come
+from `SAMPLERS` in the sampler module and include descriptive tooltips. Broader
+machine-readable component metadata and library capability panels remain TODO;
+this document does not imply a generic component registry.
+
 ## Sampling
 
 `margam/components/sampling.py` exposes `sample_box(lower, upper, count, method, seed)`.
@@ -13,7 +36,38 @@ and PyTorch. Supported methods:
 
 Coordinates use the supplied physical bounds. Boundary sampling is separate;
 the Poisson template maps 1D samples onto each rectangle side, excluding corners
-for grid sampling. Interval boundaries are the two endpoints. These are initial
+for grid sampling. Interval boundaries are the two endpoints.
+
+Rectangle-side recipes are `BoundarySampling(points, method, seed)` values stored
+in `PoissonConfig.boundary_sampling`, keyed by `left`, `right`, `bottom`, or `top`.
+Each side is independent of `sampling` and `seed` (the interior settings). For an
+unconfigured side, `boundary_recipe(side)` uses a grid, `boundary_points` as the
+default count, and stable seeds 8/9/10/11 respectively. This preserves existing
+all-grid templates and their point counts. Unlike earlier versions, changing the
+interior method or seed no longer changes boundary samples. An explicit side recipe
+also overrides the default count. Grid seeds are stored but unused. The existing
+`seed` still seeds network initialisation as well as interior random sampling.
+
+Supported budgets are 1–100000 interior points and 1–10000 per rectangle side.
+Side sampling is 1D, so either method returns the exact requested side count.
+Random uses the sampler's half-open coordinate range; grid samples exclude corners.
+The Boundary points inspector selects a named set then edits only that recipe.
+Switching to an interval retains rectangle recipes but uses only its two endpoints;
+switching back restores them. Template reset clears overrides. Boundary conditions
+remain a separate assignment step. The optional Rectangle sample preview and the
+trainer both use `sample_problem`, so they consume the same recipes.
+
+```python
+from margam.templates.poisson import BoundarySampling, PoissonConfig, sample_problem
+
+config = PoissonConfig(points=70, sampling='random', seed=42)
+config.boundary_sampling['left'] = BoundarySampling(30, 'random', 123)
+config.boundary_sampling['top'] = BoundarySampling(12, 'grid', 11)
+interior, boundaries = sample_problem(config)
+# 70 interior; 30 left; 12 top; 16 each on right and bottom.
+```
+
+ These are initial
 small-domain samplers; the broader GeoSampler catalogue is not yet imported.
 
 ## Poisson template

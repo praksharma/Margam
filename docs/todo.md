@@ -3,7 +3,8 @@
 See roadmap.md for the agreed design and stages. Completed historical DeepINN
 checkboxes are not claims about current Margam support.
 
-- [ ] Catalogue implemented methods, sampling and optimisation components with limitations.
+- [x] Catalogue implemented methods, sampling and optimisation components with
+  API/UI support and limitations in components.md.
 - [ ] Reuse GeoSampler unit-domain samplers and expose supported settings.
 - [x] Add built-in intervals, squares and rectangles with grid/random meshless sampling.
 - [x] Create named rectangle-side point sets, then assign constant Dirichlet/Neumann BCs.
@@ -48,14 +49,15 @@ checkboxes are not claims about current Margam support.
   and Results. Template actions remain separate in File/the toolbar. Search matches
   block/category names and restores collapsed groups when cleared. Only implemented
   blocks are listed; Enter and double-click add a block.
-- [ ] Group sampling by purpose: interior/PDE points and boundary point sets.
+- [x] Group sampling by purpose: interior/PDE points and boundary point sets.
   Within each, show implemented methods and their supported settings. Sampling
   method is distinct from the target region; assigning a BC is a later operation.
-- [ ] Keep basic built-in interval/rectangle sampling in Margam: grid and seeded
+- [x] Keep basic built-in interval/rectangle sampling in Margam: grid and seeded
   uniform random, domain/side selection, point budget or points-per-side, seed,
   actual count and preview. A simple problem must not require GeoSampler.
-- [ ] Let distinct point sets use independent sampling recipes, methods, counts
-  and seeds; do not force every boundary and the interior to share one selection.
+- [x] Let the template interior and each named rectangle side use independent
+  sampling recipes, methods, counts and seeds. Intervals retain fixed endpoints. Arbitrary additional sampler
+  instances still depend on future graph execution work.
 - [ ] Drive library entries and property options from the component catalogue,
   including status, compatible targets, parameters and limitations. Do not list
   planned sampling methods as executable options.
@@ -84,8 +86,9 @@ checkboxes are not claims about current Margam support.
 
 The first output-ownership stage in simulink-evidence.md is implemented and
 verified. See ui-prototype.md for actual menu actions, output lifecycle and limits.
-The searchable, collapsible library is implemented. Independent core sampling
-recipes and catalogue-backed capability descriptions remain future work.
+The searchable, collapsible library and independent rectangle-side sampling
+recipes are implemented. The component catalogue records implemented capabilities;
+structured catalogue metadata driving all library descriptions remains future work.
 
 ## Block-owned rectangle previews and context menus
 

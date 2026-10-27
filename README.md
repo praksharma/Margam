@@ -121,7 +121,10 @@ See [heat-demo.md](docs/heat-demo.md) for equations, parameters and reference ch
    2D windows open only on request and float by default; they are not available
    for intervals or arbitrary geometry. Closing one hides it; reopening reuses it.
 3. Select **Interior sampler** to choose grid/random sampling, point budget and seed.
-   Select **Boundary points** for the number of samples per rectangle side.
+   Select **Boundary points**, choose a named side, then set its own grid/random
+   method, point count and seed. Changing one side leaves the other sides and
+   interior unchanged. Interval boundaries are fixed endpoints. Grid seeds are
+   retained for switching methods; grids themselves are deterministic.
 4. Select **PDE residual** to change the constant source. This first UI supports a
    Poisson preset; arbitrary PDE editing and pointwise forcing arrays are future work.
 5. Select **Boundary condition** to assign each named side a Dirichlet value or
