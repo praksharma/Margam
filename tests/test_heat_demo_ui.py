@@ -47,7 +47,7 @@ assert view.rectangle_comparison.prediction.height()>=230
 assert not view.grab().isNull()
 w.reset_template();app.processEvents()
 assert len(w.scene.nodes())==7 and not w.output_views.entries
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
                               env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

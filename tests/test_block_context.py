@@ -91,7 +91,7 @@ owner=next(n for n in w.scene.nodes() if n.kind=='domain')
 w.open_rectangle_preview(owner,False)
 w.reset_template();app.processEvents()
 assert not w.rectangle_previews
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
                               env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

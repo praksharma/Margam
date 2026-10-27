@@ -66,7 +66,7 @@ assert all(event.isAccepted() for event in send_drop(core))
 assert not w.validate_model()
 assert 'exactly one domain' in w.validation.text()
 assert w.add_node('unknown title') is None
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 ''')
 
     def test_quick_insert_keyboard_and_lifecycle(self):
@@ -128,5 +128,5 @@ assert w.quick_insert is None
 w.show_quick_insert(expected,view.viewport().mapToGlobal(position))
 w.reset_template();app.processEvents()
 assert w.quick_insert is None and len(w.scene.nodes())==7
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 ''')

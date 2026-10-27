@@ -2,6 +2,7 @@
 from uuid import uuid4
 from copy import deepcopy
 from dataclasses import replace
+from pathlib import Path
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.heat import heat_demo_config
 from ..components.outputs import OutputRequest
@@ -14,6 +15,7 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
+from .model_document import capture_model, decode_document, read_model, write_model
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
@@ -23,7 +25,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
-    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox,
+    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox, QFileDialog,
 )
 
 
@@ -310,14 +312,15 @@ class Window(QMainWindow):
         self.rectangle_previews = {}
         self.quick_insert = None
         self._closing = False
+        self.model_path = None
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
         configure_theme(QApplication.instance(),'light')
         toolbar=self.addToolBar('Model')
         self.load_action=toolbar.addAction('Reset Poisson template')
-        self.load_action.triggered.connect(self.reset_template)
+        self.load_action.triggered.connect(lambda:self.request_template(False))
         self.heat_action=toolbar.addAction('Heat demo')
-        self.heat_action.triggered.connect(self.load_heat_template)
+        self.heat_action.triggered.connect(lambda:self.request_template(True))
         self.zoom_in_action=toolbar.addAction('Zoom in')
         self.zoom_in_action.triggered.connect(lambda:self.view.zoom_by(1.2))
         self.zoom_out_action=toolbar.addAction('Zoom out')
@@ -379,6 +382,8 @@ class Window(QMainWindow):
         self.scene.edit_handler=self.push_edit
         self.scene.selectionChanged.emit()
         self.log.appendPlainText('Poisson template: Δu + c = 0. Select a block to configure it, validate, then train. Plot views are optional; add and connect an output block, then double-click it to open its view.\nBoundary sets are sampled first; assign a constant condition to each side in the BC block.')
+        self.undo_stack.cleanChanged.connect(self.update_document_title)
+        self.update_document_title()
         self.statusBar().showMessage('Ready · rectangle Poisson template · select blocks to edit settings')
         QTimer.singleShot(0,self.fit_model)
 
@@ -390,6 +395,13 @@ class Window(QMainWindow):
 
     def setup_menus(self):
         file_menu=self.menuBar().addMenu('File')
+        self.open_model_action=file_menu.addAction('Open model…')
+        self.open_model_action.setShortcut('Ctrl+O');self.open_model_action.triggered.connect(self.open_model)
+        self.save_model_action=file_menu.addAction('Save model')
+        self.save_model_action.setShortcut('Ctrl+S');self.save_model_action.triggered.connect(lambda:self.save_model())
+        self.save_as_action=file_menu.addAction('Save model as…')
+        self.save_as_action.setShortcut('Ctrl+Shift+S');self.save_as_action.triggered.connect(self.save_model_as)
+        file_menu.addSeparator()
         self.load_action.setShortcut('Ctrl+N')
         file_menu.addAction(self.load_action)
         file_menu.addAction(self.heat_action)
@@ -456,6 +468,100 @@ class Window(QMainWindow):
             'A Comparison needs a model and an explicit Reference. References support intervals and rectangles with equal constant Dirichlet edges.'))
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
             self,'Margam','A visual builder for physics-informed neural networks.\nCurrent executable template: scalar Poisson on intervals and rectangles.'))
+
+    def update_document_title(self,*args):
+        name=Path(self.model_path).name if self.model_path else 'Untitled'
+        self.setWindowTitle('Margam · '+name+'[*] · baseline PINN builder')
+        self.setWindowModified(not self.undo_stack.isClean())
+
+    def commit_inspector(self):
+        focus=QApplication.focusWidget()
+        if focus is not None and self.property_scroll.isAncestorOf(focus):focus.clearFocus()
+
+    def confirm_discard(self):
+        self.commit_inspector()
+        if self.undo_stack.isClean():return True
+        answer=QMessageBox.question(self,'Unsaved model',
+            'Save changes to the current model before continuing?',
+            QMessageBox.StandardButton.Save|QMessageBox.StandardButton.Discard|QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel)
+        if answer==QMessageBox.StandardButton.Save:return self.save_model()
+        return answer==QMessageBox.StandardButton.Discard
+
+    def request_template(self,heat=False):
+        if self.is_running() or self.scene.locked or not self.confirm_discard():return False
+        if heat:self.load_heat_template()
+        else:self.reset_template()
+        return True
+
+    def save_model_as(self):
+        if self.is_running() or self.scene.locked:return False
+        path,_=QFileDialog.getSaveFileName(self,'Save Margam model',self.model_path or 'model.margam.json',
+                                         'Margam model (*.margam.json *.json)')
+        if not path:return False
+        if not path.lower().endswith('.json'):
+            path+='.margam.json'
+            if Path(path).exists() and QMessageBox.question(self,'Replace model?',
+                    'Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+        return self.save_model(path)
+
+    def save_model(self,path=None):
+        if self.is_running() or self.scene.locked:return False
+        self.commit_inspector()
+        path=path or self.model_path
+        if not path:return self.save_model_as()
+        try:write_model(path,capture_model(self))
+        except (OSError,ValueError,TypeError) as error:
+            QMessageBox.warning(self,'Model could not be saved',str(error));return False
+        self.model_path=str(Path(path).absolute())
+        self.undo_stack.setClean();self._history_epoch+=1;self.update_document_title()
+        self.statusBar().showMessage('Saved model · '+Path(path).name)
+        return True
+
+    def open_model(self):
+        if self.is_running() or self.scene.locked:return False
+        path,_=QFileDialog.getOpenFileName(self,'Open Margam model',str(Path(self.model_path).parent) if self.model_path else '',
+                                         'Margam model (*.margam.json *.json)')
+        return self.load_model(path) if path else False
+
+    def load_model(self,path):
+        if self.is_running() or self.scene.locked:return False
+        try:read_model(path)
+        except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
+            QMessageBox.warning(self,'Model could not be opened',str(error));return False
+        if not self.confirm_discard():return False
+        # Save in the unsaved prompt may have updated this same file. Read it
+        # again before staging so the clean model matches what is now on disk.
+        try:
+            data=read_model(path)
+            config,records,connections=decode_document(data)
+            staged=Canvas();nodes={}
+            titles={kind:title for title,kind in KINDS.items()}
+            for record in records:
+                node=Node(titles[record['kind']],'',*record['position'])
+                node.identifier=record['id'];node.title=record['title'];node.settings=dict(record['settings'])
+                staged.addItem(node);nodes[node.identifier]=node
+            for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
+        except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
+            QMessageBox.warning(self,'Model could not be opened',str(error));return False
+        if self.quick_insert is not None:self.quick_insert.reject()
+        self._resetting=True;self.scene.blockSignals(True)
+        try:
+            self.clear_run_data();self.output_views.sync([]);self.close_rectangle_previews()
+            self.scene.cancel_wire();self.undo_stack.clear()
+            self.scene.wires.clear();self.scene.clear();self.config=config
+            for wire in staged.wires:staged.removeItem(wire)
+            for node in nodes.values():staged.removeItem(node);self.scene.addItem(node)
+            self.scene.wires=list(staged.wires);staged.wires.clear()
+            for wire in self.scene.wires:self.scene.addItem(wire);wire.update_path()
+        finally:
+            self.scene.blockSignals(False);self._resetting=False
+        self.model_path=str(Path(path).absolute());self._history_epoch+=1
+        self.settings_changed();self.selection_changed();self.fit_model()
+        self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
+        self.statusBar().showMessage('Opened model · '+Path(path).name+' · validate before training')
+        return True
 
     def push_edit(self,text,redo,undo,merge_key=None):
         if self.is_running() or self.scene.locked or self._history_replaying:return
@@ -655,6 +761,7 @@ class Window(QMainWindow):
         self.populate_template();self.settings_changed();self.fit_model()
         self.log.appendPlainText('Loaded the rectangle Poisson template.')
         self._resetting=False
+        self.model_path=None;self.undo_stack.setClean();self.update_document_title()
         self.update_history_actions()
 
     def load_heat_template(self):
@@ -674,7 +781,7 @@ class Window(QMainWindow):
         self.scene.clearSelection();method.setSelected(True)
         self.validate_model();self.fit_model()
         self._resetting=False
-        self.undo_stack.clear();self.update_history_actions()
+        self.undo_stack.clear();self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
         self.statusBar().showMessage('Heat demo ready · Train PINN, then open monitor, prediction or comparison blocks')
         self.log.appendPlainText('Loaded steady heat demo: unit conductivity, constant source 2, zero edge temperature. Explicit series reference and output blocks are connected; views remain closed until requested.')
 
@@ -937,6 +1044,7 @@ class Window(QMainWindow):
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
+        self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)
@@ -1015,6 +1123,8 @@ class Window(QMainWindow):
     def closeEvent(self,event):
         if self.is_running():
             self._closing=True;self.cancel_training();event.ignore();return
+        if not self.confirm_discard():
+            self._closing=False;event.ignore();return
         if not getattr(self,'_selection_disconnected',False):
             self.scene.selectionChanged.disconnect(self.selection_changed)
             self._selection_disconnected=True

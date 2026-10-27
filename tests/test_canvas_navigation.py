@@ -46,7 +46,7 @@ for _ in range(30):view.zoom_by(2)
 assert abs(view.transform().m11()-4)<1e-10
 for _ in range(30):view.zoom_by(.5)
 assert abs(view.transform().m11()-.1)<1e-10
-w.fit_model();w.close();app.processEvents()
+w.fit_model();w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
                               env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

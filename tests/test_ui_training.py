@@ -160,7 +160,7 @@ assert w.isVisible() and w.train_button.isEnabled()
 # Closing during training requests cancellation and waits for safe thread teardown.
 w.change('iterations',100000)
 assert w.start_training()
-w.close()
+w.undo_stack.setClean();w.close()
 assert w._closing
 until_finished()
 assert w.result['cancelled']

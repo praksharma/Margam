@@ -44,7 +44,7 @@ action.trigger();app.processEvents()
 assert w.library_dock.isHidden()
 action.trigger();app.processEvents()
 assert not w.library_dock.isHidden()
-w.close()
+w.undo_stack.setClean();w.close()
 app.processEvents()
 """
         env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONDONTWRITEBYTECODE="1")

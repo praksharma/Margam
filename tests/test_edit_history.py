@@ -87,7 +87,7 @@ assert history.index()==index
 w.reset_template();assert history.count()==0 and len(w.scene.nodes())==7
 w.load_heat_template();assert history.count()==0 and len(w.scene.nodes())==11
 w.undo_edit();assert len(w.scene.nodes())==11
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 ''')
 
     def test_real_drag_grouping_shortcuts_and_result_rules(self):
@@ -141,7 +141,7 @@ assert network.scene() is None and pde.scene() is None
 w.undo_edit()
 assert network.scene() is w.scene and pde.scene() is w.scene
 assert len(w.scene.wires)==count and w.validate_model()
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 ''')
 
     def test_training_boundary_and_history_limit(self):
@@ -171,5 +171,5 @@ for _ in range(100):w.undo_edit()
 assert w.config.source==7 and not w.undo_stack.canUndo()
 for _ in range(100):w.redo_edit()
 assert w.config.source==107
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 ''')

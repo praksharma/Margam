@@ -50,7 +50,7 @@ w.set_busy(True)
 assert not library.search.isEnabled() and not tree.isEnabled()
 w.set_busy(False)
 assert library.search.isEnabled() and tree.isEnabled()
-w.close(); app.processEvents()
+w.undo_stack.setClean();w.close(); app.processEvents()
 '''
         result = subprocess.run([sys.executable, '-c', code],
             cwd=Path(__file__).resolve().parents[1],

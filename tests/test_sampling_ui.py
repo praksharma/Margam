@@ -46,7 +46,7 @@ w.set_busy(False)
 w.reset_template();app.processEvents()
 assert not w.config.boundary_sampling
 assert all(len(rows)==16 for rows in sample_problem(w.config)[1].values())
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
             env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

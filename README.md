@@ -85,7 +85,7 @@ selected-block properties on the right, and no default figure pane.
 Operational Messages are a separate panel, initially hidden (open it from View).
 Use **View → Theme → Light / Dark** to switch themes. Panels can be resized or docked.
 Menus are File, Edit, View, Run and Help; only implemented actions are exposed.
-File currently provides the basic-template reset, Heat demo and Quit; model Open/Save remains future work.
+File provides model Open/Save/Save As, the basic-template reset, Heat demo and Quit.
 
 ### Navigate the canvas
 
@@ -173,6 +173,19 @@ does not clear previous results. These insertion controls are
 locked during training. Tab in property editors keeps its normal focus behaviour.
 
 
+Use **File → Save model** (Ctrl+S), **Save model as…** (Ctrl+Shift+S), and
+**Open model…** (Ctrl+O) for `.margam.json` model files. They store the graph,
+positions, block names/settings and template/sampling settings. Incomplete drafts
+can be saved; Validate still determines whether they can train. Reopened output
+and preview windows stay closed; train again to produce results. Model files do
+not include trained weights, result arrays, undo history or panel layout.
+
+An asterisk in the window title marks unsaved model edits. Opening another model,
+using a template action, or closing offers Save / Discard / Cancel. Invalid files
+leave the current model intact. Save/Open/template changes are locked during
+training; closing during a run first stops it safely. Saving marks the current
+undo position clean, so undoing back to it removes the unsaved indicator.
+
 Use **Edit → Undo / Redo** or the block context menu to reverse model edits.
 With canvas focus, **Ctrl+Z** undoes; **Ctrl+Y** or **Ctrl+Shift+Z** redoes.
 Text/property editors retain their own shortcuts; use the Edit menu for model undo
@@ -199,8 +212,8 @@ shows retained data. Training never forces plots open or switches to them.
 and waits for the worker. The numerical model remains in memory after a run until
 a model edit or new run; there is no model export/continuation UI yet. Changing
 the graph or model/evaluation settings clears stale results and requires another
-run. Models/results are not saved automatically; persistence and arbitrary PDE
-execution remain future work. Use **View → Reset panel layout** to restore docks.
+run. Model definitions can be saved explicitly from File; trained results and
+checkpoints are not persisted. Arbitrary PDE execution remains future work. Use **View → Reset panel layout** to restore docks.
 
 Right-click menus expose only supported actions: Properties, Delete block, Help,
 and the view actions belonging to that block. Output blocks offer Open monitor,

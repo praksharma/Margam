@@ -1,0 +1,124 @@
+"""Versioned, data-only model documents for the current Poisson builder."""
+from dataclasses import asdict, fields
+import json
+import math
+import os
+from pathlib import Path
+import tempfile
+
+from ..templates.poisson import PoissonConfig, BoundarySampling
+from ..components.sampling import SAMPLERS
+from .ports import INPUTS, OUTPUTS
+
+MAX_BYTES = 4 * 1024 * 1024
+SIDES = {'left', 'right', 'bottom', 'top'}
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def number(value):
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def decode_document(data):
+    """Validate editor structure; incomplete/physically invalid drafts are allowed."""
+    require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] == 1, 'Unsupported Margam model format/version.')
+    c = data['config']
+    require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
+    require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
+    for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
+        require(number(c[key]), f'{key} must be finite numeric data.')
+    for key,lower,upper in (('points',1,100000),('boundary_points',1,10000),
+                            ('seed',0,2**31-1),('iterations',1,100000)):
+        require(type(c[key]) is int and lower <= c[key] <= upper, f'Invalid {key}.')
+    require(isinstance(c['layers'], (list,tuple)) and len(c['layers']) <= 256 and all(type(v) is int and abs(v) <= 1000000 for v in c['layers']), 'Invalid network layers.')
+    for key in ('bc_types','bc_values'):
+        require(isinstance(c[key],dict) and set(c[key]) == SIDES, 'Boundary settings need all four named sides.')
+    require(all(v in ('Dirichlet','Neumann') for v in c['bc_types'].values()), 'Unsupported boundary condition.')
+    require(all(number(v) for v in c['bc_values'].values()), 'Boundary targets must be finite.')
+    recipes = c['boundary_sampling']
+    require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
+    parsed = {}
+    for side, recipe in recipes.items():
+        require(isinstance(recipe,dict) and set(recipe) == {'points','method','seed'}, 'Invalid boundary recipe.')
+        require(recipe['method'] in SAMPLERS and type(recipe['points']) is int and 1 <= recipe['points'] <= 10000 and type(recipe['seed']) is int and 0 <= recipe['seed'] < 2**31, 'Unsupported boundary recipe settings.')
+        parsed[side] = BoundarySampling(**recipe)
+    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed)
+    config = PoissonConfig(**values)
+    nodes, wires = data['nodes'], data['wires']
+    require(isinstance(nodes,list) and len(nodes) <= 2000, 'Invalid block list (maximum 2000).')
+    require(isinstance(wires,list) and len(wires) <= 10000, 'Invalid wire list (maximum 10000).')
+    by_id = {}
+    for node in nodes:
+        require(isinstance(node,dict) and set(node) == {'id','kind','title','position','settings'}, 'Invalid block record.')
+        identifier = node['id']
+        require(isinstance(identifier,str) and 0 < len(identifier) <= 128 and identifier not in by_id, 'Block identifiers must be unique non-empty strings.')
+        require(isinstance(node['kind'],str) and node['kind'] in INPUTS, 'Unknown block kind.')
+        require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
+        require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
+        settings = node['settings']
+        require(isinstance(settings,dict) and set(settings) == {'resolution','history_limit'}, 'Invalid output settings.')
+        require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
+        by_id[identifier] = node
+    occupied = set()
+    for wire in wires:
+        require(isinstance(wire,dict) and set(wire) == {'source','target','input'}, 'Invalid wire record.')
+        require(all(isinstance(wire[k],str) for k in wire), 'Wire endpoints must be strings.')
+        require(wire['source'] in by_id and wire['target'] in by_id and wire['source'] != wire['target'], 'Unknown or self-connected wire endpoint.')
+        source = OUTPUTS[by_id[wire['source']]['kind']]
+        targets = {spec.name:spec for spec in INPUTS[by_id[wire['target']]['kind']]}
+        target = targets.get(wire['input'])
+        require(source is not None and target is not None and source.data_type == target.data_type, 'Incompatible saved wire ports.')
+        key = (wire['target'], wire['input'])
+        require(key not in occupied, 'A saved input has multiple sources.')
+        occupied.add(key)
+    return config, nodes, wires
+
+
+def capture_model(window):
+    return {'format':'margam-model', 'version':1, 'config':asdict(window.config),
+            'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
+                      'position':[n.pos().x(),n.pos().y()],'settings':dict(n.settings)}
+                     for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],
+            'wires':[{'source':w.source.parentItem().identifier,'target':w.target.parentItem().identifier,'input':w.target.name}
+                     for w in window.scene.wires]}
+
+
+def unique_keys(pairs):
+    result = {}
+    for key,value in pairs:
+        require(key not in result, 'Duplicate JSON object key.')
+        result[key] = value
+    return result
+
+
+def read_model(path):
+    with open(path,'rb') as stream:
+        content = stream.read(MAX_BYTES+1)
+    require(len(content) <= MAX_BYTES, 'Model file exceeds 4 MiB.')
+    try:
+        data = json.loads(content, object_pairs_hook=unique_keys)
+        decode_document(data)
+    except (TypeError, KeyError, OverflowError, RecursionError, UnicodeError) as error:
+        raise ValueError('Invalid model data.') from error
+    return data
+
+
+def write_model(path, data):
+    """Replace only after a complete validated write beside the destination."""
+    decode_document(data)
+    content = (json.dumps(data,indent=2,allow_nan=False)+'\n').encode('utf-8')
+    require(len(content) <= MAX_BYTES, 'Model document exceeds 4 MiB.')
+    path = Path(path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent,prefix='.margam-',suffix='.tmp',delete=False) as stream:
+            temporary = stream.name
+            stream.write(content);stream.flush();os.fsync(stream.fileno())
+        os.replace(temporary,path)
+    finally:
+        if temporary is not None and os.path.exists(temporary):os.unlink(temporary)

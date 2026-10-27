@@ -17,18 +17,23 @@ checkboxes are not claims about current Margam support.
   adding wires. Validate stored wire endpoints again before training.
 - [ ] Define executable graph semantics beyond the current template-backed core.
 - [x] Add block/wire deletion and fit-to-model navigation.
-- [ ] Add saved models/results.
+- [x] Add versioned model Save / Save As / Open, including graph/configuration,
+  block IDs/settings/positions, named sampling recipes, atomic replacement,
+  validated loading, dirty state and Save/Discard/Cancel protection.
+- [ ] Add saved training results/checkpoints as a separate explicit capability.
+  Model files currently contain model definitions only.
 - [x] Add bounded model undo/redo for add/move/connect/delete and settings.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
 - [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
+  Model document persistence is implemented; panel layout and crash recovery remain.
 - [ ] Integrate GeoSampler for complex geometry later; no 3D viewport in this project.
 - [ ] Validate a compatible GPU PyTorch build in the Python 3.14 environment.
 
 ## Menus and explicit outputs
 
 - [x] Add File / Edit / View / Run / Help menus for implemented actions. File
-  currently offers template reset and Quit; model Open/Save remains future work.
+  offers model Open/Save/Save As, template actions and Quit.
 - [x] Allow training without any plot/results block.
 - [x] Make loss plots and prediction plots explicit optional output blocks, with
   per-instance history/evaluation settings.

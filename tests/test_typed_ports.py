@@ -87,7 +87,7 @@ scene.begin_wire(method.output)
 scene.clearSelection();method.setSelected(True)
 w.delete_selected()
 assert scene.pending is None
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
             env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),
@@ -129,7 +129,7 @@ view=w.output_views.entries[monitor.identifier][0]
 view.close();double_click(monitor)
 assert w.output_views.entries[monitor.identifier][0] is view and not view.isHidden()
 assert w.quick_insert is None
-w.close();app.processEvents()
+w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
             env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

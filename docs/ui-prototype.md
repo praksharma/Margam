@@ -25,7 +25,7 @@ there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
 | Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T) |
 | Help | Quick start and About |
 
-Open/Save is not implemented. Undo/Redo is available for model edits as described below.
+Open/Save and Undo/Redo are implemented for model definitions/edits as described below.
 Panel visibility/layout is not yet persisted. Fitting is explicit; selecting a
 block or resizing an inspector does not automatically reset the camera.
 
@@ -132,7 +132,7 @@ independent evaluation resolutions, rectangle-only context actions and preview
 cleanup, monitor retention, closed-view recording,
 detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
 Screenshots are under assets/screenshots. General graph execution, instance-owned core settings,
-multiple arbitrary sampling blocks, persistence, arbitrary PDE/reference
+multiple arbitrary sampling blocks, saved results/checkpoints, arbitrary PDE/reference
 sources and export remain in todo.md.
 
 ## Canvas navigation
@@ -274,3 +274,39 @@ data. Semantic graph/settings edits and their replay invalidate old results;
 undo never restores model weights, predictions or discarded monitor records.
 Increasing a restored retention limit does not recover already trimmed samples.
 A restored view can be explicitly opened again; no plot is created by history.
+
+## Model files and unsaved changes
+
+File → Open model (Ctrl+O), Save model (Ctrl+S) and Save model as (Ctrl+Shift+S)
+use `.margam.json` documents. Version 1 is readable JSON with a fixed format marker,
+version, template configuration, node IDs/kinds/names/positions/settings, and wire
+source/target IDs plus target port name. Named boundary recipes and output-instance
+settings are included. No Python callables, executable code, pickle data, trained
+weights, numerical results, undo commands or view preferences are stored.
+
+Opening validates the whole structure, known kinds/ports, compatible types,
+unique IDs, finite data and single-source inputs, then stages the graph before
+replacing the current document. Files are capped at 4 MiB, 2000 nodes and 10000
+wires. Unknown versions, duplicate JSON keys, missing fields, invalid endpoints and
+unsupported settings are rejected. Open failure leaves the graph, filename, history
+and existing results untouched. Drafts may have missing/duplicate core blocks or
+invalid physics/settings; they can still be saved and reopened, but pre-training
+validation reports them. Core display names remain derived from the template;
+output names preserve their user-defined labels.
+
+Saving validates the serialised structure and writes and flushes data into a temporary
+file beside the destination before atomic replacement. A failed write/replacement
+does not mark the document clean or replace the previous file. Pending inspector
+values are committed before saving or deciding whether to discard. The filename
+and unsaved indicator update only after success. Undo/redo tracks the clean save
+position. Programmatic low-level scene edits remain outside this dirty tracking,
+just as they are outside model undo.
+
+Unsaved UI edits prompt Save / Discard / Cancel before File Open, user-facing
+template actions, or closing. Cancelling Save As cancels the pending replacement.
+The existing direct template-building helpers reset without an interactive prompt;
+menu/toolbar actions route through the unsaved guard. Templates are clean Untitled
+models and reset history. Opening clears history/run data and leaves optional views
+closed, with the loaded graph fitted to the canvas. Save/Open/template actions are
+locked during training; a close request waits for safe worker cancellation before
+the unsaved decision. Panel persistence, recent files and crash recovery remain TODO.
