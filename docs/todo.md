@@ -324,3 +324,6 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Add F1 / Help → User manual, with build guidance and clear browser errors.
 - [x] Keep search/fonts local for offline reading; document optional build tools
   and verify rendered links, screenshots and help behaviour.
+
+- [x] Add a GitHub Pages workflow that builds/checks and publishes the generated
+  manual, with build-only PR validation and documented GitHub Actions source setting.

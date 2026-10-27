@@ -91,7 +91,9 @@
 - Update screenshots/captions when their controls change; use the state-isolated
   examples.capture_manual helper, with images in assets/screenshots.
 - Build/check with examples.documentation. Generated source/site stay under the
-  ignored build/manual directory; never edit generated copies or publish by default.
+  ignored build/manual directory; never edit generated copies. Local builds do not
+  publish. The dedicated Pages workflow deploys the manual when main is pushed;
+  do not push or change remote Pages settings unless the user requests it.
 - F1 opens the local built guide. Zensical is an optional docs extra, not a numerical
   or desktop startup dependency. Preserve offline assets and their licenses.
 

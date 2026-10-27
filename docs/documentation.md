@@ -76,3 +76,27 @@ The browser preview was checked over localhost: navigation, a ParaView search,
 result navigation, image rendering and the theme toggle. The in-app test browser
 does not allow file URLs, so direct-file offline search was not exercised there.
 The offline configuration and bundled local search shim are checked separately.
+
+## Publish the manual on GitHub Pages
+
+The `Publish user manual` workflow builds this same checked site on pushes to
+`main`, uploads **build/manual/site**, and deploys it to GitHub Pages. Pull requests
+only build/check the guide; they do not deploy. The build installs the pinned docs
+extra only, without the desktop or numerical dependencies.
+
+One-time repository setting:
+
+1. Open **Settings → Pages**.
+2. Under **Build and deployment → Source**, select **GitHub Actions**.
+3. Push the workflow change, or run **Actions → Publish user manual → Run workflow**
+   on main after the change is present there.
+4. Wait for both build and deploy to finish, then open the Pages URL.
+
+Selecting **Deploy from a branch → main → /docs** does not run Zensical. It
+publishes the Markdown source instead of the generated sidebar/search interface.
+The built site is deliberately ignored by Git; do not commit it into docs/ or
+replace the authored Markdown with HTML. Local builds remain local; publishing
+happens through the separate workflow. Site URL includes the repository prefix
+so navigation and search resolve beneath `/Margam/`.
+
+[GitHub Pages custom workflow reference](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).

@@ -1,0 +1,61 @@
+name: Publish user manual
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install documentation tools only
+        # Read the pinned docs extra without installing Torch or the desktop app.
+        run: |
+          python - <<'PY'
+          import subprocess
+          import sys
+          import tomllib
+
+          with open('pyproject.toml', 'rb') as stream:
+              tools = tomllib.load(stream)['project']['optional-dependencies']['docs']
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *tools], check=True)
+          PY
+      - name: Build and check illustrated manual
+        run: python -m examples.documentation build
+      - name: Upload generated manual
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/manual/site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Publish generated manual
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,5 +1,6 @@
 [project]
 site_name = "Margam User Guide"
+site_url = "https://praksharma.github.io/Margam/"
 site_description = "Build, train, inspect and export physics-informed neural networks."
 docs_dir = "build/manual/source"
 site_dir = "build/manual/site"

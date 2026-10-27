@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from urllib.parse import unquote,urlsplit
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -78,7 +79,11 @@ class Page(HTMLParser):
             if attrs.get(key):self.links.append(attrs[key])
 
 
-def check_site(site=SITE):
+def check_site(site=SITE, site_url=None):
+    if site_url is None:
+        with (ROOT/'zensical.toml').open('rb') as stream:
+            site_url=tomllib.load(stream)['project'].get('site_url','')
+    base_path=urlsplit(site_url).path.rstrip('/')+'/'
     pages={}
     for path in site.rglob('*.html'):
         page=Page();page.feed(path.read_text());pages[path.resolve()]=page
@@ -87,7 +92,15 @@ def check_site(site=SITE):
         for target in page.links:
             parts=urlsplit(target)
             if parts.scheme or parts.netloc:continue
-            destination=(site/unquote(parts.path).lstrip('/') if parts.path.startswith('/') else path.parent/unquote(parts.path)).resolve() if parts.path else path
+            link_path=unquote(parts.path)
+            if link_path.startswith('/'):
+                if not link_path.startswith(base_path):
+                    errors.append(f'{path.relative_to(site)} → {target} (outside site base path)');continue
+                destination=(site/link_path[len(base_path):]).resolve()
+            else:
+                destination=(path.parent/link_path).resolve() if link_path else path
+            if not destination.is_relative_to(site.resolve()):
+                errors.append(f'{path.relative_to(site)} → {target} (outside site directory)');continue
             if destination.is_dir():destination=destination/'index.html'
             if not destination.is_file():errors.append(f'{path.relative_to(site)} → {target} (missing file)');continue
             if parts.fragment and destination in pages and unquote(parts.fragment) not in pages[destination].ids:

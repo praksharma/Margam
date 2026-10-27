@@ -44,6 +44,11 @@ class DocumentationTests(unittest.TestCase):
             index=root/'index.html';index.write_text('<a href="topic.html#settings">Topic</a><img src="image.png">')
             (root/'topic.html').write_text('<h1 id="settings">Settings</h1>')
             self.assertEqual(manual.check_site(root),2)
+            index.write_text('<a href="/Margam/topic.html#settings">Topic</a>')
+            self.assertEqual(manual.check_site(root,site_url='https://example.org/Margam/'),2)
+            index.write_text('<a href="/elsewhere/topic.html">Outside</a>')
+            with self.assertRaisesRegex(ValueError,'outside site base path'):
+                manual.check_site(root,site_url='https://example.org/Margam/')
             for bad in ('missing.png','topic.html#absent'):
                 index.write_text('<a href="'+bad+'">Broken</a>')
                 with self.assertRaisesRegex(ValueError,'Broken manual links'):manual.check_site(root)
