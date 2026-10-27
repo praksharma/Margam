@@ -278,7 +278,7 @@ A restored view can be explicitly opened again; no plot is created by history.
 ## Model files and unsaved changes
 
 File → Open model (Ctrl+O), Save model (Ctrl+S) and Save model as (Ctrl+Shift+S)
-use `.margam.json` documents. Version 1 is readable JSON with a fixed format marker,
+use `.margam.json` documents. Version 2 is readable JSON (v1 files migrate with blank expression defaults) with a fixed format marker,
 version, template configuration, node IDs/kinds/names/positions/settings, and wire
 source/target IDs plus target port name. Named boundary recipes and output-instance
 settings are included. No Python callables, executable code, pickle data, trained
@@ -310,3 +310,23 @@ models and reset history. Opening clears history/run data and leaves optional vi
 closed, with the loaded graph fitted to the canvas. Save/Open/template actions are
 locked during training; a close request waits for safe worker cancellation before
 the unsaved decision. Panel persistence, recent files and crash recovery remain TODO.
+
+## Saved runs and baseline resume
+
+File → Save run and checkpoint explicitly stores .margam-run.pt archives after a
+successful or stopped run. Model JSON remains definitions only. Run archives include
+the model graph/config, requested scalar predictions/references/metrics, retained
+monitor histories, network tensors, Adam state, total update count and loss histories.
+No view is created by saving or opening. Open saved run validates the full archive,
+reconstructs a disposable CPU recipe to check weights/optimiser compatibility, then
+replaces the model only after the unsaved decision. Invalid archives preserve the
+current model/results. Files and expanded archives are limited to 256 MiB. Loading
+uses torch.load(weights_only=True, map_location='cpu'), never a pickled model object.
+
+Run → Resume checkpoint asks for additional updates, retains prior monitor losses,
+and runs the existing worker. CPU resume is explicit for portability; architecture,
+Adam options and dtype must match. Semantic edits invalidate loaded resume state;
+layout/renaming preserve it. Model history does not undo numerical training. The
+current total-update limit remains 100000. Tests verify bitwise-identical CPU
+predictions for 25+25 resumed versus 50 uninterrupted Adam updates. No claim of
+GPU equivalence or cross-version optimiser compatibility follows from that check.

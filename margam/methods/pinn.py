@@ -4,6 +4,7 @@ All baseline preparation, loss evaluation, optimisation and prediction live
 here. Other methods can reuse components without branching this trainer.
 """
 import torch
+from copy import deepcopy
 from ..backend import choose_optimiser, loss_metric
 from ..components import weighted_loss
 
@@ -127,6 +128,37 @@ class PINN:
             if display_every and self.iter % display_every == 0:
                 print(f"Iteration: {self.iter}\t Loss: {record['total']:.6g}")
         return self.training_history
+
+    def training_state(self):
+        """Tensor/primitive checkpoint for this baseline recipe, not a pickled model."""
+        self._require_compiled()
+        if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
+        return deepcopy({'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
+                         'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history})
+
+    def load_training_state(self,state):
+        self._require_compiled()
+        if not isinstance(state,dict) or set(state)!={'network','optimiser','iter','loss_history','training_history'}:
+            raise ValueError('Invalid baseline checkpoint.')
+        steps=state['iter']
+        if type(steps) is not int or not 0<=steps<=100000 or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
+            raise ValueError('Checkpoint history does not match its step count.')
+        expected=self.network.state_dict()
+        if set(state['network'])!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[key].shape or value.dtype!=expected[key].dtype or not torch.isfinite(value).all() for key,value in state['network'].items()):
+            raise ValueError('Checkpoint network does not match the configured architecture/dtype.')
+        groups=state['optimiser'].get('param_groups',[])
+        expected_groups=self.optimiser.state_dict()['param_groups']
+        if len(groups)!=len(expected_groups) or any(set(group)!=set(expected_group) or any(group[key]!=expected_group[key] for key in group if key!='params') for group,expected_group in zip(groups,expected_groups)):
+            raise ValueError('Checkpoint optimiser settings do not match the recipe.')
+        self.network.load_state_dict(state['network'])
+        self.optimiser.load_state_dict(state['optimiser'])
+        for parameter,values in self.optimiser.state.items():
+            for name,value in values.items():
+                if isinstance(value,torch.Tensor) and (not torch.isfinite(value).all() or (name!='step' and value.shape!=parameter.shape)):
+                    raise ValueError('Invalid optimiser checkpoint tensor.')
+        self.iter=steps
+        self.loss_history=deepcopy(state['loss_history']);self.training_history=list(state['training_history'])
+        return self
 
     def predict(self, points):
         """Evaluate values without gradients, restoring the network's mode."""

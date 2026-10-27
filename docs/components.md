@@ -137,3 +137,14 @@ anchor and checks adjacent rectangular Dirichlet target values at corners. Prese
 references are unavailable for custom physics. Vector systems and pointwise input
 arrays remain separate future work. Tests cover manufactured residuals, derivatives,
 normal signs, Robin operators, corner compatibility and actual custom-PDE training.
+
+GeoSampler-derived `hammersley` and `stratified` samplers are also available for
+interior and side recipes. Both return exact counts, are seeded and map unit designs
+onto the supplied physical bounds. Hammersley uses a random toroidal shift;
+stratified uses an exact-N equal-volume recursive partition. Grid/random retain
+their previous sequences. No SciPy or Gmsh dependency was introduced. See
+THIRD_PARTY.md for the upstream revision and licence.
+
+The current block capability descriptions in `ui/block_catalogue.py` drive library
+selection details, tooltips, the inspector summary and Help, including parameters,
+port roles and implementation limits. Sampler dropdowns still derive from SAMPLERS.

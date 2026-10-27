@@ -5,7 +5,9 @@ checkboxes are not claims about current Margam support.
 
 - [x] Catalogue implemented methods, sampling and optimisation components with
   API/UI support and limitations in components.md.
-- [ ] Reuse GeoSampler unit-domain samplers and expose supported settings.
+- [x] Reuse GeoSampler Hammersley and recursive stratified unit-domain samplers,
+  with exact counts, seeded shifts/strata and physical interval/rectangle bounds.
+  Existing grid/random sequences are preserved; SciPy-only methods are not exposed.
 - [x] Add built-in intervals, squares and rectangles with grid/random meshless sampling.
 - [x] Create named rectangle-side point sets, then assign constant Dirichlet/Neumann BCs.
 - [x] Connect PDE points to the Poisson residual preset; defer additional pointwise inputs.
@@ -24,15 +26,19 @@ checkboxes are not claims about current Margam support.
 - [x] Add versioned model Save / Save As / Open, including graph/configuration,
   block IDs/settings/positions, named sampling recipes, atomic replacement,
   validated loading, dirty state and Save/Discard/Cancel protection.
-- [ ] Add saved training results/checkpoints as a separate explicit capability.
-  Model files currently contain model definitions only.
+- [x] Add explicit saved-run archives with model definitions, requested predictions,
+  monitor records, network/Adam state, validated CPU loading and resume updates.
+  Model JSON files remain definitions only; run archives use .margam-run.pt.
 - [x] Add bounded model undo/redo for add/move/connect/delete and settings.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
 - [ ] Reuse GeoSampler dock persistence and recovery patterns where appropriate.
   Model document persistence is implemented; panel layout and crash recovery remain.
 - [ ] Integrate GeoSampler for complex geometry later; no 3D viewport in this project.
-- [ ] Validate a compatible GPU PyTorch build in the Python 3.14 environment.
+- [ ] External prerequisite: validate GPU training when a working NVIDIA driver
+  and CUDA-enabled PyTorch build are available. Audit on 27 October: installed
+  torch 2.14.1+cpu, torch.version.cuda=None, CUDA unavailable; nvidia-smi cannot
+  communicate with the driver. CPU checks do not satisfy this item.
 
 ## Menus and explicit outputs
 
@@ -70,9 +76,9 @@ checkboxes are not claims about current Margam support.
 - [x] Let the template interior and each named rectangle side use independent
   sampling recipes, methods, counts and seeds. Intervals retain fixed endpoints. Arbitrary additional sampler
   instances still depend on future graph execution work.
-- [ ] Drive library entries and property options from the component catalogue,
-  including status, compatible targets, parameters and limitations. Do not list
-  planned sampling methods as executable options.
+- [x] Share implemented block status, parameters, compatible ports and limits
+  across the library, inspector and Help. Property sampler choices come from the
+  implemented sampler catalogue. Keep widgets explicit; no generic plugin registry.
 - [ ] Reserve advanced geometry-aware sampling, CAD face/edge selection and richer
   region workflows for GeoSampler. Define the integration boundary rather than
   rebuilding its full toolbox inside Margam.

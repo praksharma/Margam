@@ -1,7 +1,7 @@
 """Collapsible library of the blocks currently supported by the builder."""
 from PySide6.QtCore import Qt, Signal, QMimeData, QEvent
 from PySide6.QtGui import QDrag
-from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME
+from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME, KINDS, describe_block
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel
 
 
@@ -55,18 +55,25 @@ class BlockLibrary(QWidget):
         self.tree.setExpandsOnDoubleClick(False)
         self.tree.setAccessibleName('Block categories')
         layout.addWidget(self.tree)
+        self.description=QLabel('Select a block to see supported settings and limits.');self.description.setWordWrap(True)
+        layout.addWidget(self.description)
+        self.tree.currentItemChanged.connect(self.describe_item)
         for name, blocks in BLOCK_GROUPS.items():
             group = QTreeWidgetItem(self.tree, [name])
             group.setFlags(group.flags() & ~Qt.ItemFlag.ItemIsDragEnabled)
             for title in blocks:
                 item = QTreeWidgetItem(group, [title])
                 item.setData(0, Qt.ItemDataRole.UserRole, title)
-                item.setToolTip(0, 'Drag, double-click or press Enter to add ' + title)
+                item.setToolTip(0, 'Drag, double-click or press Enter to add '+title+'\n'+describe_block(KINDS[title]))
             group.setExpanded(True)
         self._expanded_before_search = None
         self.search.textChanged.connect(self.filter_blocks)
         self.tree.itemDoubleClicked.connect(self.activate_item)
         self.tree.enterPressed.connect(self.activate_item)
+
+    def describe_item(self,item,previous=None):
+        title=item.data(0,Qt.ItemDataRole.UserRole) if item else None
+        self.description.setText(describe_block(KINDS[title]) if title else 'Choose a supported component from this category.')
 
     def activate_item(self, item, column=0):
         title = item.data(0, Qt.ItemDataRole.UserRole)

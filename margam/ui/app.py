@@ -13,9 +13,10 @@ from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
-from .block_catalogue import KINDS
+from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
+from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData
@@ -26,7 +27,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
-    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox, QFileDialog,
+    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QMessageBox, QFileDialog, QInputDialog,
 )
 
 
@@ -306,6 +307,7 @@ class Window(QMainWindow):
         self._history_epoch=0
         self.config = PoissonConfig()
         self.worker = None
+        self.loaded_checkpoint = None
         self.result = None
         self.monitor_records = {}
         self.active_monitors = set()
@@ -339,7 +341,7 @@ class Window(QMainWindow):
         self.validate_button=QPushButton('Validate')
         self.validate_button.clicked.connect(self.validate_model)
         self.train_button=QPushButton('Train PINN')
-        self.train_button.clicked.connect(self.start_training)
+        self.train_button.clicked.connect(lambda:self.start_training())
         self.cancel_button=QPushButton('Stop')
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.cancel_training)
@@ -403,6 +405,11 @@ class Window(QMainWindow):
         self.save_model_action.setShortcut('Ctrl+S');self.save_model_action.triggered.connect(lambda:self.save_model())
         self.save_as_action=file_menu.addAction('Save model as…')
         self.save_as_action.setShortcut('Ctrl+Shift+S');self.save_as_action.triggered.connect(self.save_model_as)
+        self.open_run_action=file_menu.addAction('Open saved run…')
+        self.open_run_action.triggered.connect(lambda:self.open_saved_run())
+        self.save_run_action=file_menu.addAction('Save run and checkpoint…')
+        self.save_run_action.triggered.connect(lambda:self.save_current_run())
+        self.save_run_action.setEnabled(False)
         file_menu.addSeparator()
         self.load_action.setShortcut('Ctrl+N')
         file_menu.addAction(self.load_action)
@@ -467,6 +474,8 @@ class Window(QMainWindow):
         self.stop_action=run.addAction('Stop')
         self.stop_action.setShortcut('Ctrl+Shift+T');self.stop_action.setEnabled(False)
         self.stop_action.triggered.connect(self.cancel_button.click)
+        self.resume_action=run.addAction('Resume checkpoint…');self.resume_action.setEnabled(False)
+        self.resume_action.triggered.connect(lambda:self.resume_training())
         help_menu=self.menuBar().addMenu('Help')
         help_menu.addAction('Quick start').triggered.connect(lambda:QMessageBox.information(
             self,'Build and train a PINN',
@@ -606,20 +615,19 @@ class Window(QMainWindow):
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             QMessageBox.warning(self,'Model could not be opened',str(error));return False
         if not self.confirm_discard():return False
-        # Save in the unsaved prompt may have updated this same file. Read it
-        # again before staging so the clean model matches what is now on disk.
-        try:
-            data=read_model(path)
-            config,records,connections=decode_document(data)
-            staged=Canvas();nodes={}
-            titles={kind:title for title,kind in KINDS.items()}
-            for record in records:
-                node=Node(titles[record['kind']],'',*record['position'])
-                node.identifier=record['id'];node.title=record['title'];node.settings=dict(record['settings'])
-                staged.addItem(node);nodes[node.identifier]=node
-            for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
+        try:return self.replace_model(read_model(path),path)
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             QMessageBox.warning(self,'Model could not be opened',str(error));return False
+
+    def replace_model(self,data,path=None):
+        config,records,connections=decode_document(data)
+        staged=Canvas();nodes={}
+        titles={kind:title for title,kind in KINDS.items()}
+        for record in records:
+            node=Node(titles[record['kind']],'',*record['position'])
+            node.identifier=record['id'];node.title=record['title'];node.settings=dict(record['settings'])
+            staged.addItem(node);nodes[node.identifier]=node
+        for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
         if self.quick_insert is not None:self.quick_insert.reject()
         self._resetting=True;self.scene.blockSignals(True)
         try:
@@ -632,11 +640,59 @@ class Window(QMainWindow):
             for wire in self.scene.wires:self.scene.addItem(wire);wire.update_path()
         finally:
             self.scene.blockSignals(False);self._resetting=False
-        self.model_path=str(Path(path).absolute());self._history_epoch+=1
+        self.model_path=str(Path(path).absolute()) if path else None;self._history_epoch+=1
         self.settings_changed();self.selection_changed();self.fit_model()
         self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
-        self.statusBar().showMessage('Opened model · '+Path(path).name+' · validate before training')
+        self.statusBar().showMessage('Opened model · validate before training')
         return True
+
+    def update_run_actions(self):
+        if not hasattr(self,'save_run_action'):return
+        locked=self.is_running() or self.scene.locked
+        self.open_run_action.setEnabled(not locked)
+        self.save_run_action.setEnabled(not locked and self.result is not None)
+        self.resume_action.setEnabled(not locked and (self.loaded_checkpoint is not None or self.last_run is not None and self.last_run.model is not None))
+
+    def save_current_run(self,path=None):
+        if self.is_running() or self.result is None:return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(self,'Save run and checkpoint','run.margam-run.pt','Margam run (*.margam-run.pt)')
+            if path and not path.lower().endswith('.pt'):
+                path+='.margam-run.pt'
+                if Path(path).exists() and QMessageBox.question(self,'Replace saved run?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+        if not path:return False
+        try:save_run(path,capture_run(self))
+        except Exception as error:QMessageBox.warning(self,'Run could not be saved',str(error));return False
+        self.statusBar().showMessage('Saved run and baseline checkpoint · '+Path(path).name)
+        return True
+
+    def open_saved_run(self,path=None):
+        if self.is_running() or self.scene.locked:return False
+        if path is None:path,_=QFileDialog.getOpenFileName(self,'Open saved run','','Margam run (*.margam-run.pt)')
+        if not path:return False
+        try:data=load_run(path)
+        except Exception as error:QMessageBox.warning(self,'Run could not be opened',str(error));return False
+        if not self.confirm_discard():return False
+        try:self.replace_model(data['model'])
+        except Exception as error:QMessageBox.warning(self,'Run could not be opened',str(error));return False
+        self.result=deepcopy(data['result']);self.result['config']=self.config
+        for output in self.result['outputs'].values():output['config']=self.config
+        self.monitor_records=deepcopy(data['monitors']);self.loaded_checkpoint=data['checkpoint']
+        self.progress_bar.setValue(self.result['steps']);self.update_run_actions()
+        self.statusBar().showMessage('Opened saved run · views stay closed until requested')
+        return True
+
+    def resume_training(self,additional=None):
+        if self.is_running() or self.scene.locked:return False
+        checkpoint=self.last_run.model.training_state() if self.last_run is not None and self.last_run.model is not None else self.loaded_checkpoint
+        if checkpoint is None or checkpoint['iter']>=100000:return False
+        if additional is None:
+            additional,accepted=QInputDialog.getInt(self,'Resume checkpoint','Additional updates',1000,1,100000-checkpoint['iter'])
+            if not accepted:return False
+        if type(additional) is not int or not 1<=additional<=100000-checkpoint['iter']:return False
+        self.change('iterations',checkpoint['iter']+additional)
+        self.change('device','cpu')
+        return self.start_training(checkpoint=checkpoint)
 
     def push_edit(self,text,redo,undo,merge_key=None):
         if self.is_running() or self.scene.locked or self._history_replaying:return
@@ -736,19 +792,7 @@ class Window(QMainWindow):
         self.delete_selected()
 
     def block_help(self, node):
-        text={
-            'domain':'Configure interval or rectangle bounds. Rectangle blocks provide optional local 2D geometry and sample previews through this menu.',
-            'interior':'Choose the supported sampling method, point budget and seed for PDE points.',
-            'boundary':'Choose a named rectangle side and configure its independent grid/random sampler, count and seed. Interval boundaries are fixed endpoints. Assign physical conditions separately in the BC block.',
-            'pde':'Use the scalar Poisson preset or a restricted mathematical residual expression. Expressions are interpreted without Python eval; coupled/vector systems remain future work.',
-            'bc':'Assign Dirichlet values, outward derivatives or a restricted Custom operator. Coordinate-dependent target expressions are optional; retain at least one Dirichlet side.',
-            'network':'Set hidden-layer sizes for the fully connected tanh network.',
-            'method':'Configure baseline full-batch Adam training. Output blocks are optional.',
-            'monitor':'Connect the PINN method to request bounded loss history. Open or hide its view independently of recording.',
-            'solution':'Connect the PINN method to evaluate scalar predictions at the requested resolution. No reference is assumed.',
-            'comparison':'Connect a model and an explicit Reference. The demo reference supports intervals and equal-Dirichlet rectangles (truncated series).',
-            'reference':'An explicit Poisson reference for Comparison: analytical on intervals, truncated sine series on equal-Dirichlet rectangles.',
-        }[node.kind]
+        text=describe_block(node.kind)
         QMessageBox.information(self,node.title,text)
 
     def open_rectangle_preview(self, node, show_samples):
@@ -900,6 +944,7 @@ class Window(QMainWindow):
         return self.worker is not None
 
     def clear_run_data(self):
+        self.loaded_checkpoint=None
         self.result=None
         self.monitor_records={}
         self.active_monitors=set()
@@ -908,6 +953,7 @@ class Window(QMainWindow):
             self.last_run.model=None
             self.last_run.deleteLater()
             self.last_run=None
+        self.update_run_actions()
 
     def graph_changed(self):
         self.clear_run_data()
@@ -985,6 +1031,8 @@ class Window(QMainWindow):
         self.detail.setText(node.detail if node else '')
         body=QWidget();self.form=QFormLayout(body)
         self.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        if node is not None:
+            capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
         if node is None:
             self.form.addRow(QLabel('Select a block to edit its settings.'))
         elif node.kind=='domain':
@@ -1019,7 +1067,7 @@ class Window(QMainWindow):
                 seed.setObjectName('boundary_seed')
                 seed.valueChanged.connect(lambda value,s=side,t=object():self.change_boundary_sampling(s,'seed',value,t))
                 self.form.addRow('Seed',seed)
-                note=QLabel('Each side has an independent recipe. Grid and seeded uniform random return exactly the selected count on that side. Grid points exclude corners. The seed is retained but unused for a grid. Interior settings do not change boundary recipes.')
+                note=QLabel('Each side has an independent recipe. All implemented side methods return exactly the selected count on that side. Grid points exclude corners. The seed is retained but unused for a grid. Interior settings do not change boundary recipes.')
             else:
                 note=QLabel('Interval point sets are the left and right endpoints: one point each. Rectangle-side recipes are retained but do not apply to an interval.')
             note.setWordWrap(True);self.form.addRow(note)
@@ -1145,18 +1193,18 @@ class Window(QMainWindow):
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
-        self.update_history_actions();self.update_clipboard_actions()
+        self.update_history_actions();self.update_clipboard_actions();self.update_run_actions()
 
-    def start_training(self):
+    def start_training(self,*,checkpoint=None):
         if self.is_running() or not self.validate_model():return False
         self._history_epoch+=1
         self.clear_run_data()
         requests=self.scene.output_requests(self.config)
         self.active_monitors={r.identifier for r in requests if r.kind=='monitor'}
-        self.monitor_records={identifier:[] for identifier in self.active_monitors}
+        self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] if checkpoint is not None else [] for node in self.scene.nodes() if node.identifier in self.active_monitors}
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         self.set_busy(True)
-        self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self)
+        self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
         self.worker.progress.connect(self.training_progress)
         self.worker.completed.connect(self.training_completed)
         self.worker.failed.connect(self.training_failed)
@@ -1196,6 +1244,7 @@ class Window(QMainWindow):
         if worker is not None:
             if self.result is not None:self.last_run=worker
             else:worker.deleteLater()
+        self.update_run_actions()
         if self._closing:QTimer.singleShot(0,self.close)
 
     def cancel_training(self):

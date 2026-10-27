@@ -13,3 +13,10 @@ PyniteGUI source revision recorded upstream:
 Adaptations rename the application theme property for Margam. The prototype
 uses these colours in its native Qt canvas, ports, connections and 2D preview.
 No Three.js, CAD fixture, or WebEngine code is copied.
+
+The Hammersley and equal-volume recursive stratified algorithms in
+`margam/components/sampling.py` are adapted from GeoSampler
+`src/geosampler/sampling.py`, revision c532cecec8777ee239e4c08bb41d7d922a82bc5c,
+AGPL-3.0-only. They are restricted to intervals/rectangles and do not import
+GeoSampler, SciPy, Gmsh or any CAD/UI code. Existing Margam grid/random sequences
+remain unchanged.

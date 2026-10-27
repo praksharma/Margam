@@ -212,8 +212,7 @@ shows retained data. Training never forces plots open or switches to them.
 and waits for the worker. The numerical model remains in memory after a run until
 a model edit or new run; there is no model export/continuation UI yet. Changing
 the graph or model/evaluation settings clears stale results and requires another
-run. Model definitions can be saved explicitly from File; trained results and
-checkpoints are not persisted. Arbitrary PDE execution remains future work. Use **View → Reset panel layout** to restore docks.
+run. Model definitions can be saved explicitly from File; trained results/checkpoints can be saved explicitly using the separate run archive. Arbitrary PDE execution remains future work. Use **View → Reset panel layout** to restore docks.
 
 Right-click menus expose only supported actions: Properties, Delete block, Help,
 and the view actions belonging to that block. Output blocks offer Open monitor,
@@ -352,3 +351,12 @@ Target expressions cannot reference `u` or derivatives. There is no Python eval 
 code import. Preset analytical references reject custom physics; ordinary prediction
 and monitor blocks work without a reference. Model format v2 stores expressions;
 older v1 model files still open with the preset defaults.
+
+Saved runs: after training, choose **File → Save run and checkpoint…** for a
+`.margam-run.pt` archive containing the model definition, requested predictions,
+retained monitor records, network weights and Adam state. **Open saved run…**
+restores data without opening plot windows. **Run → Resume checkpoint…** asks for
+additional updates and continues the fixed-sample baseline recipe on CPU. Changing
+the model invalidates its loaded checkpoint; moving blocks and renaming outputs do
+not. Loading uses PyTorch's restricted `weights_only=True` mode, validates the
+architecture and maps tensors to CPU. This is run persistence, not ParaView export.

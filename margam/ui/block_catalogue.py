@@ -28,3 +28,27 @@ def dropped_block(mime):
     except UnicodeDecodeError:
         return None
     return title if title in KINDS else None
+
+
+# Concrete capabilities for the current editor, shared by library, inspector and Help.
+CAPABILITIES = {
+    'domain': ('Bounds and shape', 'Interval or axis-aligned rectangle. Advanced CAD belongs to GeoSampler.'),
+    'interior': ('Method, budget, seed', 'Fixed meshless PDE points. Grid may use fewer than the budget; other implemented methods return the exact count.'),
+    'boundary': ('Named side, method, count, seed', 'Independent rectangle-side recipes; interval endpoints are fixed. BC assignment is separate.'),
+    'pde': ('Constant c, scalar residual expression', 'Poisson preset or restricted scalar expressions. No coupled/vector system or extra pointwise inputs.'),
+    'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
+    'network': ('Hidden-layer widths', 'Fully connected tanh / Xavier normal, fixed domain normalisation. No architecture selector.'),
+    'method': ('Updates, learning rate, loss weights, device', 'Baseline fixed-sample, full-batch Adam. No LBFGS or adaptive sampling.'),
+    'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction request; no reference assumed.'),
+    'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),
+    'reference': ('Preset source', 'Analytical intervals or truncated equal-Dirichlet rectangles. Preset sources reject custom physics.'),
+    'comparison': ('Name, evaluation points per axis', 'Requires a PINN run and explicit compatible reference; scalar outputs only.'),
+}
+
+
+def describe_block(kind):
+    from .ports import INPUTS,OUTPUTS
+    parameters,limits=CAPABILITIES[kind]
+    inputs=', '.join(spec.label for spec in INPUTS[kind]) or 'none'
+    output=OUTPUTS[kind]
+    return ('Implemented · '+parameters+'\nInputs: '+inputs+'\nOutput: '+(output.label if output else 'none')+'\n'+limits)

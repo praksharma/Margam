@@ -8,8 +8,9 @@ class TrainingWorker(QThread):
     completed = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, config, requests=(), parent=None):
+    def __init__(self, config, requests=(), parent=None, checkpoint=None):
         super().__init__(parent)
+        self.checkpoint = checkpoint
         self.config = config
         self.requests = tuple(requests)
         self.model = None
@@ -28,6 +29,7 @@ class TrainingWorker(QThread):
             torch.set_num_threads(1)
             config = self.config
             model = self.model = build_pinn(config)
+            if self.checkpoint is not None:model.load_training_state(self.checkpoint)
             while model.iter < config.iterations and not self.cancel_event.is_set():
                 previous = model.iter
                 model.train(min(25, config.iterations-model.iter),display_every=0)
