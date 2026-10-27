@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
-from ..recipes import baseline, self_adaptive, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
@@ -16,11 +16,13 @@ PARAMETERS = {
     'recipe':baseline.PARAMETERS,
     'sa_method':self_adaptive.TRAINING_FIELDS,
     'sa_recipe':self_adaptive.PARAMETERS,
+    'lra_method':learning_rate_annealing.TRAINING_FIELDS,
+    'lra_recipe':learning_rate_annealing.PARAMETERS,
 }
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method',*COMPACT_RECIPES) for attribute in attributes}
-OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in self_adaptive.ADAPTIVE_FIELDS})
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method'}.get(kind,kind)
+def role(kind):return {'predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -35,6 +37,7 @@ def parameters_for(kind,config=None):
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
     if kind=='sa_method':result['method']='self_adaptive'
+    if kind=='lra_method':result['method']='lra'
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result
 

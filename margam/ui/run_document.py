@@ -46,7 +46,8 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(('lra' in checkpoint)==(config.method=='lra'),'Checkpoint LRA state/method mismatch.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
         if config.method=='self_adaptive':
             import torch
@@ -107,6 +108,9 @@ def load_run(path):
         if config.method=='self_adaptive':
             from ..methods.self_adaptive import SelfAdaptivePINN
             model=SelfAdaptivePINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+        elif config.method=='lra':
+            from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
+            model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
         else:model=PINN(problem,network).compile(lr=config.lr,device='cpu')
         if 'data_fingerprint' not in data['checkpoint']:
             require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')

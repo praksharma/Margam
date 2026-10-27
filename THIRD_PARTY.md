@@ -62,3 +62,15 @@ centre. These are explicit changes from the inspected upstream Gabor layer. The
 shared pointwise and linear helpers implement only the subset used by these networks.
 No FNO, AFNO, spectral operator, graph, convolutional or attention architecture was
 imported. See `docs/neural-networks.md` for per-family contracts and differences.
+
+## Learning-rate annealing algorithm
+
+`margam/methods/learning_rate_annealing.py` is an independent implementation of
+Algorithm 1, equations (40)–(42), in S. Wang, Y. Teng and P. Perdikaris,
+*Understanding and mitigating gradient pathologies in physics-informed neural
+networks*, arXiv:2001.04536v1 (2020), supplied locally as `LRA.pdf`.
+[Authors' paper/repository](https://github.com/PredictiveIntelligenceLab/GradientPathologiesPINNs).
+No upstream code or proposed network architecture was copied. Margam's per-named
+constraint grouping, existing static loss scales, gradient floor and coefficient
+cap are documented in `docs/lra-pinn.md`; the v1 raw denominator and new-estimate
+EMA convention are explicit.

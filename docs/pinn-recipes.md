@@ -1,7 +1,7 @@
 # PINN recipes: compact and expanded
 
 A recipe is one reusable method construction, not a complete physics problem.
-Keep **one file per recipe** under `margam/recipes/`. Implemented recipes are `baseline.py` and `self_adaptive.py`. Each defines the internal components, connections, defaults,
+Keep **one file per recipe** under `margam/recipes/`. Implemented recipes are `baseline.py`, `self_adaptive.py` and `learning_rate_annealing.py`. Each defines the internal components, connections, defaults,
 external ports and exposed settings. Both insertion forms use this same file.
 
 Numerical methods remain one file each under `margam/methods/`; baseline training
@@ -49,7 +49,7 @@ baseline recipe. Unsupported or incomplete graphs still fail validation.
 
 ## Persistence and checks
 
-Model format 10 stores compact recipes while reading formats 1–9. Compact
+Model format 11 stores compact recipes while reading formats 1–10. Compact
 settings contain the complete component parameters; loading a saved model does
 not replace them with recipe defaults. Copy/paste gives the block a fresh identity.
 Expand/collapse and expanded insertion are each one undoable edit. They are disabled
@@ -63,3 +63,6 @@ from the same seed. Result views remain explicit and closed until opened.
 Self-adaptive PINN has its own trainer and recipe file, with the same insertion and
 expand/collapse interactions. See [SA-PINN](self-adaptive-pinn.md) for its pointwise
 mask settings, checkpoint contract and numerical evidence.
+
+Learning-rate annealing also has dedicated compact/expanded forms. Its trainer
+reuses existing networks and adds scalar gradient balancing; see [LRA](lra-pinn.md).

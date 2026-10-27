@@ -6,7 +6,7 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Self-adaptive trainer','sa_method')),
+    'Optimisation / PINN': (('PINN method', 'method'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Self-adaptive trainer','sa_method'), ('Learning-rate annealing PINN','lra_recipe'), ('LRA trainer','lra_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
 }
@@ -32,6 +32,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'lra_recipe': ('LRA recipe · compact or expanded', 'Existing pointwise network plus gradient-balanced Adam trainer. One coefficient per named constraint, max-PDE/mean-constraint gradient ratio and EMA; no paper architecture or base-rate decay.'),
+    'lra_method': ('Learning-rate annealing loss balancing', 'Wang et al. supplied v1 Algorithm 1: raw constraint-gradient denominator, EMA alpha is the new-estimate fraction. PDE weight fixed; each constraint gets a scalar coefficient. Not per-point attention or an Adam-rate scheduler.'),
     'sa_recipe': ('Self-adaptive recipe · compact or expanded', 'Per-point squared masks; Adam descent for the network and ascent for masks. Fixed samples; PDE adaptation by default; optional BC adaptation. No GP resampling or L-BFGS phase.'),
     'sa_method': ('Pointwise adaptive weights and Adam min/max', 'Independent positive initial mask weights and ascent learning rate; optional BC masks. Squared mask, finite cap. Raw term losses plus adaptive total; increasing total is not an accuracy metric.'),
     'recipe': ('Baseline recipe · compact or expanded', 'Contains a replaceable tanh network and full-batch Adam trainer. Exposes steps, learning rate and device. Connect PDE and BC inputs; double-click to expand. Collapse a baseline trainer and its private network to retain edits.'),

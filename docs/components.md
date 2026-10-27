@@ -10,6 +10,7 @@ A Python API capability is not automatically an executable UI block option.
 
 | Component | Implementation | Current support and limits |
 | --- | --- | --- |
+| Learning-rate annealing PINN | `margam/methods/learning_rate_annealing.py`; recipe `margam/recipes/learning_rate_annealing.py` | Max PDE / mean raw constraint parameter-gradient balancing, detached scalar coefficients, EMA, cap/floor and exact resume; existing networks; no base-rate scheduler; see [LRA](lra-pinn.md) |
 | Self-adaptive PINN | `margam/methods/self_adaptive.py`; recipe `margam/recipes/self_adaptive.py` | Fixed-sample per-point squared masks, Adam descent/ascent, optional BC adaptation and full resume; no L-BFGS or GP resampling; see self-adaptive-pinn.md |
 | Baseline recipe | `margam/recipes/baseline.py` | One definition for compact/expanded network + trainer; Adam only, replaceable supported tanh network; physics and outputs external; see pinn-recipes.md |
 | Hard Dirichlet PINN | `margam/methods/hard_dirichlet.py` | Equal constant Dirichlet boxes; exact boundary transform; baseline Adam reused; mixed/imported/spatial BCs rejected |
@@ -83,8 +84,8 @@ These are small-domain samplers; the broader GeoSampler catalogue is not yet imp
 ## Poisson template
 
 `margam/templates/poisson.py` supplies `PoissonConfig`, `sample_problem`,
-`build_pinn`, and `interval_reference`. It assembles baseline, hard-Dirichlet
-or self-adaptive methods from shared physics; it does not duplicate their trainers. The scalar equation is Δu + c = 0 with
+`build_pinn`, and `interval_reference`. It assembles baseline, hard-Dirichlet,
+self-adaptive or LRA methods from shared physics; it does not duplicate their trainers. The scalar equation is Δu + c = 0 with
 configurable constant c, on an interval or axis-aligned rectangle.
 
 Each named side has a constant Dirichlet value u or an outward normal derivative
@@ -200,7 +201,7 @@ u*u_x + v*u_y + p_x - nu*laplace(u),
 u*v_x + v*v_y + p_y - nu*laplace(v), and u_x+v_y. Restricted expressions expose
 u/v/p components without Python execution. Targets remain coordinate-only.
 `templates/incompressible_flow.py` assembles a 3-output network and selects the
-baseline or self-adaptive method; it is a physics template, not a duplicate trainer.
+baseline, self-adaptive or LRA method; it is a physics template, not a duplicate trainer.
 
 Each named set has optional u/v/p None/Dirichlet/Neumann/Custom operators. Each
 velocity component currently requires a Dirichlet anchor. A separate pressure point

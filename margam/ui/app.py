@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import json
-from ..recipes import baseline, self_adaptive, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -883,6 +883,9 @@ class Window(QMainWindow):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
+        if node.kind in ('lra_recipe','lra_method'):
+            summary=menu.addAction('LRA loss-weight summary');summary.setEnabled(not self.is_running() and self.result is not None)
+            summary.triggered.connect(self.show_lra_summary)
         menu.addSeparator()
         remove=menu.addAction('Delete block')
         remove.setEnabled(not self.is_running())
@@ -903,6 +906,22 @@ class Window(QMainWindow):
         summary=self.adaptive_summary()
         text='Per-point λ values; the loss mask is λ².\n\n'+'\n'.join(f'{name}: min {v["minimum"]:.5g}, mean {v["mean"]:.5g}, max {v["maximum"]:.5g}' for name,v in summary.items())
         QMessageBox.information(self,'Adaptive weight summary',text if summary else 'Train the self-adaptive recipe first.')
+
+    def lra_summary(self):
+        if self.last_run is not None and self.last_run.model is not None and hasattr(self.last_run.model,'balancing_summary'):return self.last_run.model.balancing_summary()
+        if self.loaded_checkpoint and 'lra' in self.loaded_checkpoint:
+            state=self.loaded_checkpoint['lra'];latest=state['history'][-1] if state['history'] else None
+            return dict(step=latest['step'] if latest else None,pde_max=latest['pde_max'] if latest else None,
+                        terms={name:dict(coefficient=value,effective_weight=value*state['settings']['global_weights'].get(name,1.),mean_gradient=latest['means'][name] if latest else None) for name,value in state['weights'].items()})
+        return {}
+
+    def show_lra_summary(self):
+        summary=self.lra_summary()
+        text='LRA scalar loss coefficients; Adam base learning rate is unchanged.\n\n'
+        if summary:
+            text+=f"Last balance before update {summary['step']}\n"+'\n'.join(f"{name}: coefficient {values['coefficient']:.6g}, effective weight {values['effective_weight']:.6g}" for name,values in summary['terms'].items())
+        else:text+='Train the LRA recipe first.'
+        QMessageBox.information(self,'LRA loss-weight summary',text)
 
     def show_block_menu(self, node, position):
         menu=self.create_block_menu(node)
@@ -1071,8 +1090,10 @@ class Window(QMainWindow):
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
         pde=self.make_node('Predefined PDE','',480,40)
-        if config.method=='self_adaptive':
-            old_method=method;method=self.make_node('Self-adaptive trainer','',old_method.pos().x(),old_method.pos().y())
+        if config.method in ('self_adaptive','lra'):
+            recipe=self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+            title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
+            old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
                 if wire.target.parentItem() is old_method:
                     self.scene.wires.remove(wire);self.scene.removeItem(wire)
@@ -1239,6 +1260,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
@@ -1481,9 +1503,20 @@ class Window(QMainWindow):
                 if attribute=='iterations':self.field('Training steps',attribute,'int',minimum=1,maximum=100000)
                 elif attribute=='lr':self.field('Learning rate',attribute,minimum=.000001,maximum=1)
                 elif attribute=='device':self.field('Device',attribute,'choice',choices=['cpu','auto','cuda'])
+                elif attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
+                elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
                 elif attribute=='sa_lr':self.field('Mask ascent rate',attribute,minimum=.000001,maximum=1)
             button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
         elif node.kind in TRAINER_RECIPES:
+            if node.kind=='lra_method':
+                self.form.addRow(QLabel('LRA · max PDE / mean constraint gradients\nScalar loss balancing; no base-rate decay'))
+                self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
+                self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
+                self.field('Coefficient cap','lra_max',minimum=1,maximum=1e12)
+                epsilon=QLineEdit(format(self.config.lra_epsilon,'.6g'));epsilon.setObjectName('lra_epsilon')
+                epsilon.editingFinished.connect(lambda w=epsilon:self.change_lra_epsilon(w.text()))
+                self.form.addRow('Gradient floor',epsilon)
+                note=QLabel('One scalar per constraint term. Alpha weights the new estimate. Raw gradient denominator, before LRA weighting; tiny constraint gradients hold the prior coefficient. Existing architecture is unchanged.');note.setWordWrap(True);self.form.addRow(note)
             if node.kind=='sa_method':
                 self.form.addRow(QLabel('Self-adaptive PINN · squared per-point masks\nNetwork Adam descent / mask Adam ascent'))
                 self.field('Mask ascent rate','sa_lr',minimum=.000001,maximum=1)
@@ -1495,6 +1528,7 @@ class Window(QMainWindow):
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='lra_method':variant.addItem('Learning-rate annealing PINN','lra');variant.setEnabled(False)
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
             if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
@@ -1616,6 +1650,12 @@ class Window(QMainWindow):
                 widget.setKeyboardTracking(False);widget.setRange(spec['minimum'],spec['maximum']);widget.setValue(value)
                 widget.valueChanged.connect(lambda v,k=key,t=token:self.change_network_option(k,v,t))
             widget.setObjectName('network_option_'+key);self.form.addRow(spec['label'],widget)
+
+    def change_lra_epsilon(self,text):
+        try:value=float(text)
+        except ValueError:self.validation.setText('Enter a positive gradient floor, for example 1e-12.');return
+        if not 0<value<=1:self.validation.setText('Gradient floor must be positive and at most one.');return
+        self.change('lra_epsilon',value)
 
     def change_layers(self,text,edit_token=None):
         try:layers=tuple(int(n.strip()) for n in text.split(','))

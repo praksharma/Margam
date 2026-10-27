@@ -10,7 +10,7 @@ from ..components.prepared_data import read_points,normal_fingerprint
 
 
 def validate_flow_config(config):
-    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline or self-adaptive method.')
+    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive','lra'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline, self-adaptive or LRA method.')
     if not math.isfinite(config.viscosity) or config.viscosity<=0:raise ValueError('Kinematic viscosity must be positive and finite.')
     if len(config.flow_residuals)!=3:raise ValueError('Flow needs momentum-x, momentum-y and continuity residuals.')
     for text in config.flow_residuals:Expression(text,2,fields=('u','v','p'))
@@ -84,6 +84,9 @@ def build_flow_pinn(config):
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
         return SelfAdaptivePINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+    if config.method=='lra':
+        from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
+        return LearningRateAnnealingPINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
     return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
 
 

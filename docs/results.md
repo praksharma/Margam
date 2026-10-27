@@ -9,6 +9,7 @@ training budgets or software/hardware environments.
 
 | Study | Evidence date / device | What it supports |
 | --- | --- | --- |
+| [LRA interval Poisson](#learning-rate-annealing-pinn) | 27 October 2026 / CPU | Equal-budget three-seed comparison and strong coefficient-cap sensitivity; baseline wins here |
 | [Baseline vs SA interval Poisson](#baseline-vs-self-adaptive-pinn) | 27 October 2026 / CPU | Working pointwise adaptation; mixed three-seed comparison |
 | [Heat: soft vs hard Dirichlet](#steady-heat-soft-and-hard-dirichlet) | 27 October 2026 / CPU | Lower field error for hard BC enforcement on this supported box problem |
 | [Pointwise network compatibility](#pointwise-network-compatibility) | 27 October 2026 / CPU | Ten architectures × baseline/SA on a one-seed smoke problem; not a ranking |
@@ -210,3 +211,34 @@ arbitrary imported domains follows from these records. Couette and manufactured
 PDEs currently have regression checks, not a committed multi-seed measured study.
 Use [validation](validation.md) for those exact thresholds and [TODO](todo.md) for
 remaining work.
+
+## Learning-rate annealing PINN
+
+[Raw settings, source hashes and all balancing events](../assets/benchmarks/lra-poisson-2026-10-27.json) · [Method and safeguards](lra-pinn.md)
+
+Problem u_xx+2=0 on [0,1], endpoints zero, reference x(1−x). All variants use the
+same seeded FCNN 16×16, 32 fixed cell-centred points, full-batch Adam rate 0.001,
+2,000 updates, static PDE weight 1 and mean BC weight 1 (0.5 per endpoint).
+LRA uses supplied v1 raw-gradient denominator, alpha 0.9, interval 10 and floor
+1e-12. Only the coefficient cap changes between its two variants. Evaluation:
+201 uniform points including endpoints, CPU float32, one Torch thread; Python
+3.14.8, Torch 2.14.1+cpu, NumPy 2.5.2. No extra optimisation stage.
+
+| Network seed | Baseline RMSE | LRA cap 100 RMSE | LRA cap 1,000,000 RMSE |
+| --- | ---: | ---: | ---: |
+| 7 | 0.000299148 | 0.00425180 | 0.176026 |
+| 11 | 0.000164153 | 0.000276327 | 0.179469 |
+| 19 | 0.000574412 | 0.000742293 | 0.158451 |
+
+**Baseline is more accurate in all three runs.** Very small boundary gradients
+produce large coefficients in the high-cap variant and the PDE fit stalls. Cap
+100 substantially improves LRA here; the File → Examples case uses that cap.
+The cap is a practical guard, not a paper equation or evidence of an optimal
+setting for other problems. These are post-update field errors, not the changing
+weighted objectives. Full event histories and final raw losses are preserved.
+
+This small fixed-sample problem does not reproduce the paper's stiff benchmark,
+minibatch protocol, aggregated-boundary grouping or proposed architecture. It
+establishes reproducible implemented behaviour and parameter sensitivity, not a
+ranking of PINN methods. The older SA table uses a different rate, BC weight and
+budget and must not be compared directly. CUDA remains unvalidated.

@@ -28,3 +28,14 @@ The network compatibility record preserves actual scalar predictions/reference
 values and selected source hashes for the network addition. Its explicit per-run
 settings (including lower-frequency choices and SIREN rate) differ from UI defaults
 and parameter counts differ, so it is a compatibility study rather than a ranking.
+
+## LRA interval Poisson, 27 October 2026
+
+[lra-poisson-2026-10-27.json](lra-poisson-2026-10-27.json) records three network
+seeds × baseline/LRA cap100/LRA cap1e6, equal data/architecture/rate/budget,
+post-training field errors, pre-update losses and complete balancing events.
+Reproduce with `.venv/bin/python -m examples.compare_lra --iterations 2000`
+(use `--output` with a new filename). See [interpretation](../../docs/results.md#learning-rate-annealing-pinn).
+The supplied v1 algorithm and Margam's guards/grouping are distinguished in the
+[method guide](../../docs/lra-pinn.md). Source hashes identify this working-tree
+implementation even though the recorded parent commit predates this change.

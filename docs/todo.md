@@ -238,3 +238,11 @@ paused; operational training monitors and basic rectangle previews remain useful
   interval reference comparison; keep numerical evidence separate.
 - [x] Provide repeatable state-isolated screenshot capture with a real CPU run,
   configuration assertions, source/settings manifest and no silent overwrites.
+
+## Learning-rate annealing PINN
+
+- [x] Implement supplied Wang/Teng/Perdikaris v1 Algorithm 1 independently of its architecture.
+- [x] Add one-file compact/expanded recipe, editable balance controls and optional summary.
+- [x] Reuse all existing pointwise networks and scalar/coupled builders; validate checkpoint continuation.
+- [x] Record equal-budget CPU baseline/LRA results including coefficient-cap sensitivity.
+- [ ] Deferred: reproduce a paper benchmark with its full sampling/training protocol; current small Poisson evidence is not that reproduction.

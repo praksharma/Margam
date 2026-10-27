@@ -31,10 +31,15 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 10 persists block settings and compact recipes and reads earlier formats 1–9.
+Model format 11 persists block settings and compact recipes and reads earlier formats 1–10.
 The tests check manufactured residuals and train each new example for 700 CPU
 updates with RMS prediction error below 0.05. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.
 
 File → Examples also includes Self-adaptive PINN · interval Poisson, using its
 separate trainer and the same explicit interval reference. See self-adaptive-pinn.md.
+
+**Learning-rate annealing · interval Poisson** uses the same explicit reference,
+FCNN 16×16, 32 points, Adam rate 0.001, 2,000 updates, alpha 0.9, interval 10 and
+cap 100 (an explicit practical guard). Its 700-update regression also requires
+RMSE <0.05. See [algorithm and measured comparison](lra-pinn.md).

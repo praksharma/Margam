@@ -11,6 +11,7 @@ class ExampleProblem:
 
 
 EXAMPLE_PROBLEMS = {
+    'lra_poisson':ExampleProblem('Learning-rate annealing · interval Poisson','Gradient-statistic constraint balancing; coefficient cap 100; existing FCNN and explicit reference.','x*(1-x)'),
     'self_adaptive_poisson':ExampleProblem('Self-adaptive PINN · interval Poisson','Pointwise squared PDE masks with Adam ascent; explicit reference.','x*(1-x)'),
     'interval_poisson':ExampleProblem('Poisson · interval','Constant-source Poisson; zero endpoints.','x*(1-x)'),
     'reaction_diffusion':ExampleProblem('Reaction–diffusion · interval','Positive reaction coefficient; sine manufactured forcing.','sin(pi*x)'),
@@ -22,7 +23,8 @@ EXAMPLE_PROBLEMS = {
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
     config=PoissonConfig(shape='Interval',points=32,iterations=1500,lr=.005,layers=(16,16),boundary_weight=10.,pde_preset='poisson')
-    if identifier=='self_adaptive_poisson':config.method='self_adaptive'
+    if identifier=='lra_poisson':config.method='lra';config.lr=.001;config.boundary_weight=1.;config.iterations=2000;config.lra_max=100.
+    elif identifier=='self_adaptive_poisson':config.method='self_adaptive'
     elif identifier=='reaction_diffusion':
         config.pde_preset='reaction_diffusion';config.source=1.;config.pde_forcing='(pi*pi+1)*sin(pi*x)';config.method='hard_dirichlet'
     elif identifier=='advection_diffusion':

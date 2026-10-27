@@ -4,15 +4,15 @@ Margam (formerly DeepINN) is a visual builder for physics-informed neural networ
 Connect geometry, sampling, PDEs, boundary conditions and a PINN method, then train.
 Results are requested by output blocks; no plot or reference solution is assumed.
 
-Implemented methods are **baseline**, **hard Dirichlet**, and **self-adaptive PINN**.
-Baseline and self-adaptive methods also have compact/expanded recipes. Built-in
+Implemented methods are **baseline**, **hard Dirichlet**, **self-adaptive PINN**,
+and **learning-rate annealing PINN (LRA)**. Baseline, SA and LRA have compact/expanded recipes. Built-in
 problems cover scalar interval/rectangle physics and steady 2D incompressible flow
 (u, v, p). The current executor runs one supported problem root at a time.
 
 [Documentation index](docs/README.md) · [Illustrated walkthrough](docs/visual-guide.md) ·
 [Desktop guide](docs/ui-prototype.md) ·
 [Methods and components](docs/components.md) · [Recorded results](docs/results.md) ·
-[Remaining work](docs/todo.md)
+[LRA method and safeguards](docs/lra-pinn.md) · [Remaining work](docs/todo.md)
 
 ## Run the desktop
 
@@ -70,13 +70,13 @@ results use tables and full CSV. [Problem catalogue](docs/problem-examples.md).
 
 Select **Neural network → Architecture** for the original FCNN, angular Fourier MLP,
 Fourier features, highway/modified/multiscale Fourier, DGM, SIREN, or multiplicative
-Fourier/Gabor. The same choices work with baseline and SA-PINN. Each has its own
+Fourier/Gabor. The same choices work with baseline, SA-PINN and LRA. Each has its own
 settings, preserved inside compact recipes. No neural operators or PhysicsNeMo
 runtime dependency are included. [Network guide](docs/neural-networks.md).
 
 ### Compact or expanded PINNs
 
-Use **File → Insert PINN recipe** to insert baseline or self-adaptive PINN compact
+Use **File → Insert PINN recipe** to insert baseline, self-adaptive or learning-rate annealing PINN compact
 or expanded. A compact recipe contains its network and trainer. Double-click it
 or use **Expand into components** to edit them on the canvas. Right-click the
 trainer to collapse it again. Network widths/seed, loss weights and training
@@ -114,7 +114,8 @@ geometry/sample previews. No global figure pane or 3D viewport is provided.
 | CSV | Requested scalar x/y/u or coupled x/y/u/v/p predictions; no reference/error columns | Connected CSV Export block → Export CSV |
 
 **Run → Resume checkpoint** adds updates. SA-PINN archives include point weights
-and their separate Adam state. Opening a run leaves views closed. Model edits clear
+and their separate Adam state. LRA archives include scalar coefficients and
+balancing history. Opening a run leaves views closed. Model edits clear
 stale results/checkpoints; moving blocks and renaming outputs preserve them.
 External CSV/NPZ sources remain dependencies for actual resume. Layout/theme and
 unsaved-draft recovery live separately in the user's Margam data directory.
@@ -129,6 +130,9 @@ unsaved-draft recovery live separately in the user's Margam data directory.
 # Fully headless invocation (desktop tests also set this internally)
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
 
+# Focused LRA numerical and desktop checks
+.venv/bin/python -m unittest discover -s tests -p 'test_lra*.py' -v
+
 # Focused SA-PINN numerical and desktop checks
 .venv/bin/python -m unittest discover -s tests -p 'test_self_adaptive*.py' -v
 
@@ -140,6 +144,7 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
 
 # Equal-budget baseline / SA comparison; save a new evidence file
 .venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19 --output benchmark-results/sa-poisson-new.json
+.venv/bin/python -m examples.compare_lra --iterations 2000 --seeds 7 11 19 --output benchmark-results/lra-poisson-new.json
 
 # Pointwise network compatibility study: ten architectures × baseline/SA, one seed
 .venv/bin/python -m examples.benchmark_pointwise_networks --iterations 700 --seed 7 --output benchmark-results/pointwise-networks-new.json

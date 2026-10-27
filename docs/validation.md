@@ -4,9 +4,9 @@
 
 ## Latest implementation suite
 
-27 October 2026: **88 tests: 85 passed, 3 CUDA skips**, full suite after the pointwise
-network additions. Focused network equations/derivatives, source-branch and model/archive checks also
-passed. The previous SA-only milestone was 78 tests (75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu, PySide6 6.12.0,
+27 October 2026: **93 tests: 90 passed, 3 CUDA skips**, full suite after LRA was
+added (109.8 seconds). The preceding network milestone was 88 tests (85 passed,
+3 CUDA skips); SA-only was 78 tests (75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu, PySide6 6.12.0,
 NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
 
 ```sh
@@ -52,8 +52,8 @@ SA's desktop check saves both optimiser states, opens an archive, resumes update
 and inspects adaptive statistics. [SA workflow test](../tests/test_self_adaptive_ui.py).
 
 UI startup or a screenshot demonstrates appearance/lifecycle, not numerical accuracy.
-Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 10
-reads 1–9; run archives use format 2 and restricted tensor loading. Data fingerprints
+Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 11
+reads 1–10; run archives use format 2 and restricted tensor loading. Data fingerprints
 and architecture/options are checked for resume, but cross-version optimiser
 compatibility and arbitrary PDE well-posedness are not guaranteed.
 
@@ -95,3 +95,22 @@ points. This documents a working UI example, not another architecture benchmark.
 Only documentation and capture tooling changed in this update; the earlier 88-test
 implementation result remains a dated record rather than a claim of rerunning that
 full suite for screenshots.
+
+## LRA validation
+
+`test_lra.py` verifies max/mean over parameter entries, raw denominator (excluding
+existing lambda), alpha as new-estimate fraction, cap and zero-gradient hold,
+nonfinite aborts, event phase across batches, exact checkpoint continuation and
+rejection of changed settings/data/tampered events. All ten networks train for a
+smoke budget; a real u/v/p model also trains. Those short runs do not establish
+accuracy for each architecture or flow. `test_lra_ui.py` exercises real Qt recipe
+insertion, parameters, expand/collapse, clipboard/undo, model round-trip, background
+training, restricted run loading, resume and optional weight-summary action.
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p 'test_lra*.py' -v
+```
+
+The configured cap100 Poisson example also participates in the existing
+700-update RMSE <0.05 example check. Measured 2,000-update comparisons, including
+the high-cap failures to fit, are in [results](results.md#learning-rate-annealing-pinn).
