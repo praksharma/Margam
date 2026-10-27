@@ -28,9 +28,10 @@ from .graph_model import role, PARAMETERS, OWNERS, parameters_for, overlay, asse
 from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
-from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData
+from .icons import icon
+from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData, QSize
 from shiboken6 import isValid
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack, QAction
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QDockWidget, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
@@ -350,10 +351,11 @@ class Window(QMainWindow):
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
         configure_theme(QApplication.instance(),'light')
-        toolbar=self.addToolBar('Model')
-        self.load_action=toolbar.addAction('Reset Poisson template')
+        toolbar=self.addToolBar('Model');self.model_toolbar=toolbar
+        toolbar.setIconSize(QSize(20,20));toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.load_action=QAction('Reset Poisson template',self)
         self.load_action.triggered.connect(lambda:self.request_template(False))
-        self.heat_action=toolbar.addAction('Heat demo')
+        self.heat_action=QAction('Heat demo',self)
         self.heat_action.triggered.connect(lambda:self.request_template(True))
         self.zoom_in_action=toolbar.addAction('Zoom in')
         self.zoom_in_action.triggered.connect(lambda:self.view.zoom_by(1.2))
@@ -411,6 +413,7 @@ class Window(QMainWindow):
         self.messages_dock.hide()
         self.output_views=OutputViews(self)
         self.setup_menus()
+        self.setup_icons()
         self.scene.blockOpened.connect(self.open_block)
         self.scene.connectionRejected.connect(self.connection_rejected)
         self.scene.blockContextRequested.connect(self.show_block_menu)
@@ -431,6 +434,30 @@ class Window(QMainWindow):
                 self.desktop_state.restore()
                 QTimer.singleShot(0,self.desktop_state.offer_recovery)
             except OSError as error:self.statusBar().showMessage('Local preferences unavailable: '+str(error))
+
+    def setup_icons(self):
+        actions={
+            'open_model_action':'open','save_model_action':'save','save_as_action':'save',
+            'open_run_action':'open','save_run_action':'save','load_action':'examples',
+            'heat_action':'examples','flow_action':'examples','zoom_in_action':'zoom_in',
+            'zoom_out_action':'zoom_out','pan_action':'pan','fit_action':'fit',
+            'actual_size_action':'actual','delete_action':'delete','undo_action':'undo',
+            'redo_action':'redo','copy_action':'copy','cut_action':'cut','paste_action':'paste',
+            'check_action':'check','run_action':'play','stop_action':'stop',
+            'open_output_action':'solution',
+        }
+        for attribute,glyph in actions.items():
+            action=getattr(self,attribute);action.setIcon(icon(glyph));action.setIconVisibleInMenu(True)
+            if not action.toolTip():action.setToolTip(action.text())
+        for action in self.example_actions.values():action.setIcon(icon('examples'))
+        self.examples_menu.setIcon(icon('examples'))
+        for button,glyph in ((self.validate_button,'check'),(self.train_button,'play'),(self.cancel_button,'stop')):
+            button.setIcon(icon(glyph))
+        for menu in self.menuBar().actions():
+            for action in menu.menu().actions():
+                glyph={'Quit':'quit','Help':'help','Block capabilities':'help','Select all blocks':'domain','Reset panel layout':'fit'}.get(action.text())
+                if glyph:action.setIcon(icon(glyph))
+                elif menu.text()=='Help':action.setIcon(icon('help'))
 
     def showEvent(self, event):
         super().showEvent(event)

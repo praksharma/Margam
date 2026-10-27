@@ -437,3 +437,7 @@ for editable mathematical expressions. These are alternative blocks connected to
 the same PINN residual input; choose one per problem. Presets supply equations,
 not boundary conditions or analytical solutions. Examples supply complete graphs
 with explicit reference and output blocks. See [problem examples](docs/problem-examples.md).
+
+The desktop toolbar and block library use built-in vector icons that follow the
+light/dark theme. Text labels remain visible; example loading lives in
+**File → Examples**, while the toolbar groups navigation and training controls.

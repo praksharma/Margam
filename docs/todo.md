@@ -186,3 +186,6 @@ paused; operational training monitors and basic rectangle previews remain useful
 - [x] Add manufactured interval Poisson, reaction–diffusion,
   advection–diffusion and 2D sine Poisson examples with explicit references.
 - [x] Check manufactured equations, CPU training, graph assembly and model format.
+
+- [x] Add palette-aware vector icons to the toolbar, menus and collapsible block
+  library; retain labels and keep demo shortcuts in File → Examples.

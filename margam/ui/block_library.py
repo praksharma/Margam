@@ -1,6 +1,7 @@
 """Collapsible library of the blocks currently supported by the builder."""
 from PySide6.QtCore import Qt, Signal, QMimeData, QEvent
 from PySide6.QtGui import QDrag
+from .icons import icon
 from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME, KINDS, describe_block
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel
 
@@ -60,9 +61,11 @@ class BlockLibrary(QWidget):
         self.tree.currentItemChanged.connect(self.describe_item)
         for name, blocks in BLOCK_GROUPS.items():
             group = QTreeWidgetItem(self.tree, [name])
+            group.setIcon(0,icon(KINDS[blocks[0]]))
             group.setFlags(group.flags() & ~Qt.ItemFlag.ItemIsDragEnabled)
             for title in blocks:
                 item = QTreeWidgetItem(group, [title])
+                item.setIcon(0,icon(KINDS[title]))
                 item.setData(0, Qt.ItemDataRole.UserRole, title)
                 item.setToolTip(0, 'Drag, double-click or press Enter to add '+title+'\n'+describe_block(KINDS[title]))
             group.setExpanded(True)
