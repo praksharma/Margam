@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "study": "baseline_vs_self_adaptive_interval_poisson",
+  "recorded_utc": "2026-10-27T15:59:34.749936+00:00",
+  "environment": {
+    "python": "3.14.8",
+    "torch": "2.14.1+cpu",
+    "numpy": "2.5.2",
+    "platform": "Linux-7.2.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "device": "cpu",
+    "dtype": "float32",
+    "cpu_threads": 1,
+    "cuda_available": false
+  },
+  "provenance": {
+    "git_head": "fe19aed7622b2b51bc5728352e49d0deb9fbc1ad",
+    "tracked_changes": true,
+    "source_sha256": {
+      "examples/compare_self_adaptive.py": "84ab29631dc483f5605bc7162df15d6b6ae6a611f34024d6cadf99cdcf54ac46",
+      "margam/templates/examples.py": "0ac548927337e6bb393bbc77622515919b6841bbd51ecc5a268c31dc72a3c742",
+      "margam/templates/poisson.py": "a69ed9b67689940cad1cfa7616e06150438f09b835472907eb9374d405721109",
+      "margam/methods/pinn.py": "024ab16f13beb123ba3b5aa9dfa31cf2423a9c537a117e8238eb5c99becc8467",
+      "margam/methods/self_adaptive.py": "4f9a3b1d2bf728e28d9d5a894884e972550f9c995381afa54ac7855d332dae6a",
+      "margam/components/losses.py": "552ba52e538d9e910cb45d3610762cc5d66ae4712962eece799dce9d3221d320",
+      "margam/components/sampling.py": "ff042c837f0b50e98003c5e0a448d00735fffc0210404e7448f0be88acbe2663",
+      "margam/nn/FCNN.py": "956a76b4099d67983d57262ba51eba216adf74e6ca769aac67db5b15ece1016a",
+      "margam/backend/utils.py": "2350294f3cec7463e67be77211251574c184850ddda8494379cf56b56bb31bd9"
+    }
+  },
+  "settings": {
+    "base_config": {
+      "shape": "Interval",
+      "x_min": 0.0,
+      "x_max": 1.0,
+      "y_min": 0.0,
+      "y_max": 1.0,
+      "points": 32,
+      "boundary_points": 16,
+      "sampling": "grid",
+      "seed": 7,
+      "source": 2.0,
+      "layers": [
+        16,
+        16
+      ],
+      "iterations": 700,
+      "lr": 0.005,
+      "device": "cpu",
+      "pde_weight": 1.0,
+      "boundary_weight": 10.0,
+      "bc_types": {
+        "left": "Dirichlet",
+        "right": "Dirichlet",
+        "bottom": "Dirichlet",
+        "top": "Dirichlet"
+      },
+      "bc_values": {
+        "left": 0.0,
+        "right": 0.0,
+        "bottom": 0.0,
+        "top": 0.0
+      },
+      "boundary_sampling": {},
+      "pde_expression": "",
+      "bc_targets": {},
+      "bc_operators": {},
+      "interior_data": {},
+      "boundary_data": {},
+      "network_seed": null,
+      "method": "baseline",
+      "physics": "scalar",
+      "viscosity": 0.01,
+      "flow_residuals": [
+        "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+        "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+        "D(u,x)+D(v,y)"
+      ],
+      "flow_boundary": {
+        "left": {
+          "u": {
+            "type": "Dirichlet",
+            "target": "y",
+            "operator": ""
+          },
+          "v": {
+            "type": "Dirichlet",
+            "target": "0",
+            "operator": ""
+          }
+        },
+        "right": {
+          "u": {
+            "type": "Dirichlet",
+            "target": "y",
+            "operator": ""
+          },
+          "v": {
+            "type": "Dirichlet",
+            "target": "0",
+            "operator": ""
+          }
+        },
+        "bottom": {
+          "u": {
+            "type": "Dirichlet",
+            "target": "y",
+            "operator": ""
+          },
+          "v": {
+            "type": "Dirichlet",
+            "target": "0",
+            "operator": ""
+          }
+        },
+        "top": {
+          "u": {
+            "type": "Dirichlet",
+            "target": "y",
+            "operator": ""
+          },
+          "v": {
+            "type": "Dirichlet",
+            "target": "0",
+            "operator": ""
+          }
+        }
+      },
+      "pressure_point": [
+        0.0,
+        0.0
+      ],
+      "pressure_value": 0.0,
+      "pressure_weight": 1.0,
+      "pde_preset": "poisson",
+      "pde_forcing": "0",
+      "sa_lr": 0.005,
+      "sa_initial": 1.0,
+      "sa_max": 1000.0,
+      "sa_boundary": false
+    },
+    "network_seeds": [
+      7,
+      11,
+      19
+    ],
+    "methods": [
+      "baseline",
+      "self_adaptive"
+    ],
+    "evaluation_points": 201,
+    "evaluation_range": [
+      0.0,
+      1.0
+    ],
+    "includes_boundary": true,
+    "reference": "x*(1-x)",
+    "metric_reduction": "RMSE and relative L2 over 201 scalar evaluation values",
+    "loss_measurement": "last pre-update physical MSE terms and method-specific total; field errors after final update"
+  },
+  "records": [
+    {
+      "seed": 7,
+      "method": "baseline",
+      "updates": 700,
+      "rmse": 0.009238616563379765,
+      "relative_l2": 0.05072833597660065,
+      "max_abs_error": 0.011879503726959229,
+      "final_pre_update_loss": {
+        "pde": 0.0005587185150943696,
+        "left": 2.0693234546342865e-05,
+        "right": 8.209944644477218e-05,
+        "total": 0.001072681974619627
+      }
+    },
+    {
+      "seed": 7,
+      "method": "self_adaptive",
+      "updates": 700,
+      "rmse": 0.0003612385771702975,
+      "relative_l2": 0.0019835256971418858,
+      "max_abs_error": 0.0006890594959259033,
+      "final_pre_update_loss": {
+        "pde": 0.0003767629968933761,
+        "left": 5.175444428573428e-08,
+        "right": 5.010514314562897e-07,
+        "total": 0.0006677702185697854
+      },
+      "adaptive_weights": {
+        "pde": {
+          "minimum": 1.1937720775604248,
+          "mean": 1.2677841186523438,
+          "maximum": 1.4943293333053589
+        }
+      }
+    },
+    {
+      "seed": 11,
+      "method": "baseline",
+      "updates": 700,
+      "rmse": 0.0001393274578731507,
+      "relative_l2": 0.0007650332991033792,
+      "max_abs_error": 0.0002795755863189697,
+      "final_pre_update_loss": {
+        "pde": 0.00016916883760131896,
+        "left": 9.439204973205051e-09,
+        "right": 3.0043395327084e-08,
+        "total": 0.00016936624888330698
+      }
+    },
+    {
+      "seed": 11,
+      "method": "self_adaptive",
+      "updates": 700,
+      "rmse": 0.0001502586528658867,
+      "relative_l2": 0.0008250555256381631,
+      "max_abs_error": 0.0002971738576889038,
+      "final_pre_update_loss": {
+        "pde": 0.00016296899411827326,
+        "left": 6.415007414162233e-11,
+        "right": 1.0938316918895907e-09,
+        "total": 0.0002724470105022192
+      },
+      "adaptive_weights": {
+        "pde": {
+          "minimum": 1.196030616760254,
+          "mean": 1.2575827836990356,
+          "maximum": 1.4551173448562622
+        }
+      }
+    },
+    {
+      "seed": 19,
+      "method": "baseline",
+      "updates": 700,
+      "rmse": 0.00018079883011523634,
+      "relative_l2": 0.0009927486535161734,
+      "max_abs_error": 0.00033846497535705566,
+      "final_pre_update_loss": {
+        "pde": 0.00032005918910726905,
+        "left": 1.9711805521183123e-08,
+        "right": 5.082976173298448e-08,
+        "total": 0.00032041186932474375
+      }
+    },
+    {
+      "seed": 19,
+      "method": "self_adaptive",
+      "updates": 700,
+      "rmse": 0.00022213302145246416,
+      "relative_l2": 0.0012197105679661036,
+      "max_abs_error": 0.00038455426692962646,
+      "final_pre_update_loss": {
+        "pde": 0.00014428244321607053,
+        "left": 1.188793241624353e-08,
+        "right": 3.487789967948629e-08,
+        "total": 0.00022214428463485092
+      },
+      "adaptive_weights": {
+        "pde": {
+          "minimum": 1.161867618560791,
+          "mean": 1.2227656841278076,
+          "maximum": 1.4287949800491333
+        }
+      }
+    }
+  ]
+}

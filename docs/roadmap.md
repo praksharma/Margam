@@ -8,7 +8,9 @@ For current support and limits, use [README](../README.md),
 [components](components.md), [UI implementation](ui-prototype.md), and
 [remaining TODOs](todo.md). The 27 October implementation includes owned graph
 parameters, scalar/steady-u-v-p physics, explicit outputs, model/run persistence,
-checkpoint resume, clipboard/history, recovery and a planar GeoSampler bridge.
+checkpoint resume, clipboard/history, recovery, a planar GeoSampler bridge and
+baseline/self-adaptive compact recipes. Current [recorded results](results.md) and
+[validation scope](validation.md) are maintained separately from this design history.
 
 
 ## Purpose

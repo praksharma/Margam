@@ -209,3 +209,13 @@ paused; operational training monitors and basic rectangle previews remain useful
   checkpoint/resume, equation/gradient checks and an equal-budget CPU comparison.
 - [ ] Reproduce a stiff benchmark protocol from the paper before claiming an
   advantage there; L-BFGS and GP-resampled minibatches remain unsupported.
+
+## Documentation and evidence
+
+- [x] Add a documentation index and results catalogue; separate measured studies,
+  regression thresholds, historical records and unreproduced protocols.
+- [x] Save the repeated SA comparison with settings, environment, source hashes,
+  full-precision errors, final losses and weight summaries.
+- [x] Preserve historical GPU metadata separately from current CPU validation.
+- [x] Consolidate setup/run commands, update menu/persistence/recipe guidance,
+  and document the concrete process for adding and recording a new method.

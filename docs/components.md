@@ -1,5 +1,7 @@
 # Implemented components and templates
 
+[Documentation index](README.md) · [Measured results](results.md) · [Validation](validation.md)
+
 ## Capability index
 
 This is the implemented component catalogue. Check this index before adding a
@@ -39,6 +41,8 @@ and PyTorch. Supported methods:
 | --- | --- | --- |
 | `grid` | Cell-centred Cartesian grid, excludes boundaries | Interval: exact; rectangle: floor(sqrt(budget))² |
 | `random` | Uniform random coordinates, seeded local generator | Exact budget |
+| `hammersley` | Seeded randomly shifted Hammersley points | Exact budget |
+| `stratified` | Seeded equal-volume recursive strata | Exact budget |
 
 Coordinates use the supplied physical bounds. Boundary sampling is separate;
 the Poisson template maps 1D samples onto each rectangle side, excluding corners
@@ -51,11 +55,12 @@ unconfigured side, `boundary_recipe(side)` uses a grid, `boundary_points` as the
 default count, and stable seeds 8/9/10/11 respectively. This preserves existing
 all-grid templates and their point counts. Unlike earlier versions, changing the
 interior method or seed no longer changes boundary samples. An explicit side recipe
-also overrides the default count. Grid seeds are stored but unused. The existing
-`seed` still seeds network initialisation as well as interior random sampling.
+also overrides the default count. Grid seeds are stored but unused. `network_seed` independently controls network initialisation. In the low-level
+config, `network_seed=None` falls back to `seed`; UI network blocks store an
+explicit network seed.
 
 Supported budgets are 1–100000 interior points and 1–10000 per rectangle side.
-Side sampling is 1D, so either method returns the exact requested side count.
+Side sampling is 1D, so every implemented method returns the exact requested side count.
 Random uses the sampler's half-open coordinate range; grid samples exclude corners.
 The Boundary points inspector selects a named set then edits only that recipe.
 Switching to an interval retains rectangle recipes but uses only its two endpoints;
@@ -73,19 +78,19 @@ interior, boundaries = sample_problem(config)
 # 70 interior; 30 left; 12 top; 16 each on right and bottom.
 ```
 
- These are initial
-small-domain samplers; the broader GeoSampler catalogue is not yet imported.
+These are small-domain samplers; the broader GeoSampler catalogue is not yet imported.
 
 ## Poisson template
 
 `margam/templates/poisson.py` supplies `PoissonConfig`, `sample_problem`,
-`build_pinn`, and `interval_reference`. It assembles the existing baseline method,
-not a separate training implementation. The scalar equation is Δu + c = 0 with
+`build_pinn`, and `interval_reference`. It assembles baseline, hard-Dirichlet
+or self-adaptive methods from shared physics; it does not duplicate their trainers. The scalar equation is Δu + c = 0 with
 configurable constant c, on an interval or axis-aligned rectangle.
 
 Each named side has a constant Dirichlet value u or an outward normal derivative
 ∂u/∂n (Neumann). Neumann values are derivatives, not conductivity-scaled physical
-flux. Boundary target arrays and extra pointwise PDE inputs are not supported.
+flux. Scalar boundary targets can be constant, coordinate expressions or explicitly
+mapped CSV/NPZ values. Additional pointwise PDE input arrays are not supported.
 At least one Dirichlet side is required; pure Neumann problems need compatibility
 and gauge handling. Adjacent Dirichlet targets must agree at rectangle corners.
 Mixed corner regularity is not guaranteed by this validation.
@@ -194,8 +199,8 @@ kinematic viscosity nu and density-normalised pressure. The residual preset is
 u*u_x + v*u_y + p_x - nu*laplace(u),
 u*v_x + v*v_y + p_y - nu*laplace(v), and u_x+v_y. Restricted expressions expose
 u/v/p components without Python execution. Targets remain coordinate-only.
-`templates/incompressible_flow.py` assembles a 3-output network and reuses the
-baseline method; it is a new physics template, not a duplicate training engine.
+`templates/incompressible_flow.py` assembles a 3-output network and selects the
+baseline or self-adaptive method; it is a physics template, not a duplicate trainer.
 
 Each named set has optional u/v/p None/Dirichlet/Neumann/Custom operators. Each
 velocity component currently requires a Dirichlet anchor. A separate pressure point

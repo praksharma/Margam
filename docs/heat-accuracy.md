@@ -1,4 +1,7 @@
-# Heat-demo numerical check
+# Heat-demo accuracy study
+
+[Results catalogue](results.md#steady-heat-soft-and-hard-dirichlet) ·
+[Problem/reference](heat-demo.md) · [Validation](validation.md)
 
 27 October 2026. CPU, float32, 2500 Adam updates, 144 interior grid points,
 24 points per side, tanh 32×32 network. Evaluation: 41×41 coordinates, compared
@@ -30,7 +33,13 @@ establish GPU equivalence or accuracy on unrelated physics.
 Reproduce with the root environment:
 
 ```bash
-python -m examples.benchmark_heat_accuracy --output assets/benchmarks/heat-accuracy.json
+.venv/bin/python -m examples.benchmark_heat_accuracy --output benchmark-results/heat-reproduction.json
 ```
 
-Raw settings/losses/errors: [heat-accuracy.json](../assets/benchmarks/heat-accuracy.json).
+Choose a fresh output filename: the heat script permits overwriting. The original
+record is preserved, not rerun during the documentation update. It records Torch,
+time, evaluation grid/reference and per-run settings/losses/errors, but not a full
+environment/source snapshot. The file was introduced in commit `0e37a1e`; that
+identifies artifact provenance rather than an inferred exact execution revision.
+
+Raw per-run losses/errors and limited metadata: [heat-accuracy.json](../assets/benchmarks/heat-accuracy.json).

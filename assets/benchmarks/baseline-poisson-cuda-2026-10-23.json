@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "study": "historical_baseline_poisson_cuda",
+  "preserved_utc": "2026-10-27T16:01:43.992198+00:00",
+  "origin_directory": "benchmark-results/baseline-poisson-b420c55",
+  "origin_sha256": {
+    "manifest.json": "8d69c83a1560a418d4c0ec2dfc5c011ac6ec6c3e7ece468a5bb9f02b1f820640",
+    "summary.json": "8dd7b798093d54abac92d70fd3faa8d0d0b3ba8e4f12f53d99af952bae8b9933",
+    "aggregate.json": "099314472e255d9c4ac2d4c12d417b8d3167bf43fea4e8d5798c885b0ea38e96"
+  },
+  "note": "Preserved historical measurement, not rerun on the current environment. Original manifest, summary and aggregate payloads are unchanged. Samples/checkpoints are not included in this curated summary.",
+  "manifest": {
+    "schema_version": 1,
+    "created_at_utc": "2026-10-23T14:23:28.526388+00:00",
+    "case": "poisson_1d",
+    "case_config": {
+      "equation": "u_xx + 2 = 0",
+      "domain": [
+        0,
+        1
+      ],
+      "boundary_value": 0,
+      "collocation_points": 32,
+      "evaluation_points": 101
+    },
+    "iterations": 1000,
+    "seeds": [
+      7,
+      17,
+      27
+    ],
+    "recipes": [
+      {
+        "name": "baseline_pinn",
+        "config": {
+          "network": [
+            1,
+            16,
+            16,
+            1
+          ],
+          "activation": "tanh",
+          "initialiser": "Xavier normal",
+          "input_bounds": [
+            [
+              0.0
+            ],
+            [
+              1.0
+            ]
+          ],
+          "optimiser": "adam",
+          "lr": 0.01,
+          "weights": {
+            "pde": 1,
+            "boundary": 1
+          },
+          "device": "cuda"
+        }
+      }
+    ],
+    "environment": {
+      "python": "3.9.25",
+      "platform": "Linux-7.2.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "torch": "2.0.1+cu118",
+      "numpy": "1.26.4",
+      "cuda_runtime": "11.8",
+      "cpu_threads": 1,
+      "cudnn_deterministic": false,
+      "cudnn_benchmark": false,
+      "matmul_allow_tf32": false,
+      "cudnn_allow_tf32": true,
+      "deterministic_algorithms": false,
+      "git_commit": "b420c5565d0982f7dc1b8156e05cbc4412d19557",
+      "git_dirty": false
+    },
+    "metric_reduction": "pooled over all evaluation points and output components"
+  },
+  "records": [
+    {
+      "case": "poisson_1d",
+      "recipe": "baseline_pinn",
+      "seed": 7,
+      "iterations": 1000,
+      "samples_sha256": "de9cfea5c64e6b09e9e2e62d99ae9d39c432b0f79c2155a14a0ed8c1cd8641c9",
+      "evaluation_points": 101,
+      "status": "completed",
+      "setup_seconds": 0.2921246749999682,
+      "device": "cuda",
+      "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "training_seconds": 4.542724860000135,
+      "prediction_seconds": 0.000446352999915689,
+      "rmse": 0.002099945002391711,
+      "mae": 0.0019234529521205638,
+      "max_abs_error": 0.002678811550140381,
+      "relative_l2": 0.011559238947770195,
+      "final_training_loss": 6.739798845956102e-05
+    },
+    {
+      "case": "poisson_1d",
+      "recipe": "baseline_pinn",
+      "seed": 17,
+      "iterations": 1000,
+      "samples_sha256": "de9cfea5c64e6b09e9e2e62d99ae9d39c432b0f79c2155a14a0ed8c1cd8641c9",
+      "evaluation_points": 101,
+      "status": "completed",
+      "setup_seconds": 0.001425196999889522,
+      "device": "cuda",
+      "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "training_seconds": 3.834871888999942,
+      "prediction_seconds": 0.00043082299998786766,
+      "rmse": 0.0008537383762986277,
+      "mae": 0.0008534806789738117,
+      "max_abs_error": 0.0008827745914459229,
+      "relative_l2": 0.0046994401659460035,
+      "final_training_loss": 9.496154962107539e-05
+    },
+    {
+      "case": "poisson_1d",
+      "recipe": "baseline_pinn",
+      "seed": 27,
+      "iterations": 1000,
+      "samples_sha256": "de9cfea5c64e6b09e9e2e62d99ae9d39c432b0f79c2155a14a0ed8c1cd8641c9",
+      "evaluation_points": 101,
+      "status": "completed",
+      "setup_seconds": 0.0013901099998747668,
+      "device": "cuda",
+      "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "training_seconds": 3.833235525999953,
+      "prediction_seconds": 0.0004250039999078581,
+      "rmse": 0.00010564805941892612,
+      "mae": 8.463173514545553e-05,
+      "max_abs_error": 0.00020714104175567627,
+      "relative_l2": 0.0005815443555906009,
+      "final_training_loss": 8.855608757585287e-05
+    }
+  ],
+  "aggregate": [
+    {
+      "recipe": "baseline_pinn",
+      "runs_completed": 3,
+      "runs_failed": 0,
+      "rmse_mean": 0.0010197771460364218,
+      "rmse_std": 0.001007463016184554,
+      "mae_mean": 0.0009538551220799438,
+      "mae_std": 0.0009235107680049563,
+      "max_abs_error_mean": 0.0012562423944473267,
+      "max_abs_error_std": 0.0012774574064968653,
+      "relative_l2_mean": 0.005613407823102267,
+      "relative_l2_std": 0.005545624157706512,
+      "training_seconds_mean": 4.07027742500001,
+      "training_seconds_std": 0.40915229872214437,
+      "prediction_seconds_mean": 0.00043405999993713823,
+      "prediction_seconds_std": 1.1036465776564271e-05
+    }
+  ]
+}

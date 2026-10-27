@@ -2,8 +2,8 @@
 
 Implemented from McClenny and Braga-Neto, *Self-Adaptive Physics-Informed Neural
 Networks using a Soft Attention Mechanism*, arXiv:2009.04544v5 (18 June 2024).
-The supplied `/home/hell/Downloads/saPINN.pdf` was read, particularly section 3,
-equations (10)–(20), and the Adam discussion on page 6.
+The implementation follows section 3, equations (10)–(20), and the Adam
+discussion on page 6 of the supplied v5 paper.
 
 Primary references:
 - [Paper](https://arxiv.org/abs/2009.04544)
@@ -77,28 +77,21 @@ cap projection, nonfinite failure, corrupted checkpoint rejection, exact uninter
 versus resumed training, and interval prediction error. Desktop tests exercise both
 recipe forms, save/open, clipboard, actual training, archive/reload and resume.
 
-Reproduce a small CPU comparison with:
+The [results catalogue](results.md#baseline-vs-self-adaptive-pinn) is the canonical
+comparison table, including per-seed errors, aggregate/median statistics, final λ
+summaries, environment, and interpretation. The [raw evidence file](../assets/benchmarks/self-adaptive-poisson-2026-10-27.json)
+preserves full-precision values and reproduction settings. A repeated six-run
+comparison matched our earlier values: SA improves one seed and is slightly worse
+on the other two. The better mean is dominated by that one seed; the median is worse.
 
-```bash
-.venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19
+```sh
+.venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19 --output benchmark-results/sa-poisson-new.json
 ```
 
-Unit interval Poisson `u_xx+2=0`, zero Dirichlet endpoints, reference `x(1-x)`;
-32 fixed grid points, tanh 16×16 network, network lr=0.005, PDE weight 1, mean BC
-weight 10; identical initial network per seed and 700 updates for each method.
-SA uses the defaults above, adapting PDE points only. Errors use 201 uniform
-including-boundary evaluation points (CPU float32).
-
-| Network seed | Baseline RMSE | SA-PINN RMSE | SA final λ range |
-| --- | ---: | ---: | ---: |
-| 7 | 0.009239 | 0.0003612 | 1.194–1.494 |
-| 11 | 0.0001393 | 0.0001503 | 1.196–1.455 |
-| 19 | 0.0001808 | 0.0002221 | 1.162–1.429 |
-
-SA improves this small run for seed 7, but is slightly worse for seeds 11 and 19.
-This verifies functioning adaptation; it does not establish general superiority.
-No cap was reached. The paper's Burgers/Allen–Cahn/Helmholtz benchmark protocols
-were not reproduced. Optional L-BFGS, GP-based resampling, minibatches, random
-mask initialisation, alternative mask families and transient UI problems are not
+Use a new filename; existing evidence is never overwritten by this command.
+The [validation guide](validation.md) separates regression thresholds from actual
+measurements. The paper's Burgers/Allen–Cahn/Helmholtz benchmark protocols were not
+reproduced. Optional L-BFGS, GP-based resampling, minibatches, random mask
+initialisation, alternative mask families and transient UI problems are not
 implemented. Existing interval/rectangle scalar physics and steady u/v/p are
 supported; no 3D or ParaView work is included.

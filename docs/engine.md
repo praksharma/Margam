@@ -1,7 +1,13 @@
-# Baseline PINN and benchmarking
+# Numerical API and benchmarking
+
+[Documentation index](README.md) · [Method/recipe ownership](adding-a-pinn.md) ·
+[Measured results](results.md) · [Validation](validation.md)
 
 The method implementation is `margam/methods/pinn.py`. Shared problem definitions
 live in `margam/components/problem.py`, with named weighted losses alongside them.
+SA-PINN is a separate implementation in `margam/methods/self_adaptive.py`;
+hard Dirichlet is in `margam/methods/hard_dirichlet.py`. UI recipes are separate
+construction definitions under `margam/recipes/`.
 Only strong-form residuals are in scope; weak/variational methods are not implemented.
 
 ```python
@@ -46,3 +52,9 @@ Relative L2 is null for zero reference norm. Aggregates include success/failure
 counts and sample standard deviations; one seed has no sample standard deviation.
 Failures are recorded and re-raised. This analytical Poisson example is a baseline
 correctness exercise, not evidence of broad PDE coverage or hardware equivalence.
+
+The small [SA comparison](self-adaptive-pinn.md) has a separate runnable script,
+`examples.compare_self_adaptive`, with optional provenance/settings JSON output.
+It uses the template builder and existing mean-BC convention; it does not share
+the historical baseline benchmark's exact collocation grid, learning rate or BC
+weight. Compare results only under the [stated protocols](results.md).

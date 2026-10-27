@@ -1,6 +1,6 @@
 # Ready-wired steady heat demo
 
-Load with the toolbar **Heat demo** action or **File → Heat demo**. The separate
+Load with **File → Examples → Heat demo**. The separate
 basic template remains available through Reset Poisson template.
 
 ## Problem and configuration
@@ -61,3 +61,7 @@ difference solve on a translated, non-square rectangle with a nonzero boundary.
 These are correctness checks at stated resolutions, not a rigorous truncation bound.
 `tests/test_heat_demo_ui.py` verifies the wired demo, background run, monitor history,
 reference metrics, comparison rendering and return to the basic template.
+
+Measured soft/hard BC performance is recorded in the [accuracy study](heat-accuracy.md)
+and [results catalogue](results.md). These measurements are separate from the
+reference correctness checks and are not general accuracy guarantees.

@@ -1,374 +1,195 @@
-# Baseline PINN desktop workflow
+# Desktop guide
 
-Run from the repository root with the existing root environment:
+Despite this file's historical name, this describes the current connected builder.
+[Documentation index](README.md) · [Commands](../README.md) · [Capabilities](components.md)
+
+## Start with a problem
 
 ```sh
-source .venv/bin/activate
-python -m margam.ui
+.venv/bin/python -m margam.ui
 ```
 
-## Layout and menus
+Choose **File → Examples** for the basic Poisson reset, steady Heat demo,
+incompressible Couette demo, manufactured scalar problems, or the self-adaptive
+interval example. Example loading replaces the graph after Save / Discard / Cancel
+for unsaved edits. The initial/reset graph has no output blocks; examples explicitly
+wire their requested outputs. See [problem definitions](problem-examples.md).
 
-The block library is on the left, model canvas in the centre, and inspector on the
-right. No figure or sample panel is created by default. Operational Messages have
-an independent dock, hidden until requested from View or shown for a training error.
-Rectangle geometry/sample previews are local, explicitly opened windows; they float
-by default and can be docked by the user. Output views have their own dock widgets,
-which can be grouped or detached/redocked. No global panel owns the figures and
-there is no 3D viewport. Source attribution is in ../THIRD_PARTY.md.
+The library is on the left, canvas in the middle and selected-block properties on
+the right. Operational Messages are initially hidden and can be opened from View;
+training errors show them. Results and rectangle previews have their own optional
+docks and can float or dock. No default figure pane or 3D viewport is created.
 
 | Menu | Implemented actions |
 | --- | --- |
-| File | Model Open/Save/Save As, run Open/Save, scalar/heat/flow templates, Quit |
-| Edit | Undo/Redo, Copy/Cut/Paste blocks, Delete selected, Select all blocks |
-| View | Panel visibility, zoom in/out, 100%, Fit model, Reset panel layout, Open selected output, Theme |
-| Run | Validate (Ctrl+D), Train (F5), Stop (Ctrl+Shift+T), Resume checkpoint |
+| File | Model Open/Save/Save As; run Open/Save; Examples; Insert PINN recipe; Quit |
+| Edit | Undo/Redo, block Copy/Cut/Paste, Delete selected, Select all blocks |
+| View | Panels, zoom/100%/Fit/Pan, Reset panel layout, Open selected output, Theme |
+| Run | Validate, Train, Stop, Resume checkpoint |
 | Help | Quick start and About |
 
-Open/Save and Undo/Redo are implemented for model definitions/edits as described below.
-Local panel layout/theme/library groups are persisted. Fitting is explicit; selecting a
-block or resizing an inspector does not automatically reset the camera.
+Light/dark themes and vector icons retain text labels. Core panel layout, window
+geometry, theme and collapsed library groups persist independently of models.
 
-## Core model
+## Build the graph
 
-The Poisson template has seven required blocks: domain, interior sampler, boundary
-points, PDE residual, boundary condition, neural network, and PINN method. Output
-blocks are optional. The underlying method remains `margam/methods/pinn.py`.
+The expanded problem consists of domain → interior sampler → PDE residual,
+domain → boundary points → boundary condition, a network, and a trainer consuming
+the PDE/BC/network inputs. Compact recipes hide the network/trainer pair.
 
-Geometry, sampling, constant source, BCs, hidden-layer sizes, Adam settings and
-weights are edited in the selected block's inspector. Built-in interval/rectangle
-sampling needs no imported geometry or mesh. Grid/random sampling, corner policy,
-normal conventions and numerical limits are documented in components.md.
+Settings belong to the blocks. Execution follows one method root's typed inputs;
+the inspector's cached configuration is not the source of truth. Interior and
+boundary sets must use the same domain source. Unconnected or duplicate core
+blocks remain editable drafts but prevent training. Multiple method roots and
+arbitrary cyclic simulations are not supported.
 
-Right-clicking any supported block offers Properties, Delete block and Help.
-Rectangle adds Preview geometry and Preview samples. Output blocks add Open
-monitor, Open plot or Open comparison, according to their actual type. There is
-no universal Plot action. Undo/Redo and Copy/Cut/Paste are implemented.
-
-Double-clicking a computational block exposes its inspector. Multiple selection
-has no arbitrary single-block parameter editor. Parameters share one inspector; core settings are owned by block instances.
-
-## Optional rectangle previews
-
-Right-click a Rectangle block and choose Preview geometry or Preview samples.
-Geometry shows the bounds and outline; samples shows the currently configured
-interior/boundary point sets. These two views are keyed to that block and reused
-when reopened. Bounds/sampling edits update existing views without opening new
-ones. Closing hides a view. Switching to Interval, deleting its owner or resetting
-the model closes/removes its previews. These actions do not evaluate a neural model.
-
-The implementation is deliberately `RectanglePreview`, not a general geometry
-renderer or plot registry. Interval and unrelated blocks have no sample-preview
-action. Complex geometry and advanced sampling visualisation belong to GeoSampler.
-Rectangle previews are available as read-only views during training.
-
-## Optional output blocks
-
-| Block | Inputs | Output settings and behaviour |
-| --- | --- | --- |
-| Training Monitor | PINN method | Live losses; retained-update limit 25–100000, default 10000 |
-| Solution Plot | PINN method | Scalar predictions only; evaluation resolution 2–201 per axis |
-| Reference | No input | Explicit interval analytical / rectangular truncated-series Poisson source |
-| Comparison | Model input above; Reference input below | Prediction/reference curves and RMSE at its own evaluation points |
-
-Outputs have stable instance identities and independent settings. A reference
-source does nothing unless connected to a requested Comparison. The rectangular reference supports equal constant Dirichlet conditions on all
-sides and uses 40 odd sine modes per axis (truncated). Interval references remain
-analytical. Other rectangle BCs are rejected for comparison; ordinary prediction
-views work without references.
-It is not a general symbolic or imported-data reference editor.
-
-Connect an output block before training, then double-click it or use its specific
-right-click Open action to open its view.
-Selecting it and choosing View → Open selected output is another route. A view
-can be opened before, during or after training. New or hidden views are never
-opened automatically by training. Connected outputs still collect/evaluate their
-requested data if their views are closed. An unconnected output is ignored; a
-comparison connected on only one input fails validation rather than assuming a
-reference. The trained model is evaluated separately for each prediction request.
-
-Close a view to hide it; reopen the same block to reuse the view and retained
-results. Removing the block deletes its view and request. Changing the graph or
-model/evaluation settings invalidates the current run. Changing a monitor's
-retention limit trims its existing display history without retraining; previously
-trimmed data cannot be recovered by increasing the limit.
-
-## Execution and diagnostics
-
-Training runs in a background thread in batches of up to 25 updates. Progress,
-current total loss and failures are operational information available without any
-output block. Only connected monitors retain UI loss history. Their plots show
-weighted total, raw PDE loss and mean raw BC loss on a logarithmic axis; losses
-are measured before updates. The numerical recipe retains its own loss history
-independently of the bounded view history.
-
-Without prediction/comparison requests, the worker never calls prediction or
-constructs a reference. A completed/partial numerical model is retained in the
-finished worker until a model edit/new run, rather than passing a network to plot
-widgets. There is no export/continuation interface for that model yet.
-
-Settings/graph edits are locked during training, while block selection and opening
-output views remain available. Stop requests cancellation between batches. Closing
-the main window waits for the worker to stop. Errors release the controls and show
-operational Messages; they do not create result views. CPU thread count is one for
-these small examples. CUDA remains unverified in this environment.
-
-## Analytical check
-
-Choose Interval on [0,1], source 2, zero Dirichlet endpoints, 32 grid interior
-points, hidden layers 16,16, learning rate .01 and 1000 iterations. Add Reference
-and Comparison, connect the method to its upper model input and Reference to its
-lower reference input, then train and explicitly open the Comparison. The reference
-is u=x(1-x). A separate Solution Plot shows predictions alone, not an assumed exact
-solution. A connected rectangular Comparison shows prediction/reference/error heatmaps,
-RMSE and maximum absolute error against its explicit truncated-series reference.
-Standalone rectangle Solution Plots show predictions alone.
-
-## Validation and remaining work
-
-Tests cover output-free execution, no implicit reference, comparison validation,
-independent evaluation resolutions, rectangle-only context actions and preview
-cleanup, monitor retention, closed-view recording,
-detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
-Screenshots are under assets/screenshots. General graph execution, instance-owned core settings,
-multiple arbitrary sampling blocks, saved results/checkpoints, arbitrary PDE/reference
-sources and export remain in todo.md.
-
-## Canvas navigation
-
-Wheel zoom is centred on the mouse pointer, limited to 10–400%. Middle-button drag
-or Space+left-drag pans. Tapping Space fits all blocks. Toolbar/View actions offer
-zoom in/out, 100% and Fit model. Ctrl+Plus, Ctrl+Minus and Ctrl+0 are canvas-scoped
-shortcuts, so property text inputs retain their own key handling. Fitting can choose
-a smaller scale if needed to include a large diagram. Panning and zoom do not move
-blocks, alter training settings, or reset simply because selection changes.
-
-## Ready-wired steady heat demo
-
-Toolbar/File → Heat demo loads the same baseline method with a configured square,
-constant source, zero edge temperature rise and connected monitor, prediction,
-Reference and Comparison blocks. No view is forced open. The current configuration
-uses 144 interior points, 24 samples per side, hidden layers 32,32, Adam learning
-rate .005, 2500 updates, PDE weight 1 and mean BC weight 10. These are editable demo
-settings, not universal defaults or an accuracy guarantee. See heat-demo.md.
-
-## Collapsible block library
-
-The left dock groups the existing blocks under Geometry, Sampling, Neural networks,
-Loss / Physics, Optimisation / PINN, and Results. Each group collapses independently.
-Search matches category and block names without case sensitivity, temporarily
-expands matches, and restores previous expansion states when cleared. Double-click
-a block or press Enter to add it; category headings only toggle expansion. The
-whole library, including search, is disabled while training. The dock can still be
-hidden/reopened from View. No new solver, loss or optimiser implementations are
-implied by these categories: the PINN method still owns Adam settings and the PDE
-and BC blocks define its existing loss terms.
-
-## Independent boundary sampling
-
-The Sampling library group separates Interior sampler from Boundary points. The
-interior inspector exposes implemented methods, budget and sampling seed. Network initialisation
-has its own seed. The Boundary points inspector selects a named rectangle side and
-exposes that side's method, exact count and independent seed. Limits match the
-sampler contract: 100000 interior points, 10000 on each side. Method choices and
-tooltips use the implemented `SAMPLERS` mapping. Changing one side does not change
-the interior or another side. The boundary block shows the total actual point count;
-the Rectangle's optional sample preview uses these recipes. BC type/target assignment
-remains in its own block. Interval endpoints have no sampling controls. Shape changes
-retain rectangle recipes, while template reset clears overrides. These recipes and their settings are owned by the actual sampler blocks and
-assembled through the supported typed graph; multiple roots remain unsupported.
-
-## Drag/drop and quick insertion
-
-Library leaves can be dragged into the canvas; headings cannot. Only a known
-block title in Margam's block MIME payload is accepted, not text/files. The block
-centre lands at the drop's scene coordinate, accounting for pan and zoom. New
-blocks remain unconnected. Core duplicates are permitted for editing but continue
-to fail the existing template validation; optional outputs never auto-open.
-
-Double-click an empty canvas location or press Tab with canvas focus for the Add
-block popup. Double-clicks on blocks retain their existing Properties/Open view
-actions. Tab inserts at the visible canvas centre; mouse insertion uses the clicked
-position. Popup search uses the same groups and titles as the dock. Enter in search
-adds the first matching block; Down focuses the results for arrow-key selection and
-Enter insertion. An empty result does nothing. Escape or clicking outside dismisses
-the popup. Training and template reset dismiss pending insertion; training locks
-both insertion paths. Property-editor Tab remains ordinary focus navigation.
-
-`block_catalogue.py` is a small shared list of supported UI titles and kinds,
-not a general solver/plugin registry or a replacement for the component capability
-document. All insertion paths call `Window.add_node`, so output instance settings,
-selection, graph invalidation and validation rules remain consistent. Core settings are instance-owned and the supported one-root scalar/flow graph
-is assembled from actual connections. Verified native Qt drop events, placement under camera
-transforms, keyboard routing, invalid payloads and popup lifecycle are covered by
-`tests/test_block_insertion.py`. A real platform drag gesture should also be checked
-on the target desktop; automated offscreen events do not prove OS drag appearance.
-
-## Typed editor ports and connection checks
-
-Source-only Geometry, Neural network, and Reference blocks have no artificial
-input socket. Terminal output blocks have no output socket. PINN method inputs
-are separate pde/boundary/network ports; Comparison keeps separate model/reference
-inputs. Tooltips identify each port's semantic role and one-source input rule.
-
-| Source output | Accepted destination input |
+| Block | Edit in its properties |
 | --- | --- |
-| Geometry | Interior sampler / Boundary points: Geometry |
-| Interior points | PDE residual: Interior points |
-| Boundary point sets | Boundary condition: Boundary point sets |
-| PDE residual | PINN method: PDE residual |
-| Boundary conditions | PINN method: Boundary conditions |
-| Neural network | PINN method: Neural network |
-| PINN run | Training Monitor / Solution Plot: PINN run; Comparison: PINN run |
-| Reference source | Comparison: Reference source |
+| Domain | Interval/rectangle shape and physical bounds |
+| Interior sampler | Grid, random, Hammersley or stratified method; budget and seed; optional imported points |
+| Boundary points | Rectangle named side, its independent sampler/count/seed; optional point/normal mapping; interval endpoints are fixed |
+| PDE residual | Restricted scalar expression or steady u/v/p residuals; blank scalar expression retains constant-source Poisson |
+| Predefined PDE | Equation family, coefficient, coordinate forcing and supported diffusivity/viscosity |
+| Boundary condition | Per-set/component Dirichlet, Neumann or custom operator/target; flow pressure gauge |
+| Neural network | Tanh fully connected hidden widths and independent initialisation seed |
+| PINN method | Baseline/hard-Dirichlet variant, Adam settings and loss weights |
+| Self-adaptive trainer | Network and mask rates, initial mask/cap, optional adaptive BCs, global loss weights |
 
-`ports.py` holds the concrete editor contracts. Direction, compatible semantic
-type, same-model ownership, self-connections and occupied destinations are checked
-before creating a wire, for both gestures and template/helper connections. Each
-input accepts one source; outputs may branch to distinct consumers. Delete the
-old wire to replace an input source. A rejected native gesture reports its reason
-in Properties, status and the Messages log without opening a plot or clearing
-results. Dropping into empty space cancels without changing the model. Training
-and deletion cancel pending wires, preventing stale endpoints. Full pre-training
-validation checks endpoints again and still requires the exact seven-block core.
+Predefined PDE and PDE residual are alternatives on the same typed input. A preset
+supplies equations, not BCs or reference solutions. Expression syntax and point/data
+limits are in [components](components.md). No Python eval/code import is offered.
+Neumann values are outward normal derivatives, not automatically conductivity-scaled
+flux. Built-in rectangle Dirichlet values must agree at shared corners; imported
+boundary consistency and outward normal orientation remain the data provider's job.
 
-These types describe editor roles, not tensor shapes, units or general executable
-graph semantics. A PINN run is the method's model/history output contract, not a
-simulated physical-time signal. Core configuration remains owned by the template.
-Outputs retain instance-specific settings and explicit view ownership. The existing
-`connect_nodes` helper infers the unique compatible target socket; an explicit
-input name can be supplied. Unsupported helper connections raise ValueError.
+### Insert, connect and navigate
 
-Double-clicking core/reference blocks selects them and opens the same inspector
-used by Properties. There is no independent parameter-dialog state to synchronise.
-Double-clicking an output opens/reuses its owned dock. Tests cover these actions,
-per-output branching, rejected native wire gestures, endpoint checks, preservation
-of run data on rejection, and cleanup of incomplete gestures.
+Library groups collapse separately. Search matches titles/categories and restores
+prior collapsed groups when cleared. Add a block by dragging it onto the canvas,
+double-clicking it in the library, or selecting it and pressing Enter. Category
+headings only expand/collapse. Double-click empty canvas space or press Tab with
+canvas focus for quick insertion. Search and Enter selects the first match; Down
+moves into the matches. Escape/click outside cancels. New blocks are unconnected.
 
-## Undo and redo
+Drag from an output port to a compatible input. Hover to see port roles. Inputs
+accept one source; outputs may fan out. Incompatible/occupied inputs and self-connections are rejected immediately. Delete an existing wire before replacing its source.
+Rejected/cancelled wiring leaves current results intact. Pan/zoom is respected by
+insertion and does not change block coordinates.
 
-Edit and block context menus offer Undo/Redo with the next operation's name.
-With canvas focus, Ctrl+Z undoes and Ctrl+Y or Ctrl+Shift+Z redoes. Property/text
-editors keep their local shortcuts; use the Edit menu to replay model history
-while an inspector field has focus. Actions are disabled while training, including
-through public undo/redo wrappers. Templates start a fresh, empty history.
+| Navigation | Control |
+| --- | --- |
+| Pointer-centred zoom | Wheel, 10–400%; toolbar/View zoom actions |
+| Persistent pan | Pan toggle, left-drag; open/closed hand cursors; Escape returns to selection |
+| Temporary pan | Middle-drag or Space+left-drag |
+| Fit | Tap Space or Fit model |
+| Actual size | 100% or Ctrl+0 on the canvas |
+| Zoom shortcuts | Ctrl+Plus / Ctrl+Minus on the canvas |
 
-The bounded Qt undo stack retains at most 100 commands. Additions, valid
-connections, deletion of selected nodes/wires, grouped mouse-drag moves, template
-settings (including BC and per-side sampling recipes), output settings and output
-names are reversible. Consecutive changes from the same inspector control are
-coalesced until another command or inspector reconstruction; programmatic setting
-calls are separate steps. A new edit after undo discards the previous redo branch.
-No-op values, rejected connections, navigation and selection do not create steps.
-Direct low-level scene/item manipulation is not an editor command.
+Selection or inspector resizing does not reset the camera. View → Reset panel
+layout restores dock placement. Navigation remains available during training.
 
-Deleted nodes keep their IDs and instance settings. Undo deletion restores the
-same nodes and their incident wires together. Deleting an owner removes its
-optional views; undo restores its model state without reopening those views.
-Opening, hiding, docking and closing views, camera movement and library search are
-outside model history. Layout-only block moves and output renaming preserve run
-data. Semantic graph/settings edits and their replay invalidate old results;
-undo never restores model weights, predictions or discarded monitor records.
-Increasing a restored retention limit does not recover already trimmed samples.
-A restored view can be explicitly opened again; no plot is created by history.
+### Compact and expanded recipes
 
-## Model files and unsaved changes
+File → Insert PINN recipe offers baseline and self-adaptive compact/expanded forms.
+The library's named PINN entries insert compact forms; trainer entries are separate.
+Insertion does not replace the existing method root. Collapse an existing supported
+trainer/private network, or remove the old pair before wiring a new recipe.
 
-File → Open model (Ctrl+O), Save model (Ctrl+S) and Save model as (Ctrl+Shift+S)
-use `.margam.json` documents. Version 6 is readable JSON (v1–v5 migrate with their compatible defaults) with a fixed format marker,
-version, template configuration, node IDs/kinds/names/positions/settings, and wire
-source/target IDs plus target port name. Named boundary recipes and output-instance
-settings are included. No Python callables, executable code, pickle data, trained
-weights, numerical results, undo commands or view preferences are stored.
+Double-click a compact recipe, use its inspector button, or right-click → Expand
+into components. Its components appear on the same canvas. Edit or replace the
+supported neural network through the typed input. Right-click the trainer →
+Collapse as Baseline PINN / Self-adaptive PINN to hide the pair, retaining settings
+and external connections. Shared networks cannot be collapsed; hard Dirichlet is
+not relabelled as a baseline recipe. Individual layout offsets are not stored in
+the compact form, but Undo restores the previous layout. [Recipe guide](pinn-recipes.md).
 
-Opening validates the whole structure, known kinds/ports, compatible types,
-unique IDs, finite data and single-source inputs, then stages the graph before
-replacing the current document. Files are capped at 4 MiB, 2000 nodes and 10000
-wires. Unknown versions, duplicate JSON keys, missing fields, invalid endpoints and
-unsupported settings are rejected. Open failure leaves the graph, filename, history
-and existing results untouched. Drafts may have missing/duplicate core blocks or
-invalid physics/settings; they can still be saved and reopened, but pre-training
-validation reports them. Core display names remain derived from the template;
-output names preserve their user-defined labels.
+## Request results explicitly
 
-Saving validates the serialised structure and writes and flushes data into a temporary
-file beside the destination before atomic replacement. A failed write/replacement
-does not mark the document clean or replace the previous file. Pending inspector
-values are committed before saving or deciding whether to discard. The filename
-and unsaved indicator update only after success. Undo/redo tracks the clean save
-position. Programmatic low-level scene edits remain outside this dirty tracking,
-just as they are outside model undo.
+| Output block | What it requests |
+| --- | --- |
+| Training Monitor | Live raw physical losses and weighted total; retained history limit 25–100000 |
+| Solution Plot | Scalar predictions or coupled u/v/p table, evaluation resolution 2–201 per axis |
+| Reference | Explicit supported preset, coordinate expression or mapped reference values; no request by itself |
+| Comparison | Model **and** Reference inputs; predictions/reference and error metrics at its own evaluation points |
+| CSV Export | Coordinate/field predictions only; no reference/error columns; written by its export action |
 
-Unsaved UI edits prompt Save / Discard / Cancel before File Open, user-facing
-template actions, or closing. Cancelling Save As cancels the pending replacement.
-The existing direct template-building helpers reset without an interactive prompt;
-menu/toolbar actions route through the unsaved guard. Templates are clean Untitled
-models and reset history. Opening clears history/run data and leaves optional views
-closed, with the loaded graph fitted to the canvas. Save/Open/template actions are
-locked during training; a close request waits for safe worker cancellation before
-the unsaved decision. Local panel preferences and draft recovery are implemented
-separately from model files.
+Connect outputs before training. Double-click the block, use its own right-click
+Open action, or select an output and choose View → Open selected output. Views may
+open before/during/after a run; adding, connecting, training or loading never opens
+them automatically. Closed monitors still record connected requests. Unconnected
+outputs are ignored; a partially connected Comparison fails validation.
 
-## Saved runs and baseline resume
+Closing a view hides it; reopening reuses it. Removing a block removes its request
+and view. Monitor retention changes trim retained data; increasing the limit cannot
+recover discarded records. Prediction/comparison requests are evaluated separately.
+With no prediction requests, training does not create field arrays or a reference.
 
-File → Save run and checkpoint explicitly stores .margam-run.pt archives after a
-successful or stopped run. Model JSON remains definitions only. Run archives include
-the model graph/config, requested scalar predictions/references/metrics, retained
-monitor histories, network tensors, Adam state, total update count and loss histories.
-No view is created by saving or opening. Open saved run validates the full archive,
-reconstructs a disposable CPU recipe to check weights/optimiser compatibility, then
-replaces the model only after the unsaved decision. Invalid archives preserve the
-current model/results. Files and expanded archives are limited to 256 MiB. Loading
-uses torch.load(weights_only=True, map_location='cpu'), never a pickled model object.
+Reference expressions supply one scalar expression or `u; v; p` expressions for
+flow. Imported reference coordinates must match the requested evaluation grid;
+row order may differ, but no interpolation occurs. Choose expression or imported
+data, not both. Blank reference settings use only a supported preset. The rectangle
+Poisson reference is a labelled 40-odd-mode-per-axis truncated series, not a universal
+exact solution. Couette reference is valid for the unchanged Couette setup.
 
-Run → Resume checkpoint asks for additional updates, retains prior monitor losses,
-and runs the existing worker. CPU resume is explicit for portability; architecture,
-Adam options and dtype must match. Semantic edits invalidate loaded resume state;
-layout/renaming preserve it. Model history does not undo numerical training. The
-current total-update limit remains 100000. Tests verify bitwise-identical CPU
-predictions for 25+25 resumed versus 50 uninterrupted Adam updates. No claim of
-GPU equivalence or cross-version optimiser compatibility follows from that check.
+Existing scalar interval/rectangle plots remain available; coupled fields use tables
+(first 200 rows shown) and full CSV. No new field heatmaps are being developed.
+For SA-PINN, the monitor total includes adaptive masks and can increase while field
+error falls. Right-click the completed SA block for Adaptive weight summary; this
+reports λ rather than λ² and also works for loaded run archives.
 
-## Owned core parameters and supported graph assembly
+## Train, stop and diagnose
 
-`graph_model.py` defines which fields each implemented core kind owns and follows
-one PINN method's pde/boundary/network inputs upstream to interior/boundary point
-sources and their common geometry instance. Assembly produces the numerical scalar/steady-flow
-recipe from the connected block records. The inspector configuration is a view/cache,
-not executable state. Network initialisation seeds are separate from interior
-sampling seeds. Copied core records keep independent parameters and stable undo
-behaviour; old model files receive owned records from their saved template defaults.
+Validate checks graph structure and physics/data settings. Train runs in a worker
+thread, reporting batches of up to 25 full-batch updates. Settings and graph edits
+are locked; selection and explicit output views remain available. Stop requests
+cancellation between batches and retains the partial run. Closing waits for the
+worker before the unsaved-model decision. Failures release controls and show
+Messages without creating result views. These small examples use one CPU thread.
 
-This concrete executor requires one complete core subgraph, a shared geometry
-source, and one method root. It supports the scalar and explicit steady-u/v/p
-contracts, and does not execute arbitrary cycles or multiple PINNs. Unconnected core instances remain editable drafts
-and prevent training rather than being silently executed. Outputs remain explicit.
-Local geometry previews use their owner's settings, not whichever block was last
-selected. Current models persist parameter records and migrate earlier formats.
+Losses are measured **before** updates; final predictions are measured after the
+completed updates. Raw losses, weighted total and independent field-error metrics
+have different meanings. Compare runs with the same problem/evaluation protocol;
+see [results](results.md) and [validation scope](validation.md).
 
-## Current coupled flow support
+## Edit history and persistence
 
-The supported second field contract is steady 2D incompressible u/v/p. The PDE
-inspector exposes kinematic viscosity, momentum-x/y and continuity residuals.
-BC properties choose a named set and component None/Dirichlet/Neumann/Custom
-operator/target, plus an explicit pressure gauge point/value/weight. The demo
-prescribes Couette flow and explicitly wires its reference; other edited flow does
-not receive an assumed exact solution. Vector result docks contain a bounded table,
-per-field comparison metrics and full CSV export. Training Monitor includes a
-separate pressure-gauge series. No field heatmaps or 3D renderer were added.
+Canvas Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) and Edit/context actions undo/redo model
+changes, up to 100 commands. Insertion, grouped moves, wires, deletion, core/output
+settings, and recipe expansion/collapse are reversible. Templates reset history.
+Property editors retain ordinary text shortcuts. Copy/Cut/Paste applies to selected
+blocks/internal wires, creates fresh IDs on paste, and is one undoable edit.
 
-CSV/NPZ adapters accept explicit three-component reference values only for this
-contract; geometry, units, interpolation and physical-time semantics are not
-inferred. General flow well-posedness, non-axis-aligned geometry, unsteady physics,
-turbulence and multiple method roots are not implemented. See components.md and
-geosampler-contract.md for precise boundaries and reproduction commands.
+Model/graph/evaluation edits clear stale numerical state. Moving blocks and renaming
+outputs preserve it. Undo restores the graph, not prior training results. An asterisk
+marks unsaved edits; saving marks the current undo position clean.
 
-Archived predictions/history remain readable if external source files moved. Actual
-resume still rebuilds the problem and verifies its original data fingerprint; it
-requires compatible source files. Static archive loading checks architecture and
-Adam payloads using disposable data, without touching the current model.
+| Persistence | Contents and limits |
+| --- | --- |
+| Model JSON (`.margam.json`, current format 9, reads 1–8) | Owned graph settings, IDs, positions and expressions; no weights, results, layout or undo history; incomplete drafts can be saved |
+| Run archive (`.margam-run.pt`, current format 2) | Model, requested predictions/metrics, retained monitor histories, network and Adam state; SA also includes masks and ascent optimiser |
+| Desktop preferences/recovery | Layout/theme/library groups and per-session unsaved model drafts; no trained numerical state |
 
-Toolbar/View → Pan toggles a persistent open-hand cursor and left-drag navigation,
-including over blocks. Dragging shows a closed hand; Escape or toggling Pan off
-returns to selection. Pan remains available during training. Middle-drag and
-Space+drag keep their temporary behaviour; no model/history edits are recorded.
+File model/run actions validate before replacing the current document, and offer
+Save / Discard / Cancel where needed. Atomic writes preserve the earlier file on
+failure. Model JSON is capped at 4 MiB / 2000 nodes / 10000 wires. Run files and
+expanded archives are capped at 256 MiB. Runs use restricted `weights_only=True`
+loading and CPU tensor mapping; invalid data leaves the current model intact.
+
+Run → Resume checkpoint asks for additional updates and resumes on CPU. Matching
+architecture/Adam settings, dtype and data fingerprint are required; SA additionally
+checks masks, ascent settings, term ordering and global weights. Total updates are
+limited to 100000. Archived predictions remain inspectable if external sources
+moved, but actual resume requires reconstructing compatible samples/targets/normals.
+No cross-version or GPU-equivalence guarantee follows from CPU resume tests.
+
+Prepared CSV/NPZ paths are absolute references, not embedded source arrays. Use the
+mapping preview to select coordinates, optional outward unit normals and values.
+PDE point imports are coordinates only. Off-box normal-dependent BC operators need
+explicit normals. [GeoSampler contract](geosampler-contract.md) describes the planar
+bridge and its bounding-box/evaluation limitations.
+
+On Linux, layout and recovery normally live under `~/.local/share/Margam`.
+Per-session recovery files are locked; active sessions are skipped, abandoned drafts
+can be recovered as unsaved models, and clean close removes that session's draft.
+Recovery does not reopen plots. [Current limits](components.md) and [TODO](todo.md)
+list unsupported/deferred behaviour.

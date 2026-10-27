@@ -1,5 +1,9 @@
 # Package rename and staged legacy cleanup
 
+Historical snapshot of the cleanup stage. The statements below refer to that
+stage; see the [documentation index](README.md) for current capabilities, including
+connected training, checkpoints and the planar GeoSampler bridge.
+
 26 October 2026. Work remains on the current main checkout; dev was not changed.
 
 1. Renamed DeepINN to margam and updated maintained examples and tests.
