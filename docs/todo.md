@@ -314,3 +314,13 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Add correctness tests for expansion, conditional settings, compatibility
   reports, failure isolation, repeatability, resume and desktop/headless parity
   before pursuing sweep-driven solution accuracy.
+
+## User-friendly illustrated help
+
+- [x] Add a searchable local manual with short task-based walkthroughs and
+  separate reference/project sections, following the PyniteGUI documentation approach.
+- [x] Capture 22 current Qt screenshots with captions and full-size links; verify
+  a complete first-PINN workflow and preserve personal UI state during capture.
+- [x] Add F1 / Help → User manual, with build guidance and clear browser errors.
+- [x] Keep search/fonts local for offline reading; document optional build tools
+  and verify rendered links, screenshots and help behaviour.

@@ -1,5 +1,16 @@
 # UI screenshots
 
+The latest user manual uses **22 `manual-*` captures** and
+[manual-captures.json](manual-captures.json), captured from current Qt widgets
+with personal state disabled. See [manual maintenance](../../docs/documentation.md)
+for regeneration and [the user guide](../../docs/index.md) for the walkthrough.
+The additional `manual-site-preview.png` shows the rendered browser manual.
+The Qt set covers workspace/library, examples, domain/samples, boundary settings,
+data mapping, PDE/network/method controls, compact/expanded recipes, monitor and
+comparison views, saving, export and Help.
+
+The older screenshot sets below remain dated development/reference records.
+
 The [illustrated walkthrough](../../docs/visual-guide.md) uses the current `guide-*`
 set below. These are real widgets captured from application source `e0fde23` on
 27 October 2026, light theme, with personal desktop state disabled. Older images

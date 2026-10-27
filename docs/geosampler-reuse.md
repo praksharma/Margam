@@ -1,6 +1,6 @@
 # GeoSampler reuse assessment
 
-Inspected 26 October 2026, local checkout `/home/hell/Desktop/GeoSampler`,
+Inspected 26 October 2026, local `GeoSampler` checkout,
 revision `c532cecec8777ee239e4c08bb41d7d922a82bc5c`.
 This is a source review, not a new validation of GeoSampler's test suite.
 Initial source review was followed by adapting `theme.py` into `margam/ui/theme.py`.

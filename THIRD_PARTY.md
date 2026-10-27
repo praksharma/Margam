@@ -81,3 +81,15 @@ equations (8)–(10), of the same supplied v1 paper. The authors'
 confirms the square domain, sine modes (1,4), forcing and k²=1. No TensorFlow
 network or trainer code was copied. Margam uses its existing Fourier feature NN,
 fixed samples, LRA guards and separate output/reference contracts.
+
+## Offline documentation search
+
+`assets/vendor/iframe-worker/shim.js` and its LICENSE are unmodified files from
+iframe-worker 1.0.4, MIT, distributed at
+https://registry.npmjs.org/iframe-worker/-/iframe-worker-1.0.4.tgz . The local shim
+supports Zensical search when opening built pages directly from disk; no CDN
+request is needed. Zensical is an optional documentation-build dependency.
+
+The local PyniteGUI manual inspired the organisation of Margam's user guide
+(task pages, contextual screenshots and separate reference navigation). No
+PyniteGUI code, prose or screenshots were copied for this documentation work.

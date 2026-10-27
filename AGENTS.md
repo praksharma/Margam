@@ -2,9 +2,8 @@
 
 ## Working location and environment
 
-- Work in this repository. On the current machine it is
-  `/home/hell/Desktop/Margam`. Do not put project code or documentation in a
-  separate ChatGPT workspace, even if that is the chat's initial directory.
+- Work in the Margam repository root. Do not put project code or documentation
+  in a separate chat workspace, even if that is the chat's initial directory.
 - Reuse the single repository-root `.venv`. Check its Python version and installed
   dependencies before changing it. Current development uses Python 3.14.
 - Do not create virtual environments inside feature folders or invent additional
@@ -84,3 +83,19 @@
   development. Full 3D/non-planar GeoSampler remains deferred. ParaView export is
   opt-in; never infer physical time from training updates. Supplied-node evaluation
   and richer mesh-aware exports are planned in docs/todo.md, not implemented yet.
+
+## User documentation
+
+- Keep task-based help under docs/start, docs/modeling and docs/use, with docs/index.md
+  as the user entry. Keep method/API/evidence pages separate as reference.
+- Update screenshots/captions when their controls change; use the state-isolated
+  examples.capture_manual helper, with images in assets/screenshots.
+- Build/check with examples.documentation. Generated source/site stay under the
+  ignored build/manual directory; never edit generated copies or publish by default.
+- F1 opens the local built guide. Zensical is an optional docs extra, not a numerical
+  or desktop startup dependency. Preserve offline assets and their licenses.
+
+- Public documentation, snippets, screenshots and capture manifests must not
+  contain local usernames or home-directory paths. Use repository-relative demo
+  paths, and inspect capture inputs before saving screenshots. Keep real local
+  filesystem paths confined to local tool operations and diagnostic UI when needed.

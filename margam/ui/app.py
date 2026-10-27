@@ -31,9 +31,9 @@ from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
 from .icons import icon
-from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData, QSize
+from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData, QSize, QUrl
 from shiboken6 import isValid
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack, QAction
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack, QAction, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QDockWidget, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
@@ -566,16 +566,35 @@ class Window(QMainWindow):
         self.resume_action=run.addAction('Resume checkpoint…');self.resume_action.setEnabled(False)
         self.resume_action.triggered.connect(lambda:self.resume_training())
         help_menu=self.menuBar().addMenu('Help')
+        self.manual_action=help_menu.addAction('User manual');self.manual_action.setShortcut('F1')
+        self.manual_action.triggered.connect(self.open_manual)
         help_menu.addAction('Quick start').triggered.connect(lambda:QMessageBox.information(
             self,'Build and train a PINN',
-            'Load Heat demo for a ready-wired monitor and reference comparison, or configure the basic Poisson blocks and train.\n\n'
-            'Canvas: wheel to zoom, middle-drag or Space+drag to pan, tap Space to fit.\n\n'
-            'Rectangle previews: right-click the Rectangle block and choose Preview geometry or Preview samples.\n\n'
-            'Plots are optional. Add a Training Monitor or Solution Plot, connect the PINN method to it, '
-            'then double-click the output block to open its view. Views can dock or float.\n\n'
-            'A Comparison needs a model and an explicit Reference. References support intervals and rectangles with equal constant Dirichlet edges.'))
+            'Press F1 for the illustrated user manual.\n\n'
+            'Start with File → Examples → 1D examples → Poisson — baseline. '
+            'Select a block to edit its settings, then Validate and Train PINN (F5).\n\n'
+            'Open a connected Training Monitor or Solution Plot explicitly to see results. '
+            'Comparison also requires a Reference block.\n\n'
+            'Use the mouse wheel to zoom, the Pan button or Space+drag to pan, and Fit model to frame the graph. '
+            'Add CSV Export or ParaView Export when you want to export predictions.'))
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
-            self,'Margam','A visual builder for physics-informed neural networks.\nSupported: scalar residuals and steady 2D incompressible flow, explicit outputs and baseline/hard-Dirichlet methods.'))
+            self,'Margam','A visual builder for physics-informed neural networks.\n'
+            'Baseline, hard Dirichlet, SA-PINN and LRA; scalar problems and steady 2D incompressible flow.\n'
+            'Reusable recipes, pointwise networks, optional results and explicit CSV/ParaView export.'))
+
+    def open_manual(self):
+        path=Path(__file__).resolve().parents[2]/'build/manual/site/index.html'
+        if not path.is_file():
+            QMessageBox.information(self,'User manual',
+                'The illustrated manual has not been built in this checkout.\n\n'
+                'From the repository root, install the optional documentation tools and build once:\n\n'
+                'uv pip install --python .venv/bin/python -e ".[docs]"\n'
+                '.venv/bin/python -m examples.documentation build\n\n'
+                'Then press F1 again. The Markdown guides are also available in docs/.')
+            return False
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+            QMessageBox.warning(self,'User manual','The browser could not open the manual. Open this file directly:\n'+str(path));return False
+        return True
 
     def update_clipboard_actions(self):
         if not hasattr(self,'copy_action'):return

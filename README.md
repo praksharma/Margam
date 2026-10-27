@@ -9,7 +9,7 @@ and **learning-rate annealing PINN (LRA)**. Baseline, SA and LRA have compact/ex
 problems cover scalar interval/rectangle physics and steady 2D incompressible flow
 (u, v, p). The current executor runs one supported problem root at a time.
 
-[Documentation index](docs/README.md) · [Illustrated walkthrough](docs/visual-guide.md) ·
+[Illustrated user manual](docs/index.md) · [Documentation index](docs/README.md) ·
 [Desktop guide](docs/ui-prototype.md) ·
 [Methods and components](docs/components.md) · [Recorded results](docs/results.md) ·
 [LRA method and safeguards](docs/lra-pinn.md) · [2D Helmholtz example](docs/helmholtz.md) · [ParaView export](docs/paraview-export.md) · [Remaining work](docs/todo.md)
@@ -17,10 +17,10 @@ problems cover scalar interval/rectangle physics and steady 2D incompressible fl
 ## Run the desktop
 
 Use the single repository-root `.venv`. All commands below run from the repository
-root; on this machine it is `/home/hell/Desktop/Margam`.
+root. Use your own checkout location when changing directories.
 
 ```sh
-cd /home/hell/Desktop/Margam
+cd path/to/Margam
 .venv/bin/python --version
 .venv/bin/python -m margam.ui
 ```
@@ -44,9 +44,8 @@ not require a `pip` module inside `.venv`. Keep an existing environment in place
 
 ## First run
 
-Follow the [screenshot walkthrough](docs/visual-guide.md) for an actual SIREN/SA
-example: choose a network, set training separately, expand/collapse, and explicitly
-open losses and a reference comparison.
+Follow [Your first PINN](docs/start/first-pinn.md) for the current screenshot-led
+walkthrough, then [Networks and methods](docs/modeling/networks.md) to replace components.
 
 1. Choose **File → Examples → 1D examples → Poisson — baseline**, or start
    with **File → Examples → 2D steady heat conduction**. Loading an example offers the usual
@@ -246,3 +245,19 @@ mkdir -p benchmark-results
 The demo is synthetic data for file-format/playback checks, not a PINN result.
 Future evaluation/export at supplied GeoSampler or FEM nodes, with optional
 pointwise reference errors, is recorded in [TODO](docs/todo.md#future-evaluation-and-export-at-supplied-points).
+
+## Illustrated help manual
+
+Press **F1** or **Help → User manual** for the locally built searchable guide.
+It includes 22 current screenshots, short task pages, a first-PINN walkthrough,
+troubleshooting and links to the technical reference. Build it once:
+
+```sh
+uv pip install --python .venv/bin/python -e ".[docs]"
+.venv/bin/python -m examples.documentation build
+```
+
+Open `build/manual/site/index.html` directly, or use
+`.venv/bin/python -m examples.documentation serve` for a local browser preview.
+Reading/searching the built manual works offline. No website is published.
+[Plain Markdown entry](docs/index.md) · [Capture/build maintenance](docs/documentation.md).

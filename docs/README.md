@@ -1,4 +1,7 @@
-# Margam documentation
+# Margam reference catalogue
+
+For task-based help with current screenshots, start with the [illustrated user manual](index.md)
+and [Your first PINN](start/first-pinn.md). F1 opens the built manual in the app.
 
 Current implementation and recorded evidence, reviewed 27 October 2026. Start with
 [setup and commands](../README.md); historical design discussions are labelled below.
@@ -7,7 +10,7 @@ Current implementation and recorded evidence, reviewed 27 October 2026. Start wi
 
 | Question | Read |
 | --- | --- |
-| Can I follow a screenshot walkthrough? | [Illustrated network/PINN walkthrough](visual-guide.md) |
+| Can I follow a screenshot walkthrough? | [Your first PINN](start/first-pinn.md) |
 | How do I build, train, inspect and save a model? | [Desktop guide](ui-prototype.md) |
 | Which complete problems are available? | [Examples and predefined PDEs](problem-examples.md) |
 | How do compact/expanded PINNs work? | [Recipes](pinn-recipes.md) |

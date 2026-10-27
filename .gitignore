@@ -12,3 +12,6 @@ dist/
 **/.ipynb_checkpoints/
 # Experiment outputs: retain existing runs locally
 benchmark-results/
+
+# Documentation builder cache
+.cache/

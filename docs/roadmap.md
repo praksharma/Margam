@@ -318,7 +318,7 @@ separate concern.
 
 ## Current baseline and boundaries
 
-The repository is `/home/hell/Desktop/Margam`, with the Python package `margam`.
+The repository root contains the Python package `margam`.
 The baseline PINN, benchmark runner, numerical components and behaviour tests are
 retained. The older borrowed geometry stack and compatibility API are retired;
 new simple-domain sampling is planned. The desktop builder is a layout prototype

@@ -1,0 +1,8 @@
+.md-grid { max-width: 92rem; }
+.md-typeset { font-size: .84rem; line-height: 1.65; }
+.md-typeset h1 { font-weight: 650; color: var(--md-default-fg-color); }
+.md-typeset img { border: 1px solid var(--md-default-fg-color--lightest); border-radius: .4rem; }
+.md-typeset .portrait { max-height: 38rem; width: auto; display: block; margin: 1rem auto; }
+.md-typeset figcaption { color: var(--md-default-fg-color--light); font-size: .75rem; }
+.md-typeset table:not([class]) th { background: var(--md-code-bg-color); }
+.md-typeset .admonition { font-size: .79rem; }

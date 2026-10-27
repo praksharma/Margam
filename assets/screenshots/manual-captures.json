@@ -1,0 +1,218 @@
+{
+  "recorded_utc": "2026-10-27T23:14:13.839701+00:00",
+  "application_parent": "af9bd7da103f7e2b88e498cf9714688fbd038e87",
+  "tracked_changes": true,
+  "scope": "Actual Qt walkthrough captures and one default baseline run; not a numerical benchmark.",
+  "qt_platform": "offscreen",
+  "pyside": "6.12.0",
+  "torch": "2.14.1+cpu",
+  "configuration": {
+    "shape": "Interval",
+    "x_min": 0.0,
+    "x_max": 1.0,
+    "y_min": 0.0,
+    "y_max": 1.0,
+    "points": 32,
+    "boundary_points": 16,
+    "sampling": "grid",
+    "seed": 7,
+    "source": 2.0,
+    "layers": [
+      16,
+      16
+    ],
+    "iterations": 1500,
+    "lr": 0.005,
+    "device": "cpu",
+    "pde_weight": 1.0,
+    "boundary_weight": 10.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {},
+    "pde_expression": "",
+    "bc_targets": {},
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": 7,
+    "method": "baseline",
+    "physics": "scalar",
+    "viscosity": 0.01,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "poisson",
+    "pde_forcing": "0",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "lra_alpha": 0.9,
+    "lra_interval": 10,
+    "lra_epsilon": 1e-12,
+    "lra_max": 1000000.0,
+    "network_type": "fcnn",
+    "network_options": {}
+  },
+  "run_steps": 1500,
+  "observed_comparison_rmse": 0.0001941966387788102,
+  "capture_tool_sha256": "e016bb8b44eeac976262804960c486cf5561822c8f83ca363eb956d7ee67b70b",
+  "captures": {
+    "workspace": {
+      "file": "manual-workspace.png",
+      "sha256": "dd2f7c833020ab82cbb648ba26181f41d0d86642fe1f7ca6b57cfd2c9779ce0b"
+    },
+    "library": {
+      "file": "manual-library.png",
+      "sha256": "8935050c8899e55545f0485eda3f859658cb1c261508b43a49e2cda1f4a8ce46"
+    },
+    "examples": {
+      "file": "manual-examples.png",
+      "sha256": "d9ed3cb7093a485d6a87eca502466fde455ad8c109fb724858c29bd34a84ff36"
+    },
+    "examples-1d": {
+      "file": "manual-examples-1d.png",
+      "sha256": "258dab6cb49dcb5730a451e128e883f9c4b3d9f741cb96f0c269a456f9a5d35a"
+    },
+    "domain": {
+      "file": "manual-domain.png",
+      "sha256": "0736135bf166e82dec096d38d0b82bdc12138422223b389107246cdbdeaf0ef9"
+    },
+    "samples": {
+      "file": "manual-samples.png",
+      "sha256": "720cce4cee4da547744df08492f93fd91132dca62f32639752f96d69946eb515"
+    },
+    "interior": {
+      "file": "manual-interior.png",
+      "sha256": "cce46cfe5d35b5520edc674dcc3401093249585dcd8f3a31c574dacf60a24b64"
+    },
+    "boundary-points": {
+      "file": "manual-boundary-points.png",
+      "sha256": "e47d4e73d6eaf7f633682ceed15af7c970537ab5b7bc25a18be1dbbc59fd985c"
+    },
+    "boundary-condition": {
+      "file": "manual-boundary-condition.png",
+      "sha256": "bca8e3a6cfd12e811fbfb11ad2914b4ef036225a1e5e54bfa7e5c0a82eb95192"
+    },
+    "map-data": {
+      "file": "manual-map-data.png",
+      "sha256": "4b588de188b9f19bcb216bddb26b21e866c64dd316815a6850373c06e5fc2e07"
+    },
+    "helmholtz-pde": {
+      "file": "manual-helmholtz-pde.png",
+      "sha256": "928698fbab7601254107c32e2b3aef8dfb2c0edd5c047843d9442ecdf57e71e2"
+    },
+    "network-choices": {
+      "file": "manual-network-choices.png",
+      "sha256": "4dc30daece72d6ad61722831fb5df4563181aaf2d03e7a22767fe2ab476d1d7f"
+    },
+    "fourier-settings": {
+      "file": "manual-fourier-settings.png",
+      "sha256": "cc672c98742a807d8087acf14ff82cf0a77065fc4a131d6681411cb4d0253442"
+    },
+    "sa-settings": {
+      "file": "manual-sa-settings.png",
+      "sha256": "ec40d91be06a99f96f76b99a3e21f4ff45790c6db5b6a829f1f0c6185d218e32"
+    },
+    "training-settings": {
+      "file": "manual-training-settings.png",
+      "sha256": "4d36d31c035ad5d347d25e04291ac3fd4a22dbc0d1fd7c4671c933d901cd29aa"
+    },
+    "expanded": {
+      "file": "manual-expanded.png",
+      "sha256": "b0c29a5559c5566e057aa4f1417ba1b2b0ad8334a029de7035812a8f5b107fa1"
+    },
+    "compact": {
+      "file": "manual-compact.png",
+      "sha256": "99bfd894cc5aeac3f92b838a1f48a61b9906326e2b9bbe04ba1b3754a748b331"
+    },
+    "monitor": {
+      "file": "manual-monitor.png",
+      "sha256": "397d825738e2d15ca69e51a5a5619e4e59292d96bbb73a6f1276cc03ef6f316c"
+    },
+    "comparison": {
+      "file": "manual-comparison.png",
+      "sha256": "efe2212768dc931f95f4274e7cb898129874fc05e2bb21a302054bcdb8758819"
+    },
+    "save-menu": {
+      "file": "manual-save-menu.png",
+      "sha256": "9ae6344eae185a26fa9ea03d3c7ab1be5eb7973cacc440e8cc4122350fe89da1"
+    },
+    "paraview": {
+      "file": "manual-paraview.png",
+      "sha256": "99c3ebbd8e6c257b7e2dec45216e8a2725972c7088d7aefc828508e3a166aa0a"
+    },
+    "help": {
+      "file": "manual-help.png",
+      "sha256": "c84a5bcf28bfb4570726e373a671101a65ef6406a4a81e42bd2eb33f1565aab6"
+    }
+  }
+}

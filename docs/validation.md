@@ -54,7 +54,7 @@ SA's desktop check saves both optimiser states, opens an archive, resumes update
 and inspects adaptive statistics. [SA workflow test](../tests/test_self_adaptive_ui.py).
 
 UI startup or a screenshot demonstrates appearance/lifecycle, not numerical accuracy.
-Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 12
+Screenshots are under [assets/screenshots](../assets/screenshots/README.md). Model format 12
 reads 1–11; run archives use format 2 and restricted tensor loading. Data fingerprints
 and architecture/options are checked for resume, but cross-version optimiser
 compatibility and arbitrary PDE well-posedness are not guaranteed.
@@ -140,3 +140,21 @@ VTK 9.7.1 test verifies readback geometry, fields and TIME_STEPS metadata. The b
 [dataset validation](../assets/examples/paraview-demo/validation.json) records this.
 These are file/data correctness checks, not solution-accuracy measurements.
 ParaView GUI playback was not run because ParaView is not installed on this host.
+
+## Illustrated manual and Help
+
+The manual adds five staging/link/configuration/privacy checks and one Qt help lifecycle
+check. Sources remain untouched by staging, root README/catalogue links stay
+distinct from the homepage, missing targets/section links are rejected, and F1
+opens the local guide without importing Torch or Zensical. Missing builds and
+browser failures have explicit messages. Desktop startup and block-context
+checks also pass after the Help menu change. These targeted checks supplement
+the preceding full numerical/export suite; it was not rerun for documentation.
+
+A strict Zensical build and rendered link checker cover the manual's pages, images
+and section targets. Browser preview confirmed navigation, search, result-page
+opening, screenshot rendering and theme switching. The in-app test browser blocks
+file URLs; direct-file offline search was therefore not exercised. The bundled
+shim and offline configuration are verified locally. The 22 UI captures come
+from a state-isolated helper that runs the default baseline tutorial and saves
+both model and checkpoint. This is workflow evidence, not a new accuracy study.

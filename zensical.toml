@@ -1,0 +1,47 @@
+[project]
+site_name = "Margam User Guide"
+site_description = "Build, train, inspect and export physics-informed neural networks."
+docs_dir = "build/manual/source"
+site_dir = "build/manual/site"
+use_directory_urls = false
+extra_css = ["stylesheets/manual.css"]
+nav = [
+  { "Start" = [{ "Welcome" = "index.md" }, { "Install and launch" = "start/install.md" }, { "Your first PINN" = "start/first-pinn.md" }, { "Find your way around" = "start/workspace.md" }] },
+  { "Build a model" = [{ "Blocks and connections" = "modeling/blocks.md" }, { "Geometry, sampling and data" = "modeling/sampling.md" }, { "PDEs and boundary conditions" = "modeling/physics.md" }, { "Networks and PINN methods" = "modeling/networks.md" }] },
+  { "Run and results" = [{ "Training and optional results" = "use/results.md" }, { "Save, reopen and resume" = "use/saving.md" }, { "CSV and ParaView export" = "use/export.md" }, { "Troubleshooting" = "use/troubleshooting.md" }] },
+  { "Reference" = [{ "Documentation catalogue" = "reference-index.md" }, { "Desktop reference" = "ui-prototype.md" }, { "Components" = "components.md" }, { "Examples" = "problem-examples.md" }, { "Neural networks" = "neural-networks.md" }, { "PINN recipes" = "pinn-recipes.md" }, { "SA-PINN" = "self-adaptive-pinn.md" }, { "LRA-PINN" = "lra-pinn.md" }, { "Helmholtz" = "helmholtz.md" }, { "Heat demo" = "heat-demo.md" }, { "GeoSampler contract" = "geosampler-contract.md" }, { "ParaView formats" = "paraview-export.md" }, { "Numerical API" = "engine.md" }, { "Add a PINN" = "adding-a-pinn.md" }] },
+  { "Project" = [{ "Recorded results" = "results.md" }, { "Validation" = "validation.md" }, { "Heat accuracy study" = "heat-accuracy.md" }, { "Roadmap" = "roadmap.md" }, { "TODO" = "todo.md" }, { "Documentation maintenance" = "documentation.md" }, { "Simulink evidence" = "simulink-evidence.md" }, { "Design history" = "cleanup.md" }, { "GeoSampler reuse review" = "geosampler-reuse.md" }, { "Original illustrated walkthrough" = "visual-guide.md" }] }
+]
+
+[project.theme]
+font = false
+features = ["navigation.tabs", "navigation.sections", "navigation.path", "navigation.top", "navigation.footer", "toc.follow", "search.highlight", "content.code.copy"]
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "teal"
+accent = "teal"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "teal"
+accent = "teal"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to light mode"
+
+[project.plugins.offline]
+
+[project.extra]
+polyfills = ["assets/vendor/iframe-worker/shim.js"]
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+tables = {}
+toc.permalink = true
+pymdownx.superfences = {}
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.details = {}
+pymdownx.tasklist.custom_checkbox = true

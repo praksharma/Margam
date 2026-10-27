@@ -1,6 +1,6 @@
-# Illustrated walkthrough: choose a network and train a PINN
+# Original illustrated network walkthrough (dated captures)
 
-[Documentation index](README.md) · [Network details](neural-networks.md) ·
+[Current user manual](index.md) · [Reference catalogue](README.md) · [Network details](neural-networks.md) ·
 [Desktop reference](ui-prototype.md) · [Measured studies](results.md)
 
 This walkthrough uses an existing interval Poisson example, changes its network to
@@ -17,7 +17,7 @@ Start from the repository root:
 .venv/bin/python -m margam.ui
 ```
 
-Choose **File → Examples → Self-adaptive PINN · interval Poisson**. This creates
+Choose **File → Examples → 1D examples → Poisson — SA-PINN**. This creates
 geometry, sampling, PDE, BCs, network, trainer and explicit output/reference blocks.
 It solves `u_xx + 2 = 0` on [0,1], with zero Dirichlet endpoints and reference
 `u=x(1-x)`. No geometry file or mesh is required.
