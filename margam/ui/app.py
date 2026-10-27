@@ -12,6 +12,7 @@ from .training import TrainingWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS
+from .ports import INPUTS, OUTPUTS
 from .theme import colors, configure_theme, theme_name
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
 from shiboken6 import isValid
@@ -26,14 +27,16 @@ from PySide6.QtWidgets import (
 
 
 class Port(QGraphicsEllipseItem):
-    def __init__(self, node, output, name="input", y=40):
+    def __init__(self, node, output, spec, y=40):
         super().__init__(-6, -6, 12, 12, node)
         self.output = output
-        self.name = name
+        self.name = spec.name
+        self.data_type = spec.data_type
+        self.label = spec.label
         self.setPos(170 if output else 0, y)
         self.setBrush(QColor(colors()['highlight']))
         self.setPen(QPen(QColor(colors()['base']), 2))
-        self.setToolTip('Output: drag to an input' if output else name)
+        self.setToolTip(('Output: ' if output else 'Input: ') + spec.label + '\n' + spec.data_type.replace('_',' ') + (' · drag to a compatible input' if output else ' · accepts one source'))
         self.setZValue(2)
 
     def mousePressEvent(self, event):
@@ -88,16 +91,12 @@ class Node(QGraphicsRectItem):
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable |
                       QGraphicsItem.GraphicsItemFlag.ItemIsSelectable |
                       QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-        self.inputs = {"input": Port(self, False)}
-        if self.kind == 'comparison':
-            self.inputs['input'].name = 'model'
-            self.inputs['input'].setToolTip('Trained model')
-            self.inputs['input'].setY(28)
-            self.inputs = {'model': self.inputs['input'], 'reference': Port(self, False, 'reference', 60)}
-        self.input = next(iter(self.inputs.values()))
-        self.output = Port(self, True, 'output')
-        if self.kind == 'reference':self.input.hide()
-        if self.kind in OUTPUT_KINDS:self.output.hide()
+        specs=INPUTS[self.kind]
+        self.inputs={spec.name:Port(self,False,spec,80*(index+1)/(len(specs)+1))
+                     for index,spec in enumerate(specs)}
+        self.input=next(iter(self.inputs.values()),None)
+        spec=OUTPUTS[self.kind]
+        self.output=Port(self,True,spec) if spec else None
         self.setPos(x, y)
 
     def paint(self, painter, option, widget=None):
@@ -130,6 +129,7 @@ class Canvas(QGraphicsScene):
     graphChanged = Signal()
     blockOpened = Signal(object)
     blockContextRequested = Signal(object, object)
+    connectionRejected = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -138,34 +138,59 @@ class Canvas(QGraphicsScene):
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setBackgroundBrush(QColor(colors()['canvas']))
 
+    def cancel_wire(self):
+        if self.pending is not None:
+            self.removeItem(self.pending)
+            self.pending=None
+
     def begin_wire(self, source):
+        if self.locked or source is None or not source.output or source.scene() is not self:
+            return
+        self.cancel_wire()
         self.pending = Wire(source)
         self.addItem(self.pending)
 
-    def finish_wire(self, position):
-        if not self.pending:
-            return
-        targets = [i for i in self.items(position) if isinstance(i, Port) and not i.output]
-        wire = self.pending
-        if targets and targets[0].parentItem() is not wire.source.parentItem():
-            wire.target = targets[0]
-            if not any(w.source is wire.source and w.target is wire.target for w in self.wires):
-                self.wires.append(wire)
-                wire.update_path()
-            else:
-                self.removeItem(wire)
-        else:
-            self.removeItem(wire)
-        self.pending = None
+    def connection_error(self, source, target, ignore=None):
+        if source is None or target is None:
+            return 'Choose an output and a compatible input.'
+        if source.scene() is not self or target.scene() is not self:
+            return 'Both ports must belong to the current model.'
+        if not source.output or target.output:
+            return 'Connect an output to an input.'
+        if source.parentItem() is target.parentItem():
+            return 'A block cannot connect to itself.'
+        if source.data_type != target.data_type:
+            return f'{source.label} cannot feed {target.label}. Choose a compatible input.'
+        for wire in self.wires:
+            if wire is ignore:continue
+            if wire.target is target:
+                return f'{target.label} already has a source. Delete its wire before reconnecting.'
+        return None
+
+    def connect_ports(self, source, target):
+        if self.locked:raise ValueError('Connections are locked during training.')
+        error=self.connection_error(source,target)
+        if error:raise ValueError(error)
+        wire=Wire(source,target)
+        self.addItem(wire);self.wires.append(wire)
         self.graphChanged.emit()
+        return wire
+
+    def finish_wire(self, position):
+        if self.pending is None:return
+        source=self.pending.source
+        targets=[item for item in self.items(position) if isinstance(item,Port) and not item.output]
+        self.cancel_wire()
+        if self.locked or not targets:return
+        try:self.connect_ports(source,targets[0])
+        except ValueError as error:self.connectionRejected.emit(str(error))
 
     def connect_nodes(self, source, target, input_name=None):
-        if input_name is None:
-            input_name = ('reference' if source.kind == 'reference' else 'model') if target.kind == 'comparison' else 'input'
-        wire = Wire(source.output, target.inputs[input_name])
-        self.addItem(wire)
-        self.wires.append(wire)
-        self.graphChanged.emit()
+        if input_name is None and source.output is not None:
+            matches=[port for port in target.inputs.values() if port.data_type==source.output.data_type]
+            if len(matches)==1:input_name=matches[0].name
+        port=target.inputs.get(input_name)
+        return self.connect_ports(source.output,port)
 
     def nodes(self):
         return [item for item in self.items() if isinstance(item, Node)]
@@ -178,6 +203,8 @@ class Canvas(QGraphicsScene):
         core_edges = set()
         destinations = set()
         for wire in self.wires:
+            error=self.connection_error(wire.source,wire.target,ignore=wire)
+            if error:raise ValueError(error)
             source,target = wire.source.parentItem(),wire.target.parentItem()
             edge = (source.kind,target.kind)
             if source.kind in CORE_KINDS and target.kind in CORE_KINDS:
@@ -217,6 +244,8 @@ class Canvas(QGraphicsScene):
         return requests
 
     def delete_selection(self):
+        if self.locked:return
+        self.cancel_wire()
         selected = set(self.selectedItems())
         for wire in list(self.wires):
             if wire in selected or wire.source.parentItem() in selected or wire.target.parentItem() in selected:
@@ -300,6 +329,7 @@ class Window(QMainWindow):
         self.output_views=OutputViews(self)
         self.setup_menus()
         self.scene.blockOpened.connect(self.open_block)
+        self.scene.connectionRejected.connect(self.connection_rejected)
         self.scene.blockContextRequested.connect(self.show_block_menu)
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
@@ -772,6 +802,11 @@ class Window(QMainWindow):
         except ValueError:layers=()
         self.change('layers',layers)
 
+    def connection_rejected(self,message):
+        self.validation.setText(message)
+        self.statusBar().showMessage(message)
+        self.log.appendPlainText('Connection: '+message)
+
     def validate_model(self):
         try:self.config.validate();requests=self.scene.output_requests(self.config)
         except ValueError as error:
@@ -784,7 +819,9 @@ class Window(QMainWindow):
         return True
 
     def set_busy(self,busy):
-        if busy and self.quick_insert is not None:self.quick_insert.reject()
+        if busy:
+            self.scene.cancel_wire()
+            if self.quick_insert is not None:self.quick_insert.reject()
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)

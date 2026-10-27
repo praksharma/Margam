@@ -13,7 +13,9 @@ checkboxes are not claims about current Margam support.
 - [x] Add constant Dirichlet/Neumann settings, analytical normals and an explicit rectangle corner policy.
 - [ ] Add broader BC operators and spatially varying targets.
 - [ ] Add prepared-data adapters with explicit coordinate/label mapping and previews.
-- [ ] Define typed ports, connection validation and executable graph semantics.
+- [x] Define typed editor ports and reject incompatible/occupied inputs before
+  adding wires. Validate stored wire endpoints again before training.
+- [ ] Define executable graph semantics beyond the current template-backed core.
 - [x] Add block/wire deletion and fit-to-model navigation.
 - [ ] Add saved models/results and undo/redo.
 - [x] Connect the baseline engine through background training with progress and cancellation.
@@ -78,9 +80,14 @@ checkboxes are not claims about current Margam support.
   supported UI catalogue and existing block creation path. Placement respects
   pan/zoom; empty-canvas double-click and canvas-only Tab open quick insert.
   This does not generalise the template-backed core execution model.
-- [ ] Define contextual double-click behaviour and shared inspector/dialog state.
-- [ ] Add instance-owned settings and typed ports before generalising graph execution.
-- [ ] Add output branching and undoable graph/parameter edits.
+- [x] Define contextual double-click behaviour: core/reference blocks use the
+  shared inspector; output blocks open/reuse their owned views. No separate
+  parameter-dialog state is introduced.
+- [ ] Add instance-owned core settings before generalising graph execution.
+  Outputs already own their settings; typed editor ports are implemented.
+- [x] Support output branching from one method/reference to distinct consumers,
+  with one source per typed input and no implicit view creation.
+- [ ] Add undoable graph/parameter edits.
 - [ ] Validate interaction parity hands-on against a selected Simulink release;
   the current evidence collection is documentation-based.
 

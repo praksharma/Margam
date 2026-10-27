@@ -131,7 +131,7 @@ Tests cover output-free execution, no implicit reference, comparison validation,
 independent evaluation resolutions, rectangle-only context actions and preview
 cleanup, monitor retention, closed-view recording,
 detach/redock, deletion, menu presence, worker failures and close/cancel behaviour.
-Screenshots are under assets/screenshots. General graph execution, typed core ports,
+Screenshots are under assets/screenshots. General graph execution, instance-owned core settings,
 multiple arbitrary sampling blocks, persistence, arbitrary PDE/reference
 sources and export remain in todo.md.
 
@@ -206,3 +206,44 @@ execution are future work. Verified native Qt drop events, placement under camer
 transforms, keyboard routing, invalid payloads and popup lifecycle are covered by
 `tests/test_block_insertion.py`. A real platform drag gesture should also be checked
 on the target desktop; automated offscreen events do not prove OS drag appearance.
+
+## Typed editor ports and connection checks
+
+Source-only Geometry, Neural network, and Reference blocks have no artificial
+input socket. Terminal output blocks have no output socket. PINN method inputs
+are separate pde/boundary/network ports; Comparison keeps separate model/reference
+inputs. Tooltips identify each port's semantic role and one-source input rule.
+
+| Source output | Accepted destination input |
+| --- | --- |
+| Geometry | Interior sampler / Boundary points: Geometry |
+| Interior points | PDE residual: Interior points |
+| Boundary point sets | Boundary condition: Boundary point sets |
+| PDE residual | PINN method: PDE residual |
+| Boundary conditions | PINN method: Boundary conditions |
+| Neural network | PINN method: Neural network |
+| PINN run | Training Monitor / Solution Plot: PINN run; Comparison: PINN run |
+| Reference source | Comparison: Reference source |
+
+`ports.py` holds the concrete editor contracts. Direction, compatible semantic
+type, same-model ownership, self-connections and occupied destinations are checked
+before creating a wire, for both gestures and template/helper connections. Each
+input accepts one source; outputs may branch to distinct consumers. Delete the
+old wire to replace an input source. A rejected native gesture reports its reason
+in Properties, status and the Messages log without opening a plot or clearing
+results. Dropping into empty space cancels without changing the model. Training
+and deletion cancel pending wires, preventing stale endpoints. Full pre-training
+validation checks endpoints again and still requires the exact seven-block core.
+
+These types describe editor roles, not tensor shapes, units or general executable
+graph semantics. A PINN run is the method's model/history output contract, not a
+simulated physical-time signal. Core configuration remains owned by the template.
+Outputs retain instance-specific settings and explicit view ownership. The existing
+`connect_nodes` helper infers the unique compatible target socket; an explicit
+input name can be supplied. Unsupported helper connections raise ValueError.
+
+Double-clicking core/reference blocks selects them and opens the same inspector
+used by Properties. There is no independent parameter-dialog state to synchronise.
+Double-clicking an output opens/reuses its owned dock. Tests cover these actions,
+per-output branching, rejected native wire gestures, endpoint checks, preservation
+of run data on rejection, and cleanup of incomplete gestures.

@@ -109,3 +109,13 @@ The generic UI worker no longer imports or constructs the analytical interval
 reference. References are made explicitly by a Reference block using the Poisson
 template helper: analytical intervals or a truncated series for supported rectangles. Monitors have independent bounded UI histories; their visibility
 is separate from recording. See ui-prototype.md for menus and view lifecycle.
+
+## Editor connection contracts
+
+`margam/ui/ports.py` defines the current semantic port types: geometry, interior
+points, boundary points, residual, constraints, network, PINN run, and reference.
+These prevent incompatible editor wires; they do not add tensor-shape validation,
+units or a general execution engine. Every destination has one source; method and
+reference outputs can branch to distinct consumers. See ui-prototype.md for the
+full port table. Numerical execution still assembles the validated Poisson template
+through `build_pinn`, not by evaluating arbitrary block graphs.

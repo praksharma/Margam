@@ -133,6 +133,9 @@ See [heat-demo.md](docs/heat-demo.md) for equations, parameters and reference ch
    must agree at shared corners; corner sampling is excluded.
 6. Select **Neural network** to edit hidden-layer sizes, or **PINN method** for Adam
    learning rate, iteration count, PDE/BC weights and device.
+   The PINN method has separate **PDE residual**, **Boundary conditions**, and
+   **Neural network** inputs. Hover over a port to see its role. Each input accepts
+   one compatible source; an output may connect to several compatible blocks.
 7. Click **Validate**, then **Train PINN**. A model with no output blocks trains
    without creating predictions or plot views. Progress and errors remain available.
 8. To request losses, add **Training Monitor** and connect the PINN method to it.
@@ -163,7 +166,10 @@ after zooming or panning. Double-click empty canvas space for **Add block**, or
 press **Tab** with the canvas focused to insert at the visible canvas centre.
 Search, then press Enter to add the first match; Down moves into the results so
 you can choose another block. Escape or clicking outside cancels. New blocks are
-unconnected and their plot windows stay closed. These insertion controls are
+unconnected and their plot windows stay closed. Incompatible connections and already
+occupied inputs are rejected immediately, with a message in Properties/status.
+Delete an existing wire before replacing its source. A rejected or cancelled wire
+does not clear previous results. These insertion controls are
 locked during training. Tab in property editors keeps its normal focus behaviour.
 
 
