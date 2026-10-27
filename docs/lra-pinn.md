@@ -90,7 +90,7 @@ statistics/targets/coefficients at every balancing event are in checkpoint state
 - Compare: `.venv/bin/python -m examples.compare_lra --iterations 2000`.
 - Test: `.venv/bin/python -m unittest discover -s tests -p 'test_lra*.py' -v`.
 
-Model format 11 reads formats 1–10. Run format 2 stores ordinary network/Adam
+Model format 12 reads formats 1–11. Run format 2 stores ordinary network/Adam
 state plus LRA settings, current coefficients and balancing history. Restricted
 loading validates the ratio, smoothing, term names and update phase. Actual
 resume also checks original data fingerprints and network architecture. A changed

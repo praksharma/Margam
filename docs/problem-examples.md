@@ -32,7 +32,7 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 11 persists block settings and compact recipes and reads earlier formats 1–10.
+Model format 12 persists block settings and compact recipes and reads earlier formats 1–11.
 The tests check manufactured residuals and train the smaller examples for 700 CPU
 updates, Helmholtz for 2,000, with RMS prediction error below 0.05 across the full domain. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.

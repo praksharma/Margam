@@ -1,0 +1,141 @@
+{
+  "scope": "Synthetic known-value data-format test, not a PINN prediction or numerical accuracy benchmark",
+  "vtk_reader": "9.7.1",
+  "paraview_gui_tested": false,
+  "frames": [
+    {
+      "time": 0.0,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000000.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "ff3302f00d22b3eca8c3d266f93320e38d6029ba7aa74aeeb8ccbda6ee91099f"
+    },
+    {
+      "time": 0.05,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000001.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "4f4484c83a2a1fe4000bbf4fa8bf71941442961fdf7616f31061b8c997d3f8f3"
+    },
+    {
+      "time": 0.1,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000002.vti",
+      "max_known_value_discrepancy": 6.938893903907228e-16,
+      "sha256": "1eccd4eff387bfc209e45fcdd59e43cc545e07d6865d87ba670e4e421ac5f707"
+    },
+    {
+      "time": 0.15,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000003.vti",
+      "max_known_value_discrepancy": 4.996003610813204e-16,
+      "sha256": "608ee4e1f56a53130a978f1d5b2dc210fd0344b4cbb5ba9a9ce7f62046be354e"
+    },
+    {
+      "time": 0.2,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000004.vti",
+      "max_known_value_discrepancy": 2.636779683484747e-16,
+      "sha256": "37ff081211d606f4d1861e193ad5f4e350562a4f94b0e8c5a208e7195a71376d"
+    },
+    {
+      "time": 0.25,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000005.vti",
+      "max_known_value_discrepancy": 5.238529448733282e-32,
+      "sha256": "78bb67509207d554202a6cbda82469a03de0d88c7e76780062ad7a39b660aac6"
+    },
+    {
+      "time": 0.3,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000006.vti",
+      "max_known_value_discrepancy": 2.636779683484747e-16,
+      "sha256": "e366ec3297d0e07129b16e07cc092c67a9306d467ed13957e473cb6ce64d0d5d"
+    },
+    {
+      "time": 0.35,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000007.vti",
+      "max_known_value_discrepancy": 4.996003610813204e-16,
+      "sha256": "fdc6ea49a1882f81c0b5ac54d14a27f0605ea5b4e94a824183066b558997089a"
+    },
+    {
+      "time": 0.4,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000008.vti",
+      "max_known_value_discrepancy": 6.661338147750939e-16,
+      "sha256": "629e366de9f196f615a380b54628198887d2fd404458647b6d1ec56c2009bd87"
+    },
+    {
+      "time": 0.45,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000009.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "0af460328f9632dac0d33bb2e863deb302c4f465ac84c021269793fc81ebc51b"
+    },
+    {
+      "time": 0.5,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000010.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "f94e53dad3a1d43be28bb8f50e365e933ed9c16b0d3225aca57392078c652e4e"
+    },
+    {
+      "time": 0.55,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000011.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "80e1a3567afbd25e7673e3182d1813085093a68f43de62eeca4d30cee7224a31"
+    },
+    {
+      "time": 0.6,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000012.vti",
+      "max_known_value_discrepancy": 6.938893903907228e-16,
+      "sha256": "071e649b7564f3b7743a981089dc6f779ca376e5258280139a723480a87cfd1b"
+    },
+    {
+      "time": 0.65,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000013.vti",
+      "max_known_value_discrepancy": 4.718447854656915e-16,
+      "sha256": "f7d0d659c9f958cd13c45d8a7419b44ee7c4fe3a34f9e0deb39f35bb4866492f"
+    },
+    {
+      "time": 0.7,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000014.vti",
+      "max_known_value_discrepancy": 2.636779683484747e-16,
+      "sha256": "af6153ef62b46394bf978375e0873758723965a8253e6716754c3d279977b04c"
+    },
+    {
+      "time": 0.75,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000015.vti",
+      "max_known_value_discrepancy": 1.4791141972893971e-31,
+      "sha256": "7cd68d44e7b8b64a96e56bc67ef8af0a93a1de0aa88c6c2cbad5249ddf761f82"
+    },
+    {
+      "time": 0.8,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000016.vti",
+      "max_known_value_discrepancy": 2.636779683484747e-16,
+      "sha256": "991f08a3aca0e46f0f2642fb39f5bfb398732eac6b14b382e51279bbc967d343"
+    },
+    {
+      "time": 0.85,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000017.vti",
+      "max_known_value_discrepancy": 4.996003610813204e-16,
+      "sha256": "792c09f007d7984107b7c4d5a1fe4c4887f79333fc498fb8702c8de64f84c9ee"
+    },
+    {
+      "time": 0.9,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000018.vti",
+      "max_known_value_discrepancy": 6.661338147750939e-16,
+      "sha256": "55878d11fbd94e946d966b54d46ebfe19bc6bcc8cac46358510d7f878d4881c3"
+    },
+    {
+      "time": 0.95,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000019.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "d589c3bd988152740070470213243cf33a6c69b17d2f64d655626578cd82b64f"
+    },
+    {
+      "time": 1.0,
+      "file": "standing-wave_frames_eb442081813140ebbe05fd38d2c10480/frame_000020.vti",
+      "max_known_value_discrepancy": 8.326672684688674e-16,
+      "sha256": "22c230a793f24de6408af4d0aee93699257fc9e533fed4334d2f8269e0d63685"
+    }
+  ],
+  "formula": "sin(pi*x)*sin(pi*y)*cos(2*pi*t)",
+  "dimensions": [
+    21,
+    21,
+    1
+  ],
+  "writer_sha256": "0dfa556ba21310b5c2c2b60f7f900dcdb1454cad40132cf29206ac9cab588545",
+  "generator_sha256": "a938f5663070791460188f1b032ec7c89c08a4d76f81ffbcffd10d1dd9a13e70"
+}

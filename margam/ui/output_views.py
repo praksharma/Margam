@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt
 from .plots import CurvePlot, SolutionView
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem
 
-OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export'}
+OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export', 'paraview'}
 
 
 class VectorResultView(QWidget):
@@ -35,7 +35,7 @@ class OutputViews:
         self.entries = {}
 
     def open(self, node):
-        if node.kind not in OUTPUT_KINDS or node.kind=='export':
+        if node.kind not in OUTPUT_KINDS or node.kind in ('export','paraview'):
             return
         if node.identifier not in self.entries:
             view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else VectorResultView() if len(self.window.config.field_names)>1 else SolutionView()

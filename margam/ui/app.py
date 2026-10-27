@@ -840,16 +840,23 @@ class Window(QMainWindow):
         if self.is_running():return False
         data=(self.result or {}).get('outputs',{}).get(node.identifier)
         if data is None:
-            self.statusBar().showMessage('Connect this CSV Export block and train before exporting.');return False
+            self.statusBar().showMessage('Connect this export block and train before exporting.');return False
+        paraview=node.kind=='paraview'
+        extension='.vti' if paraview else '.csv'
+        label='ParaView predictions' if paraview else 'CSV predictions'
         if path is None:
-            path,_=QFileDialog.getSaveFileName(self,'Export scalar predictions','prediction.csv','CSV (*.csv)')
-            if path and not path.lower().endswith('.csv'):
-                path+='.csv'
-                if Path(path).exists() and QMessageBox.question(self,'Replace CSV?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+            path,_=QFileDialog.getSaveFileName(self,'Export '+label,'prediction'+extension,'VTK ImageData (*.vti)' if paraview else 'CSV (*.csv)')
+            if path and not path.lower().endswith(extension):
+                path+=extension
+                if Path(path).exists() and QMessageBox.question(self,'Replace export?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
         if not path:return False
-        try:export_csv(path,data)
-        except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'CSV could not be exported',str(error));return False
-        self.statusBar().showMessage('Exported scalar predictions · '+Path(path).name);return True
+        try:
+            if paraview:
+                from ..components.paraview_export import export_vti
+                export_vti(path,data)
+            else:export_csv(path,data)
+        except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'Predictions could not be exported',str(error));return False
+        self.statusBar().showMessage('Exported '+label+' · '+Path(path).name);return True
 
     def open_selected_output(self):
         nodes=[node for node in self.scene.nodes() if node.isSelected()]
@@ -858,7 +865,7 @@ class Window(QMainWindow):
     def open_block(self,node):
         if not isValid(node) or node.scene() is not self.scene:return
         if node.kind in COMPACT_RECIPES:return self.expand_recipe(node)
-        if node.kind=='export':return self.export_block_data(node)
+        if node.kind in ('export','paraview'):return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
             return self.output_views.open(node)
         self.properties_dock.show()
@@ -880,7 +887,7 @@ class Window(QMainWindow):
             menu.addAction('Preview geometry').triggered.connect(lambda:self.open_rectangle_preview(node,False))
             menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
         elif node.kind in OUTPUT_KINDS:
-            label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…'}[node.kind]
+            label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…','paraview':'Export ParaView…'}[node.kind]
             menu.addAction(label).triggered.connect(lambda:self.open_block(node))
         if node.kind in ('sa_recipe','sa_method'):
             summary=menu.addAction('Adaptive weight summary')
@@ -1267,7 +1274,7 @@ class Window(QMainWindow):
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
-                     'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
+                     'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if node.kind=='domain':node.title=c.shape
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
@@ -1575,9 +1582,10 @@ class Window(QMainWindow):
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
                 self.form.addRow('Evaluation points / axis',count)
                 text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
+            if node.kind=='paraview':text='Connect a trainer or recipe and train. Export predictions as VTI on a regular evaluation grid; training samples can be random. Flow includes a velocity vector. Current steady models export a single snapshot. Choose a filename when exporting.'
             if node.kind=='export':text='Connect PINN method, train, then explicitly export scalar x/y/u rows. No plot or file is created automatically.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
-            button=QPushButton('Export CSV…' if node.kind=='export' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
+            button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
         elif node.kind=='reference':
             expression=QLineEdit(node.settings.get('reference_expression',''))

@@ -46,8 +46,9 @@
   Keep operational progress/errors separate from numerical output views.
 - Do not continue polishing or expanding in-app field heatmaps without a concrete
   user request. Preserve existing behaviour unless the user requests removal.
-- ParaView integration and export are deferred. Record them in TODO; do not start
-  implementing them during unrelated tasks.
+- ParaView file export was explicitly requested and is supported through its own
+  opt-in block. Viewer embedding/launching, arbitrary mesh export and transient
+  solvers remain deferred; do not introduce them during unrelated tasks.
 
 ## Validation and commits
 
@@ -80,4 +81,6 @@
   directory when testing desktop state. Do not overwrite personal layout/recovery
   files during validation. Release test clipboard data before offscreen Qt teardown.
 - Coupled u/v/p results currently use tables/CSV. Preserve the pause on heatmap
-  development. Full 3D/non-planar GeoSampler and ParaView remain deferred.
+  development. Full 3D/non-planar GeoSampler remains deferred. ParaView export is
+  opt-in; never infer physical time from training updates. Supplied-node evaluation
+  and richer mesh-aware exports are planned in docs/todo.md, not implemented yet.

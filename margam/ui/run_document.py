@@ -18,7 +18,7 @@ def validate_run(data):
     require(type(steps) is int and 0<=steps<=100000 and type(result['cancelled']) is bool and isinstance(result['device'],str),'Invalid run status.')
     require(isinstance(result['outputs'],dict),'Invalid run outputs.')
     for identifier,output in result['outputs'].items():
-        require(kinds.get(identifier) in ('solution','comparison','export') and isinstance(output,dict),'Unknown run output.')
+        require(kinds.get(identifier) in ('solution','comparison','export','paraview') and isinstance(output,dict),'Unknown run output.')
         require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field'},'Invalid output metadata.')
         size=output['size'];require(type(size) is int and 2<=size<=201,'Invalid output resolution.')
         points,values=output['points'],output['values']

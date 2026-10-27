@@ -4,10 +4,11 @@
 
 ## Latest implementation suite
 
-27 October 2026: **95 tests: 92 passed, 3 CUDA skips**, full suite after the
-Helmholtz example (134.9 seconds). Previous milestones: LRA 93 tests (90 passed,
-3 CUDA skips); networks 88 tests (85 passed, 3 CUDA skips); SA-only 78 tests
-(75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu,
+27 October 2026: **100 tests: 97 passed, 3 CUDA skips**, full suite after
+ParaView export (142.8 seconds), with the optional real VTK reader available only
+in an isolated temporary validation directory. Without VTK, that one reader test
+also skips. Prior milestones: Helmholtz 95 tests (92 passed, 3 CUDA skips); LRA 93;
+networks 88; SA-only 78. Runtime: Python 3.14.8, Torch 2.14.1+cpu,
 PySide6 6.12.0, NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
 
 ```sh
@@ -53,8 +54,8 @@ SA's desktop check saves both optimiser states, opens an archive, resumes update
 and inspects adaptive statistics. [SA workflow test](../tests/test_self_adaptive_ui.py).
 
 UI startup or a screenshot demonstrates appearance/lifecycle, not numerical accuracy.
-Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 11
-reads 1–10; run archives use format 2 and restricted tensor loading. Data fingerprints
+Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 12
+reads 1–11; run archives use format 2 and restricted tensor loading. Data fingerprints
 and architecture/options are checked for resume, but cross-version optimiser
 compatibility and arbitrary PDE well-posedness are not guaranteed.
 
@@ -126,3 +127,16 @@ round-trips, compact recipes and resume. Those lifecycle updates do not establis
 accuracy. The separate manufactured-example check trains 2,000 updates and tests
 RMSE <0.05 over random points across the full square. Measured 5,000-update results
 are in the [Helmholtz study](results.md#helmholtz-with-fourier-lra-pinn).
+
+## ParaView export correctness
+
+Five focused tests cover known-value scalar/u-v-p export, velocity vectors, grid
+ordering, physical timestamps, XML escaping and failed-write preservation. Actual
+Qt tests add the block explicitly, train with random samples, export independent
+regular-grid predictions, and reopen model/run files. Both scalar and coupled-flow
+exports are exercised. No files or views are opened by training. The optional real
+VTK 9.7.1 test verifies readback geometry, fields and TIME_STEPS metadata. The bundled
+21-frame synthetic dataset was independently read and checked at every point;
+[dataset validation](../assets/examples/paraview-demo/validation.json) records this.
+These are file/data correctness checks, not solution-accuracy measurements.
+ParaView GUI playback was not run because ParaView is not installed on this host.

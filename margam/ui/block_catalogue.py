@@ -9,7 +9,7 @@ BLOCK_CATEGORIES = {
     'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe')),
     'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
-                ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export')),
+                ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
 }
 KINDS = {title: kind for entries in BLOCK_CATEGORIES.values() for title, kind in entries}
 BLOCK_GROUPS = {group: tuple(title for title, _ in entries)
@@ -49,6 +49,7 @@ CAPABILITIES = {
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction or u/v/p table request; no reference assumed.'),
     'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),
     'reference': ('Preset, coordinate expression or mapped values', 'Explicit scalar source. Imported data requires matching coordinates; preset sources reject custom physics.'),
+    'paraview': ('Name, regular-grid evaluation resolution', 'VTI predictions on regular line/rectangle grids: scalar fields or u/v/p plus a velocity vector. Export a snapshot on request. Evaluation resolution is independent of training samples.'),
     'export': ('Name, evaluation points per axis', 'Explicit scalar/u-v-p data request. Export CSV only after training and on user action; no plot window.'),
     'comparison': ('Name, evaluation points per axis', 'Requires a PINN run and an explicit reference matching coordinates and scalar/u-v-p fields.'),
 }

@@ -40,6 +40,7 @@ PATHS = {
     'monitor':'M3 4h18v14H3z M8 22h8 M12 18v4 M5 12h3l2-5 4 8 2-4h3',
     'reference':'M5 3h14v18H5z M8 7h8 M8 11h8 M8 15h5',
     'comparison':'M4 4h6v16H4z M14 4h6v16h-6z M10 12h4',
+    'paraview':'M3 3h12v12H3z M8 8h13v13H8z M3 3l5 5 M15 3l6 5 M3 15l5 6 M15 15l6 6',
     'export':'M13 3H4v18h16v-9 M10 14L21 3 M14 3h7v7',
     'help':'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 4 M12 18h.01 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
     'quit':'M10 3H3v18h7 M9 12h13 M17 7l5 5-5 5',

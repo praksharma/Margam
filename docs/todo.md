@@ -76,7 +76,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
 - [x] Add explicit imported scalar reference data and restricted reference
   expressions; matching evaluation coordinates required, no implicit interpolation.
 - [x] Add a dedicated scalar/u-v-p CSV Export request block; files are written only on
-  explicit export after training. ParaView/VTK integration remains deferred.
+  explicit export after training. The separate opt-in ParaView Export block now supports regular-grid VTI output; richer integration remains deferred.
 
 ## Left library and sampling options
 
@@ -165,13 +165,37 @@ supported catalogue descriptions are shared by the library, inspector and Help.
   and add/verify an optional hard-Dirichlet method that improves field error in
   every tested seed. See heat-accuracy.md; no field plots were changed.
 
-## Deferred: ParaView
+## ParaView file export
 
-- [ ] Later, decide a ParaView-compatible result export format and implement it as
-  an explicit output request. Preserve coordinates, field names and available
-  prediction/reference/error data; define units and export scope first.
-- [ ] Revisit ParaView integration only when requested. No ParaView setup, export
-  implementation or integration is part of the current work.
+- [x] Add a separate opt-in ParaView Export block for regular-grid predicted fields;
+  retain CSV Export and never create files or launch viewers by default.
+- [x] Write uniform-grid VTI scalar/u-v-p data and a derived velocity vector.
+- [x] Support physical-time PVD collections and per-snapshot TimeValue metadata
+  in the writer API, with a known-value playback dataset and real VTK reader checks.
+- [ ] Deferred: actual transient PINN solver/UI integration and physical-time selection.
+- [ ] Deferred: embedding/launching ParaView and direct viewer integration.
+
+## Future evaluation and export at supplied points
+
+- [ ] Let users choose evaluation locations from GeoSampler/prepared input data
+  or supplied FEM mesh nodes, alongside the existing regular export grid. These
+  are evaluation points and need not be the PINN training samples.
+- [ ] Evaluate predictions at those exact spatial coordinates. Preserve original
+  point/node IDs, ordering, coordinate units, boundary/region labels and provenance,
+  so results can be matched back to the source without nearest-neighbour guessing.
+- [ ] Preserve supplied mesh connectivity and node-versus-cell field association
+  when available. Do not invent connectivity for a point cloud or silently export
+  scattered nodes as uniform ImageData. Select an appropriate VTK representation
+  (e.g. PolyData for points or UnstructuredGrid when cells are supplied).
+- [ ] Accept optional reference/FEM values at the same nodes, with explicit field
+  mapping and units, and export prediction, reference and pointwise error arrays.
+  Do not require an exact solution. Define scalar/component errors and optional
+  vector norms; handle absent references and zero denominators explicitly.
+- [ ] Preserve physical times and point IDs across transient snapshots; support
+  ParaView playback of the supplied-node or mesh results. Never use optimiser
+  iterations as physical timesteps.
+- [ ] Keep this broader input → evaluation → export system a separate implementation
+  milestone. Current VTI exports still evaluate on regular line/rectangle grids.
 
 Existing in-app heatmaps are left as they are. Further field-plot development is
 paused; operational training monitors and basic rectangle previews remain useful.

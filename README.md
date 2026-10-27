@@ -12,7 +12,7 @@ problems cover scalar interval/rectangle physics and steady 2D incompressible fl
 [Documentation index](docs/README.md) · [Illustrated walkthrough](docs/visual-guide.md) ·
 [Desktop guide](docs/ui-prototype.md) ·
 [Methods and components](docs/components.md) · [Recorded results](docs/results.md) ·
-[LRA method and safeguards](docs/lra-pinn.md) · [2D Helmholtz example](docs/helmholtz.md) · [Remaining work](docs/todo.md)
+[LRA method and safeguards](docs/lra-pinn.md) · [2D Helmholtz example](docs/helmholtz.md) · [ParaView export](docs/paraview-export.md) · [Remaining work](docs/todo.md)
 
 ## Run the desktop
 
@@ -115,6 +115,7 @@ geometry/sample previews. No global figure pane or 3D viewport is provided.
 | --- | --- | --- |
 | `.margam.json` | Model graph and settings; no trained weights/results | File → Save model / Save model as / Open model |
 | `.margam-run.pt` | Model, requested results, retained monitor history, network and optimiser state | File → Save run and checkpoint / Open saved run |
+| `.vti` | Predicted fields on a regular evaluation grid; flow also has a velocity vector | Connected ParaView Export block → Export ParaView |
 | CSV | Requested scalar x/y/u or coupled x/y/u/v/p predictions; no reference/error columns | Connected CSV Export block → Export CSV |
 
 **Run → Resume checkpoint** adds updates. SA-PINN archives include point weights
@@ -227,3 +228,21 @@ Documentation screenshots can be reproduced without personal UI state:
 ```
 
 Use a new directory, or explicitly pass `--overwrite` to refresh that guide's captures.
+
+### Optional ParaView export and playback test
+
+Add **Results → ParaView Export**, connect the trainer/recipe and train, then
+explicitly export VTI predictions. Random interior training samples are fine:
+export uses a separate regular evaluation grid. CSV Export is unchanged.
+Current solvers are steady; the timestamped PVD writer is ready for future
+transient results. [Scope and known-value playback dataset](docs/paraview-export.md).
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p 'test_paraview*.py' -v
+mkdir -p benchmark-results
+.venv/bin/python -m examples.export_paraview_demo --output benchmark-results/playback.pvd
+```
+
+The demo is synthetic data for file-format/playback checks, not a PINN result.
+Future evaluation/export at supplied GeoSampler or FEM nodes, with optional
+pointwise reference errors, is recorded in [TODO](docs/todo.md#future-evaluation-and-export-at-supplied-points).

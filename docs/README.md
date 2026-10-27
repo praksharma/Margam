@@ -16,6 +16,7 @@ Current implementation and recorded evidence, reviewed 27 October 2026. Start wi
 | How does SA-PINN work, and which settings matter? | [SA-PINN method](self-adaptive-pinn.md) |
 | What is the paper Helmholtz example? | [Fourier/LRA Helmholtz](helmholtz.md) |
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |
+| How do I export predictions to ParaView? | [Explicit export and playback](paraview-export.md) |
 | How do prepared GeoSampler points enter Margam? | [Planar data contract](geosampler-contract.md) |
 | What is implemented and what are the limits? | [Component capability index](components.md) |
 
