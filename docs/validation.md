@@ -4,9 +4,9 @@
 
 ## Latest implementation suite
 
-27 October 2026: **78 tests: 75 passed, 3 CUDA skips**, full suite after SA-PINN
-integration. Focused SA and model-document checks also passed after the final
-validation refinements. Runtime: Python 3.14.8, Torch 2.14.1+cpu, PySide6 6.12.0,
+27 October 2026: **88 tests: 85 passed, 3 CUDA skips**, full suite after the pointwise
+network additions. Focused network equations/derivatives, source-branch and model/archive checks also
+passed. The previous SA-only milestone was 78 tests (75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu, PySide6 6.12.0,
 NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
 
 ```sh
@@ -52,8 +52,8 @@ SA's desktop check saves both optimiser states, opens an archive, resumes update
 and inspects adaptive statistics. [SA workflow test](../tests/test_self_adaptive_ui.py).
 
 UI startup or a screenshot demonstrates appearance/lifecycle, not numerical accuracy.
-Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 9
-reads 1–8; run archives use format 2 and restricted tensor loading. Data fingerprints
+Screenshots are under [assets/screenshots](../assets/screenshots/). Model format 10
+reads 1–9; run archives use format 2 and restricted tensor loading. Data fingerprints
 and architecture/options are checked for resume, but cross-version optimiser
 compatibility and arbitrary PDE well-posedness are not guaranteed.
 
@@ -64,3 +64,20 @@ record. Historical heat and GPU measurements were preserved with explicit proven
 limits. Local Markdown targets, JSON structure/finite metrics, recorded source hashes,
 reported tables and CLI help/output preservation were checked. No production numerical
 algorithm changed as part of that documentation work.
+
+## Pointwise network additions
+
+All ten choices pass numerical first/second-derivative checks, per-row independence,
+output shapes, real u/v/p training integration and exact adaptive checkpoint resume.
+Additional checks cover exposed Fourier encodings, activations, skip/gate branches,
+Gabor centres, legacy FCNN identity, setting-mismatch rejection and hard-Dirichlet
+architecture metadata. [Numerical tests](../tests/test_pointwise_networks.py).
+The [architecture UI test](../tests/test_network_ui.py) exercises every choice through
+save/open, compact conversion, clipboard and actual archive/resume. Startup remains
+Torch-free until numerical execution is requested.
+
+The [twenty-run compatibility record](../assets/benchmarks/pointwise-networks-2026-10-27.json)
+contains predictions as well as metrics. Their errors and rounded documentation
+table were recomputed/checked; selected source hashes and local documentation links
+were verified. This one-seed CPU study is separate from regression thresholds and
+from any architecture-quality or CUDA-equivalence claim.

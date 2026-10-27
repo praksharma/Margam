@@ -6,7 +6,7 @@ implementation remains margam.methods.pinn.PINN; shared components stay shared.
 """
 NAME = 'Baseline PINN'
 ROOT = 'method'
-NETWORK_FIELDS = ('layers', 'network_seed')
+from ..components.network_config import NETWORK_FIELDS
 TRAINING_FIELDS = ('method', 'iterations', 'lr', 'device', 'pde_weight', 'boundary_weight')
 PARAMETERS = NETWORK_FIELDS + TRAINING_FIELDS
 EXPOSED = ('iterations', 'lr', 'device')
@@ -18,7 +18,7 @@ CONNECTIONS = (('network', 'method', 'network'),)
 INPUTS = (('pde', 'PDE residual', 'residual'), ('boundary', 'Boundary conditions', 'constraints'))
 OUTPUT = ('output', 'PINN run', 'pinn_run')
 DEFAULTS = dict(layers=[16, 16], network_seed=7, method='baseline', iterations=1000,
-                lr=.01, device='cpu', pde_weight=1., boundary_weight=1.)
+                lr=.01, device='cpu', pde_weight=1., boundary_weight=1.,network_type='fcnn',network_options={})
 
 
 def split(parameters):

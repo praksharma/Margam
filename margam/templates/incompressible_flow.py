@@ -50,7 +50,7 @@ def build_flow_pinn(config):
     import torch
     from ..components import PINNProblem,PointConstraint
     from ..methods import PINN
-    from ..nn import FullyConnected
+    from ..nn.factory import build_network
     config.validate()
     torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
     interior,boundaries=sample_problem(config)
@@ -79,7 +79,7 @@ def build_flow_pinn(config):
             constraints.append(PointConstraint(side+':'+field,torch.tensor(rows),value,operator))
     constraints.append(PointConstraint('pressure_gauge',torch.tensor([config.pressure_point]),config.pressure_value,lambda x,u:u[:,2:3]))
     problem=PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
-    network=FullyConnected([2,*config.layers,3],'tanh','Xavier normal',input_bounds=config.bounds)
+    network=build_network(config)
     weights=config.loss_weights
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN

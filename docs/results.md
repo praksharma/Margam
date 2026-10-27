@@ -11,6 +11,7 @@ training budgets or software/hardware environments.
 | --- | --- | --- |
 | [Baseline vs SA interval Poisson](#baseline-vs-self-adaptive-pinn) | 27 October 2026 / CPU | Working pointwise adaptation; mixed three-seed comparison |
 | [Heat: soft vs hard Dirichlet](#steady-heat-soft-and-hard-dirichlet) | 27 October 2026 / CPU | Lower field error for hard BC enforcement on this supported box problem |
+| [Pointwise network compatibility](#pointwise-network-compatibility) | 27 October 2026 / CPU | Ten architectures × baseline/SA on a one-seed smoke problem; not a ranking |
 | [Historical baseline Poisson](#historical-baseline-poisson-on-cuda) | 23 October 2026 / CUDA, retired runtime | Preserved older measurement; not current CUDA validation |
 
 ## Metric definitions
@@ -115,6 +116,55 @@ Reproduce to a fresh filename (the heat script itself allows overwriting):
 
 ```sh
 .venv/bin/python -m examples.benchmark_heat_accuracy --output benchmark-results/heat-reproduction.json
+```
+
+## Pointwise network compatibility
+
+[Raw settings/predictions/errors](../assets/benchmarks/pointwise-networks-2026-10-27.json) ·
+[Architectures and derivative checks](neural-networks.md)
+
+Unit interval Poisson `u_xx+2=0`, zero endpoints, reference x(1−x), 32 fixed grid
+points, 201 including-boundary evaluation points, hidden widths 16,16, seed 7,
+700 full-batch updates. CPU float32, one Torch thread. Baseline and SA share the
+same initial network for each architecture; SA adapts PDE points only (rate 0.005,
+initial λ=1, cap 1000), global PDE/mean-BC weights are 1/10.
+
+Network lr is **0.003**, except SIREN **0.001**. Explicit smoke options:
+axis Fourier/highway/modified frequencies [0,0.5,1]; angular Fourier MLP modes 3,
+scale 0.1; multiscale Gaussian scales [0.1,0.5], 8 features; SIREN first/hidden
+omega 10/10; multiplicative filter input scale 0.5. Other options retain their
+validated defaults. These are not all UI defaults and not an equal-capacity or
+hyperparameter-search-controlled comparison. Width entries have architecture-specific
+meaning, so parameter counts differ. No efficiency ranking is made.
+
+| Architecture | Baseline RMSE | SA RMSE |
+| --- | ---: | ---: |
+| Fully connected | 0.002182551 | 0.0004081843 |
+| Fourier MLP (angular) | 7.359666e-05 | 6.320456e-05 |
+| Fourier feature NN | 0.0001424609 | 0.0001722684 |
+| Highway Fourier NN | 3.459548e-05 | 5.73967e-05 |
+| Modified Fourier NN | 0.0005386058 | 0.000642377 |
+| Multiscale Fourier NN | 5.359752e-05 | 6.415103e-05 |
+| DGM network | 0.0001696879 | 0.0001521516 |
+| SIREN | 0.000439797 | 0.0005324064 |
+| Multiplicative Fourier NN | 4.697537e-05 | 5.107183e-05 |
+| Multiplicative Gabor NN | 0.0002652292 | 0.0002539854 |
+
+All twenty runs completed with RMSE below 0.003. This is evidence of usable
+pointwise derivatives/training under those specific settings. One seed on an easy
+problem does not establish architecture superiority, general SA improvement, or
+accuracy on stiff/multiscale PDEs. It does not validate neural operators or CUDA.
+The earlier SA study above used lr=0.005 and different Fourier-free defaults;
+its values should not be substituted for this study's FCNN row.
+
+Raw JSON includes actual evaluation coordinates/reference, predictions, per-run
+complete configs, final pre-update loss records, field metrics, adaptive summaries,
+environment and selected source hashes. It reports the pre-commit HEAD and modified
+working tree honestly; hashes identify the selected files used, not a complete
+source archive. Reproduce to a **new** file:
+
+```sh
+.venv/bin/python -m examples.benchmark_pointwise_networks --iterations 700 --seed 7 --output benchmark-results/pointwise-networks-new.json
 ```
 
 ## Historical baseline Poisson on CUDA

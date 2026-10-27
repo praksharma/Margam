@@ -4,12 +4,15 @@ This method owns its output transform; the baseline full-batch recipe is reused.
 It does not support arbitrary boundary functions or mixed boundary operators.
 """
 import torch
+from copy import deepcopy
 from .pinn import PINN
 
 
 class BoxDirichletNetwork(torch.nn.Module):
     def __init__(self,network,lower,upper,value):
         super().__init__();self.network=network
+        if hasattr(network,'_margam_spec'):
+            self._margam_spec=dict(deepcopy(network._margam_spec),hard_dirichlet=dict(bounds=[list(lower),list(upper)],value=float(value)))
         self.register_buffer('lower',torch.as_tensor(lower,dtype=next(network.parameters()).dtype))
         self.register_buffer('span',torch.as_tensor(upper,dtype=self.lower.dtype)-self.lower)
         self.register_buffer('value',torch.as_tensor(value,dtype=self.lower.dtype))

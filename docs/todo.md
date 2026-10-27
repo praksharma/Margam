@@ -219,3 +219,14 @@ paused; operational training monitors and basic rectangle previews remain useful
 - [x] Preserve historical GPU metadata separately from current CPU validation.
 - [x] Consolidate setup/run commands, update menu/persistence/recipe guidance,
   and document the concrete process for adding and recording a new method.
+
+## Pointwise networks
+
+- [x] Inspect NVIDIA layers/full model equations; adapt angular/Fourier, highway,
+  modified/multiscale Fourier, DGM, SIREN and Fourier/Gabor filter networks.
+- [x] Add architecture controls to the shared network block and retain them in
+  both recipe forms, model migrations, copy/undo and validated checkpoint resume.
+- [x] Check first/second derivatives, physical scaling, batch independence, gating,
+  original FCNN identity, real scalar/flow training and all-architecture archives.
+- [x] Record a twenty-run CPU compatibility study with configs, predictions and
+  provenance; retain Apache notices and keep neural operators out of scope.

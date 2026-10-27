@@ -63,7 +63,7 @@ total. Because λ grows, total loss can increase while prediction error decrease
 Use the explicitly wired Reference/Comparison to assess accuracy. Views stay closed
 until opened. No field heatmaps were changed.
 
-Model format 9 reads formats 1–8. Run archives retain both Adam states, masks,
+Model format 10 reads formats 1–9. Run archives retain both Adam states, masks,
 term ordering, adaptive settings, sample fingerprint and histories. Resume rejects
 changed samples, rates, caps, term ordering or global loss weights. Archive inspection
 validates shapes without reopening external data files; actual resume reconstructs

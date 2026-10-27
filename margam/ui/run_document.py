@@ -46,7 +46,7 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
         if config.method=='self_adaptive':
             import torch
@@ -94,10 +94,10 @@ def load_run(path):
         # Actual resume still reconstructs data and verifies the original digest.
         from ..components import PINNProblem,PointConstraint
         from ..methods import PINN
-        from ..nn import FullyConnected
+        from ..nn.factory import build_network
         config=decode_document(data['model'])[0]
         dimension=len(config.bounds[0])
-        network=FullyConnected([dimension,*config.layers,len(config.field_names)],'tanh','Xavier normal',input_bounds=config.bounds)
+        network=build_network(config)
         if config.method=='hard_dirichlet':
             from ..methods.hard_dirichlet import BoxDirichletNetwork
             network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])

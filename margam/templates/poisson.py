@@ -66,6 +66,8 @@ class PoissonConfig:
     sa_initial: float = 1.
     sa_max: float = 1000.
     sa_boundary: bool = False
+    network_type: str = 'fcnn'
+    network_options: dict = field(default_factory=dict)
 
     @property
     def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
@@ -143,6 +145,8 @@ class PoissonConfig:
             raise ValueError('Iterations must be between 1 and 100000.')
         if not self.layers or len(self.layers) > 6 or any(type(n) is not int or not 1 <= n <= 256 for n in self.layers):
             raise ValueError('Use 1–6 hidden layers, with 1–256 neurons each.')
+        from ..components.network_config import validate_network
+        validate_network(self.network_type,self.network_options,self.layers)
         if not math.isfinite(self.lr) or not 0 < self.lr <= 1:
             raise ValueError('Learning rate must be greater than zero and at most one.')
         if self.device not in ('cpu','auto','cuda'):
@@ -206,7 +210,7 @@ def build_pinn(config):
     import torch
     from ..components import PINNProblem, PointConstraint
     from ..methods import PINN
-    from ..nn import FullyConnected
+    from ..nn.factory import build_network
     from ..utils import laplacian
     interior, boundaries = sample_problem(config)
     torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
@@ -248,7 +252,7 @@ def build_pinn(config):
         return expression(x,u,source=config.source) if expression else laplacian(u,x) + config.source
     problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
-    network = FullyConnected([len(lower),*config.layers,1], 'tanh', 'Xavier normal',input_bounds=(lower,upper))
+    network = build_network(config)
     weights = config.loss_weights
     if config.method=='hard_dirichlet':
         from ..methods.hard_dirichlet import HardDirichletPINN

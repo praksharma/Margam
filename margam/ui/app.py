@@ -15,6 +15,7 @@ from ..components.expressions import Expression
 from ..components.prepared_data import reference_values
 from ..components.export import export_csv
 from ..components.sampling import SAMPLERS
+from ..components.network_config import NETWORK_NAMES, OPTION_SCHEMAS, network_options
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
 from .training import TrainingWorker
@@ -119,7 +120,7 @@ class Node(QGraphicsRectItem):
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
         painter.setPen(QColor(colors()['text']))
-        painter.drawText(14, 28, self.title)
+        painter.drawText(14, 28, painter.fontMetrics().elidedText(self.title,Qt.TextElideMode.ElideRight,145))
         painter.setPen(QColor(colors()['muted']))
         painter.drawText(14, 55, painter.fontMetrics().elidedText(self.detail, Qt.TextElideMode.ElideRight, 145))
 
@@ -1239,11 +1240,12 @@ class Window(QMainWindow):
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
-                     'network':' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
+                     'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if node.kind=='domain':node.title=c.shape
+            if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
             node.update()
@@ -1458,7 +1460,13 @@ class Window(QMainWindow):
                     self.form.addRow(side+' custom operator',operator)
                 note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
-            note=QLabel('Fully connected · tanh · Xavier normal\nFixed input bounds follow the domain.');note.setWordWrap(True);self.form.addRow(note)
+            architecture=QComboBox();architecture.setObjectName('network_architecture')
+            for identifier,label in NETWORK_NAMES.items():architecture.addItem(label,identifier)
+            architecture.setCurrentIndex(architecture.findData(self.config.network_type))
+            architecture.currentIndexChanged.connect(lambda index,w=architecture:self.change_network_type(w.itemData(index)))
+            self.form.addRow('Architecture',architecture)
+            note=QLabel('Pointwise coordinates → fields · fixed domain scaling. No neural operators. Changing architecture resets its options; trainer settings stay separate.');note.setWordWrap(True);self.form.addRow(note)
+            self.network_option_fields()
             edit=QLineEdit(', '.join(map(str,self.config.layers)))
             edit.setPlaceholderText('16, 16')
             token=object()
@@ -1565,6 +1573,49 @@ class Window(QMainWindow):
         attribute='bc_types' if kind=='type' else 'bc_values'
         values=deepcopy(getattr(self.config,attribute));values[side]=value
         self.change(attribute,values,edit_token)
+
+    def change_network_type(self,kind):
+        if self.is_running() or self.scene.locked or kind not in NETWORK_NAMES:return
+        node=self.parameter_owner('network_type')
+        if node is None or node.settings['parameters']['network_type']==kind:return
+        old=deepcopy(node.settings['parameters']);new=dict(old,network_type=kind,network_options={})
+        def apply(parameters):
+            node.settings['parameters']=deepcopy(parameters);self.config=self.config_for_node(node)
+            self.settings_changed();self.selection_changed()
+        self.push_edit('Change network architecture',lambda:apply(new),lambda:apply(old))
+
+    def change_network_option(self,key,value,token=None):
+        options=deepcopy(self.config.network_options);options[key]=value
+        try:network_options(self.config.network_type,options)
+        except ValueError as error:self.validation.setText(str(error));return
+        self.change('network_options',options,token)
+
+    def change_network_list(self,key,text):
+        try:values=[float(value.strip()) for value in text.split(',')]
+        except ValueError:self.validation.setText('Enter a comma-separated list of finite numbers.');return
+        self.change_network_option(key,values)
+
+    def network_option_fields(self):
+        resolved=network_options(self.config.network_type,self.config.network_options)
+        for key,spec in OPTION_SCHEMAS[self.config.network_type].items():
+            if key=='features' and 'encoding' in resolved and resolved['encoding']!='gaussian':continue
+            if key=='frequencies' and resolved.get('encoding')=='gaussian':continue
+            value=resolved[key];kind=spec['kind'];token=object()
+            if kind=='choice':
+                widget=QComboBox();widget.addItems(spec['choices']);widget.setCurrentText(value)
+                widget.currentTextChanged.connect(lambda v,k=key:self.change_network_option(k,v))
+            elif kind=='bool':
+                widget=QCheckBox();widget.setChecked(value)
+                widget.toggled.connect(lambda v,k=key,t=token:self.change_network_option(k,v,t))
+            elif kind=='list':
+                widget=QLineEdit(', '.join(map(str,value)))
+                widget.editingFinished.connect(lambda k=key,w=widget:self.change_network_list(k,w.text()))
+            else:
+                widget=QSpinBox() if kind=='int' else QDoubleSpinBox()
+                if kind!='int':widget.setDecimals(6)
+                widget.setKeyboardTracking(False);widget.setRange(spec['minimum'],spec['maximum']);widget.setValue(value)
+                widget.valueChanged.connect(lambda v,k=key,t=token:self.change_network_option(k,v,t))
+            widget.setObjectName('network_option_'+key);self.form.addRow(spec['label'],widget)
 
     def change_layers(self,text,edit_token=None):
         try:layers=tuple(int(n.strip()) for n in text.split(','))

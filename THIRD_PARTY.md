@@ -29,3 +29,36 @@ protocols or GeoSampler project payloads are copied.
 The planar import adapter consumes the GeoSampler schema-v2 NPZ manifest contract
 from `src/geosampler/export.py` at the same recorded revision. It is a Margam data
 adapter; no CAD import, Gmsh worker or 3D viewport implementation is included.
+
+## PhysicsNeMo pointwise networks
+
+The pointwise architecture adaptations in `margam/nn/{pointwise,fourier,highway,
+modified_fourier,multiscale_fourier,dgm,siren,multiplicative_filter}.py` draw from
+NVIDIA PhysicsNeMo/PhysicsNeMo Sym, Apache-2.0. Copyright notices are retained in
+those files; the full Apache-2.0 text is retained in `assets/LICENSE-PHYSICSNEMO`.
+No upstream NOTICE file was present in the inspected local repository root.
+
+Inspected local source: `physicsnemo/nn/module/{fourier_layers,siren_layers,
+dgm_layers,fully_connected_layers}.py`, revision
+`96b7cd1c75914c1d2a438937a4fd340c08bebe59` of
+https://github.com/NVIDIA/physicsnemo .
+
+Complete model equations were also checked against
+`physicsnemo/sym/models/{fourier_net,highway_fourier_net,modified_fourier_net,
+multiscale_fourier_net,dgm,siren,multiplicative_filter_net}.py`, revision
+`0c5f18c31d03d46ec0cc3ef4ccbf761a956dd38c` of
+https://github.com/NVIDIA/physicsnemo-sym .
+
+Margam modifications: plain tensor pointwise I/O and fixed [0,1] domain scaling;
+shared network construction for scalar/u-v-p PINNs; Torch-only seeded frequency
+and Gamma sampling; bounded concrete UI settings; no key/dictionary Arch wrappers,
+weight normalisation, adaptive activation parameters, or PhysicsNeMo runtime.
+Smooth tanh/SiLU/sine activations are selectable where supported. The original
+Margam fully connected implementation and defaults are unchanged.
+
+Gabor uses a softplus positive-width parameter and a direct sum of squared distances,
+so trained widths stay positive and second derivatives remain finite at a filter
+centre. These are explicit changes from the inspected upstream Gabor layer. The
+shared pointwise and linear helpers implement only the subset used by these networks.
+No FNO, AFNO, spectral operator, graph, convolutional or attention architecture was
+imported. See `docs/neural-networks.md` for per-family contracts and differences.

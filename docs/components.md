@@ -19,7 +19,7 @@ A Python API capability is not automatically an executable UI block option.
 | Grid / random / Hammersley / stratified | `margam/components/sampling.py` | Intervals and axis-aligned rectangles; physical coordinates; no CAD runtime or adaptive samplers |
 | Loss aggregation | `margam/components/losses.py` | Fixed weighted sum of named scalar terms; Python supports finite non-negative weights; UI currently requires positive PDE/BC weights |
 | Loss metric / optimiser | `margam/backend/utils.py` | Built-in MSE and Adam only; method accepts an optimiser factory in Python; no standalone optimiser block, scheduler or UI optimiser selection |
-| Fully connected network | `margam/nn/FCNN.py` | UI uses tanh and Xavier normal with domain-bound coordinate normalisation; hidden-layer widths editable; no UI activation/architecture selection |
+| Pointwise neural networks | `margam/nn/`; [network guide](neural-networks.md) | Original FCNN plus angular/Fourier, highway/modified/multiscale Fourier, DGM, SIREN and multiplicative Fourier/Gabor; architecture-specific settings; no neural operators |
 | Poisson template | `margam/templates/poisson.py` | Scalar constant-source interval/rectangle problem; constant Dirichlet or outward derivative BCs; independent rectangle-side sampling |
 | Heat demo | `margam/templates/heat.py` | Configures the same Poisson method and explicit outputs; no transient heat solver |
 | Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; scalar plots or u/v/p tables; explicit CSV export; reference required only for comparison; ParaView deferred |

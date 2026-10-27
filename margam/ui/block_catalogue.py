@@ -41,7 +41,7 @@ CAPABILITIES = {
     'predefined_pde': ('PDE family, coefficient, forcing/diffusivity', 'Tested equation presets only. Alternative to PDE residual; BCs and references remain separate.'),
     'pde': ('Physics, residual expressions, viscosity/coefficient', 'Scalar residual or steady 2D incompressible u/v/p. No transient system or extra pointwise inputs.'),
     'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
-    'network': ('Hidden-layer widths, initialisation seed', 'Fully connected tanh / Xavier normal, fixed domain normalisation. No architecture selector.'),
+    'network': ('Architecture, hidden layers, seed and per-architecture options', 'Pointwise fully connected, Fourier MLP/features, highway/modified/multiscale Fourier, DGM, SIREN and multiplicative Fourier/Gabor networks. Shared by baseline and SA. No neural operators.'),
     'method': ('Variant, updates, learning rate, loss weights, device', 'Baseline or equal-constant hard Dirichlet PINN; fixed-sample full-batch Adam. No LBFGS or adaptive sampling.'),
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction or u/v/p table request; no reference assumed.'),
     'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),

@@ -61,6 +61,14 @@ The startup/reset rectangle Poisson graph has no output blocks. Examples provide
 explicit output wiring. Scalar results use the existing plots; coupled u/v/p
 results use tables and full CSV. [Problem catalogue](docs/problem-examples.md).
 
+### Choose a network
+
+Select **Neural network → Architecture** for the original FCNN, angular Fourier MLP,
+Fourier features, highway/modified/multiscale Fourier, DGM, SIREN, or multiplicative
+Fourier/Gabor. The same choices work with baseline and SA-PINN. Each has its own
+settings, preserved inside compact recipes. No neural operators or PhysicsNeMo
+runtime dependency are included. [Network guide](docs/neural-networks.md).
+
 ### Compact or expanded PINNs
 
 Use **File → Insert PINN recipe** to insert baseline or self-adaptive PINN compact
@@ -128,6 +136,9 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
 # Equal-budget baseline / SA comparison; save a new evidence file
 .venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19 --output benchmark-results/sa-poisson-new.json
 
+# Pointwise network compatibility study: ten architectures × baseline/SA, one seed
+.venv/bin/python -m examples.benchmark_pointwise_networks --iterations 700 --seed 7 --output benchmark-results/pointwise-networks-new.json
+
 # Heat study (9 runs); choose a fresh output filename to preserve recorded evidence
 .venv/bin/python -m examples.benchmark_heat_accuracy --output benchmark-results/heat-study-new.json
 
@@ -142,7 +153,7 @@ per-seed errors and weight summaries. It refuses to overwrite an existing file.
 Full local experiments belong in ignored `benchmark-results/`; curated evidence
 belongs in `assets/benchmarks/` and is indexed by [recorded results](docs/results.md).
 
-Latest implementation validation: **78 tests, 75 passed, 3 CUDA skips** on the
+Latest implementation validation: **88 tests, 85 passed, 3 CUDA skips** on the
 27 October 2026 CPU environment. [Validation scope](docs/validation.md).
 The SA smoke comparison improved one of three seeds and was slightly worse for the
 other two; it is not a reproduction of the paper's stiff benchmarks. The heat study
@@ -189,5 +200,5 @@ commits and keep source/results organised. Attribution: [THIRD_PARTY.md](THIRD_P
 licence: [LICENSE](LICENSE).
 
 Full 3D/non-planar geometry, ParaView, transient UI physics, multiple simultaneous
-method roots, standalone optimiser blocks and broader network architectures remain
+method roots, standalone optimiser blocks and neural-operator architectures remain
 outside current support. [TODO](docs/todo.md) records deferred work.

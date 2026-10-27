@@ -6,6 +6,7 @@ here. Other methods can reuse components without branching this trainer.
 import torch
 from copy import deepcopy
 import hashlib
+import json
 from ..backend import choose_optimiser, loss_metric
 from ..components import weighted_loss
 
@@ -154,14 +155,24 @@ class PINN:
         """Tensor/primitive checkpoint for this baseline recipe, not a pickled model."""
         self._require_compiled()
         if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
-        return deepcopy({'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
-                         'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history})
+        state={'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
+               'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history}
+        if hasattr(self.network,'_margam_spec'):state['network_spec']=self.network._margam_spec
+        return deepcopy(state)
 
     def load_training_state(self,state):
         self._require_compiled()
-        if not isinstance(state,dict) or set(state)!={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}:
+        fields={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}
+        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec'}:
             raise ValueError('Invalid baseline checkpoint.')
         if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets differ from the current files or sampling recipe.')
+        expected_spec=getattr(self.network,'_margam_spec',None)
+        if 'network_spec' in state:
+            try:matches=json.dumps(state['network_spec'],sort_keys=True,allow_nan=False)==json.dumps(expected_spec,sort_keys=True,allow_nan=False)
+            except (TypeError,ValueError):matches=False
+            if not matches:raise ValueError('Checkpoint network architecture/settings differ from this recipe.')
+        elif expected_spec is not None and (expected_spec['type']!='fcnn' or expected_spec['options']):
+            raise ValueError('This architecture requires a network settings checkpoint.')
         steps=state['iter']
         if type(steps) is not int or not 0<=steps<=100000 or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
             raise ValueError('Checkpoint history does not match its step count.')

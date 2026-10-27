@@ -16,8 +16,9 @@ The block library's Baseline PINN entry inserts the compact form. Insertion adds
 components without replacing an existing method: remove the old trainer/network
 if building on an existing example, or collapse that trainer directly.
 
-The compact form exposes training steps, learning rate and device. It contains a
+The compact form exposes training steps, learning rate and device. It defaults to a
 seeded tanh fully connected network, loss weights and full-batch Adam training.
+The selected pointwise architecture and its options are also retained.
 PDE residual and boundary-condition inputs stay outside. Geometry and sampling
 also stay outside and can be edited using their existing blocks. Outputs connect
 to the recipe's PINN run port just as they connect to the original trainer.
@@ -25,9 +26,9 @@ to the recipe's PINN run port just as they connect to the original trainer.
 Double-click the compact block, use its inspector button, or right-click and
 choose **Expand into components**. This opens its two editable components directly
 on the canvas: Neural network → PINN method. There is no separate nested editor.
-Change layer widths/seed, or delete the network and connect a replacement supported
-Neural network block. The existing network port contract supplies domain coordinates
-and scalar u or coupled u/v/p outputs; it does not accept arbitrary architectures.
+Choose an [architecture](neural-networks.md), edit widths/seed/options, or delete
+the network and connect a replacement supported Neural network block. The existing network port contract supplies domain coordinates
+and scalar u or coupled u/v/p outputs; it accepts the implemented pointwise architectures, not neural operators.
 Loss weights are edited on the expanded trainer. Adam is currently the only UI
 optimiser; there is no nonfunctional optimiser selector.
 
@@ -44,7 +45,7 @@ baseline recipe. Unsupported or incomplete graphs still fail validation.
 
 ## Persistence and checks
 
-Model format 9 stores compact recipes while reading formats 1–8. Compact
+Model format 10 stores compact recipes while reading formats 1–9. Compact
 settings contain the complete component parameters; loading a saved model does
 not replace them with recipe defaults. Copy/paste gives the block a fresh identity.
 Expand/collapse and expanded insertion are each one undoable edit. They are disabled

@@ -34,7 +34,7 @@ geometry, theme and collapsed library groups persist independently of models.
 ## Build the graph
 
 The expanded problem consists of domain → interior sampler → PDE residual,
-domain → boundary points → boundary condition, a network, and a trainer consuming
+domain → boundary points → boundary condition, a selected pointwise network, and a trainer consuming
 the PDE/BC/network inputs. Compact recipes hide the network/trainer pair.
 
 Settings belong to the blocks. Execution follows one method root's typed inputs;
@@ -51,7 +51,7 @@ arbitrary cyclic simulations are not supported.
 | PDE residual | Restricted scalar expression or steady u/v/p residuals; blank scalar expression retains constant-source Poisson |
 | Predefined PDE | Equation family, coefficient, coordinate forcing and supported diffusivity/viscosity |
 | Boundary condition | Per-set/component Dirichlet, Neumann or custom operator/target; flow pressure gauge |
-| Neural network | Tanh fully connected hidden widths and independent initialisation seed |
+| Neural network | Pointwise architecture, architecture-specific options, hidden widths and independent seed |
 | PINN method | Baseline/hard-Dirichlet variant, Adam settings and loss weights |
 | Self-adaptive trainer | Network and mask rates, initial mask/cap, optional adaptive BCs, global loss weights |
 
@@ -165,7 +165,7 @@ marks unsaved edits; saving marks the current undo position clean.
 
 | Persistence | Contents and limits |
 | --- | --- |
-| Model JSON (`.margam.json`, current format 9, reads 1–8) | Owned graph settings, IDs, positions and expressions; no weights, results, layout or undo history; incomplete drafts can be saved |
+| Model JSON (`.margam.json`, current format 10, reads 1–9) | Owned graph settings, IDs, positions and expressions; no weights, results, layout or undo history; incomplete drafts can be saved |
 | Run archive (`.margam-run.pt`, current format 2) | Model, requested predictions/metrics, retained monitor histories, network and Adam state; SA also includes masks and ascent optimiser |
 | Desktop preferences/recovery | Layout/theme/library groups and per-session unsaved model drafts; no trained numerical state |
 
@@ -193,3 +193,7 @@ Per-session recovery files are locked; active sessions are skipped, abandoned dr
 can be recovered as unsaved models, and clean close removes that session's draft.
 Recovery does not reopen plots. [Current limits](components.md) and [TODO](todo.md)
 list unsupported/deferred behaviour.
+
+All network options are documented in the [network guide](neural-networks.md),
+including smooth-derivative requirements, equal-width restrictions and the recorded
+compatibility study. Changing architecture resets its options as one undoable edit.

@@ -2,6 +2,7 @@
 from PySide6.QtCore import Qt, Signal, QMimeData, QEvent
 from PySide6.QtGui import QDrag
 from .icons import icon
+from ..components.network_config import NETWORK_NAMES
 from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME, KINDS, describe_block
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel
 
@@ -95,6 +96,7 @@ class BlockLibrary(QWidget):
             for index in range(group.childCount()):
                 item = group.child(index)
                 match = not query or query in item.text(0).casefold() or query in group.text(0).casefold()
+                if item.data(0,Qt.ItemDataRole.UserRole)=='Neural network':match |= query in ' '.join(NETWORK_NAMES.values()).casefold()
                 item.setHidden(not match)
                 visible |= match
             group.setHidden(not visible)
