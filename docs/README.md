@@ -14,6 +14,7 @@ Current implementation and recorded evidence, reviewed 27 October 2026. Start wi
 | Which pointwise networks are available? | [Neural networks](neural-networks.md) |
 | How does learning-rate annealing work? | [LRA method and safeguards](lra-pinn.md) |
 | How does SA-PINN work, and which settings matter? | [SA-PINN method](self-adaptive-pinn.md) |
+| What is the paper Helmholtz example? | [Fourier/LRA Helmholtz](helmholtz.md) |
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |
 | How do prepared GeoSampler points enter Margam? | [Planar data contract](geosampler-contract.md) |
 | What is implemented and what are the limits? | [Component capability index](components.md) |

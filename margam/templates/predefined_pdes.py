@@ -13,6 +13,7 @@ class PDEPreset:
 
 PREDEFINED_PDES = {
     'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle')),
+    'helmholtz': PDEPreset('Helmholtz', 'Δu + c u = f(x,y), c = k²', ('Interval','Rectangle')),
     'reaction_diffusion': PDEPreset('Reaction–diffusion', '−Δu + c u = f(x,y)', ('Interval','Rectangle')),
     'advection_diffusion_1d': PDEPreset('Advection–diffusion · 1D', 'c uₓ − ν uₓₓ = f(x)', ('Interval',)),
     'incompressible_2d': PDEPreset('Steady incompressible flow · 2D', 'Momentum x/y + ∂u/∂x + ∂v/∂y = 0', ('Rectangle',),False),
@@ -26,6 +27,7 @@ def resolve_predefined(config):
     config.physics='scalar'
     if config.pde_preset=='poisson':
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
+    elif config.pde_preset=='helmholtz':config.pde_expression='laplace(u)+c*u-'+forcing
     elif config.pde_preset=='reaction_diffusion':config.pde_expression='-laplace(u)+c*u-'+forcing
     elif config.pde_preset=='advection_diffusion_1d':config.pde_expression='c*D(u,x)-('+repr(config.viscosity)+')*D(D(u,x),x)-'+forcing
     else:
@@ -39,3 +41,5 @@ def validate_predefined(config):
     if config.shape not in preset.shapes:raise ValueError(preset.label+' supports '+', '.join(preset.shapes)+'.')
     if preset.forcing:Expression(config.pde_forcing,len(config.bounds[0]),target=True)
     if config.pde_preset=='advection_diffusion_1d' and config.viscosity<=0:raise ValueError('Advection–diffusion requires positive diffusivity ν.')
+
+    if config.pde_preset=='helmholtz' and config.source<0:raise ValueError('Helmholtz requires non-negative c = k².')

@@ -1428,7 +1428,7 @@ class Window(QMainWindow):
             equation=QLabel(preset.equation);equation.setWordWrap(True);self.form.addRow(equation)
             note=QLabel('Domains: '+', '.join(preset.shapes)+'. Boundary conditions and reference values are configured separately. Use PDE residual for editable equations.');note.setWordWrap(True);self.form.addRow(note)
             if self.config.pde_preset!='incompressible_2d':
-                self.field('Coefficient c','source')
+                self.field('Squared wavenumber k²' if self.config.pde_preset=='helmholtz' else 'Coefficient c','source')
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
                 forcing.editingFinished.connect(lambda e=forcing:self.change('pde_forcing',e.text().strip()))
                 self.form.addRow('Forcing f',forcing)

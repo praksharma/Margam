@@ -74,3 +74,10 @@ No upstream code or proposed network architecture was copied. Margam's per-named
 constraint grouping, existing static loss scales, gradient floor and coefficient
 cap are documented in `docs/lra-pinn.md`; the v1 raw denominator and new-estimate
 EMA convention are explicit.
+
+The Helmholtz example in `margam/templates/examples.py` follows section 2.2,
+equations (8)–(10), of the same supplied v1 paper. The authors'
+[Helmholtz2D.py](https://github.com/PredictiveIntelligenceLab/GradientPathologiesPINNs/blob/master/Helmholtz/Helmholtz2D.py)
+confirms the square domain, sine modes (1,4), forcing and k²=1. No TensorFlow
+network or trainer code was copied. Margam uses its existing Fourier feature NN,
+fixed samples, LRA guards and separate output/reference contracts.

@@ -39,3 +39,13 @@ Reproduce with `.venv/bin/python -m examples.compare_lra --iterations 2000`
 The supplied v1 algorithm and Margam's guards/grouping are distinguished in the
 [method guide](../../docs/lra-pinn.md). Source hashes identify this working-tree
 implementation even though the recorded parent commit predates this change.
+
+## Helmholtz with existing Fourier/LRA, 27 October 2026
+
+[helmholtz-fourier-lra-2026-10-27.json](helmholtz-fourier-lra-2026-10-27.json)
+records three network seeds, 5,000 updates each, full configuration, selected source
+hashes, field/residual errors and all LRA balancing events. The problem comes from
+the supplied LRA paper; the Fourier architecture, fixed samples and training
+protocol are Margam choices. Reproduce with `.venv/bin/python -m examples.run_helmholtz`
+and use a fresh filename with `--output` when saving. See [problem guide](../../docs/helmholtz.md)
+and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).

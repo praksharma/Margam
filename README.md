@@ -12,7 +12,7 @@ problems cover scalar interval/rectangle physics and steady 2D incompressible fl
 [Documentation index](docs/README.md) · [Illustrated walkthrough](docs/visual-guide.md) ·
 [Desktop guide](docs/ui-prototype.md) ·
 [Methods and components](docs/components.md) · [Recorded results](docs/results.md) ·
-[LRA method and safeguards](docs/lra-pinn.md) · [Remaining work](docs/todo.md)
+[LRA method and safeguards](docs/lra-pinn.md) · [2D Helmholtz example](docs/helmholtz.md) · [Remaining work](docs/todo.md)
 
 ## Run the desktop
 
@@ -149,6 +149,7 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
 # Equal-budget baseline / SA comparison; save a new evidence file
 .venv/bin/python -m examples.compare_self_adaptive --iterations 700 --seeds 7 11 19 --output benchmark-results/sa-poisson-new.json
 .venv/bin/python -m examples.compare_lra --iterations 2000 --seeds 7 11 19 --output benchmark-results/lra-poisson-new.json
+.venv/bin/python -m examples.run_helmholtz --iterations 5000 --seeds 7 11 19 --output benchmark-results/helmholtz-new.json
 
 # Pointwise network compatibility study: ten architectures × baseline/SA, one seed
 .venv/bin/python -m examples.benchmark_pointwise_networks --iterations 700 --seed 7 --output benchmark-results/pointwise-networks-new.json

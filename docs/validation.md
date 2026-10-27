@@ -4,10 +4,11 @@
 
 ## Latest implementation suite
 
-27 October 2026: **93 tests: 90 passed, 3 CUDA skips**, full suite after LRA was
-added (109.8 seconds). The preceding network milestone was 88 tests (85 passed,
-3 CUDA skips); SA-only was 78 tests (75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu, PySide6 6.12.0,
-NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
+27 October 2026: **95 tests: 92 passed, 3 CUDA skips**, full suite after the
+Helmholtz example (134.9 seconds). Previous milestones: LRA 93 tests (90 passed,
+3 CUDA skips); networks 88 tests (85 passed, 3 CUDA skips); SA-only 78 tests
+(75 passed, 3 CUDA skips). Runtime: Python 3.14.8, Torch 2.14.1+cpu,
+PySide6 6.12.0, NumPy 2.5.2. These counts are a dated record, not a permanently fixed test count.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
@@ -28,7 +29,7 @@ For exact current setups/assertions, follow the linked source.
 
 | Check | Acceptance / meaning | Test source |
 | --- | --- | --- |
-| Manufactured scalar examples | Reference PDE residual max <1e-4; prediction RMSE <0.05 after 700 CPU updates | [predefined examples](../tests/test_predefined_examples.py) |
+| Manufactured scalar examples | Reference PDE residual max <1e-4; prediction RMSE <0.05 after 700 CPU updates (2,000 for Helmholtz) | [predefined examples](../tests/test_predefined_examples.py) |
 | SA interval Poisson | RMSE <0.04 after 700 updates, with BC masks off and on | [SA numerical checks](../tests/test_self_adaptive.py) |
 | SA update equations | Two-point exact λ gradient [1,4]; network descends while masks ascend | [SA numerical checks](../tests/test_self_adaptive.py) |
 | SA resume | Identical loss history, masks and predictions for 30+20 resumed vs uninterrupted updates | [SA numerical checks](../tests/test_self_adaptive.py) |
@@ -114,3 +115,14 @@ training, restricted run loading, resume and optional weight-summary action.
 The configured cap100 Poisson example also participates in the existing
 700-update RMSE <0.05 example check. Measured 2,000-update comparisons, including
 the high-cap failures to fit, are in [results](results.md#learning-rate-annealing-pinn).
+
+## Helmholtz validation
+
+`test_helmholtz.py` checks the supplied paper's square domain, sine modes, forcing
+and positive mass sign, zero edge values, Fourier feature settings and rejection
+of negative k². Its real Qt workflow uses the full configured samples with a short
+25+5 update budget to verify background execution, explicit references, model/run
+round-trips, compact recipes and resume. Those lifecycle updates do not establish
+accuracy. The separate manufactured-example check trains 2,000 updates and tests
+RMSE <0.05 over random points across the full square. Measured 5,000-update results
+are in the [Helmholtz study](results.md#helmholtz-with-fourier-lra-pinn).

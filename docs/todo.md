@@ -255,3 +255,7 @@ paused; operational training monitors and basic rectangle previews remain useful
 
 - [x] Group five 1D problems in File → Examples → 1D examples, with explicit
   2D labels on the parent-menu cases.
+
+- [x] Add the LRA paper 2D Helmholtz problem with existing Fourier features, explicit
+  forcing/reference and soft BCs; verify desktop/persistence and record CPU results.
+  Paper-architecture and full stochastic benchmark reproduction remain outside this example.

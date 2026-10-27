@@ -9,6 +9,7 @@ training budgets or software/hardware environments.
 
 | Study | Evidence date / device | What it supports |
 | --- | --- | --- |
+| [Helmholtz Fourier/LRA](#helmholtz-with-fourier-lra-pinn) | 27 October 2026 / CPU | Three seeds on the paper problem using an existing Fourier network; changed training protocol |
 | [LRA interval Poisson](#learning-rate-annealing-pinn) | 27 October 2026 / CPU | Equal-budget three-seed comparison and strong coefficient-cap sensitivity; baseline wins here |
 | [Baseline vs SA interval Poisson](#baseline-vs-self-adaptive-pinn) | 27 October 2026 / CPU | Working pointwise adaptation; mixed three-seed comparison |
 | [Heat: soft vs hard Dirichlet](#steady-heat-soft-and-hard-dirichlet) | 27 October 2026 / CPU | Lower field error for hard BC enforcement on this supported box problem |
@@ -242,3 +243,40 @@ minibatch protocol, aggregated-boundary grouping or proposed architecture. It
 establishes reproducible implemented behaviour and parameter sensitivity, not a
 ranking of PINN methods. The older SA table uses a different rate, BC weight and
 budget and must not be compared directly. CUDA remains unvalidated.
+
+## Helmholtz with Fourier LRA-PINN
+
+[Exact settings, source hashes and balancing histories](../assets/benchmarks/helmholtz-fourier-lra-2026-10-27.json) · [Problem and differences from the paper](helmholtz.md)
+
+Equation Δu+u=(1−17π²)sin(πx)sin(4πy), square [−1,1]², zero soft Dirichlet
+edges, explicit reference sin(πx)sin(4πy). Existing axis Fourier NN with frequencies
+1–4, tanh hidden widths 32×32; 1,024 fixed grid interior points, 64 points per edge.
+LRA alpha 0.9, interval 10, floor 1e-12, cap 10,000; static PDE weight 1 and mean
+BC weight 1 (0.25 per edge). Full-batch Adam rate 0.001 for 5,000 updates.
+
+Errors after the last update, evaluated on a separate 101×101 grid including
+edges. CPU float32, one Torch thread, Python 3.14.8, Torch 2.14.1+cpu. Training
+wall time excludes construction/evaluation; other validation ran concurrently,
+so these timings are approximate local observations, not performance comparisons.
+
+| Network seed | RMSE | Relative L2 | Maximum absolute error | Dense-grid PDE residual RMS | Maximum boundary error | Training seconds |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 7 | 0.006596973 | 0.01332589 | 0.0193499 | 3.345981 | 0.005976811 | 37.38 |
+| 11 | 0.007249426 | 0.01464384 | 0.01861102 | 2.952915 | 0.006694295 | 36.79 |
+| 19 | 0.004117785 | 0.008317927 | 0.01758766 | 3.896296 | 0.006933656 | 38.33 |
+
+Mean relative L2 across these three seeds: **1.210%**. This is a small
+three-seed demonstration, not a ten-trial estimate or a comparison against other
+architectures/methods. Known frequencies informed the feature choice.
+
+Dense-grid residuals are higher than the final training-point residuals; the
+locations differ, and the evaluation grid also includes boundary points where
+training enforces values rather than PDE residuals. Good field accuracy does not
+establish uniformly small PDE residuals. Boundary conditions are soft, so their
+errors are measured rather than assumed zero. The raw JSON retains each edge's
+maximum error and final pre-update physical losses. Changing weighted objectives
+are not used as field-accuracy scores.
+
+The paper's problem is retained; its architecture, stochastic/resampling protocol,
+base-rate schedule and 40,000-update training budget are not. These results do
+not reproduce or establish superiority to its reported values. CUDA is untested.

@@ -1,0 +1,129 @@
+{
+  "configuration": {
+    "shape": "Rectangle",
+    "x_min": -1.0,
+    "x_max": 1.0,
+    "y_min": -1.0,
+    "y_max": 1.0,
+    "points": 1024,
+    "boundary_points": 64,
+    "sampling": "grid",
+    "seed": 7,
+    "source": 1.0,
+    "layers": [
+      32,
+      32
+    ],
+    "iterations": 5000,
+    "lr": 0.001,
+    "device": "cpu",
+    "pde_weight": 1.0,
+    "boundary_weight": 1.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {},
+    "pde_expression": "laplace(u)+c*u-((1-17*pi*pi)*sin(pi*x)*sin(4*pi*y))",
+    "bc_targets": {},
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": 7,
+    "method": "lra",
+    "physics": "scalar",
+    "viscosity": 0.01,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "helmholtz",
+    "pde_forcing": "(1-17*pi*pi)*sin(pi*x)*sin(4*pi*y)",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "lra_alpha": 0.9,
+    "lra_interval": 10,
+    "lra_epsilon": 1e-12,
+    "lra_max": 10000.0,
+    "network_type": "fourier",
+    "network_options": {
+      "encoding": "axis",
+      "frequencies": [
+        1.0,
+        2.0,
+        3.0,
+        4.0
+      ],
+      "scale": 1.0
+    }
+  },
+  "scope": "Actual Qt configuration screenshots before training; no accuracy claim",
+  "qt_platform": "offscreen"
+}

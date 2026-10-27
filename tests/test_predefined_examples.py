@@ -17,11 +17,12 @@ class ExampleTests(unittest.TestCase):
                 config=example_config(key)
                 model=build_pinn(config)
                 dimensions=1 if config.shape=='Interval' else 2
-                points=torch.rand(23,dimensions,requires_grad=True)
+                lower,upper=(torch.tensor(v) for v in config.bounds)
+                points=(lower+(upper-lower)*torch.rand(23,dimensions)).requires_grad_()
                 reference=Expression(example.reference,dimensions,target=True)
                 self.assertLess(model.problem.residual(points,reference(points)).abs().max().item(),1e-4)
-                model.train(700,display_every=0)
-                points=torch.rand(100,dimensions)
+                model.train(2000 if key=='helmholtz_lra_2d' else 700,display_every=0)
+                points=lower+(upper-lower)*torch.rand(100,dimensions)
                 self.assertLess((model.predict(points)-reference(points)).square().mean().sqrt().item(),.05)
 
     def test_preset_validation_and_legacy_defaults(self):

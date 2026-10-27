@@ -1,14 +1,15 @@
 # Problem examples and predefined equations
 
 File → Examples is the catalogue of complete runnable desktop graphs. Existing
-Poisson, heat and steady incompressible flow examples remain available. Four
-additional manufactured cases exercise the new Predefined PDE block:
+Poisson, heat and steady incompressible flow examples remain available. Additional
+manufactured cases exercise the new Predefined PDE block:
 
-| Example | Equation | Reference on the unit domain |
+| Example | Equation | Reference (domain noted where different) |
 | --- | --- | --- |
 | Interval Poisson | uₓₓ + 2 = 0 | x(1−x) |
 | Interval reaction–diffusion | −uₓₓ + u = (π²+1)sin(πx) | sin(πx) |
 | Interval advection–diffusion | uₓ − 0.1uₓₓ = 1 | x |
+| 2D Helmholtz — Fourier LRA-PINN | Δu + u = (1−17π²)sin(πx)sin(4πy), on [−1,1]² | sin(πx)sin(4πy) |
 | Rectangle sine Poisson | Δu + 2π²sin(πx)sin(πy) = 0 | sin(πx)sin(πy) |
 
 Dirichlet endpoints/edges follow the reference. The advection case has unequal
@@ -18,7 +19,7 @@ Plot, Comparison and CSV Export are wired explicitly; no view opens automaticall
 
 Predefined PDE and PDE residual are alternatives, not sequential stages. The
 former chooses a tested family (Poisson, reaction–diffusion, interval
-advection–diffusion, or steady incompressible flow); the latter retains editable
+advection–diffusion, Helmholtz, or steady incompressible flow); the latter retains editable
 restricted expressions. Both produce the same typed residual connection. The
 supported graph has one PDE producer. A preset supplies neither BCs nor a
 reference solution. Source/coefficient, coordinate forcing and viscosity settings
@@ -32,8 +33,8 @@ Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
 Model format 11 persists block settings and compact recipes and reads earlier formats 1–10.
-The tests check manufactured residuals and train each new example for 700 CPU
-updates with RMS prediction error below 0.05. This is a regression check for these
+The tests check manufactured residuals and train the smaller examples for 700 CPU
+updates, Helmholtz for 2,000, with RMS prediction error below 0.05 across the full domain. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.
 
 File → Examples also includes Poisson — SA-PINN, using its
@@ -52,3 +53,7 @@ with explicit 2D names. No new dimension or physics support is implied.
 ![Dimension-labelled Examples menu](../assets/screenshots/examples-dimensions.png)
 
 ![1D example submenu](../assets/screenshots/examples-1d.png)
+
+The [2D Helmholtz example](helmholtz.md) uses the LRA paper problem with our existing
+Fourier-feature network, not its proposed architecture. It remains in the parent
+Examples menu as an explicitly 2D case.
