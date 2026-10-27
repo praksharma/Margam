@@ -336,3 +336,9 @@ The older `Model(domain, network)` API and borrowed geometry stack are retired.
 - [Third-party attribution](THIRD_PARTY.md) and [licence](LICENSE).
 
 Existing benchmark results remain in the ignored `benchmark-results/` folder.
+
+Block clipboard: select blocks, then use Edit or their context menu for Copy/Cut/Paste.
+Ctrl+C/X/V are scoped to the canvas so property editors keep normal text editing.
+Paste creates fresh block IDs, preserves internal wires and output settings, and
+is one undo step. Pasted core blocks still use the current template configuration;
+duplicate core blocks must be resolved before training.

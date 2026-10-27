@@ -120,7 +120,8 @@ structured catalogue metadata driving all library descriptions remains future wo
 - [x] Keep these sample previews limited to rectangles. Do not create a general
   geometry renderer or implicit 3D preview path without a justified requirement.
 - [x] Add Undo/Redo actions to block context menus.
-- [ ] Add clipboard actions when those operations exist.
+- [x] Add undoable block Copy/Cut/Paste with fresh IDs, internal wires and
+  canvas-scoped shortcuts. Pasted core settings remain template-backed.
 
 - [x] Add pointer-centred wheel zoom, mouse/Space panning, zoom controls and fit-to-model.
 

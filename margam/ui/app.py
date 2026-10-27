@@ -3,6 +3,7 @@ from uuid import uuid4
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
+import json
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.heat import heat_demo_config
 from ..components.outputs import OutputRequest
@@ -15,9 +16,9 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
-from .model_document import capture_model, decode_document, read_model, write_model
+from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
-from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot
+from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData
 from shiboken6 import isValid
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack
 from PySide6.QtWidgets import (
@@ -271,7 +272,7 @@ class Canvas(QGraphicsScene):
             requests.append(OutputRequest(node.identifier,node.kind,node.settings['resolution'],reference))
         return requests
 
-    def delete_selection(self):
+    def delete_selection(self,text='Delete selection'):
         if self.locked:return
         self.cancel_wire()
         selected = set(self.selectedItems())
@@ -291,7 +292,7 @@ class Canvas(QGraphicsScene):
                 self.addItem(wire);self.wires.append(wire);wire.update_path()
                 wire.setSelected(wire in selected)
             self.graphChanged.emit()
-        self.edit('Delete selection',remove,restore)
+        self.edit(text,remove,restore)
 
 
 
@@ -313,6 +314,7 @@ class Window(QMainWindow):
         self.quick_insert = None
         self._closing = False
         self.model_path = None
+        self._paste_serial = 0
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
         configure_theme(QApplication.instance(),'light')
@@ -419,6 +421,14 @@ class Window(QMainWindow):
         self.undo_stack.redoTextChanged.connect(self.update_history_actions)
         self.update_history_actions()
         edit.addSeparator()
+        self.copy_action=edit.addAction('Copy blocks');self.copy_action.setShortcut('Ctrl+C')
+        self.cut_action=edit.addAction('Cut blocks');self.cut_action.setShortcut('Ctrl+X')
+        self.paste_action=edit.addAction('Paste blocks');self.paste_action.setShortcut('Ctrl+V')
+        for action,callback in [(self.copy_action,self.copy_blocks),(self.cut_action,self.cut_blocks),(self.paste_action,self.paste_blocks)]:
+            action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            self.view.addAction(action);action.triggered.connect(callback)
+        QApplication.clipboard().dataChanged.connect(self.update_clipboard_actions)
+        edit.addSeparator()
         edit.addAction(self.delete_action)
         self.delete_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.view.addAction(self.delete_action)
@@ -468,6 +478,71 @@ class Window(QMainWindow):
             'A Comparison needs a model and an explicit Reference. References support intervals and rectangles with equal constant Dirichlet edges.'))
         help_menu.addAction('About Margam').triggered.connect(lambda:QMessageBox.about(
             self,'Margam','A visual builder for physics-informed neural networks.\nCurrent executable template: scalar Poisson on intervals and rectangles.'))
+
+    def update_clipboard_actions(self):
+        if not hasattr(self,'copy_action'):return
+        selected=any(node.isSelected() for node in self.scene.nodes())
+        locked=self.is_running() or self.scene.locked
+        self.copy_action.setEnabled(selected)
+        self.cut_action.setEnabled(selected and not locked)
+        mime=QApplication.clipboard().mimeData()
+        self.paste_action.setEnabled(not locked and mime is not None and mime.hasFormat('application/x-margam-model-fragment'))
+
+    def copy_blocks(self):
+        identifiers={node.identifier for node in self.scene.nodes() if node.isSelected()}
+        if not identifiers:return False
+        document=capture_model(self)
+        document['nodes']=[n for n in document['nodes'] if n['id'] in identifiers]
+        document['wires']=[wire for wire in document['wires'] if wire['source'] in identifiers and wire['target'] in identifiers]
+        content=json.dumps(document,allow_nan=False).encode('utf-8')
+        if len(content)>MAX_BYTES:return False
+        mime=QMimeData();mime.setData('application/x-margam-model-fragment',content)
+        QApplication.clipboard().setMimeData(mime);self._paste_serial=0
+        return True
+
+    def cut_blocks(self):
+        if self.is_running() or self.scene.locked:return False
+        if not self.copy_blocks():return False
+        self.scene.delete_selection('Cut blocks');return True
+
+    def paste_blocks(self):
+        if self.is_running() or self.scene.locked:return False
+        mime=QApplication.clipboard().mimeData()
+        if mime is None or not mime.hasFormat('application/x-margam-model-fragment'):return False
+        try:
+            content=bytes(mime.data('application/x-margam-model-fragment'))
+            if len(content)>MAX_BYTES:raise ValueError('Copied model exceeds 4 MiB.')
+            data=json.loads(content,object_pairs_hook=unique_keys)
+            _,records,connections=decode_document(data)
+            if not records:return False
+        except (ValueError,TypeError,KeyError,RecursionError,UnicodeError,OverflowError) as error:
+            self.statusBar().showMessage('Cannot paste blocks: '+str(error));return False
+        self._paste_serial+=1
+        center=self.view.mapToScene(self.view.viewport().rect().center())+QPointF(20,20)*(self._paste_serial-1)
+        origin=QPointF((min(n['position'][0] for n in records)+max(n['position'][0] for n in records)+170)/2,
+                       (min(n['position'][1] for n in records)+max(n['position'][1] for n in records)+80)/2)
+        titles={kind:title for title,kind in KINDS.items()};nodes={};staged=Canvas()
+        for record in records:
+            point=QPointF(*record['position'])+center-origin
+            node=Node(titles[record['kind']],'',point.x(),point.y())
+            node.title=record['title'];node.settings=deepcopy(record['settings'])
+            staged.addItem(node);nodes[record['id']]=node
+        for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
+        wires=list(staged.wires);staged.wires.clear()
+        for wire in wires:staged.removeItem(wire)
+        for node in nodes.values():staged.removeItem(node)
+        def add():
+            self.scene.clearSelection()
+            for node in nodes.values():self.scene.addItem(node);node.setSelected(True)
+            for wire in wires:self.scene.addItem(wire);self.scene.wires.append(wire);wire.update_path()
+            self.graph_changed()
+        def remove():
+            for wire in wires:self.scene.wires.remove(wire);self.scene.removeItem(wire)
+            for node in nodes.values():self.scene.removeItem(node)
+            self.graph_changed()
+        self.push_edit('Paste blocks',add,remove)
+        self.statusBar().showMessage('Pasted blocks · core blocks still use the current template settings')
+        return True
 
     def update_document_title(self,*args):
         name=Path(self.model_path).name if self.model_path else 'Untitled'
@@ -640,6 +715,7 @@ class Window(QMainWindow):
         remove.setEnabled(not self.is_running())
         remove.triggered.connect(lambda:self.delete_block(node))
         menu.addSeparator()
+        menu.addAction(self.copy_action);menu.addAction(self.cut_action);menu.addAction(self.paste_action)
         menu.addAction(self.undo_action);menu.addAction(self.redo_action)
         menu.addAction('Help').triggered.connect(lambda:self.block_help(node))
         return menu
@@ -904,6 +980,7 @@ class Window(QMainWindow):
         nodes=[i for i in self.scene.selectedItems() if isinstance(i,Node)]
         node=nodes[0] if len(nodes)==1 else None
         self.name.setText(node.title if node else ('Multiple blocks selected' if len(nodes)>1 else ''))
+        self.update_clipboard_actions()
         self.open_output_action.setEnabled(node is not None and node.kind in OUTPUT_KINDS)
         self.detail.setText(node.detail if node else '')
         body=QWidget();self.form=QFormLayout(body)
@@ -1050,7 +1127,7 @@ class Window(QMainWindow):
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
-        self.update_history_actions()
+        self.update_history_actions();self.update_clipboard_actions()
 
     def start_training(self):
         if self.is_running() or not self.validate_model():return False
