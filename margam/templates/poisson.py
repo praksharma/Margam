@@ -265,17 +265,21 @@ def sample_problem(config):
     return interior, boundaries
 
 
-def build_pinn(config):
+def build_pinn(config,*,initial_teacher=None,time_origin=None):
     from ..components.adaptive_sampling import configure_adaptive_sampling
-    return configure_adaptive_sampling(_build_pinn(config),config)
+    config.validate()
+    if config.method=='expert' and config.expert_settings['windows']>1:
+        from ..methods.time_marching import TimeMarchingPINN
+        return TimeMarchingPINN(config)
+    return configure_adaptive_sampling(_build_pinn(config,initial_teacher=initial_teacher,time_origin=time_origin),config)
 
 
-def _build_pinn(config):
+def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
     if config.is_paper_case:
         from .expert_examples import build_case
-        return build_case(config)
+        return build_case(config,initial_teacher=initial_teacher,time_origin=time_origin)
     if config.physics=='incompressible_2d':
         from .incompressible_flow import build_flow_pinn
         return build_flow_pinn(config)
@@ -333,7 +337,7 @@ def _build_pinn(config):
         return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
     if config.method=='expert':
         from ..methods.expert import ExpertPINN
-        return ExpertPINN(problem,network,config=config,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
+        return ExpertPINN(problem,network,config=config,weights=weights,loss_formulation=config.loss_formulation,initial_teacher=initial_teacher).compile(lr=config.lr,device=config.device)
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
         return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)

@@ -127,7 +127,7 @@ def residual(c,x,values):
     return torch.cat((mx,my,div),1)
 
 
-def make_constraints(c,network,sets):
+def make_constraints(c,network,sets,*,time_origin=None):
     import torch
     from ..components.problem import PointConstraint
     result=[];key=c.pde_preset
@@ -171,26 +171,26 @@ def make_constraints(c,network,sets):
             if name=='inlet':
                 def target(x):
                     velocity=4*c.bc_values['left']*(x[:,1:2]-c.y_min)*(c.y_max-x[:,1:2])/(c.y_max-c.y_min)**2
-                    if key=='expert_cylinder':velocity=velocity*(1-torch.exp(-(x[:,-1:]-c.t_min)/c.startup_time))
+                    if key=='expert_cylinder':velocity=velocity*(1-torch.exp(-(x[:,-1:]-(c.t_min if time_origin is None else time_origin))/c.startup_time))
                     return torch.cat((velocity,torch.zeros_like(velocity)),1)
         result.append(PointConstraint(name,torch.tensor(rows),target,operator))
     return result
 
 
-def build_case(c):
+def build_case(c,*,initial_teacher=None,time_origin=None):
     import torch
     from ..components.problem import PINNProblem
     from ..nn.factory import build_network
     from ..methods.pinn import PINN
     network=build_network(c);points,sets=samples(c)
-    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(points),make_constraints(c,network,sets))
+    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(points),make_constraints(c,network,sets,time_origin=time_origin))
     def refresh(phase):
         points,sets=samples(c,phase)
-        return points,make_constraints(c,network,sets)
+        return points,make_constraints(c,network,sets,time_origin=time_origin)
     problem.refresh_samples=refresh
     if c.method=='expert':
         from ..methods.expert import ExpertPINN
-        model=ExpertPINN(problem,network,config=c,weights=c.loss_weights)
+        model=ExpertPINN(problem,network,config=c,weights=c.loss_weights,initial_teacher=initial_teacher)
     else:model=PINN(problem,network,weights=c.loss_weights)
     return model.compile(lr=c.lr,device=c.device)
 

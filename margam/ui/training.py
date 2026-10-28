@@ -40,7 +40,7 @@ class TrainingWorker(QThread):
                 if hasattr(model,'expert_summary'):self.expert_progress.emit(model.expert_summary())
                 if model.sampling_controller is not None:
                     for event in model.sampling_controller.history[events:]:self.sampling_updated.emit(dict(event))
-            outputs = evaluate_outputs(model, config, self.requests)
+            outputs = evaluate_outputs(model, config, self.requests) if getattr(model,'outputs_ready',True) else {}
             self.completed.emit({'outputs': outputs, 'steps': model.iter,
                                  'cancelled': self.cancel_event.is_set(),
                                  'device': str(model.device), 'config': config})

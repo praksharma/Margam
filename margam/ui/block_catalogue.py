@@ -33,8 +33,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
-    'expert_recipe':('Expert’s Guide v1 recommended pipeline','Margam label, not the paper’s method name. Replaceable Fourier/RWF network, causal time loss, L2-gradient group balancing, fresh uniform samples and Adam decay. Concrete scalar and 2D flow examples; no NTK/curriculum or RAR/importance combination.'),
-    'expert_method':('Causal chunks, gradient-norm EMA and Adam decay','Fresh random batches on the supported scalar and 2D flow cases. Paper v1 sum of group gradient norms; old-weight momentum. Network remains replaceable. Mean MSE only; no imported/adaptive points.'),
+    'expert_recipe':('Expert’s Guide v1 recommended pipeline','Margam label, not the paper’s method name. Replaceable Fourier/RWF network, causal time loss, L2-gradient group balancing, fresh uniform samples and Adam decay. Concrete scalar and 2D flow examples; Optional NTK/time marching; no Reynolds curriculum or RAR/importance combination.'),
+    'expert_method':('Causal chunks, gradient-norm EMA and Adam decay','Fresh random batches on the supported scalar and 2D flow cases. Paper v1 gradient norms or NTK diagonal traces; old-weight momentum; optional sequential time windows. Network remains replaceable. Mean MSE only; no imported/adaptive points.'),
     'lra_recipe': ('LRA recipe · compact or expanded', 'Existing pointwise network plus gradient-balanced Adam trainer. One coefficient per named constraint, max-PDE/mean-constraint gradient ratio and EMA; no paper architecture or base-rate decay.'),
     'lra_method': ('Learning-rate annealing loss balancing', 'Wang et al. supplied v1 Algorithm 1: raw constraint-gradient denominator, EMA alpha is the new-estimate fraction. PDE weight fixed; each constraint gets a scalar coefficient. Not per-point attention or an Adam-rate scheduler.'),
     'sa_recipe': ('Self-adaptive recipe · compact or expanded', 'Per-point squared masks; Adam descent for the network and ascent for masks. Fixed samples; PDE adaptation by default; optional BC adaptation. No GP resampling or L-BFGS phase.'),

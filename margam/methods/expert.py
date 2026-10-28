@@ -1,7 +1,7 @@
 """Expert's Guide v1: causal residuals, L2-gradient balancing and fresh samples.
 
 Independent PyTorch implementation from the paper equations, not a JAX port.
-First concrete workflow: scalar 1D space–time, existing soft boundary/initial sets.
+Concrete scalar and flow workflows; optional NTK diagonal balancing.
 """
 from copy import deepcopy
 from dataclasses import asdict,replace
@@ -12,9 +12,10 @@ from ..components.expert_config import validate_expert_problem
 
 
 class ExpertPINN(PINN):
-    def __init__(self,problem,network,*,config,weights=None,loss_formulation='mean'):
+    def __init__(self,problem,network,*,config,weights=None,loss_formulation='mean',initial_teacher=None):
         super().__init__(problem,network,weights=weights,loss_formulation=loss_formulation)
         self.sample_config=deepcopy(config);self.options=deepcopy(config.expert_settings)
+        self.initial_teacher=initial_teacher
         self._expert_fingerprint=None
 
     def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):
@@ -28,7 +29,8 @@ class ExpertPINN(PINN):
         self.initial_lr=lr;self.coefficients=dict(pde=1.,**({'initial':1.} if self.sample_config.is_time_dependent else {}),boundary=1.);self.balance_history=[];self._causal_min=1.
         description=asdict(self.sample_config)
         for key in ('iterations','device'):description.pop(key)
-        self.expert_signature=dict(algorithm='expert-guide-v1-sum-grad-norm',configuration=description,lr=lr,weights=deepcopy(self.weights))
+        self.expert_signature=dict(algorithm='expert-guide-v1-ntk-diagonal' if self.options['balance_mode']=='ntk' else 'expert-guide-v1-sum-grad-norm',configuration=description,lr=lr,weights=deepcopy(self.weights))
+        if self.initial_teacher is not None:self.expert_signature['initial_teacher']=self.initial_teacher.identity
         self._fresh_samples(0)
         self._expert_fingerprint=self._canonical_fingerprint()
         return self
@@ -40,6 +42,7 @@ class ExpertPINN(PINN):
             self._constraints=[]
             for condition in conditions:
                 points=self._points(condition.points);self._constraints.append((condition,points,self._target(condition.target,points)))
+            self._transfer_initial()
             return
         from ..templates.poisson import sample_problem
         config=deepcopy(self.sample_config)
@@ -56,6 +59,13 @@ class ExpertPINN(PINN):
         self.collocation_point_labels=self._target(self.problem.residual_target,self.collocation_point_sample)
         samples={config.constraint_name(side):rows for side,rows in boundaries.items()}
         self._constraints=[(condition,self._points(samples[condition.name]),self._target(condition.target,self._points(samples[condition.name]))) for condition,_,_ in self._constraints]
+
+        self._transfer_initial()
+
+    def _transfer_initial(self):
+        if self.initial_teacher is None:return
+        from dataclasses import replace
+        self._constraints=[(replace(condition,target=self.initial_teacher),points,self._target(self.initial_teacher,points)) if condition.name=='initial' else (condition,points,target) for condition,points,target in self._constraints]
 
     def _canonical_fingerprint(self):
         # Evaluate target expressions on CPU for device-independent archive identity.
@@ -98,13 +108,35 @@ class ExpertPINN(PINN):
         groups['boundary']=sum(value*self.weights.get(name,1.) for name,value in terms.items() if name not in ('pde','initial'))
         return groups
 
+    @staticmethod
+    def ntk_trace(values,parameters,maximum,seed=0):
+        """Diagonal Jacobian Gram trace; row subsampling estimates the full trace."""
+        if values.ndim==1:values=values[:,None]
+        count=len(values);take=min(count,maximum)
+        indices=torch.randperm(count,generator=torch.Generator().manual_seed(seed))[:take].to(values.device) if take<count else torch.arange(count,device=values.device)
+        trace=0.
+        for value in values[indices].flatten():
+            gradients=torch.autograd.grad(value,parameters,retain_graph=True,allow_unused=True) if value.requires_grad else (None,)*len(parameters)
+            if any(g is not None and not torch.isfinite(g).all() for g in gradients):raise FloatingPointError('Non-finite NTK diagonal; no update was taken.')
+            trace+=sum(g.detach().double().square().sum().item() for g in gradients if g is not None)
+        return trace*count/take
+
+    def _ntk_traces(self):
+        parameters=tuple(p for p in self.network.parameters() if p.requires_grad)
+        traces=dict.fromkeys(self.coefficients,0.)
+        for index,(name,(values,_,_)) in enumerate(self.loss_samples().items()):
+            group=name if name in ('pde','initial') else 'boundary'
+            traces[group]+=self.ntk_trace(values,parameters,self.options['ntk_points'],(self.sample_config.seed+104729*self.iter+7919*index)%2**31)
+        return traces
+
     def _balanced(self,groups):
         parameters=tuple(p for p in self.network.parameters() if p.requires_grad)
         norms={}
-        for name,loss in groups.items():
+        for name,loss in (groups.items() if self.options['balance_mode']=='gradient' else []):
             gradients=torch.autograd.grad(loss,parameters,retain_graph=True,allow_unused=True) if loss.requires_grad else (None,)*len(parameters)
             if any(g is not None and not torch.isfinite(g).all() for g in gradients):raise FloatingPointError('Non-finite Expert PINN gradient norm; no update was taken.')
             norms[name]=math.sqrt(sum(g.detach().double().square().sum().item() for g in gradients if g is not None))
+        if self.options['balance_mode']=='ntk':norms=self._ntk_traces()
         reference=sum(norms.values());next_weights={};targets={}
         for name,old in self.coefficients.items():
             target=None if norms[name]<=self.options['gradient_floor'] else min(reference/norms[name],self.options['weight_cap'])
@@ -137,7 +169,7 @@ class ExpertPINN(PINN):
             if display_every and self.iter%display_every==0:print(f"Iteration: {self.iter} Expert loss: {record['total']:.6g}")
         return self.training_history
 
-    def expert_summary(self):return dict(step=self.iter,coefficients=deepcopy(self.coefficients),learning_rate=self.optimiser.param_groups[0]['lr'],minimum_causal_weight=self._causal_min)
+    def expert_summary(self):return dict(step=self.iter,coefficients=deepcopy(self.coefficients),learning_rate=self.optimiser.param_groups[0]['lr'],minimum_causal_weight=self._causal_min,balance_mode=self.options['balance_mode'])
 
     def training_state(self):
         state=super().training_state()
@@ -147,6 +179,17 @@ class ExpertPINN(PINN):
     def load_training_state(self,state):
         self._require_compiled()
         payload=state.get('expert') if isinstance(state,dict) else None
+        if isinstance(payload,dict) and isinstance(payload.get('settings'),dict):
+            payload=deepcopy(payload)
+            from ..components.expert_config import expert_defaults
+            configuration=payload['settings'].get('configuration',{})
+            if not isinstance(configuration,dict):raise ValueError('Invalid Expert PINN checkpoint configuration.')
+            if isinstance(configuration,dict):
+                from ..templates.poisson import PoissonConfig
+                defaults=asdict(PoissonConfig())
+                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):configuration.setdefault(key,defaults[key])
+            saved=configuration.get('expert_settings')
+            if isinstance(saved,dict):payload['settings']['configuration']['expert_settings']={**expert_defaults(),**saved}
         if not isinstance(payload,dict) or set(payload)!={'settings','coefficients','history'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')
         steps=state.get('iter');history=payload['history'];names=set(self.coefficients)
         if type(steps) is not int or not 0<=steps<=100000 or not isinstance(history,list) or len(history)!=steps//self.options['balance_every']:raise ValueError('Expert PINN balance history phase differs.')

@@ -128,4 +128,4 @@
   paths, and inspect capture inputs before saving screenshots. Keep real local
   filesystem paths confined to local tool operations and diagnostic UI when needed.
 
-- Expert suite examples use concrete paper-case contracts. Torus Taylor–Green and cylinder startup are explicitly labelled variations. Preserve obstacle exclusion, outlet traction, cavity corner handling and physical-time PVD frames. Torus output w is scalar vorticity, not vertical velocity. Do not claim paper accuracy or multi-window/curriculum support.
+- Expert suite examples use concrete paper-case contracts. Torus Taylor–Green and cylinder startup are explicitly labelled variations. Preserve obstacle exclusion, outlet traction, cavity corner handling and physical-time PVD frames. Torus output w is scalar vorticity, not vertical velocity. Do not claim paper accuracy or Reynolds curriculum support. NTK and sequential time marching are opt-in Expert controls; preserve detached teacher ICs, per-window Adam/EMA resets, local coordinate bounds and piecewise physical-time predictions. Reject predictions beyond trained windows and validate the complete teacher/checkpoint chain.

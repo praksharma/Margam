@@ -74,8 +74,8 @@ balance PDE/initial/boundary. Periodicity is a soft loss, not an exact periodic
 network embedding. Allen–Cahn uses the classical initial profile, whose endpoint
 derivative mismatch is handled as an initial/periodic loss, not forced corner data.
 
-There is currently **one time slab**, no multi-window time marching, and no
-Reynolds-number curriculum for the cavity. Default small networks/sample counts
+The default is **one time slab**; [optional time marching and NTK balancing](expert-training.md)
+are available in the Expert trainer. There is no Reynolds-number curriculum for the cavity. Default small networks/sample counts
 are usable starting graphs, not the paper's training configurations or accuracy
 results. No later-time analytical reference is assumed or added automatically.
 

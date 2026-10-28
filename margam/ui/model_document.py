@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -40,6 +40,9 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<17:
         c=dict(c)
         for key,value in (('t_min',0.),('t_max',1.),('cylinder_x',.2),('cylinder_y',.2),('cylinder_radius',.05),('fourth_order',100/16**4),('startup_time',.1)):c.setdefault(key,value)
+    if isinstance(c,dict) and data['version']<18 and isinstance(c.get('expert_settings'),dict):
+        from ..components.expert_config import expert_defaults
+        c=dict(c,expert_settings={**expert_defaults(),**c['expert_settings']})
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
@@ -133,6 +136,9 @@ def decode_document(data):
             if data['version']<17 and node['kind'] in ('domain','predefined_pde','bc') and isinstance(parameters,dict):
                 from .graph_model import parameters_for
                 parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
+            if data['version']<18 and isinstance(parameters,dict) and isinstance(parameters.get('expert_settings'),dict):
+                from ..components.expert_config import expert_defaults
+                parameters=dict(parameters,expert_settings={**expert_defaults(),**parameters['expert_settings']});node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='method':require(parameters['method'] in ('baseline','hard_dirichlet'),'Use the self-adaptive trainer for SA-PINN settings.')
             if node['kind'] in ('rar','importance'):
@@ -141,7 +147,7 @@ def decode_document(data):
             if node['kind']=='interior':require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':17,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':18,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -159,7 +165,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':17, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':18, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

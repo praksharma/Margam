@@ -39,3 +39,5 @@ state whether code was copied or independently implemented, and describe deliber
 differences and current limits in its guide.
 
 The [seven Expert examples](expert-examples.md) independently implement the v1 paper equations and boundary conditions. Torus Taylor–Green and cylinder startup use explicitly labelled self-contained initial fields, not the authors’ simulation datasets. Periodicity is imposed with soft derivative constraints, and the torus auxiliary-vorticity representation includes zero-mean velocity quadrature. No JAX-PI source/data is copied.
+
+Expert NTK balancing independently implements paper v1 equations 5.4–5.9 through pointwise parameter-Jacobian diagonal norms (sampled-row trace estimates, no full matrix). Sequential time marching follows section 5.3 with frozen IC transfer; per-window optimiser resets, local coordinate scaling and piecewise outputs are explicit Margam choices. See [implementation and limits](expert-training.md).

@@ -960,12 +960,19 @@ class Window(QMainWindow):
         model=self.last_run.model if self.last_run is not None else None
         if model is not None and hasattr(model,'expert_summary'):return model.expert_summary()
         checkpoint=self.loaded_checkpoint
-        if checkpoint and 'expert' in checkpoint:return dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=None)
+        if checkpoint and 'expert' in checkpoint:
+            summary=dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=None)
+            if 'marching' in checkpoint:
+                index=len(checkpoint['marching']['completed']);options=self.config.expert_settings
+                summary.update(window=index+1,windows=options['windows'],window_step=checkpoint['iter']-index*options['window_steps'])
+            return summary
         return None
 
     def show_expert_summary(self):
         summary=self.expert_summary()
-        text='Expert’s Guide v1 · paper sum-gradient-norm balancing\n'
+        mode=self.config.expert_settings['balance_mode']
+        text='Expert’s Guide v1 · '+('NTK diagonal-trace' if mode=='ntk' else 'sum-gradient-norm')+' balancing\n'
+        if summary and 'window' in summary:text+=f"Time window {summary['window']}/{summary['windows']} · local update {summary['window_step']}\n"
         if summary:
             text+=f"Update {summary['step']} · Adam rate {summary['learning_rate']:.6g}\n"
             text+='\n'.join(f'{name}: {value:.6g}' for name,value in summary['coefficients'].items())
@@ -1396,23 +1403,34 @@ class Window(QMainWindow):
 
     def expert_settings_fields(self):
         self.property_section('Expert PINN training')
-        specs=[('Causal time chunks','chunks',1,128),('Causal epsilon','causal_epsilon',0.,100.),
+        mode=QComboBox();mode.setObjectName('expert_balance_mode');mode.addItem('Gradient norm (recommended)','gradient');mode.addItem('NTK diagonal trace','ntk')
+        mode.setCurrentIndex(mode.findData(self.config.expert_settings['balance_mode']));mode.currentIndexChanged.connect(lambda i,w=mode:self.change_expert_option('balance_mode',w.itemData(i)));self.form.addRow('Loss balancing',mode)
+        specs=[('NTK sampled rows per set','ntk_points',1,256),('Time windows','windows',1,32),('Updates per window','window_steps',1,100000),('Causal time chunks','chunks',1,128),('Causal epsilon','causal_epsilon',0.,100.),
                ('Balance every (updates)','balance_every',1,100000),('EMA old-weight momentum','momentum',0.,.9999),
                ('Adam decay factor','decay_rate',.001,1.),('Adam decay steps','decay_steps',1,100000)]
         for label,key,low,high in specs:
-            widget=QSpinBox() if key in ('chunks','balance_every','decay_steps') else QDoubleSpinBox()
+            widget=QSpinBox() if key in ('ntk_points','windows','window_steps','chunks','balance_every','decay_steps') else QDoubleSpinBox()
             widget.setObjectName('expert_'+key);widget.setKeyboardTracking(False);widget.setRange(low,high)
             if isinstance(widget,QDoubleSpinBox):widget.setDecimals(4)
             widget.setValue(self.config.expert_settings[key])
+            if key in ('windows','window_steps') and not self.config.is_time_dependent:widget.setEnabled(False)
+            if key=='ntk_points' and self.config.expert_settings['balance_mode']!='ntk':widget.setEnabled(False)
             if key in ('chunks','causal_epsilon') and not self.config.is_time_dependent:widget.setEnabled(False)
             widget.valueChanged.connect(lambda value,k=key:self.change_expert_option(k,value))
             self.form.addRow(label,widget)
-        note=QLabel('Margam name for the Expert’s Guide v1 pipeline. Random case samples refresh each update. Transient PDE counts divide into causal time chunks; steady cases omit causal/initial weighting. Mean MSE; no NTK or time-window curriculum.')
+        note=QLabel('Margam name for the Expert’s Guide v1 pipeline. Random case samples refresh each update. Transient PDE counts divide into causal time chunks; steady cases omit causal/initial weighting. Mean MSE. NTK estimates traces from sampled rows per named set and costs extra Jacobian evaluations. Time windows transfer frozen final predictions; Adam/EMA/decay reset per window. Window edits set the total update budget. No Reynolds curriculum or sweeps.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_expert_option(self,key,value):
         options=deepcopy(self.config.expert_settings);options[key]=value
-        self.change('expert_settings',options)
+        schedule=key in ('windows','window_steps')
+        if schedule:self.undo_stack.beginMacro('Change time-window schedule')
+        try:
+            self.change('expert_settings',options)
+            if schedule:self.change('iterations',min(100000,options['windows']*options['window_steps']))
+        finally:
+            if schedule:self.undo_stack.endMacro()
+        if key=='balance_mode':self.selection_changed()
 
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
@@ -1884,6 +1902,7 @@ class Window(QMainWindow):
         return True
 
     def expert_training_progress(self,summary):
+        if 'window' in summary:self.log.appendPlainText(f"Time window {summary['window']}/{summary['windows']} · local update {summary['window_step']} · trained through t={summary['trained_time_end']:.6g}" + (' · full-domain outputs held until the last window' if not summary['outputs_ready'] else ''))
         self.log.appendPlainText(f"Expert update {summary['step']}: Adam rate {summary['learning_rate']:.5g}, minimum causal weight {summary['minimum_causal_weight']:.5g}")
 
     def sampling_progress(self,event):

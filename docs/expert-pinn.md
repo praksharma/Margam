@@ -154,6 +154,12 @@ The implementations are therefore not claimed numerically equivalent. Exact JAX
 random-number streams, default architecture, datasets and published accuracy are
 not reproduced.
 
+## NTK and time marching
+
+The trainer now offers [NTK diagonal balancing and sequential time windows](expert-training.md),
+with frozen initial-field handoff, local optimiser resets and piecewise physical-time outputs.
+Gradient balancing and one window remain the defaults.
+
 ## Current limits
 
 Expert supports scalar **1D space–time** and the concrete steady/2D transient
@@ -161,12 +167,12 @@ Expert supports scalar **1D space–time** and the concrete steady/2D transient
 strata and per-update sampling policy need an explicit combined design before
 those can be composed. Use the other supported trainers for those samplers.
 
-NTK-diagonal balancing, curriculum/multiple time windows, automatic physical
+Reynolds-number curriculum, automatic physical
 non-dimensionalisation, exact periodic embeddings, modified JAX MLP architecture,
 mini-batch gradient accumulation, distributed training and later PirateNet/ActNet
 methods are not implemented by this recipe. These remain separate extensions.
 
-Model format 17 stores Expert examples and recipe/trainer settings and reads earlier formats.
+Model format 18 stores Expert examples and recipe/trainer settings and reads earlier formats.
 Run archives use restricted tensor/primitive loading. Sampling seeds are derived
 from the configured seed and update index, and the last active batch is regenerated
 on resume. Mode/options/physics changes reject resume; iteration budget and device

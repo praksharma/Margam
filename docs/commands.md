@@ -141,3 +141,13 @@ python -m examples.capture_expert_suite --overwrite
 ```
 
 See [case contracts and recorded results](expert-examples.md).
+
+## Expert NTK and time marching
+
+```bash
+python -m examples.expert_extensions --device cpu
+python -m examples.expert_extensions --device cuda
+python -m examples.capture_expert_extensions --overwrite
+```
+
+See [controls and correctness evidence](expert-training.md).

@@ -374,8 +374,9 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Fresh seeded random interior/BC/initial batches, temporal stratification and exact checkpoint continuation.
 - [x] One-file compact/expanded recipe, Burgers example, controls and block-owned diagnostics.
 - [x] CPU/CUDA formulas/archive/UI checks, screenshots and reproducible short-run evidence.
-- [ ] NTK-diagonal alternative balancing, separately verified against its equations.
-- [ ] Multi-window curriculum with explicit transfer of the previous window’s final prediction to the next IC.
+- [x] NTK-diagonal alternative balancing, verified against explicit parameter Jacobians; configurable sampled-row trace estimates.
+- [x] Sequential time marching with frozen final-prediction transfer, per-window optimiser resets, piecewise outputs and archive resume.
 - [ ] Explicit composition of causal strata with residual-adaptive sampling/imported candidate sets.
 - [x] Seven concrete Expert paper examples: scalar periodic problems, steady flow, torus and transient cylinder; labelled self-contained IC variations, dedicated submenu and physical-time exports.
-- [ ] Multi-window time marching and cavity Reynolds curriculum; separate future work, not claimed by the single-slab examples.
+- [x] Optional time marching for Expert transient examples; defaults retain a single window.
+- Reynolds curriculum and grid/parameter sweeps are outside the requested paper scope.

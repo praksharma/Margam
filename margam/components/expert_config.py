@@ -4,13 +4,15 @@ import math
 
 def expert_defaults():
     return dict(chunks=8,causal_epsilon=1.,balance_every=1000,momentum=.9,
-                decay_rate=.9,decay_steps=2000,gradient_floor=1e-12,weight_cap=1e6)
+                decay_rate=.9,decay_steps=2000,gradient_floor=1e-12,weight_cap=1e6,balance_mode='gradient',ntk_points=16,windows=1,window_steps=1000)
 
 
 def validate_expert_settings(settings):
     if not isinstance(settings,dict) or set(settings)!=set(expert_defaults()):raise ValueError('Incomplete Expert PINN settings.')
-    for key,limit in (('chunks',128),('balance_every',100000),('decay_steps',100000)):
+    if settings['balance_mode'] not in ('gradient','ntk'):raise ValueError('Choose gradient or NTK balancing.')
+    for key,limit in (('ntk_points',256),('windows',32),('window_steps',100000),('chunks',128),('balance_every',100000),('decay_steps',100000)):
         if type(settings[key]) is not int or not 1<=settings[key]<=limit:raise ValueError('Invalid Expert PINN '+key+'.')
+    if settings['windows']*settings['window_steps']>100000:raise ValueError('Time-marching schedule exceeds 100000 updates.')
     for key,low,high in (('causal_epsilon',0.,100.),('momentum',0.,.9999),('decay_rate',.001,1.),('gradient_floor',1e-16,1.),('weight_cap',1.,1e12)):
         value=settings[key]
         if type(value) not in (int,float) or not math.isfinite(value) or not low<=value<=high:raise ValueError('Invalid Expert PINN '+key+'.')
@@ -18,6 +20,7 @@ def validate_expert_settings(settings):
 
 def validate_expert_problem(config):
     validate_expert_settings(config.expert_settings)
+    if config.expert_settings['windows']>1 and not config.is_time_dependent:raise ValueError('Time marching requires a transient problem.')
     if config.is_paper_case:
         from ..templates.expert_examples import validate_case
         validate_case(config)

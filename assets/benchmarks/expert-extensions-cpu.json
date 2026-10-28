@@ -1,0 +1,1831 @@
+{
+  "scope": "Software correctness only, not convergence or paper accuracy reproduction.",
+  "resume_tolerance": {
+    "rtol": 1e-05,
+    "atol": 1e-07,
+    "cpu_requires_bitwise_identity": true,
+    "cuda_requires_numerical_equivalence": true
+  },
+  "torch": "2.14.1+cu130",
+  "device": "cpu",
+  "gpu": null,
+  "cases": {
+    "expert_burgers": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": -1.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {
+          "left": {
+            "points": 64,
+            "method": "random",
+            "seed": 8
+          },
+          "right": {
+            "points": 64,
+            "method": "random",
+            "seed": 9
+          },
+          "bottom": {
+            "points": 64,
+            "method": "random",
+            "seed": 10
+          }
+        },
+        "pde_expression": "D(u,t)+u*D(u,x)-nu*D(D(u,x),x)",
+        "bc_targets": {
+          "bottom": "-sin(pi*x)"
+        },
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "scalar",
+        "viscosity": 0.003183098861837907,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "burgers_1d",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.0668398376802224,
+          "initial": 1.6744616976191677,
+          "boundary": 1.2683230066792062
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.6933276653289795,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 1.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 0.3268865942955017,
+        "left": 0.014917707070708275,
+        "right": 0.34569117426872253,
+        "initial": 0.019566522911190987,
+        "total": 0.5121129751205444
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 16981.171281813775,
+              "initial": 3589.058794912404,
+              "boundary": 7771.342754840764
+            },
+            "targets": {
+              "pde": 1.6689998799976626,
+              "initial": 7.896658832043084,
+              "boundary": 3.646933834428162
+            },
+            "weights": {
+              "pde": 1.0668999879997663,
+              "initial": 1.689665883204308,
+              "boundary": 1.264693383442816
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 16942.592525511933,
+              "initial": 3429.711186278236,
+              "boundary": 7427.6743514674245
+            },
+            "targets": {
+              "pde": 1.6408337756690277,
+              "initial": 8.105632385164434,
+              "boundary": 3.742756716005647
+            },
+            "weights": {
+              "pde": 1.0640833775669027,
+              "initial": 1.710563238516443,
+              "boundary": 1.2742756716005648
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 15362.100679428328,
+              "initial": 3309.408834113041,
+              "boundary": 6958.594324289195
+            },
+            "targets": {
+              "pde": 1.668398376802224,
+              "initial": 7.744616976191677,
+              "boundary": 3.683230066792063
+            },
+            "weights": {
+              "pde": 1.0668398376802224,
+              "initial": 1.6744616976191677,
+              "boundary": 1.2683230066792062
+            }
+          }
+        ]
+      ]
+    },
+    "expert_allen_cahn": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": -1.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 5.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.0001,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_allen_cahn",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.0015140004050802,
+          "initial": 20.89130723303591,
+          "boundary": 10.988751940379439
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.20159150660037994,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 1.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 0.8213720321655273,
+        "initial": 0.04090576246380806,
+        "periodic_x": 0.07099489867687225,
+        "total": 1.639975666999817
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 41904.23576119875,
+              "initial": 167.39104732490506,
+              "boundary": 344.6560665301232
+            },
+            "targets": {
+              "pde": 1.0122194595499379,
+              "initial": 253.39636469759353,
+              "boundary": 123.0684354466355
+            },
+            "weights": {
+              "pde": 1.0012219459549938,
+              "initial": 26.239636469759347,
+              "boundary": 13.206843544663547
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 39952.92215579062,
+              "initial": 161.0142739910815,
+              "boundary": 328.9633007861337
+            },
+            "targets": {
+              "pde": 1.012263873287331,
+              "initial": 251.17586613971844,
+              "boundary": 122.94046063472794
+            },
+            "weights": {
+              "pde": 1.001226387328733,
+              "initial": 26.017586613971837,
+              "boundary": 13.194046063472792
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 31086.109909232106,
+              "initial": 157.8523773924777,
+              "boundary": 312.79145255696204
+            },
+            "targets": {
+              "pde": 1.0151400040508016,
+              "initial": 199.91307233035914,
+              "boundary": 100.88751940379441
+            },
+            "weights": {
+              "pde": 1.0015140004050802,
+              "initial": 20.89130723303591,
+              "boundary": 10.988751940379439
+            }
+          }
+        ]
+      ]
+    },
+    "expert_advection": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": 0.0,
+        "x_max": 6.283185307179586,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 50.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.01,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_advection",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.0007701504462936,
+          "initial": 28.125917804905296,
+          "boundary": 26.090986459807098
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.1275586187839508,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 1.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 1.426466464996338,
+        "initial": 0.027461135759949684,
+        "periodic_x": 0.004080120008438826,
+        "total": 1.8669769763946533
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 48223.35108435464,
+              "initial": 169.21398290285038,
+              "boundary": 187.50253732685007
+            },
+            "targets": {
+              "pde": 1.0073971740289414,
+              "initial": 287.0925131079461,
+              "boundary": 259.09018777650294
+            },
+            "weights": {
+              "pde": 1.0007397174028942,
+              "initial": 29.6092513107946,
+              "boundary": 26.809018777650287
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 45695.57046718366,
+              "initial": 166.07113882012163,
+              "boundary": 181.45196261019993
+            },
+            "targets": {
+              "pde": 1.0076051813748532,
+              "initial": 277.2492191944629,
+              "boundary": 253.74811551377383
+            },
+            "weights": {
+              "pde": 1.0007605181374852,
+              "initial": 28.624921919446283,
+              "boundary": 26.274811551377375
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 44710.84764116343,
+              "initial": 165.48638968452283,
+              "boundary": 178.85440296552196
+            },
+            "targets": {
+              "pde": 1.0077015044629354,
+              "initial": 272.25917804905305,
+              "boundary": 251.90986459807107
+            },
+            "weights": {
+              "pde": 1.0007701504462936,
+              "initial": 28.125917804905296,
+              "boundary": 26.090986459807098
+            }
+          }
+        ]
+      ]
+    },
+    "expert_stokes": {
+      "configuration": {
+        "shape": "Channel2D",
+        "x_min": 0.0,
+        "x_max": 2.2,
+        "y_min": 0.0,
+        "y_max": 0.41,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 3,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.3,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 1,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.001,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_stokes",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 3,
+        "coefficients": {
+          "pde": 1.0070607031690473,
+          "boundary": 2.416289533858033
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 1.0,
+        "balance_mode": "ntk"
+      },
+      "final_losses": {
+        "pde": 3.399979591369629,
+        "inlet": 0.23627643287181854,
+        "outlet_traction": 0.14889223873615265,
+        "walls": 0.22264538705348969,
+        "cylinder": 0.48281824588775635,
+        "total": 4.082806587219238
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 22483.646911215794,
+              "boundary": 1587.5035699776286
+            },
+            "targets": {
+              "pde": 1.0706070316904734,
+              "boundary": 15.162895338580332
+            },
+            "weights": {
+              "pde": 1.0070607031690473,
+              "boundary": 2.416289533858033
+            }
+          }
+        ]
+      ]
+    },
+    "expert_ks": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": 0.0,
+        "x_max": 6.283185307179586,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 6.25,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.390625,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_ks",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.0022895947758401,
+          "initial": 10.713459564282722,
+          "boundary": 9.10117752511482
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.7480810284614563,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 1.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 0.2654242515563965,
+        "initial": 0.010120789520442486,
+        "periodic_x": 0.062360089272260666,
+        "total": 0.604021430015564
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 15759.699280878245,
+              "initial": 167.6576888734699,
+              "boundary": 207.20867204663716
+            },
+            "targets": {
+              "pde": 1.0237863904785889,
+              "initial": 96.23516672697902,
+              "boundary": 77.866266321937
+            },
+            "weights": {
+              "pde": 1.0023786390478588,
+              "initial": 10.5235166726979,
+              "boundary": 8.686626632193699
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 16031.910635198019,
+              "initial": 159.47591446872013,
+              "boundary": 196.71339846574355
+            },
+            "targets": {
+              "pde": 1.022217521107712,
+              "initial": 102.76222589930263,
+              "boundary": 83.30952581751248
+            },
+            "weights": {
+              "pde": 1.0022217521107712,
+              "initial": 11.176222589930262,
+              "boundary": 9.230952581751247
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 14989.691844332552,
+              "initial": 156.24352396091638,
+              "boundary": 186.95967742144742
+            },
+            "targets": {
+              "pde": 1.0228959477584008,
+              "initial": 98.13459564282724,
+              "boundary": 82.01177525114822
+            },
+            "weights": {
+              "pde": 1.0022895947758401,
+              "initial": 10.713459564282722,
+              "boundary": 9.10117752511482
+            }
+          }
+        ]
+      ]
+    },
+    "expert_cavity": {
+      "configuration": {
+        "shape": "Rectangle",
+        "x_min": 0.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 3,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 1.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 1,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.0003125,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_cavity",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 3,
+        "coefficients": {
+          "pde": 1.0147120492623225,
+          "boundary": 1.679714961640996
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 1.0,
+        "balance_mode": "ntk"
+      },
+      "final_losses": {
+        "pde": 1.6957048177719116,
+        "lid": 0.296080619096756,
+        "walls": 0.3359948694705963,
+        "pressure_gauge": 0.026233211159706116,
+        "total": 2.1186187267303467
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 9964.972953513265,
+              "boundary": 1466.0517298979871
+            },
+            "targets": {
+              "pde": 1.1471204926232252,
+              "boundary": 7.797149616409962
+            },
+            "weights": {
+              "pde": 1.0147120492623225,
+              "boundary": 1.679714961640996
+            }
+          }
+        ]
+      ]
+    },
+    "expert_torus": {
+      "configuration": {
+        "shape": "SpaceTime2D",
+        "x_min": 0.0,
+        "x_max": 6.283185307179586,
+        "y_min": 0.0,
+        "y_max": 6.283185307179586,
+        "t_min": 0.0,
+        "t_max": 10.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.01,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_torus",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.1113437050692285,
+          "initial": 1.4593759995212852,
+          "boundary": 1.1873014443333532
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.9898641705513,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 10.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 0.008830785751342773,
+        "initial": 0.07036593556404114,
+        "periodic_x": 0.004973997827619314,
+        "periodic_y": 0.02366078831255436,
+        "mean_velocity": 0.19389379024505615,
+        "total": 0.101538747549057
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 1130.1207970458222,
+              "initial": 427.022028755245,
+              "boundary": 845.7491371283588
+            },
+            "targets": {
+              "pde": 2.126225770918184,
+              "initial": 5.627091346865116,
+              "boundary": 2.8411403067913987
+            },
+            "weights": {
+              "pde": 1.1126225770918183,
+              "initial": 1.4627091346865115,
+              "boundary": 1.1841140306791398
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 1094.1124424741054,
+              "initial": 416.2205439421369,
+              "boundary": 814.5880983454534
+            },
+            "targets": {
+              "pde": 2.124937981241101,
+              "initial": 5.585791279646463,
+              "boundary": 2.8541063753373606
+            },
+            "weights": {
+              "pde": 1.11249379812411,
+              "initial": 1.4585791279646463,
+              "boundary": 1.185410637533736
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 1065.2887235952085,
+              "initial": 402.48789008780784,
+              "boundary": 783.6440444477907
+            },
+            "targets": {
+              "pde": 2.1134370506922857,
+              "initial": 5.593759995212853,
+              "boundary": 2.873014443333532
+            },
+            "weights": {
+              "pde": 1.1113437050692285,
+              "initial": 1.4593759995212852,
+              "boundary": 1.1873014443333532
+            }
+          }
+        ]
+      ]
+    },
+    "expert_cylinder": {
+      "configuration": {
+        "shape": "ChannelTime2D",
+        "x_min": 0.0,
+        "x_max": 2.2,
+        "y_min": 0.0,
+        "y_max": 0.41,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 3,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 9,
+        "lr": 0.001,
+        "device": "cpu",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 1.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 1.5,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": 7,
+        "method": "expert",
+        "expert_settings": {
+          "chunks": 2,
+          "causal_epsilon": 1.0,
+          "balance_every": 2,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "ntk",
+          "ntk_points": 2,
+          "windows": 3,
+          "window_steps": 3
+        },
+        "physics": "paper_case",
+        "viscosity": 0.001,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "expert_cylinder",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fourier",
+        "network_options": {
+          "encoding": "gaussian",
+          "features": 4,
+          "scale": 0.15915494309189535,
+          "weight_factorization": true,
+          "factor_mean": 1.0,
+          "factor_std": 0.1
+        }
+      },
+      "checkpoint_resume_identical": true,
+      "checkpoint_resume_close": true,
+      "parameter_max_abs_difference": 0.0,
+      "loss_max_abs_difference": 0.0,
+      "summary": {
+        "step": 9,
+        "coefficients": {
+          "pde": 1.0073009098871328,
+          "initial": 9.332083426887241,
+          "boundary": 2.679929880713971
+        },
+        "learning_rate": 0.0009998946450345664,
+        "minimum_causal_weight": 0.8012173175811768,
+        "balance_mode": "ntk",
+        "window": 3,
+        "windows": 3,
+        "window_step": 3,
+        "trained_time_end": 1.0,
+        "outputs_ready": true
+      },
+      "final_losses": {
+        "pde": 0.2636328637599945,
+        "initial": 0.09673764556646347,
+        "inlet": 0.4000600576400757,
+        "outlet_traction": 0.011790663003921509,
+        "walls": 0.13632017374038696,
+        "cylinder": 0.1586221158504486,
+        "total": 0.8249415159225464
+      },
+      "balance_histories": [
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 19834.40580772562,
+              "initial": 239.77107942975874,
+              "boundary": 1095.7072375639912
+            },
+            "targets": {
+              "pde": 1.0673314002919903,
+              "initial": 88.292066645682,
+              "boundary": 19.320748644304736
+            },
+            "weights": {
+              "pde": 1.006733140029199,
+              "initial": 9.729206664568197,
+              "boundary": 2.832074864430473
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 18650.23814463876,
+              "initial": 230.3213936717915,
+              "boundary": 1073.2423403482321
+            },
+            "targets": {
+              "pde": 1.0698952862644677,
+              "initial": 86.63460028855589,
+              "boundary": 18.592074807805684
+            },
+            "weights": {
+              "pde": 1.0069895286264468,
+              "initial": 9.563460028855587,
+              "boundary": 2.759207480780568
+            }
+          }
+        ],
+        [
+          {
+            "step": 2,
+            "norms": {
+              "pde": 17424.414059698753,
+              "initial": 221.73114142752524,
+              "boundary": 1050.4096274319886
+            },
+            "targets": {
+              "pde": 1.0730090988713286,
+              "initial": 84.32083426887242,
+              "boundary": 17.799298807139714
+            },
+            "weights": {
+              "pde": 1.0073009098871328,
+              "initial": 9.332083426887241,
+              "boundary": 2.679929880713971
+            }
+          }
+        ]
+      ]
+    }
+  }
+}
