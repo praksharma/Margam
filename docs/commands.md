@@ -120,3 +120,14 @@ python -m examples.capture_burgers --overwrite
 ```
 
 See [Burgers](burgers.md) for the initial condition and physical-time export.
+
+## Expert PINN
+
+```bash
+python -m examples.expert_pinn --device cpu
+python -m examples.expert_pinn --device cuda
+python -m unittest discover -s tests -p 'test_expert*.py' -v
+python -m examples.capture_expert --overwrite
+```
+
+See [Expert PINN](expert-pinn.md) for the paper version, formulas and limitations.

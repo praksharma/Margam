@@ -49,7 +49,7 @@ baseline recipe. Unsupported or incomplete graphs still fail validation.
 
 ## Persistence and checks
 
-Model format 12 stores compact recipes while reading formats 1–11. Compact
+Model format 16 stores compact recipes while reading formats 1–15. Compact
 settings contain the complete component parameters; loading a saved model does
 not replace them with recipe defaults. Copy/paste gives the block a fresh identity.
 Expand/collapse and expanded insertion are each one undoable edit. They are disabled
@@ -84,3 +84,10 @@ Optimisation settings remain in the inspector; no standalone optimiser block is
 currently implemented. Existing block names, saved models and connections stay valid.
 
 ![Separate PINN recipes and Training library categories](../assets/screenshots/library-pinn-recipes-training.png)
+
+## Expert PINN
+
+**Expert PINN** / **Expert trainer** use the same compact/expanded recipe contract,
+with one definition in `margam/recipes/expert.py`. This is Margam’s name for the
+[Expert’s Guide v1 pipeline](expert-pinn.md), not a name used by its authors. The
+first runnable case is File → Examples → 1D examples → Burgers — Expert PINN.

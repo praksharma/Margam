@@ -46,9 +46,10 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
+        require(('expert' in checkpoint)==(config.method=='expert'),'Checkpoint Expert method/state mismatch.')
         require(('lra' in checkpoint)==(config.method=='lra'),'Checkpoint LRA state/method mismatch.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
         if config.method=='self_adaptive':
@@ -90,7 +91,13 @@ def load_run(path):
     with zipfile.ZipFile(path) as archive:
         require(sum(entry.file_size for entry in archive.infolist())<=LIMIT,'Expanded run exceeds 256 MiB.')
     data=torch.load(path,map_location='cpu',weights_only=True)
-    validate_run(data)
+    config=validate_run(data)
+    if data['checkpoint'] is not None and config.method=='expert':
+        from copy import deepcopy
+        from ..templates.poisson import build_pinn
+        config=deepcopy(config);config.device='cpu'
+        model=build_pinn(config);model.load_training_state(data['checkpoint'])
+        return data
     if data['checkpoint'] is not None:
         # Validate the architecture/Adam payload without opening external input
         # files: archived predictions remain viewable if those files moved.

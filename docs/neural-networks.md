@@ -192,3 +192,13 @@ Current evidence is CPU-only; stiff/multiscale benchmarks and CUDA remain unveri
 Source provenance/licences: [THIRD_PARTY.md](../THIRD_PARTY.md). Local layer revision
 `96b7cd1…`; full PhysicsNeMo Sym models at `0c5f18c…`. These sources were inspected
 and adapted; the original checkouts were not modified.
+
+## Random weight factorization
+
+Fully connected, Fourier feature and modified Fourier networks expose optional
+**Random weight factorization** with log-scale mean/std controls. It preserves
+the initialized effective function and trains exponential row scales plus direction
+weights. Existing disabled settings preserve checkpoint architecture descriptions.
+The [Expert PINN guide](expert-pinn.md#random-weight-factorization) explains its
+paper reference, initialization and derivative checks. This is reusable outside
+the Expert recipe and is not a new neural-operator architecture.

@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import math
 import json
 from ..components.sampling import sample_box, SAMPLERS
+from ..components.expert_config import expert_defaults,validate_expert_settings,validate_expert_problem
 from ..components.expressions import Expression
 from ..components.prepared_data import read_points, validate_mapping, normal_fingerprint
 
@@ -55,6 +56,7 @@ class PoissonConfig:
     boundary_data: dict = field(default_factory=dict)
     network_seed: int | None = None
     method: str = 'baseline'
+    expert_settings: dict = field(default_factory=expert_defaults)
     physics: str = 'scalar'
     viscosity: float = .01
     flow_residuals: tuple = FLOW_RESIDUALS
@@ -167,7 +169,9 @@ class PoissonConfig:
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
         if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra'):raise ValueError('Unknown PINN method.')
+        validate_expert_settings(self.expert_settings)
+        if self.method=='expert':validate_expert_problem(self)
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -298,6 +302,9 @@ def _build_pinn(config):
     if config.method=='hard_dirichlet':
         from ..methods.hard_dirichlet import HardDirichletPINN
         return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
+    if config.method=='expert':
+        from ..methods.expert import ExpertPINN
+        return ExpertPINN(problem,network,config=config,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
         return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)

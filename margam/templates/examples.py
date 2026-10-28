@@ -11,6 +11,7 @@ class ExampleProblem:
 
 
 EXAMPLE_PROBLEMS = {
+    'expert_burgers':ExampleProblem('Burgers — Expert PINN · 1D + time','Expert’s Guide v1 pipeline; Margam label, Fourier/RWF, causal training and gradient-norm balancing.',''),
     'burgers_1d':ExampleProblem('Burgers — 1D + time','Original PINN problem: ν=0.01/π, sine initial profile, zero endpoint BCs; current Adam defaults.',''),
     'lra_poisson':ExampleProblem('Poisson — LRA-PINN','Gradient-statistic constraint balancing; coefficient cap 100; existing FCNN and explicit reference.','x*(1-x)'),
     'self_adaptive_poisson':ExampleProblem('Poisson — SA-PINN','Pointwise squared PDE masks with Adam ascent; explicit reference.','x*(1-x)'),
@@ -24,6 +25,13 @@ EXAMPLE_PROBLEMS = {
 
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
+    if identifier=='expert_burgers':
+        from .burgers import burgers_config
+        from ..recipes.expert import DEFAULTS
+        from copy import deepcopy
+        config=burgers_config()
+        for key,value in DEFAULTS.items():setattr(config,key,tuple(value) if key=='layers' else deepcopy(value))
+        return config
     if identifier=='burgers_1d':
         from .burgers import burgers_config
         return burgers_config()

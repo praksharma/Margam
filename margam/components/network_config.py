@@ -40,6 +40,12 @@ OPTION_SCHEMAS = {
 }
 
 
+RWF_OPTIONS={'weight_factorization':flag('Random weight factorization'),
+             'factor_mean':number('Log-scale initial mean',1.,-2.,2.),
+             'factor_std':number('Log-scale initial std',.1,0.,1.)}
+for _kind in ('fcnn','fourier','modified_fourier'):OPTION_SCHEMAS[_kind]=dict(OPTION_SCHEMAS[_kind],**RWF_OPTIONS)
+
+
 def network_options(kind,options):
     if not isinstance(kind,str) or kind not in NETWORK_NAMES:raise ValueError('Choose a supported pointwise neural network.')
     schema=OPTION_SCHEMAS[kind]

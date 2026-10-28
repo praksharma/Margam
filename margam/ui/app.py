@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import json
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -915,6 +915,9 @@ class Window(QMainWindow):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
+        if node.kind in ('expert_recipe','expert_method'):
+            summary=menu.addAction('Expert training summary');summary.setEnabled(not self.is_running() and self.result is not None)
+            summary.triggered.connect(self.show_expert_summary)
         if node.kind in ('lra_recipe','lra_method'):
             summary=menu.addAction('LRA loss-weight summary');summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_lra_summary)
@@ -946,6 +949,23 @@ class Window(QMainWindow):
             return dict(step=latest['step'] if latest else None,pde_max=latest['pde_max'] if latest else None,
                         terms={name:dict(coefficient=value,effective_weight=value*state['settings']['global_weights'].get(name,1.),mean_gradient=latest['means'][name] if latest else None) for name,value in state['weights'].items()})
         return {}
+
+    def expert_summary(self):
+        model=self.last_run.model if self.last_run is not None else None
+        if model is not None and hasattr(model,'expert_summary'):return model.expert_summary()
+        checkpoint=self.loaded_checkpoint
+        if checkpoint and 'expert' in checkpoint:return dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=None)
+        return None
+
+    def show_expert_summary(self):
+        summary=self.expert_summary()
+        text='Expert’s Guide v1 · paper sum-gradient-norm balancing\n'
+        if summary:
+            text+=f"Update {summary['step']} · Adam rate {summary['learning_rate']:.6g}\n"
+            text+='\n'.join(f'{name}: {value:.6g}' for name,value in summary['coefficients'].items())
+            if summary['minimum_causal_weight'] is not None:text+=f"\nMinimum causal weight: {summary['minimum_causal_weight']:.6g}"
+        else:text+='Train an Expert recipe first.'
+        QMessageBox.information(self,'Expert training summary',text)
 
     def show_lra_summary(self):
         summary=self.lra_summary()
@@ -1123,8 +1143,8 @@ class Window(QMainWindow):
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
         pde=self.make_node('Predefined PDE','',480,40)
-        if config.method in ('self_adaptive','lra'):
-            recipe=self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+        if config.method in ('self_adaptive','lra','expert'):
+            recipe=expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
             title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
             old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
@@ -1297,6 +1317,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
@@ -1367,13 +1388,33 @@ class Window(QMainWindow):
         else:self.change('interior_data',{})
         self.selection_changed()
 
+    def expert_settings_fields(self):
+        self.property_section('Expert PINN training')
+        specs=[('Causal time chunks','chunks',1,128),('Causal epsilon','causal_epsilon',0.,100.),
+               ('Balance every (updates)','balance_every',1,100000),('EMA old-weight momentum','momentum',0.,.9999),
+               ('Adam decay factor','decay_rate',.001,1.),('Adam decay steps','decay_steps',1,100000)]
+        for label,key,low,high in specs:
+            widget=QSpinBox() if key in ('chunks','balance_every','decay_steps') else QDoubleSpinBox()
+            widget.setObjectName('expert_'+key);widget.setKeyboardTracking(False);widget.setRange(low,high)
+            if isinstance(widget,QDoubleSpinBox):widget.setDecimals(4)
+            widget.setValue(self.config.expert_settings[key])
+            widget.valueChanged.connect(lambda value,k=key:self.change_expert_option(k,value))
+            self.form.addRow(label,widget)
+        note=QLabel('Margam name for the Expert’s Guide v1 pipeline. Random interior/BC/initial batches refresh each update. PDE count must divide evenly into causal time chunks. Mean MSE; scalar 1D space–time; no NTK or time-window curriculum.')
+        note.setWordWrap(True);self.form.addRow(note)
+
+    def change_expert_option(self,key,value):
+        options=deepcopy(self.config.expert_settings);options[key]=value
+        self.change('expert_settings',options)
+
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
+        if self.config.method=='expert':choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
-        note=QLabel('Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note=QLabel('Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_sampling_option(self,key,value):
@@ -1578,6 +1619,7 @@ class Window(QMainWindow):
             note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
             self.property_section('PINN method')
             self.form.addRow(QLabel(recipe.NAME))
+            if node.kind=='expert_recipe':self.expert_settings_fields()
             self.loss_formulation_field()
             for attribute in recipe.EXPOSED:
                 if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
@@ -1597,11 +1639,13 @@ class Window(QMainWindow):
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='expert_method':variant.addItem('Expert PINN','expert');variant.setEnabled(False)
             if node.kind=='lra_method':variant.addItem('Learning-rate annealing PINN','lra');variant.setEnabled(False)
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
             if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
             self.form.addRow('Method variant',variant)
+            if node.kind=='expert_method':self.expert_settings_fields()
             if node.kind=='lra_method':
                 self.form.addRow(QLabel('LRA · max PDE / mean constraint gradients\nScalar loss balancing; no base-rate decay'))
                 self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
@@ -1802,6 +1846,7 @@ class Window(QMainWindow):
         self.set_busy(True)
         self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
         self.worker.progress.connect(self.training_progress)
+        self.worker.expert_progress.connect(self.expert_training_progress)
         self.worker.sampling_updated.connect(self.sampling_progress)
         self.worker.completed.connect(self.training_completed)
         self.worker.failed.connect(self.training_failed)
@@ -1810,6 +1855,9 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Preparing samples and network…')
         self.worker.start()
         return True
+
+    def expert_training_progress(self,summary):
+        self.log.appendPlainText(f"Expert update {summary['step']}: Adam rate {summary['learning_rate']:.5g}, minimum causal weight {summary['minimum_causal_weight']:.5g}")
 
     def sampling_progress(self,event):
         self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} interior points; candidate mean residual {event['mean_residual']:.4g}, max {event['max_residual']:.4g}")

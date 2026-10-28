@@ -305,3 +305,12 @@ with current Margam defaults is exercised for 100 updates. Checkpoint continuati
 is identical, predictions/losses are finite, and nine spatial VTI frames carry
 physical times from 0 to 1. No later-time exact solution or error metric is used;
 this is not a reproduction of paper accuracy. See [Burgers](burgers.md).
+
+## Expert PINN workflow — 28 October 2026
+
+Short [CPU](../assets/benchmarks/expert-cpu.json) and
+[CUDA](../assets/benchmarks/expert-cuda.json) Burgers runs exercise causal weights,
+RWF, sum-gradient-norm updates every ten steps and Adam decay for 100 updates.
+Both retain the exact same-device trajectory after checkpoint continuation. Full
+configuration and balancing histories are recorded; no shock-reference error or
+paper accuracy is claimed. See [Expert PINN](expert-pinn.md).

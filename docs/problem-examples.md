@@ -33,8 +33,8 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 15 persists spatial/space–time block settings and compact recipes and
-reads earlier formats 1–14. Burgers has dedicated correctness checks rather than
+Model format 16 persists spatial/space–time block settings and compact recipes and
+reads earlier formats 1–15. Burgers has dedicated correctness checks rather than
 the manufactured-reference accuracy checks below.
 The tests check manufactured residuals and train the smaller examples for 700 CPU
 updates, Helmholtz for 2,000, with RMS prediction error below 0.05 across the full domain. This is a regression check for these

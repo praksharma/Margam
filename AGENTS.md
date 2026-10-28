@@ -104,6 +104,12 @@
   solution in the existing table view and export physical-time PVD line frames,
   not a VTI plane treating time as space. Do not assume an exact later-time reference.
 
+- Expert PINN is Margam’s label for Expert’s Guide v1, not an author-proposed
+  name or mixture of experts. Follow paper sum-L2-gradient-norm balancing and
+  old-weight EMA; do not substitute existing max/mean LRA. Causal weights are
+  detached and (x,t) pairs stay intact. Preserve same-device sampling/decay resume.
+  The inspected JAX-PI licence restricts copying; use independent paper-based code.
+
 ## User documentation
 
 - Keep task-based help under docs/start, docs/modeling and docs/use, with docs/index.md

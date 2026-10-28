@@ -19,8 +19,8 @@ w = Window(state_directory=False); w.show(); app.processEvents()
 library = w.library; tree = library.tree
 assert sorted(title for titles in BLOCK_GROUPS.values() for title in titles) == sorted(KINDS)
 assert tree.topLevelItemCount() == 7
-assert BLOCK_GROUPS['PINN recipes']==('Baseline PINN','Self-adaptive PINN','Learning-rate annealing PINN')
-assert BLOCK_GROUPS['Training']==('PINN method','Self-adaptive trainer','LRA trainer')
+assert BLOCK_GROUPS['PINN recipes']==('Baseline PINN','Self-adaptive PINN','Learning-rate annealing PINN','Expert PINN')
+assert BLOCK_GROUPS['Training']==('PINN method','Self-adaptive trainer','LRA trainer','Expert trainer')
 assert 'Optimisation / PINN' not in BLOCK_GROUPS
 geometry = tree.topLevelItem(0)
 before = len(w.scene.nodes())

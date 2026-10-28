@@ -365,3 +365,16 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Model/run persistence, residual/IC/export tests, CPU evidence and screenshots.
 - [ ] Optional benchmark reference dataset/solver validation of the shock profile.
 - [ ] Additional transient PDE cases and higher-dimensional space–time domains require explicit use cases.
+
+## Expert’s Guide recipe (28 October 2026)
+
+- [x] Define Expert PINN as Margam’s label for the paper v1 pipeline; document JAX differences and independent implementation.
+- [x] Reusable exponential random weight factorization for MLP/Fourier/modified Fourier networks.
+- [x] Detached causal time-stratum weighting, sum-L2-gradient-norm EMA groups and Adam exponential decay.
+- [x] Fresh seeded random interior/BC/initial batches, temporal stratification and exact checkpoint continuation.
+- [x] One-file compact/expanded recipe, Burgers example, controls and block-owned diagnostics.
+- [x] CPU/CUDA formulas/archive/UI checks, screenshots and reproducible short-run evidence.
+- [ ] NTK-diagonal alternative balancing, separately verified against its equations.
+- [ ] Multi-window curriculum with explicit transfer of the previous window’s final prediction to the next IC.
+- [ ] Explicit composition of causal strata with residual-adaptive sampling/imported candidate sets.
+- [ ] Additional physical problem contracts before extending Expert beyond scalar 1D space–time.

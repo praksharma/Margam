@@ -15,6 +15,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | Which complete problems are available? | [Examples and predefined PDEs](problem-examples.md) |
 | How do compact/expanded PINNs work? | [Recipes](pinn-recipes.md) |
 | Which pointwise networks are available? | [Neural networks](neural-networks.md) |
+| What does Margam mean by Expert PINN? | [Expert’s Guide pipeline](expert-pinn.md) |
 | How does learning-rate annealing work? | [LRA method and safeguards](lra-pinn.md) |
 | How do I integrate squared PDE/BC errors over the geometry? | [Integral loss formulation](integral-loss.md) |
 | How do residual refinement and importance sampling work? | [Adaptive sampling](adaptive-sampling.md) |

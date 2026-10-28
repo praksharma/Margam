@@ -230,3 +230,24 @@ Additional five-update Burgers CUDA checks passed for fixed sampling, RAR, and
 importance sampling with integral loss. These were targeted GPU checks; the full
 130-test run recorded above was the earlier CPU validation. The setup/device
 commands are in [the command reference](commands.md#devices-and-cpu-setup).
+
+## Expert PINN verification — 28 October 2026
+
+The full CPU/offscreen regression suite passed **139 tests**, with **5 skips**:
+four CUDA-only checks excluded from this CPU run and the unavailable optional
+VTK reader. The Expert numerical suite separately passed all **8 tests** with
+CUDA available, including real GPU training/checkpoint/archive checks. The final
+Expert UI test also passed after diagnostics were added.
+
+Checks cover the detached causal prefix and its gradient, paper v1 sum-L2-norm
+ratios/old-weight EMA/zero-gradient handling, RWF initial values and input
+derivatives, fresh temporal-stratum/IC geometry, Adam decay, same-device exact
+continuation at balance boundaries, corrupted state rejection, legacy defaults,
+compact expansion and network replacement. CPU-canonical target fingerprints
+allow GPU archives to open on CPU.
+
+Independent 100-update [CPU](../assets/benchmarks/expert-cpu.json) and
+[CUDA](../assets/benchmarks/expert-cuda.json) workflow records each contain ten
+balance events and exact same-device continuation. They establish implementation
+behaviour, not agreement with JAX or published accuracy. The illustrated manual
+build checks all 50 generated HTML pages and local links.

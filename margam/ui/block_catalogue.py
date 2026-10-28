@@ -6,8 +6,8 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe')),
-    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method')),
+    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe')),
+    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
 }
@@ -33,6 +33,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'expert_recipe':('Expert’s Guide v1 recommended pipeline','Margam label, not the paper’s method name. Replaceable Fourier/RWF network, causal time loss, L2-gradient group balancing, fresh uniform samples and Adam decay. First workflow: scalar 1D space–time; no NTK/curriculum or RAR/importance combination.'),
+    'expert_method':('Causal chunks, gradient-norm EMA and Adam decay','Fresh random batches on 1D space–time. Paper v1 sum of group gradient norms; old-weight momentum. Network remains replaceable. Mean MSE only; no imported/adaptive points.'),
     'lra_recipe': ('LRA recipe · compact or expanded', 'Existing pointwise network plus gradient-balanced Adam trainer. One coefficient per named constraint, max-PDE/mean-constraint gradient ratio and EMA; no paper architecture or base-rate decay.'),
     'lra_method': ('Learning-rate annealing loss balancing', 'Wang et al. supplied v1 Algorithm 1: raw constraint-gradient denominator, EMA alpha is the new-estimate fraction. PDE weight fixed; each constraint gets a scalar coefficient. Not per-point attention or an Adam-rate scheduler.'),
     'sa_recipe': ('Self-adaptive recipe · compact or expanded', 'Per-point squared masks; Adam descent for the network and ascent for masks. Fixed samples; PDE adaptation by default; optional BC adaptation. No GP resampling or L-BFGS phase.'),

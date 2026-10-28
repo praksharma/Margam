@@ -62,3 +62,9 @@ OUTPUTS = {
     'reference': PortSpec('output', 'Reference source', 'reference'),
     'comparison': None,
 }
+
+# Expert uses the same concrete physics/network contracts as the baseline recipe.
+INPUTS['expert_recipe']=INPUTS['recipe']
+INPUTS['expert_method']=INPUTS['method']
+OUTPUTS['expert_recipe']=OUTPUTS['recipe']
+OUTPUTS['expert_method']=OUTPUTS['method']

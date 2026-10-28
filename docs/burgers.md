@@ -90,7 +90,7 @@ initial/final bounds. Open the PVD in ParaView and press **Play**. Keep its gene
 frame directory beside the index file. Time is stored as frame timestamps, never
 as a second spatial coordinate or as training-update numbers.
 
-Saved models (format 15) and run archives retain the space–time domain, IC,
+Saved models and run archives retain the space–time domain, IC,
 network and checkpoint. Earlier model versions remain readable. Compact recipe
 expansion/collapse retains this same problem configuration.
 

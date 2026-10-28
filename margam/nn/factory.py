@@ -34,5 +34,11 @@ def build_network(config):
         from .multiplicative_filter import MultiplicativeFilterNetwork
         network=MultiplicativeFilterNetwork(inputs,outputs,layers,bounds,options,gabor=kind=='gabor_filter')
     else:raise ValueError('Unsupported pointwise neural network.')
+    if options.get('weight_factorization',False):
+        from .weight_factorization import factorize_linear_layers
+        factorize_linear_layers(network,options['factor_mean'],options['factor_std'])
+    else:
+        # Disabled options must preserve historical architecture checkpoint specs.
+        options={key:value for key,value in options.items() if key not in ('weight_factorization','factor_mean','factor_std')}
     network._margam_spec=deepcopy(dict(type=kind,options=options,layers=list(layers),inputs=inputs,outputs=outputs,bounds=[list(row) for row in bounds],seed=seed))
     return network

@@ -135,3 +135,20 @@ JCP 378 (2019), 686–707; [authors' problem description](https://maziarraissi.g
 No TensorFlow source or reference dataset is copied. Margam uses its existing
 networks and Adam trainer with editable defaults; it does not reproduce the
 paper's optimiser/budget/accuracy. See docs/burgers.md.
+
+## Expert’s Guide pipeline (Margam label: Expert PINN)
+
+The independent implementation in `margam/methods/expert.py` and exponential row
+factorization in `margam/nn/weight_factorization.py` use the mathematical algorithms
+in Wang, Sankaran, Wang and Perdikaris, *An Expert’s Guide to Training Physics-informed
+Neural Networks*, [arXiv:2308.08468v1](https://arxiv.org/abs/2308.08468), supplied locally
+as expertPINN.pdf. The paper is not redistributed. “Expert PINN” is Margam’s label.
+
+The [JAX-PI repository](https://github.com/PredictiveIntelligenceLab/jaxpi), inspected
+at `f944a0cd03c7f35a239955505d83bbdc5a07f831`, has a Penn research-use licence with
+restrictions on source/modification distribution. No JAX-PI code, configurations,
+data or licence-covered modifications are copied into Margam. The source was
+reviewed to identify differences; implementation is independently written from
+the paper equations using existing Margam/PyTorch components. Network reuse from
+NVIDIA remains separately attributed above. Scope, differences and deferred
+components are documented in docs/expert-pinn.md.

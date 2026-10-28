@@ -59,3 +59,6 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 
 - [Burgers CPU workflow](burgers-cpu.json): original physical setup, short training,
   exact continuation and physical-time export checks; no accuracy reproduction.
+
+- Expert PINN [CPU](expert-cpu.json) / [CUDA](expert-cuda.json): short independent
+  Expert’s Guide v1 pipeline checks, with balancing histories and exact continuation.

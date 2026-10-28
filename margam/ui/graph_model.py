@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
@@ -20,12 +20,14 @@ PARAMETERS = {
     'sa_recipe':self_adaptive.PARAMETERS,
     'lra_method':learning_rate_annealing.TRAINING_FIELDS,
     'lra_recipe':learning_rate_annealing.PARAMETERS,
+    'expert_method':expert.TRAINING_FIELDS,
+    'expert_recipe':expert.PARAMETERS,
 }
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method',*COMPACT_RECIPES) for attribute in attributes}
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
-OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS)})
+OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -44,6 +46,7 @@ def parameters_for(kind,config=None):
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
     if kind=='sa_method':result['method']='self_adaptive'
+    if kind=='expert_method':result['method']='expert'
     if kind=='lra_method':result['method']='lra'
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result

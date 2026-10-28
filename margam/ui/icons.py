@@ -23,6 +23,8 @@ PATHS = {
     'check':'M4 12l5 5L20 5',
     'play':'M7 3l14 9-14 9z',
     'stop':'M5 5h14v14H5z',
+    'expert_recipe':'M3 3h18v18H3z M7 8h10 M7 12h7 M7 16h10 M17 10v4',
+    'expert_method':'M3 18l5-5 4 2 8-12 M3 5h5 M3 9h3 M18 3h3v3',
     'lra_recipe':'M3 3h18v18H3z M6 7h4l3 5h5 M6 17h4l3-5',
     'lra_method':'M3 6h18 M3 12h18 M3 18h18 M7 3v6 M12 9v6 M17 15v6',
     'sa_recipe':'M3 3h18v18H3z M6 16l4-5 4 2 4-7 M15 6h3v3',

@@ -1,0 +1,372 @@
+{
+  "recorded_utc": "2026-10-28T15:42:48.518934+00:00",
+  "torch": "2.14.1+cu130",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "scope": "Independent Expert\u2019s Guide v1 workflow: finite training, balancing/sampling/decay and exact same-device continuation; no accuracy claim.",
+  "paper": "https://arxiv.org/abs/2308.08468",
+  "paper_version": "2308.08468v1",
+  "configuration": {
+    "shape": "SpaceTime1D",
+    "x_min": -1.0,
+    "x_max": 1.0,
+    "y_min": 0.0,
+    "y_max": 1.0,
+    "points": 128,
+    "boundary_points": 64,
+    "adaptive_sampling": {},
+    "sampling": "random",
+    "seed": 7,
+    "source": 0.0,
+    "layers": [
+      16,
+      16,
+      16
+    ],
+    "iterations": 100,
+    "lr": 0.001,
+    "device": "cuda",
+    "loss_formulation": "mean",
+    "pde_weight": 1.0,
+    "boundary_weight": 1.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {
+      "left": {
+        "points": 64,
+        "method": "random",
+        "seed": 8
+      },
+      "right": {
+        "points": 64,
+        "method": "random",
+        "seed": 9
+      },
+      "bottom": {
+        "points": 64,
+        "method": "random",
+        "seed": 10
+      }
+    },
+    "pde_expression": "D(u,t)+u*D(u,x)-nu*D(D(u,x),x)",
+    "bc_targets": {
+      "bottom": "-sin(pi*x)"
+    },
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": 7,
+    "method": "expert",
+    "expert_settings": {
+      "chunks": 8,
+      "causal_epsilon": 1.0,
+      "balance_every": 10,
+      "momentum": 0.9,
+      "decay_rate": 0.9,
+      "decay_steps": 100,
+      "gradient_floor": 1e-12,
+      "weight_cap": 1000000.0
+    },
+    "physics": "scalar",
+    "viscosity": 0.003183098861837907,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "burgers_1d",
+    "pde_forcing": "0",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "lra_alpha": 0.9,
+    "lra_interval": 10,
+    "lra_epsilon": 1e-12,
+    "lra_max": 1000000.0,
+    "network_type": "fourier",
+    "network_options": {
+      "encoding": "gaussian",
+      "features": 8,
+      "scale": 0.15915494309189535,
+      "weight_factorization": true,
+      "factor_mean": 1.0,
+      "factor_std": 0.1
+    }
+  },
+  "steps": 100,
+  "checkpoint_resume_identical": true,
+  "initial_losses": {
+    "pde": 0.03807500749826431,
+    "left": 0.016282960772514343,
+    "right": 0.03174840658903122,
+    "initial": 0.45575425028800964,
+    "total": 0.20600354671478271
+  },
+  "final_losses": {
+    "pde": 0.0008045567665249109,
+    "left": 0.009885621257126331,
+    "right": 0.006443400867283344,
+    "initial": 0.39916157722473145,
+    "total": 0.2288035899400711
+  },
+  "summary": {
+    "step": 100,
+    "coefficients": {
+      "pde": 5.993617287452806,
+      "initial": 1.5825863131127944,
+      "boundary": 2.4641051186593605
+    },
+    "learning_rate": 0.0009009487443541269,
+    "minimum_causal_weight": 0.9938398599624634
+  },
+  "balance_history": [
+    {
+      "step": 10,
+      "norms": {
+        "pde": 0.6486466403160169,
+        "initial": 1.3011418698549324,
+        "boundary": 0.7586407002650583
+      },
+      "targets": {
+        "pde": 4.175507960877553,
+        "initial": 2.0815787065079823,
+        "boundary": 3.5701079700703127
+      },
+      "weights": {
+        "pde": 1.3175507960877553,
+        "initial": 1.1081578706507982,
+        "boundary": 1.2570107970070312
+      }
+    },
+    {
+      "step": 20,
+      "norms": {
+        "pde": 0.38410154737601093,
+        "initial": 0.8529853988503631,
+        "boundary": 0.9221812490381778
+      },
+      "targets": {
+        "pde": 5.621607645206296,
+        "initial": 2.531424568550377,
+        "boundary": 2.341479180493681
+      },
+      "weights": {
+        "pde": 1.7479564809996093,
+        "initial": 1.250484540440756,
+        "boundary": 1.3654576353556962
+      }
+    },
+    {
+      "step": 30,
+      "norms": {
+        "pde": 0.32075599616977574,
+        "initial": 0.6580902506833446,
+        "boundary": 0.4554797630171295
+      },
+      "targets": {
+        "pde": 4.47170443264625,
+        "initial": 2.1795278206611957,
+        "boundary": 3.1490444281633394
+      },
+      "weights": {
+        "pde": 2.0203312761642733,
+        "initial": 1.3433888684628001,
+        "boundary": 1.5438163146364605
+      }
+    },
+    {
+      "step": 40,
+      "norms": {
+        "pde": 0.5292463923923562,
+        "initial": 0.9017609714732914,
+        "boundary": 0.4302677120210804
+      },
+      "targets": {
+        "pde": 3.516840365171302,
+        "initial": 2.0640448353467646,
+        "boundary": 4.325853471885749
+      },
+      "weights": {
+        "pde": 2.169982185064976,
+        "initial": 1.4154544651511964,
+        "boundary": 1.8220200303613894
+      }
+    },
+    {
+      "step": 50,
+      "norms": {
+        "pde": 0.15608733810823888,
+        "initial": 0.7413056852039613,
+        "boundary": 0.5282834891608473
+      },
+      "targets": {
+        "pde": 9.133838335332563,
+        "initial": 1.923196517885587,
+        "boundary": 2.698695949664574
+      },
+      "weights": {
+        "pde": 2.8663678000917345,
+        "initial": 1.4662286704246354,
+        "boundary": 1.9096876222917079
+      }
+    },
+    {
+      "step": 60,
+      "norms": {
+        "pde": 0.15748142383301827,
+        "initial": 0.7048610860634873,
+        "boundary": 0.551418837130206
+      },
+      "targets": {
+        "pde": 8.977321341250764,
+        "initial": 2.0057304552338038,
+        "boundary": 2.5638611738120245
+      },
+      "weights": {
+        "pde": 3.4774631542076375,
+        "initial": 1.5201788489055523,
+        "boundary": 1.9751049774437395
+      }
+    },
+    {
+      "step": 70,
+      "norms": {
+        "pde": 0.20185530038617358,
+        "initial": 0.9501547933785867,
+        "boundary": 0.4427999085244307
+      },
+      "targets": {
+        "pde": 7.900758608954665,
+        "initial": 1.6784738796278882,
+        "boundary": 3.6016493490336847
+      },
+      "weights": {
+        "pde": 3.9197926996823402,
+        "initial": 1.536008351977786,
+        "boundary": 2.137759414602734
+      }
+    },
+    {
+      "step": 80,
+      "norms": {
+        "pde": 0.35773886671037725,
+        "initial": 1.0235755018376222,
+        "boundary": 0.4727468431590821
+      },
+      "targets": {
+        "pde": 5.182722326920423,
+        "initial": 1.811357548493971,
+        "boundary": 3.9218902009318737
+      },
+      "weights": {
+        "pde": 4.046085662406148,
+        "initial": 1.5635432716294044,
+        "boundary": 2.316172493235648
+      }
+    },
+    {
+      "step": 90,
+      "norms": {
+        "pde": 0.1364669520846236,
+        "initial": 0.8636783979546246,
+        "boundary": 0.4376158158605382
+      },
+      "targets": {
+        "pde": 10.535599600760674,
+        "initial": 1.6646950639320293,
+        "boundary": 3.285441507804142
+      },
+      "weights": {
+        "pde": 4.695037056241601,
+        "initial": 1.573658450859667,
+        "boundary": 2.4130993946924972
+      }
+    },
+    {
+      "step": 100,
+      "norms": {
+        "pde": 0.09393618861866601,
+        "initial": 0.9987573723732518,
+        "boundary": 0.5681771008500861
+      },
+      "targets": {
+        "pde": 17.68083936835365,
+        "initial": 1.6629370733909434,
+        "boundary": 2.9231566343611335
+      },
+      "weights": {
+        "pde": 5.993617287452806,
+        "initial": 1.5825863131127944,
+        "boundary": 2.4641051186593605
+      }
+    }
+  ],
+  "reference_solution_used": false
+}
