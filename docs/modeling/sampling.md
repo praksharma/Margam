@@ -1,7 +1,8 @@
 # Geometry, sampling and prepared data
 
 You can solve simple domains without a geometry file. The built-in domain choices
-are **Interval** (a 1D line segment) and **Rectangle** (2D). Bounds are physical
+are **Interval** (a 1D line segment), **Rectangle** (2D), and **1D space–time**
+for the [Burgers initial-value problem](../burgers.md). Bounds are physical
 coordinates used by sampling, derivatives and the network's coordinate mapping.
 
 ![Select the domain block to choose its shape and physical bounds](../../assets/screenshots/manual-domain.png){ .portrait }

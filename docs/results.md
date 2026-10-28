@@ -297,3 +297,11 @@ initial scalar PDE/BC losses match mean-MSE losses times the corresponding
 area/edge length. Fixed and importance-sampled 40-update runs resume identically
 from update 15. This verifies measure application and continuation, not solution
 accuracy or convergence superiority. See [integral loss](integral-loss.md).
+
+## Burgers workflow — 28 October 2026
+
+[CPU record](../assets/benchmarks/burgers-cpu.json): the original 1D Burgers setup
+with current Margam defaults is exercised for 100 updates. Checkpoint continuation
+is identical, predictions/losses are finite, and nine spatial VTI frames carry
+physical times from 0 to 1. No later-time exact solution or error metric is used;
+this is not a reproduction of paper accuracy. See [Burgers](burgers.md).

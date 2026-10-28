@@ -354,3 +354,14 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Document NVIDIA pointwise-integral distinction, screenshot and non-unit-domain CPU evidence.
 - [ ] Imported quadrature weights and physical measures for GeoSampler point sets.
 - [ ] Integral constraints on quantities such as total flow/flux, separate from squared-error integration.
+
+## Burgers initial-value problem (28 October 2026)
+
+- [x] Original 1D viscous Burgers PDE, viscosity and sine IC/zero endpoint setup.
+- [x] Explicit x/t coordinate contract and 1D space–time geometry; no final-time BC.
+- [x] Existing BC sampler handles two spatial traces and a named initial loss.
+- [x] File → Examples → 1D examples, current networks and baseline/SA/LRA support.
+- [x] Optional x/t/u table and CSV; ParaView block emits physical-time PVD line frames.
+- [x] Model/run persistence, residual/IC/export tests, CPU evidence and screenshots.
+- [ ] Optional benchmark reference dataset/solver validation of the shock profile.
+- [ ] Additional transient PDE cases and higher-dimensional space–time domains require explicit use cases.

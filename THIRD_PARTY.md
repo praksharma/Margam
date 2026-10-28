@@ -125,3 +125,13 @@ after inspecting PhysicsNeMo Sym's `PointwiseLossNorm` in
 [loss/loss.py](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physicsnemo/sym/loss/loss.py).
 No NVIDIA code was copied. This does not implement its separate `IntegralLossNorm`
 for constraints on integrated quantities. See docs/integral-loss.md.
+
+## Original PINN Burgers benchmark
+
+The physical setup in `margam/templates/burgers.py` is from Raissi, Perdikaris and
+Karniadakis, *Physics-informed neural networks: A deep learning framework for solving
+forward and inverse problems involving nonlinear partial differential equations*,
+JCP 378 (2019), 686–707; [authors' problem description](https://maziarraissi.github.io/PINNs/).
+No TensorFlow source or reference dataset is copied. Margam uses its existing
+networks and Adam trainer with editable defaults; it does not reproduce the
+paper's optimiser/budget/accuracy. See docs/burgers.md.

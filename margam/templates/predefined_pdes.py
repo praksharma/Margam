@@ -1,5 +1,6 @@
 """Concrete PDE families; boundary conditions and reference sources remain separate."""
 from dataclasses import dataclass
+import math
 from .poisson import FLOW_RESIDUALS
 
 
@@ -12,6 +13,7 @@ class PDEPreset:
 
 
 PREDEFINED_PDES = {
+    'burgers_1d': PDEPreset('Burgers · 1D + time','uₜ + u uₓ − ν uₓₓ = 0',('SpaceTime1D',),False),
     'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle')),
     'helmholtz': PDEPreset('Helmholtz', 'Δu + c u = f(x,y), c = k²', ('Interval','Rectangle')),
     'reaction_diffusion': PDEPreset('Reaction–diffusion', '−Δu + c u = f(x,y)', ('Interval','Rectangle')),
@@ -25,7 +27,8 @@ def resolve_predefined(config):
     if config.pde_preset not in PREDEFINED_PDES:raise ValueError('Choose an implemented predefined PDE.')
     forcing='('+config.pde_forcing+')'
     config.physics='scalar'
-    if config.pde_preset=='poisson':
+    if config.pde_preset=='burgers_1d':config.pde_expression='D(u,t)+u*D(u,x)-nu*D(D(u,x),x)'
+    elif config.pde_preset=='poisson':
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
     elif config.pde_preset=='helmholtz':config.pde_expression='laplace(u)+c*u-'+forcing
     elif config.pde_preset=='reaction_diffusion':config.pde_expression='-laplace(u)+c*u-'+forcing
@@ -42,4 +45,5 @@ def validate_predefined(config):
     if preset.forcing:Expression(config.pde_forcing,len(config.bounds[0]),target=True)
     if config.pde_preset=='advection_diffusion_1d' and config.viscosity<=0:raise ValueError('Advection–diffusion requires positive diffusivity ν.')
 
+    if config.pde_preset=='burgers_1d' and (not math.isfinite(config.viscosity) or config.viscosity<=0):raise ValueError('Burgers requires positive finite viscosity ν.')
     if config.pde_preset=='helmholtz' and config.source<0:raise ValueError('Helmholtz requires non-negative c = k².')

@@ -56,3 +56,6 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 
 - [Integral loss CPU workflow](integral-loss-cpu.json): non-unit-domain measure
   scaling and exact fixed/importance checkpoint continuation; no accuracy claim.
+
+- [Burgers CPU workflow](burgers-cpu.json): original physical setup, short training,
+  exact continuation and physical-time export checks; no accuracy reproduction.

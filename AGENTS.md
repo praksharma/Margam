@@ -46,8 +46,8 @@
 - Do not continue polishing or expanding in-app field heatmaps without a concrete
   user request. Preserve existing behaviour unless the user requests removal.
 - ParaView file export was explicitly requested and is supported through its own
-  opt-in block. Viewer embedding/launching, arbitrary mesh export and transient
-  solvers remain deferred; do not introduce them during unrelated tasks.
+  opt-in block. Viewer embedding/launching, arbitrary mesh export and transient flow
+  systems remain deferred; do not introduce them during unrelated tasks.
 
 ## Validation and commits
 
@@ -98,6 +98,11 @@
 - Credit community implementation references in docs/community-methods.md and
   each method guide. Distinguish algorithm inspiration from copied/adapted source,
   retain exact upstream references/notices, and state implementation differences.
+
+- Burgers uses explicit SpaceTime1D geometry and (x,t) coordinates, two spatial
+  boundary traces plus an initial set; never impose a final-time BC. Keep its
+  solution in the existing table view and export physical-time PVD line frames,
+  not a VTI plane treating time as space. Do not assume an exact later-time reference.
 
 ## User documentation
 

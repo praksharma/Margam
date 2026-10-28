@@ -1,7 +1,8 @@
 # Problem examples and predefined equations
 
 File → Examples is the catalogue of complete runnable desktop graphs. Existing
-Poisson, heat and steady incompressible flow examples remain available. Additional
+Poisson, heat and steady incompressible flow examples remain available. The [Burgers example](burgers.md) adds the original 1D space–time initial-value
+problem, with prediction/export blocks and no assumed exact reference. Other
 manufactured cases exercise the new Predefined PDE block:
 
 | Example | Equation | Reference (domain noted where different) |
@@ -32,7 +33,9 @@ Flow retains the existing steady u/v/p equations and rectangular domain contract
 Changing a family does not automatically replace BCs, outputs or reference
 expressions: update these to describe the intended problem.
 
-Model format 12 persists block settings and compact recipes and reads earlier formats 1–11.
+Model format 15 persists spatial/space–time block settings and compact recipes and
+reads earlier formats 1–14. Burgers has dedicated correctness checks rather than
+the manufactured-reference accuracy checks below.
 The tests check manufactured residuals and train the smaller examples for 700 CPU
 updates, Helmholtz for 2,000, with RMS prediction error below 0.05 across the full domain. This is a regression check for these
 configured cases, not a guarantee for arbitrary coefficients or domains.

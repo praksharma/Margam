@@ -1,0 +1,17 @@
+{
+  "scope": "Actual Burgers setup/IC and optional result table after 50 CPU updates; no accuracy claim.",
+  "captures": {
+    "pde": {
+      "file": "manual-burgers-pde.png",
+      "sha256": "ffde99bb4324a7141245c58bb9718290f778e6068688a392de66299cc6871b19"
+    },
+    "initial": {
+      "file": "manual-burgers-initial.png",
+      "sha256": "153ad47aacea2e4715ec8bd86c0d8acd7b71459447cb43aaf7a98f23189b1c8c"
+    },
+    "results": {
+      "file": "manual-burgers-results.png",
+      "sha256": "6d757937f2aec65cb0097df4dfb53f282adc05f5a176c468c4f058008463e2d5"
+    }
+  }
+}

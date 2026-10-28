@@ -24,9 +24,10 @@ A Python API capability is not automatically an executable UI block option.
 | Loss metric / optimiser | `margam/backend/utils.py` | Built-in MSE and Adam only; method accepts an optimiser factory in Python; no standalone optimiser block, scheduler or UI optimiser selection |
 | Pointwise neural networks | `margam/nn/`; [network guide](neural-networks.md) | Original FCNN plus angular/Fourier, highway/modified/multiscale Fourier, DGM, SIREN and multiplicative Fourier/Gabor; architecture-specific settings; no neural operators |
 | Helmholtz preset/example | `margam/templates/predefined_pdes.py`, `margam/templates/examples.py` | Positive mass term Δu+k²u=f; explicit 2D paper problem on [−1,1]² with existing Fourier NN and LRA; soft zero BCs; see [Helmholtz guide](helmholtz.md) |
+| Burgers space–time example | `margam/templates/burgers.py` | Original PINN physical setup, explicit x/t coordinates, initial plus two spatial BC sets, baseline/SA/LRA and optional samplers, table/CSV and physical-time PVD export; no final-time BC or assumed reference accuracy; see [Burgers](burgers.md) |
 | Poisson template | `margam/templates/poisson.py` | Scalar constant-source interval/rectangle problem; constant Dirichlet or outward derivative BCs; independent rectangle-side sampling |
 | Heat demo | `margam/templates/heat.py` | Configures the same Poisson method and explicit outputs; no transient heat solver |
-| Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; scalar plots or u/v/p tables; explicit CSV export; reference required only for comparison; opt-in ParaView VTI export; timestamped PVD writer API, current solvers steady; see [export guide](paraview-export.md) |
+| Output contracts | `margam/components/outputs.py` | Explicit prediction, comparison and monitor requests; scalar plots or u/v/p tables; explicit CSV export; reference required only for comparison; opt-in ParaView VTI export; timestamped PVD for Burgers physical-time frames and writer API; see [export guide](paraview-export.md) |
 
 The dock, drag/drop and quick-insert popup share the supported title/kind list in
 `margam/ui/block_catalogue.py`. That list is specific to the current builder; it

@@ -1,0 +1,182 @@
+{
+  "recorded_utc": "2026-10-28T15:09:53.686670+00:00",
+  "device": "cpu",
+  "torch": "2.14.1+cpu",
+  "scope": "Original problem setup, finite training, exact continuation and physical-time export; no accuracy reproduction.",
+  "reference": "https://maziarraissi.github.io/PINNs/",
+  "configuration": {
+    "shape": "SpaceTime1D",
+    "x_min": -1.0,
+    "x_max": 1.0,
+    "y_min": 0.0,
+    "y_max": 1.0,
+    "points": 1024,
+    "boundary_points": 64,
+    "adaptive_sampling": {},
+    "sampling": "random",
+    "seed": 7,
+    "source": 0.0,
+    "layers": [
+      32,
+      32,
+      32
+    ],
+    "iterations": 100,
+    "lr": 0.001,
+    "device": "cpu",
+    "loss_formulation": "mean",
+    "pde_weight": 1.0,
+    "boundary_weight": 10.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {
+      "left": {
+        "points": 64,
+        "method": "random",
+        "seed": 8
+      },
+      "right": {
+        "points": 64,
+        "method": "random",
+        "seed": 9
+      },
+      "bottom": {
+        "points": 64,
+        "method": "random",
+        "seed": 10
+      }
+    },
+    "pde_expression": "D(u,t)+u*D(u,x)-nu*D(D(u,x),x)",
+    "bc_targets": {
+      "bottom": "-sin(pi*x)"
+    },
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": null,
+    "method": "baseline",
+    "physics": "scalar",
+    "viscosity": 0.003183098861837907,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "burgers_1d",
+    "pde_forcing": "0",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "lra_alpha": 0.9,
+    "lra_interval": 10,
+    "lra_epsilon": 1e-12,
+    "lra_max": 1000000.0,
+    "network_type": "fcnn",
+    "network_options": {}
+  },
+  "coordinates": [
+    "x",
+    "t"
+  ],
+  "constraint_names": [
+    "left",
+    "right",
+    "initial"
+  ],
+  "checkpoint_resume_identical": true,
+  "initial_losses": {
+    "pde": 0.10350099951028824,
+    "left": 0.03760275989770889,
+    "right": 0.13699793815612793,
+    "initial": 0.4340203106403351,
+    "total": 2.132237672805786
+  },
+  "final_losses": {
+    "pde": 0.004302284214645624,
+    "left": 0.01942961849272251,
+    "right": 0.01597443036735058,
+    "initial": 0.38560789823532104,
+    "total": 1.4076753854751587
+  },
+  "evaluation_points": 81,
+  "export_frame_times": [
+    0.0,
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1.0
+  ],
+  "export_spatial_extent": "0 8 0 0 0 0",
+  "reference_solution_used": false
+}

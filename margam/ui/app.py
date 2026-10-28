@@ -293,7 +293,7 @@ class Canvas(QGraphicsScene):
                 if text:
                     texts=[part.strip() for part in text.split(';')]
                     if len(texts)!=len(config.field_names):raise ValueError('Provide one reference expression per field, separated by semicolons.')
-                    expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names) for part in texts]
+                    expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names,coordinates=config.coordinate_names) for part in texts]
                     def evaluate(points,expressions=expressions):
                         import torch
                         values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
@@ -495,7 +495,7 @@ class Window(QMainWindow):
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.examples_1d_menu if example_config(identifier).shape=='Interval' else self.examples_menu
+            menu=self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -862,18 +862,20 @@ class Window(QMainWindow):
         if data is None:
             self.statusBar().showMessage('Connect this export block and train before exporting.');return False
         paraview=node.kind=='paraview'
-        extension='.vti' if paraview else '.csv'
+        transient=paraview and data['config'].is_time_dependent
+        extension='.pvd' if transient else '.vti' if paraview else '.csv'
         label='ParaView predictions' if paraview else 'CSV predictions'
         if path is None:
-            path,_=QFileDialog.getSaveFileName(self,'Export '+label,'prediction'+extension,'VTK ImageData (*.vti)' if paraview else 'CSV (*.csv)')
+            path,_=QFileDialog.getSaveFileName(self,'Export '+label,'prediction'+extension,'ParaView time series (*.pvd)' if transient else 'VTK ImageData (*.vti)' if paraview else 'CSV (*.csv)')
             if path and not path.lower().endswith(extension):
                 path+=extension
                 if Path(path).exists() and QMessageBox.question(self,'Replace export?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
         if not path:return False
         try:
             if paraview:
-                from ..components.paraview_export import export_vti
-                export_vti(path,data)
+                from ..components.paraview_export import export_vti,export_spacetime_pvd
+                if transient:export_spacetime_pvd(path,data)
+                else:export_vti(path,data)
             else:export_csv(path,data)
         except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'Predictions could not be exported',str(error));return False
         self.statusBar().showMessage('Exported '+label+' · '+Path(path).name);return True
@@ -1095,7 +1097,8 @@ class Window(QMainWindow):
             if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,self.config)
         self.settings_changed()
         method=next(node for node in self.scene.nodes() if node.kind=='method');comparison=None
-        for index,title in enumerate(('Training Monitor','Solution Plot','Comparison','CSV Export')):
+        output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export')
+        for index,title in enumerate(output_titles):
             node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
             if node.kind=='comparison':comparison=node
         reference=self.add_node('Reference');reference.setPos(730,500);self.scene.connect_nodes(reference,comparison)
@@ -1133,11 +1136,13 @@ class Window(QMainWindow):
             if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,config)
         self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(pde,method)
         comparison=None
-        for index,title in enumerate(('Training Monitor','Solution Plot','Comparison','CSV Export')):
+        output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export') if example.reference else ('Training Monitor','Solution Plot','CSV Export','ParaView Export')
+        for index,title in enumerate(output_titles):
             node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
             if node.kind=='comparison':comparison=node
-        reference=self.add_node('Reference');reference.setPos(730,500)
-        reference.settings['reference_expression']=example.reference;self.scene.connect_nodes(reference,comparison)
+        if example.reference:
+            reference=self.add_node('Reference');reference.setPos(730,500)
+            reference.settings['reference_expression']=example.reference;self.scene.connect_nodes(reference,comparison)
         self._resetting=False;self.scene.clearSelection();pde.setSelected(True)
         self.settings_changed();self.validate_model();self.fit_model()
         self.undo_stack.clear();self.undo_stack.setClean();self.update_document_title()
@@ -1284,21 +1289,23 @@ class Window(QMainWindow):
     def refresh_descriptions(self):
         for node in self.scene.nodes():
             c=self.config_for_node(node)
-            actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
-            details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+            actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
+            details={'domain':f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
                      'importance':f'{actual} points · importance',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
-                     'solution':'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
-                     'comparison':'Model + explicit reference source', 'reference':'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
-            if node.kind=='domain':node.title=c.shape
+                     'solution':'Requested x,t,u table' if c.is_time_dependent else 'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
+                     'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
+            if node.kind=='domain':node.title='1D space–time' if c.is_time_dependent else c.shape
+            if node.kind=='boundary':node.title='Boundary / initial points' if c.is_time_dependent else 'Boundary points'
+            if node.kind=='bc':node.title='Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
@@ -1413,10 +1420,13 @@ class Window(QMainWindow):
         if node is None:
             self.form.addRow(QLabel('Select a block to edit its settings.'))
         elif node.kind=='domain':
-            self.field('Domain','shape','choice',choices=['Interval','Rectangle'])
+            shape=QComboBox()
+            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('SpaceTime1D','1D space–time')]:shape.addItem(label,key)
+            shape.setCurrentIndex(shape.findData(self.config.shape));shape.currentIndexChanged.connect(lambda index,w=shape:self.change('shape',w.itemData(index)))
+            self.form.addRow('Domain',shape)
             self.field('x minimum','x_min');self.field('x maximum','x_max')
-            if self.config.shape=='Rectangle':
-                self.field('y minimum','y_min');self.field('y maximum','y_max')
+            if len(self.config.bounds[0])==2:
+                self.field('t start' if self.config.is_time_dependent else 'y minimum','y_min');self.field('t end' if self.config.is_time_dependent else 'y maximum','y_max')
             note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif role(node.kind)=='interior':
             if node.kind=='interior':
@@ -1443,11 +1453,13 @@ class Window(QMainWindow):
                 note.setWordWrap(True);self.form.addRow(note)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='boundary':
-            if self.config.shape=='Rectangle':
-                side_choice=QComboBox();side_choice.addItems(list(self.config.sides))
+            if len(self.config.bounds[0])==2:
+                side_choice=QComboBox()
+                for s in self.config.sides:side_choice.addItem(self.config.side_label(s),s)
                 side=getattr(self,'boundary_side','left')
-                side_choice.setCurrentText(side);side_choice.setObjectName('boundary_side')
-                side_choice.currentTextChanged.connect(self.select_boundary_side)
+                if side not in self.config.sides:side=self.config.sides[0]
+                side_choice.setCurrentIndex(side_choice.findData(side));side_choice.setObjectName('boundary_side')
+                side_choice.currentIndexChanged.connect(lambda index,w=side_choice:self.select_boundary_side(w.itemData(index)))
                 self.form.addRow('Named point set',side_choice)
                 imported=QPushButton('Map / preview this set from CSV or NPZ…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
                 if self.config.boundary_data.get(side):
@@ -1473,7 +1485,7 @@ class Window(QMainWindow):
                 for side in self.config.sides:
                     imported=QPushButton('Map '+side+' prepared point set…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
             note.setWordWrap(True);self.form.addRow(note)
-            note=QLabel('Named point sets: '+', '.join(self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
+            note=QLabel('Named point sets: '+', '.join(self.config.side_label(s) for s in self.config.sides)+'. Types and targets are assigned later in the Boundary condition block. Open Preview samples from the Rectangle block to inspect the combined samples.')
             note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='predefined_pde':
             choices=QComboBox()
@@ -1483,13 +1495,13 @@ class Window(QMainWindow):
             self.form.addRow('Predefined PDE',choices)
             preset=PREDEFINED_PDES[self.config.pde_preset]
             equation=QLabel(preset.equation);equation.setWordWrap(True);self.form.addRow(equation)
-            note=QLabel('Domains: '+', '.join(preset.shapes)+'. Boundary conditions and reference values are configured separately. Use PDE residual for editable equations.');note.setWordWrap(True);self.form.addRow(note)
-            if self.config.pde_preset!='incompressible_2d':
+            note=QLabel('Domains: '+', '.join('1D space–time' if shape=='SpaceTime1D' else shape for shape in preset.shapes)+'. Boundary conditions and reference values are configured separately. Use PDE residual for editable equations.');note.setWordWrap(True);self.form.addRow(note)
+            if preset.forcing:
                 self.field('Squared wavenumber k²' if self.config.pde_preset=='helmholtz' else 'Coefficient c','source')
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
                 forcing.editingFinished.connect(lambda e=forcing:self.change('pde_forcing',e.text().strip()))
                 self.form.addRow('Forcing f',forcing)
-            if self.config.pde_preset in ('advection_diffusion_1d','incompressible_2d'):
+            if self.config.pde_preset in ('advection_diffusion_1d','incompressible_2d','burgers_1d'):
                 self.field('Diffusivity / viscosity ν','viscosity',minimum=.000001,maximum=100000)
         elif node.kind=='pde':
             physics=QComboBox();physics.addItem('Scalar residual','scalar');physics.addItem('Steady incompressible 2D flow','incompressible_2d')
@@ -1505,13 +1517,13 @@ class Window(QMainWindow):
                     edit.editingFinished.connect(lambda i=index,e=edit:self.change_flow_residual(i,e.text().strip()))
                     self.form.addRow(label,edit)
             else:
-                note=QLabel('Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
+                note=QLabel('1D space–time scalar residual: use x,t and an explicit time-dependent equation. No default final-time condition.' if self.config.is_time_dependent else 'Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
                 self.field('Constant c','source')
                 edit=QLineEdit(self.config.pde_expression);edit.setObjectName('pde_expression')
                 edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
                 edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
                 self.form.addRow('Residual = 0',edit)
-                note=QLabel('Scalar expressions: x, y (rectangle), u, c, pi; D(u,x), laplace(u), sin/cos/exp/tanh/sqrt/abs. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
+                note=QLabel('Scalar expressions: '+', '.join(self.config.coordinate_names)+', u, c, nu, pi; D(u,x), '+('D(u,t), ' if self.config.is_time_dependent else '')+'laplace(u), sin/cos/exp/tanh/sqrt/abs. Laplacian is spatial only. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='bc':
             if self.config.physics=='incompressible_2d':
                 side=getattr(self,'flow_bc_side','left');choice=QComboBox();choice.addItems(list(self.config.sides));choice.setCurrentText(side)
@@ -1536,15 +1548,15 @@ class Window(QMainWindow):
                     value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
                     combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
                     value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
-                    layout.addWidget(combo);layout.addWidget(value);self.form.addRow(side.capitalize(),row)
+                    layout.addWidget(combo);layout.addWidget(value);self.form.addRow(self.config.side_label(side).capitalize(),row)
                     target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
                     target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
-                    self.form.addRow(side+' target expression',target)
+                    self.form.addRow(self.config.side_label(side)+' target expression',target)
                     operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
                     operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
                     operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
-                    self.form.addRow(side+' custom operator',operator)
+                    self.form.addRow(self.config.side_label(side)+' custom operator',operator)
                 note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             architecture=QComboBox();architecture.setObjectName('network_architecture')
@@ -1634,7 +1646,7 @@ class Window(QMainWindow):
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
                 self.form.addRow('Evaluation points / axis',count)
                 text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
-            if node.kind=='paraview':text='Connect a trainer or recipe and train. Export predictions as VTI on a regular evaluation grid; training samples can be random. Flow includes a velocity vector. Current steady models export a single snapshot. Choose a filename when exporting.'
+            if node.kind=='paraview':text='Connect a trainer or recipe and train. Export predictions as VTI on a regular evaluation grid; training samples can be random. Flow includes a velocity vector. Steady models export a snapshot; 1D space–time models export physical-time PVD frames. Choose a filename when exporting.'
             if node.kind=='export':text='Connect PINN method, train, then explicitly export scalar x/y/u rows. No plot or file is created automatically.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))

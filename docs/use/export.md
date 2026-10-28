@@ -27,8 +27,7 @@ Use a saved run when you also need training state and recorded output histories.
 
 In ParaView, open the exported `.vti`, click Apply and choose a field for colouring.
 VTI means a uniform grid. VTU means an unstructured grid, not a time-dependent
-version of VTI. Current Margam problems are steady and the block writes one
-snapshot. It does not infer physical time from training updates.
+version of VTI. Steady problems write one snapshot; Burgers writes physical-time frames. It does not infer physical time from training updates.
 
 ## Try time-series playback
 
@@ -38,8 +37,9 @@ by `demo_scalar`, then Play. Keep its companion snapshot folder beside it.
 This is a file-format test, not a trained PINN result. Snapshot fields and time
 metadata were read back with VTK; GUI playback has not been exercised on this host.
 
-The writer API supports physical-time PVD collections for future transient
-results. A transient solver and time-selection UI are not implemented yet.
+The [Burgers space–time example](../burgers.md) now uses the block to write
+physical-time PVD collections directly. Its evaluation resolution sets the spatial
+and temporal counts. Higher-dimensional transient systems remain future work.
 Read the [ParaView format guide](../paraview-export.md) for the exact scope.
 
 ## What comes later
@@ -47,3 +47,7 @@ Read the [ParaView format guide](../paraview-export.md) for the exact scope.
 Evaluation at supplied GeoSampler/FEM nodes, preserved node IDs/connectivity and
 optional pointwise reference errors are [recorded in TODO](../todo.md#future-evaluation-and-export-at-supplied-points).
 The current export evaluates the network on a regular line/rectangle grid.
+
+For [Burgers](../burgers.md), CSV headings are `x,t,u`. ParaView Export writes a
+PVD collection of 1D spatial VTI frames with physical-time stamps; open the PVD
+and press Play. Time is not exported as a spatial axis.

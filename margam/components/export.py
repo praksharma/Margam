@@ -13,7 +13,7 @@ def export_csv(path,data):
     try:
         with tempfile.NamedTemporaryFile(mode='w',newline='',encoding='utf-8',dir=path.parent,prefix='.margam-',delete=False) as stream:
             temporary=stream.name;writer=csv.writer(stream)
-            writer.writerow([*('x','y')[:dimension],*data.get('fields',['u'])])
+            writer.writerow([*getattr(data.get('config'),'coordinate_names',('x','y')[:dimension]),*data.get('fields',['u'])])
             writer.writerows([*point,*(value if isinstance(value,(list,tuple)) else (value,))] for point,value in zip(points,values))
             stream.flush();os.fsync(stream.fileno())
         os.replace(temporary,path)

@@ -76,22 +76,32 @@ class PoissonConfig:
     network_options: dict = field(default_factory=dict)
 
     @property
+    def is_time_dependent(self):return self.shape=='SpaceTime1D'
+
+    @property
+    def coordinate_names(self):return ('x','t') if self.is_time_dependent else ('x','y')[:len(self.bounds[0])]
+
+    def constraint_name(self,side):return 'initial' if self.is_time_dependent and side=='bottom' else side
+
+    def side_label(self,side):return 'initial (t start)' if self.is_time_dependent and side=='bottom' else side
+
+    @property
     def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
 
     @property
     def constraint_names(self):
-        if self.physics=='scalar':return self.sides
+        if self.physics=='scalar':return tuple(self.constraint_name(s) for s in self.sides)
         return tuple(side+':'+field for side in self.sides for field,spec in self.flow_boundary[side].items() if spec['type']!='None')+('pressure_gauge',)
 
     @property
     def loss_weights(self):
-        if self.physics=='scalar':return {'pde':self.pde_weight,**{s:self.boundary_weight/len(self.sides) for s in self.sides}}
+        if self.physics=='scalar':return {'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
         names=self.constraint_names
         return {'pde':self.pde_weight,**{name:self.boundary_weight/(len(names)-1) for name in names if name!='pressure_gauge'},'pressure_gauge':self.pressure_weight}
 
     @property
     def sides(self):
-        return ('left', 'right') if self.shape == 'Interval' else ('left', 'right', 'bottom', 'top')
+        return ('left','right','bottom') if self.is_time_dependent else ('left', 'right') if self.shape == 'Interval' else ('left', 'right', 'bottom', 'top')
 
     @property
     def bounds(self):
@@ -113,8 +123,8 @@ class PoissonConfig:
             if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
         if not isinstance(self.boundary_data,dict) or set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown imported boundary set.')
         for source in self.boundary_data.values():validate_mapping(source)
-        if self.shape not in ('Interval', 'Rectangle'):
-            raise ValueError('Choose Interval or Rectangle.')
+        if self.shape not in ('Interval', 'Rectangle','SpaceTime1D'):
+            raise ValueError('Choose Interval, Rectangle or 1D space–time.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
             raise ValueError('Domain maximums must be greater than minimums.')
@@ -152,7 +162,7 @@ class PoissonConfig:
         if self.adaptive_sampling:
             if self.interior_data:raise ValueError('Adaptive candidate generation currently supports built-in domains only; imported interior points need an explicit candidate source.')
             if self.method=='self_adaptive':raise ValueError('Adaptive sampling cannot yet move SA-PINN pointwise masks. Use baseline, hard-BC or LRA training.')
-            initial=math.isqrt(self.points)**2 if self.shape=='Rectangle' and self.sampling=='grid' else self.points
+            initial=math.isqrt(self.points)**2 if len(self.bounds[0])==2 and self.sampling=='grid' else self.points
             if self.adaptive_sampling['method']=='rar' and initial>self.adaptive_sampling['maximum']:raise ValueError('RAR maximum must cover the initial interior set.')
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
@@ -177,24 +187,29 @@ class PoissonConfig:
         if self.physics=='incompressible_2d':
             from .incompressible_flow import validate_flow_config
             validate_flow_config(self);return
+        if self.is_time_dependent:
+            if self.method=='hard_dirichlet':raise ValueError('The all-sides hard-Dirichlet transform does not apply to an initial-value problem.')
+            if self.bc_types['bottom']!='Dirichlet':raise ValueError('The initial set requires a Dirichlet value/profile.')
+            if not self.pde_expression:raise ValueError('Choose the Burgers preset or enter an explicit time-dependent residual.')
         dimension=len(self.bounds[0])
-        if self.pde_expression:Expression(self.pde_expression,dimension)
+        if self.pde_expression:Expression(self.pde_expression,dimension,coordinates=self.coordinate_names)
         for side in self.sides:
-            if self.bc_targets.get(side):Expression(self.bc_targets[side],dimension,target=True)
-            if self.bc_types.get(side)=='Custom':Expression(self.bc_operators.get(side,''),dimension)
+            if self.bc_targets.get(side):Expression(self.bc_targets[side],dimension,target=True,coordinates=self.coordinate_names)
+            if self.bc_types.get(side)=='Custom':Expression(self.bc_operators.get(side,''),dimension,coordinates=self.coordinate_names)
             if self.bc_types.get(side) not in ('Dirichlet','Neumann','Custom') or not math.isfinite(self.bc_values.get(side,float('nan'))):
                 raise ValueError(f'Assign a valid type and finite target to {side}.')
         if not any(self.bc_types[s] == 'Dirichlet' for s in self.sides):
             raise ValueError('Pure Neumann/custom-only problems need a compatibility check and solution gauge; use at least one Dirichlet side for now.')
         # Sampling excludes corners, but incompatible endpoint values still make
         # the prescribed continuous Dirichlet problem ambiguous at those corners.
-        if self.shape == 'Rectangle':
-            for a,b in [('left','bottom'),('left','top'),('right','bottom'),('right','top')]:
+        if self.shape in ('Rectangle','SpaceTime1D'):
+            corners=[('left','bottom'),('right','bottom')] if self.is_time_dependent else [('left','bottom'),('left','top'),('right','bottom'),('right','top')]
+            for a,b in corners:
                 if self.bc_types[a] == self.bc_types[b] == 'Dirichlet' and not self.boundary_data.get(a) and not self.boundary_data.get(b):
                     if self.bc_targets.get(a) or self.bc_targets.get(b):
                         import torch
                         corner=torch.tensor([[self.x_min if a=='left' else self.x_max,self.y_min if b=='bottom' else self.y_max]])
-                        values=[float(Expression(self.bc_targets[s],2,target=True)(corner,source=self.source,normal={'left':(-1.,0.),'right':(1.,0.),'bottom':(0.,-1.),'top':(0.,1.)}[s])) if self.bc_targets.get(s) else self.bc_values[s] for s in (a,b)]
+                        values=[float(Expression(self.bc_targets[s],2,target=True,coordinates=self.coordinate_names)(corner,source=self.source,viscosity=self.viscosity,normal={'left':(-1.,0.),'right':(1.,0.),'bottom':(0.,-1.),'top':(0.,1.)}[s])) if self.bc_targets.get(s) else self.bc_values[s] for s in (a,b)]
                         agree=all(math.isfinite(v) for v in values) and math.isclose(*values,rel_tol=1e-6,abs_tol=1e-6)
                     else:agree=self.bc_values[a]==self.bc_values[b]
                     if not agree:raise ValueError(f'Dirichlet targets on {a} and {b} conflict at their shared corner.')
@@ -248,7 +263,7 @@ def _build_pinn(config):
             normal=imported[1].tolist() if imported[1] is not None else normal
             # Without imported normals a side label is meaningful only on that
             # box side. Do not silently use analytical normals for arbitrary CAD.
-            needs_normal=config.bc_types[side]=='Neumann' or config.bc_types[side]=='Custom' and Expression(config.bc_operators[side],len(rows[0])).uses_normal or bool(config.bc_targets.get(side)) and Expression(config.bc_targets[side],len(rows[0]),target=True).uses_normal
+            needs_normal=config.bc_types[side]=='Neumann' or config.bc_types[side]=='Custom' and Expression(config.bc_operators[side],len(rows[0]),coordinates=config.coordinate_names).uses_normal or bool(config.bc_targets.get(side)) and Expression(config.bc_targets[side],len(rows[0]),target=True,coordinates=config.coordinate_names).uses_normal
             if imported[1] is None and needs_normal:
                 axis=0 if side in ('left','right') else 1
                 edge={'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
@@ -259,21 +274,21 @@ def _build_pinn(config):
                 derivative = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
                 return (derivative * x.new_tensor(normal)).sum(dim=1,keepdim=True)
         if config.bc_types[side]=='Custom':
-            expression=Expression(config.bc_operators[side],len(rows[0]))
+            expression=Expression(config.bc_operators[side],len(rows[0]),coordinates=config.coordinate_names)
             def operator(x,u,expression=expression,normal=normal):
-                return expression(x,u,source=config.source,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
+                return expression(x,u,source=config.source,viscosity=config.viscosity,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
         target=config.bc_values[side]
         if config.bc_targets.get(side):
-            expression=Expression(config.bc_targets[side],len(rows[0]),target=True)
+            expression=Expression(config.bc_targets[side],len(rows[0]),target=True,coordinates=config.coordinate_names)
             def target(x,expression=expression,normal=normal):
-                return expression(x,source=config.source,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
+                return expression(x,source=config.source,viscosity=config.viscosity,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
         if imported is not None and imported[2] is not None:
             if config.bc_targets.get(side):raise ValueError('Choose imported target values or a target expression, not both.')
             target=torch.tensor(imported[2])
-        constraints.append(PointConstraint(side, torch.tensor(rows), target, operator))
-    expression=Expression(config.pde_expression,len(config.bounds[0])) if config.pde_expression else None
+        constraints.append(PointConstraint(config.constraint_name(side), torch.tensor(rows), target, operator))
+    expression=Expression(config.pde_expression,len(config.bounds[0]),coordinates=config.coordinate_names) if config.pde_expression else None
     def residual(x, u):
-        return expression(x,u,source=config.source) if expression else laplacian(u,x) + config.source
+        return expression(x,u,source=config.source,viscosity=config.viscosity) if expression else laplacian(u,x) + config.source
     problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
     from ..components.losses import apply_problem_measures

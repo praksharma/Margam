@@ -204,3 +204,15 @@ separate final archive check covers importance sampling combined with integral
 loss. The manual build checked all 47 rendered pages and local links. See the
 [CPU workflow evidence](../assets/benchmarks/integral-loss-cpu.json); this establishes
 software behaviour, not improved solution accuracy.
+
+## Burgers space–time verification — 28 October 2026
+
+The final full CPU/offscreen suite passed **130 tests**, with **4 skips** for
+unavailable CUDA/optional VTK checks. Six Burgers checks cover original PDE/IC
+setup, nonlinear/time/spatial derivatives, spatial-only Laplacian, absence of a
+final-time condition, method/sampler continuation, measure scaling, model/archive
+round trips, explicit tables, x/t/u CSV and physical-time PVD frame contents.
+Existing flow, recipe and export tests also pass. The manual build checked all
+49 rendered pages. XML metadata/field contents were read back; ParaView GUI
+playback and shock accuracy against reference data were not exercised. See the
+[100-update CPU record](../assets/benchmarks/burgers-cpu.json).

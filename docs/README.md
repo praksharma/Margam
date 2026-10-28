@@ -19,6 +19,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | How do I integrate squared PDE/BC errors over the geometry? | [Integral loss formulation](integral-loss.md) |
 | How do residual refinement and importance sampling work? | [Adaptive sampling](adaptive-sampling.md) |
 | How does SA-PINN work, and which settings matter? | [SA-PINN method](self-adaptive-pinn.md) |
+| Where is the original time-dependent Burgers case? | [Burgers — 1D + time](burgers.md) |
 | What is the paper Helmholtz example? | [Fourier/LRA Helmholtz](helmholtz.md) |
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |
 | How do I export predictions to ParaView? | [Explicit export and playback](paraview-export.md) |

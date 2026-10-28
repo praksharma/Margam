@@ -95,3 +95,14 @@ python -m examples.capture_integral_loss --overwrite
 ```
 
 See [integral loss](integral-loss.md) for measures, components and supported samplers.
+
+## Burgers space–time example
+
+```bash
+python -m examples.burgers
+python -m examples.burgers --steps 100 --export results/burgers.pvd
+python -m unittest discover -s tests -p 'test_burgers*.py' -v
+python -m examples.capture_burgers --overwrite
+```
+
+See [Burgers](burgers.md) for the initial condition and physical-time export.

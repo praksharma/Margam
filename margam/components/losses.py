@@ -28,6 +28,7 @@ def apply_problem_measures(problem,config):
     lower,upper=config.bounds
     problem.measure=math.prod(b-a for a,b in zip(lower,upper))
     side_measures=dict.fromkeys(config.sides,1.) if len(lower)==1 else dict(left=upper[1]-lower[1],right=upper[1]-lower[1],bottom=upper[0]-lower[0],top=upper[0]-lower[0])
+    if config.is_time_dependent:side_measures['initial']=upper[0]-lower[0]
     for condition in problem.constraints:
         side=condition.name.split(':',1)[0]
         condition.measure=side_measures.get(side,1.) # Pressure gauge is a point penalty.

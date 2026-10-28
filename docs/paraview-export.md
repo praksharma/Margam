@@ -6,8 +6,9 @@
 
 Add **Results → ParaView Export** and connect a trainer or compact recipe to it.
 Set its evaluation resolution, train, then right-click **Export ParaView…** or use
-its inspector button. It writes predicted fields as a `.vti` file. No export block
-is added to startup graphs/examples automatically, no file is written by training,
+its inspector button. It writes steady predicted fields as a `.vti` file and Burgers space–time
+predictions as a `.pvd` physical-time series. The Burgers example includes a
+connected export block; startup graphs retain opt-in insertion. No file is written by training,
 and no viewer is launched. CSV Export remains a separate, unchanged block.
 Saved runs retain the requested predictions so they can be exported after reopening.
 
@@ -39,8 +40,9 @@ spaced and are not network-training updates or epochs. Time is never written as
 an extra spatial coordinate. Timestamp units are whatever physical units the
 caller supplies; no seconds or other units are inferred.
 
-Current Margam solvers are **steady**. Their block exports one snapshot, without
-inventing a time value. The writer API already supports real transient snapshots:
+Steady Margam problems export one snapshot without inventing a time value.
+The [Burgers space–time example](burgers.md) exports playable physical-time frames
+through the same explicit block. The writer API also accepts transient snapshots:
 
 ```python
 from margam.components.paraview_export import export_pvd

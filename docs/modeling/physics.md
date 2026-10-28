@@ -50,3 +50,7 @@ supply an explicit expression; your own problem may have no exact solution.
 Do not add a reference merely to make the graph look complete.
 
 **Next:** [Choose networks and PINN methods](networks.md).
+
+For physical time dependence, start with [Burgers — 1D + time](../burgers.md).
+It uses `(x,t)` coordinates, two spatial BC traces and a separate initial profile,
+with no final-time condition. Its preset uses `u_t + u*u_x - nu*u_xx = 0`.

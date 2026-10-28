@@ -83,6 +83,7 @@ def _write(path,tree):
 
 def export_vti(path,data,*,time=None):
     """Export explicit regular-grid predictions; optional time is physical time."""
+    if getattr(data.get('config'),'is_time_dependent',False):raise ValueError('Space–time results require a physical-time PVD series, not a spatial VTI plane.')
     path=Path(path)
     if path.suffix.lower()!='.vti':raise ValueError('A VTI snapshot needs a .vti filename.')
     tree=_document(_grid(data),time)
@@ -121,3 +122,16 @@ def export_pvd(path,frames):
     finally:
         if stage.exists():shutil.rmtree(stage)
         if not published and destination.exists():shutil.rmtree(destination)
+
+
+def export_spacetime_pvd(path,data):
+    """Export one 1D spatial frame per physical time in an x-fast space–time grid."""
+    config=data.get('config')
+    if not getattr(config,'is_time_dependent',False):raise ValueError('This series requires explicit 1D space–time coordinates.')
+    count=data.get('size');points=np.asarray(data.get('points'),dtype=float);values=np.asarray(data.get('values'),dtype=float)
+    if type(count) is not int or count<2 or points.shape!=(count*count,2) or values.shape!=(count*count,) or not np.isfinite(points).all() or not np.isfinite(values).all():raise ValueError('Invalid scalar space–time result grid.')
+    xs=np.linspace(config.x_min,config.x_max,count);times=np.linspace(config.y_min,config.y_max,count)
+    expected=np.array([[x,t] for t in times for x in xs])
+    if not np.allclose(points,expected,rtol=0,atol=1e-7):raise ValueError('Space–time results must be ordered with x varying fastest.')
+    frames=((float(time),dict(points=[[float(x)] for x in xs],values=values[i*count:(i+1)*count].tolist(),fields=['u'])) for i,time in enumerate(times))
+    return export_pvd(path,frames)
