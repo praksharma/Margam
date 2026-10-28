@@ -7,6 +7,13 @@ it does not change the network architecture or PDE.
 
 ![The trainer exposes integral loss as an explicit choice](../assets/screenshots/manual-loss-integral.png)
 
+## Community provenance
+
+This PINN loss formulation follows **NVIDIA Modulus / Modulus Sym**, subsequently
+PhysicsNeMo Sym: treat squared pointwise error as a domain/boundary integral and
+approximate it using sampling weights. The implementation is independently
+written. See [community methods and attribution](community-methods.md) for sources.
+
 ## What is integrated?
 
 The PDE term is the integral of its squared residual over the domain. Each BC
@@ -23,7 +30,7 @@ Monte Carlo estimates; cell-centred grids give equal-cell quadrature instead.
 Hammersley/stratified methods retain their documented uniform-domain construction.
 No random resampling is required to select this formulation.
 
-This follows the area-weighted squared pointwise loss in NVIDIA PhysicsNeMo Sym's
+This follows the area-weighted squared pointwise loss in NVIDIA Modulus / PhysicsNeMo Sym's
 [PointwiseLossNorm](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physicsnemo/sym/loss/loss.py),
 which multiplies point errors by integration weights before summing. Margam's
 implementation is independent and does not require NVIDIA's package.

@@ -58,6 +58,9 @@ Keep these terms distinct:
 
 ## Design history and provenance
 
+[Community methods and attribution](community-methods.md) credits DeepXDE for
+our RAR reference and NVIDIA Modulus for PINN importance sampling/integral loss.
+
 [Roadmap](roadmap.md) preserves the original discussions; its stage-specific
 “not implemented” notes are historical. [Simulink evidence](simulink-evidence.md)
 distinguishes sourced interactions from Margam choices. [Cleanup record](cleanup.md)

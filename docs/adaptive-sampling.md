@@ -6,6 +6,13 @@ the default. Both work with compact or expanded baseline/LRA recipes and the
 hard-Dirichlet trainer on built-in 1D line segments and 2D rectangles, including
 supported custom scalar PDEs and steady incompressible u/v/p residuals.
 
+## Community provenance
+
+RAR follows **DeepXDE**'s greedy refinement example. The PINN importance-sampling
+formulation is referenced to **NVIDIA Modulus / Modulus Sym**, subsequently
+PhysicsNeMo Sym. Margam implements these tools independently; see the
+[community attribution catalogue](community-methods.md) for sources and reuse status.
+
 ## Add a block
 
 1. Open a working example. Delete its Interior sampler (the two attached wires
@@ -76,7 +83,7 @@ have equal weight in the score; users must choose suitable physical scaling.
 
 ![Importance sampler inspector with its probability controls](../assets/screenshots/manual-sampling-importance.png)
 
-## Comparison with PhysicsNeMo Sym
+## Comparison with NVIDIA Modulus / PhysicsNeMo Sym
 
 Reviewed 28 October 2026 against NVIDIA's
 [importance sampling theory](https://docs.nvidia.com/physicsnemo/26.03/physicsnemo-sym/user_guide/theory/advanced_schemes.html#importance-sampling)

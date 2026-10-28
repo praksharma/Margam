@@ -95,6 +95,10 @@
   Apply volume once with importance correction. Reject RAR/imported quadrature
   until appropriate point weights exist; persist mode/measures in checkpoints.
 
+- Credit community implementation references in docs/community-methods.md and
+  each method guide. Distinguish algorithm inspiration from copied/adapted source,
+  retain exact upstream references/notices, and state implementation differences.
+
 ## User documentation
 
 - Keep task-based help under docs/start, docs/modeling and docs/use, with docs/index.md

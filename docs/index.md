@@ -11,6 +11,10 @@ and replace its components as you learn the editor.
 
 *The Margam desktop: block library, model canvas and Properties. [Open full size](../assets/screenshots/manual-workspace.png).*
 
+Margam brings community methods into one builder. See [community methods and
+attribution](community-methods.md) for the DeepXDE and NVIDIA Modulus references
+behind RAR, PINN importance sampling and integral loss.
+
 ## What would you like to do?
 
 | Your task | Start here |

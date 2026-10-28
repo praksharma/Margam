@@ -94,7 +94,22 @@ The local PyniteGUI manual inspired the organisation of Margam's user guide
 (task pages, contextual screenshots and separate reference navigation). No
 PyniteGUI code, prose or screenshots were copied for this documentation work.
 
-## Importance sampling reference
+## Residual refinement reference (DeepXDE)
+
+Margam's RAR sampler follows the greedy residual-based anchor refinement shown in
+[DeepXDE's RAR demonstration](https://deepxde.readthedocs.io/en/v1.12.2/demos/pinn_forward/burgers.rar.html).
+It is independently implemented; no DeepXDE code is copied or required at runtime.
+Margam's scheduled multi-point additions, fresh candidate pools and point cap
+are documented in docs/adaptive-sampling.md.
+See also the user-facing [community-method catalogue](docs/community-methods.md).
+
+## PINN importance sampling and integral loss references (NVIDIA Modulus)
+
+These PINN formulations are credited to **NVIDIA Modulus / Modulus Sym** as
+community implementation references, subsequently named **PhysicsNeMo Sym**.
+The links below identify the reference versions actually inspected. This credits
+the source project without claiming it invented importance sampling or integration.
+
 
 Margam's independently written residual importance sampler was compared with
 NVIDIA PhysicsNeMo Sym's `DictImportanceSampledPointwiseIterableDataset` and
@@ -103,6 +118,7 @@ The [upstream source](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physic
 is Apache-2.0. No source was copied and the package is not required. Differences
 in candidate pools, importance measures, schedules and integral/mean normalisation
 are documented in docs/adaptive-sampling.md.
+See also the user-facing [community-method catalogue](docs/community-methods.md).
 
 The optional integral-of-squared-error formulation was independently implemented
 after inspecting PhysicsNeMo Sym's `PointwiseLossNorm` in
