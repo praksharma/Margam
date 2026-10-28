@@ -340,3 +340,8 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Define SA-PINN mask and Adam-moment transfer before combining it with moving points.
 - [ ] Consider a sampler-owned live point-set view when there is a concrete need.
 - [ ] Revisit XPINN after a practical GeoSampler subdomain/interface sampling workflow exists.
+
+- [x] Cross-check importance loss correction against NVIDIA Sym's area/density
+  convention for equal-weight pools, including non-unit volume and gradients.
+- [ ] Consider field-gradient importance measures and fixed candidate pools as
+  explicit options; retain residual sampling semantics for existing saved models.

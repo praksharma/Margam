@@ -73,6 +73,37 @@ have equal weight in the score; users must choose suitable physical scaling.
 
 ![Importance sampler inspector with its probability controls](../assets/screenshots/manual-sampling-importance.png)
 
+## Comparison with PhysicsNeMo Sym
+
+Reviewed 28 October 2026 against NVIDIA's
+[importance sampling theory](https://docs.nvidia.com/physicsnemo/26.03/physicsnemo-sym/user_guide/theory/advanced_schemes.html#importance-sampling)
+and the older Sym
+[importance-sampled dataset implementation](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physicsnemo/sym/dataset/continuous.py).
+This is a mathematical/source comparison, not a run of the NVIDIA package.
+No NVIDIA sampling code is copied and no additional dependency is installed.
+
+| Choice | NVIDIA Sym reference | Current Margam block |
+| --- | --- | --- |
+| Candidate locations | A fixed supplied point cloud | A fresh uniform box pool per scheduled event |
+| Importance measure | User-supplied callable; the documentation illustrates velocity-derivative magnitude | RMS PDE residual across equations, raised to a configurable power |
+| Drawing points | Rejection sampling with replacement for each yielded training batch; periodically refresh importance | Multinomial draws with replacement at scheduled events; retain the drawn batch between events |
+| Loss correction | Reciprocal sampling density stored as integration area per draw | Reciprocal discrete probability in mean PDE loss |
+| Probability safeguards | Inspect the chosen measure for its valid support | Explicit uniform mixture and all-zero fallback |
+
+For a uniform pool of `M` equally weighted points in a domain of volume `V`,
+NVIDIA's density convention gives each draw integration weight `V/(M*p_i*B)`
+for batch size `B`. Dividing its integral estimate by `V` yields Margam's mean
+estimate `mean(error_i^2/(M*p_i))`. The test suite verifies both the per-draw
+correction and the expected parameter gradient for unit and non-unit volumes.
+This equivalence assumes equal underlying quadrature weights; arbitrary imported
+mesh/point weights require a separate contract.
+
+**Importance sampling does not require the importance measure to be the PDE
+residual.** A field-gradient measure is a reasonable future option. The current
+UI is deliberately named **Residual importance sampling** to state what it
+actually scores. It does not reproduce NVIDIA's full sampler or its example
+flow configuration.
+
 ## Schedule, scoring and reproducibility
 
 - An interval of 100 updates means the first replacement/addition occurs before

@@ -93,3 +93,13 @@ request is needed. Zensical is an optional documentation-build dependency.
 The local PyniteGUI manual inspired the organisation of Margam's user guide
 (task pages, contextual screenshots and separate reference navigation). No
 PyniteGUI code, prose or screenshots were copied for this documentation work.
+
+## Importance sampling reference
+
+Margam's independently written residual importance sampler was compared with
+NVIDIA PhysicsNeMo Sym's `DictImportanceSampledPointwiseIterableDataset` and
+[theory documentation](https://docs.nvidia.com/physicsnemo/26.03/physicsnemo-sym/user_guide/theory/advanced_schemes.html#importance-sampling).
+The [upstream source](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physicsnemo/sym/dataset/continuous.py)
+is Apache-2.0. No source was copied and the package is not required. Differences
+in candidate pools, importance measures, schedules and integral/mean normalisation
+are documented in docs/adaptive-sampling.md.

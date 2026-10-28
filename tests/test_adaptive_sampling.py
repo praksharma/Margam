@@ -61,6 +61,27 @@ class AdaptiveSamplingTests(unittest.TestCase):
         manual=((values-target).square().mean(1,keepdim=True)*model.sampling_controller.weights).mean()
         torch.testing.assert_close(model.compute_losses()['pde'],manual)
 
+    def test_physicsnemo_area_correction_matches_mean_loss_on_equal_weight_pool(self):
+        # Independent comparison to the documented Sym area/density convention.
+        # Compare exact expectations over a finite pool; no stochastic tolerance.
+        scores=torch.tensor([.2,1.,3.,5.],dtype=torch.float64)
+        probabilities=importance_probabilities(scores,2.,.9)
+        draws=7;population=len(scores)
+        for volume in (1.,6.):
+            cell_area=torch.full_like(scores,volume/population)
+            density=probabilities/(cell_area*probabilities).sum()
+            corrected_area=1/(density*draws)
+            # Every possible draw has the same per-draw contribution after
+            # converting NVIDIA's integral convention to Margam's mean convention.
+            torch.testing.assert_close(corrected_area/volume,1/(population*probabilities*draws))
+            parameter=torch.tensor(2.,dtype=torch.float64,requires_grad=True)
+            errors=(parameter*torch.arange(1.,5.,dtype=torch.float64)).square()
+            nvidia_expectation=draws*(probabilities*corrected_area*errors).sum()/volume
+            margam_expectation=(probabilities*errors/(population*probabilities)).sum()
+            torch.testing.assert_close(nvidia_expectation,margam_expectation)
+            torch.testing.assert_close(torch.autograd.grad(nvidia_expectation,parameter,retain_graph=True)[0],
+                                       torch.autograd.grad(margam_expectation,parameter)[0])
+
     def test_derivative_scores_are_chunked_detached_and_nonfinite_atomic(self):
         model=build_pinn(config());points=torch.linspace(.1,.9,13)[:,None]
         score=model.sampling_controller.scores(model,points)
