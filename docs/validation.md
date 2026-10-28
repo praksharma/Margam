@@ -216,3 +216,17 @@ Existing flow, recipe and export tests also pass. The manual build checked all
 49 rendered pages. XML metadata/field contents were read back; ParaView GUI
 playback and shock accuracy against reference data were not exercised. See the
 [100-update CPU record](../assets/benchmarks/burgers-cpu.json).
+
+## CUDA environment verification — 28 October 2026
+
+The existing root environment was changed from Torch 2.14.1+cpu to
+**2.14.1+cu130** (CUDA runtime 13.0), keeping Python 3.14 and the same environment.
+`uv pip check` passed. CUDA availability, a tensor matrix multiplication and
+actual training were verified on an NVIDIA GeForce RTX 3060 Laptop GPU.
+
+All **three existing CUDA checks passed without skips**: CPU/GPU loss agreement,
+auto-device Poisson training/data placement, and GPU benchmark artifact creation.
+Additional five-update Burgers CUDA checks passed for fixed sampling, RAR, and
+importance sampling with integral loss. These were targeted GPU checks; the full
+130-test run recorded above was the earlier CPU validation. The setup/device
+commands are in [the command reference](commands.md#devices-and-cpu-setup).

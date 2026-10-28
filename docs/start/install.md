@@ -30,7 +30,7 @@ Keep an existing environment in place. You can also activate it with
 when finished. Editable installation picks up source changes. Dependencies are
 managed with uv; a separate pip module inside the environment is not required.
 
-For CPU-specific installation and device checks, see
+For CPU/CUDA installation in this same environment and device checks, see
 [the command reference](../commands.md#devices-and-cpu-setup).
 
 ## Open this illustrated manual

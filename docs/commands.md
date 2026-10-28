@@ -56,20 +56,34 @@ belongs in `assets/benchmarks/` and is indexed by [recorded results](results.md)
 .venv/bin/python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
 ```
 
-The current environment has CPU-only Torch; CUDA checks skip. The results catalogue
-also preserves an older GPU measurement, explicitly labelled as historical rather
-than current GPU validation. On a compatible CUDA installation, use `--device cuda`
-or `--device auto` in the baseline scripts. `auto` falls back to CPU.
+A CUDA-enabled Torch build and a compatible NVIDIA driver are both required for
+GPU training. A CPU-only build reports `torch.version.cuda == None`; selecting
+`cuda` in Margam cannot add GPU support to that build. In the trainer or compact
+recipe inspector choose **Trainer → Device → auto** (CUDA when available, CPU
+otherwise) or **cuda** (require CUDA). Example configurations still default to CPU.
 
-On a fresh CPU environment, the numerical dependencies can be installed before
-the remaining setup commands using:
+### Replace CPU-only Torch in the existing environment
+
+For a driver compatible with CUDA 13.0, install the CUDA build into the same root
+`.venv`; this does not create another environment:
 
 ```sh
-uv pip install --python .venv/bin/python 'torch>=2.9,<3' 'numpy>=2,<3' --index-url https://download.pytorch.org/whl/cpu
+uv pip install --python .venv/bin/python --torch-backend cu130 'torch>=2.9,<3' --reinstall-package torch
+uv pip check --python .venv/bin/python
+.venv/bin/python -c "import torch; print(torch.__version__, torch.version.cuda); print('CUDA available:', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA device')"
 ```
 
-GPU installation requires a machine-compatible driver and Torch build; do not
-replace the working environment merely to read historical results.
+Choose a build compatible with your hardware/driver using the
+[official PyTorch installation guide](https://pytorch.org/get-started/locally/).
+Restart Margam after replacing an already imported Torch build. Baseline scripts
+also accept `--device cuda` or `--device auto`.
+
+For a CPU-only installation, keep the same environment and explicitly select
+the CPU backend instead:
+
+```sh
+uv pip install --python .venv/bin/python --torch-backend cpu 'torch>=2.9,<3' 'numpy>=2,<3'
+```
 
 ## Documentation
 
