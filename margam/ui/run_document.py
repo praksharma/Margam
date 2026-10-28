@@ -46,7 +46,8 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('lra' in checkpoint)==(config.method=='lra'),'Checkpoint LRA state/method mismatch.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
@@ -110,13 +111,15 @@ def load_run(path):
                 return torch.tensor(sample_box(*config.bounds,config.points,config.sampling,config.seed))
             return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
         problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
+        from ..components.losses import apply_problem_measures
+        apply_problem_measures(problem,config)
         if config.method=='self_adaptive':
             from ..methods.self_adaptive import SelfAdaptivePINN
-            model=SelfAdaptivePINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+            model=SelfAdaptivePINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
         elif config.method=='lra':
             from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
-            model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
-        else:model=PINN(problem,network).compile(lr=config.lr,device='cpu')
+            model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
+        else:model=PINN(problem,network,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu')
         from ..components.adaptive_sampling import configure_adaptive_sampling
         configure_adaptive_sampling(model,config)
         if 'data_fingerprint' not in data['checkpoint']:

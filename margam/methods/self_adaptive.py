@@ -30,12 +30,10 @@ class SelfAdaptivePINN(PINN):
         return self
 
     def point_errors(self):
-        return {name:(values-target).square().mean(dim=1,keepdim=True)
-                for name,sample in self.loss_samples().items()
-                for values,target in [self._aligned(*sample)]}
+        return {name:self.point_squared_errors(*sample) for name,sample in self.loss_samples().items()}
 
     def objective(self,errors):
-        return weighted_loss({name:(error*self.adaptive_weights[name].square()).mean() if name in self.adaptive_weights else error.mean()
+        return weighted_loss({name:((error*self.adaptive_weights[name].square()).mean() if name in self.adaptive_weights else error.mean())*self.loss_scale(name)
                               for name,error in errors.items()},self.weights)
 
     def train(self,iterations,display_every=1):
@@ -56,11 +54,11 @@ class SelfAdaptivePINN(PINN):
             with torch.no_grad():
                 for weight in self.adaptive_weights.values():weight.clamp_(0,self.adaptive_settings['maximum'])
             self.iter+=1
-            record={name:error.detach().mean().item() for name,error in errors.items()}
+            record={name:(error.detach().mean()*self.loss_scale(name)).item() for name,error in errors.items()}
             record['total']=total.detach().item()
             self.loss_history.append(record);self.training_history.append(record['total'])
-            self.PDE_loss=errors['pde'].detach().mean()
-            self.BC_loss=sum(error.detach().mean() for name,error in errors.items() if name!='pde')
+            self.PDE_loss=errors['pde'].detach().mean()*self.loss_scale('pde')
+            self.BC_loss=sum(error.detach().mean()*self.loss_scale(name) for name,error in errors.items() if name!='pde')
             self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f"Iteration: {self.iter}\t SA loss: {record['total']:.6g}")
         return self.training_history

@@ -98,3 +98,7 @@ algorithm setting, architecture, or data cannot silently resume the old run.
 Tests cover the exact raw-gradient ratio and EMA, cap/zero guards, nonfinite
 aborts, batching/resume equality, all ten networks and a coupled-flow smoke run,
 and real desktop insertion/expand/collapse/clipboard/undo/model/run lifecycle.
+
+The optional [integral loss formulation](integral-loss.md) applies physical measures
+before LRA computes term-gradient statistics. Mean MSE remains the default. The
+coefficient update algorithm and network architecture do not change.

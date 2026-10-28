@@ -103,3 +103,9 @@ The [upstream source](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physic
 is Apache-2.0. No source was copied and the package is not required. Differences
 in candidate pools, importance measures, schedules and integral/mean normalisation
 are documented in docs/adaptive-sampling.md.
+
+The optional integral-of-squared-error formulation was independently implemented
+after inspecting PhysicsNeMo Sym's `PointwiseLossNorm` in
+[loss/loss.py](https://github.com/NVIDIA/physicsnemo-sym/blob/main/physicsnemo/sym/loss/loss.py).
+No NVIDIA code was copied. This does not implement its separate `IntegralLossNorm`
+for constraints on integrated quantities. See docs/integral-loss.md.

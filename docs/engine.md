@@ -58,3 +58,12 @@ The small [SA comparison](self-adaptive-pinn.md) has a separate runnable script,
 It uses the template builder and existing mean-BC convention; it does not share
 the historical baseline benchmark's exact collocation grid, learning rate or BC
 weight. Compare results only under the [stated protocols](results.md).
+
+## Integral squared-error loss
+
+`PINN(problem, network, loss_formulation="integral")` uses `PINNProblem.measure`
+and each `PointConstraint.measure` (positive finite scalars, default one). It sums
+squared residual components, averages over points, and multiplies by the region
+measure. Template builders set these measures from physical box dimensions.
+The default `loss_formulation="mean"` preserves previous MSE behaviour. See
+[integral loss](integral-loss.md) for importance correction and supported data.

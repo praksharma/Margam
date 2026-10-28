@@ -89,6 +89,12 @@
   set/history. Keep BCs/export grids separate. Reject SA masks and imported-domain
   candidate generation until their explicit data/transfer contracts are implemented.
 
+- Integral loss integrates squared pointwise errors with physical measures; it
+  does not square a signed residual integral. Keep mean MSE the default, sum
+  vector components in integral mode, and retain unit endpoint/gauge penalties.
+  Apply volume once with importance correction. Reject RAR/imported quadrature
+  until appropriate point weights exist; persist mode/measures in checkpoints.
+
 ## User documentation
 
 - Keep task-based help under docs/start, docs/modeling and docs/use, with docs/index.md

@@ -42,6 +42,7 @@ class PoissonConfig:
     iterations: int = 1000
     lr: float = .01
     device: str = 'cpu'
+    loss_formulation: str = 'mean'
     pde_weight: float = 1.0
     boundary_weight: float = 1.0
     bc_types: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 'Dirichlet'))
@@ -143,6 +144,11 @@ class PoissonConfig:
         self.validate_sampling()
         from ..components.adaptive_sampling import validate_adaptive_sampling
         validate_adaptive_sampling(self.adaptive_sampling)
+        from ..components.losses import LOSS_FORMULATIONS
+        if not isinstance(self.loss_formulation,str) or self.loss_formulation not in LOSS_FORMULATIONS:raise ValueError('Unknown loss formulation.')
+        if self.loss_formulation=='integral':
+            if self.interior_data or self.boundary_data:raise ValueError('Integral loss on imported points requires explicit quadrature weights; use built-in geometry samples for now.')
+            if self.adaptive_sampling.get('method')=='rar':raise ValueError('Integral loss cannot treat RAR anchors as uniform quadrature. Use fixed uniform-domain sampling or importance sampling.')
         if self.adaptive_sampling:
             if self.interior_data:raise ValueError('Adaptive candidate generation currently supports built-in domains only; imported interior points need an explicit candidate source.')
             if self.method=='self_adaptive':raise ValueError('Adaptive sampling cannot yet move SA-PINN pointwise masks. Use baseline, hard-BC or LRA training.')
@@ -270,18 +276,20 @@ def _build_pinn(config):
         return expression(x,u,source=config.source) if expression else laplacian(u,x) + config.source
     problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
+    from ..components.losses import apply_problem_measures
+    apply_problem_measures(problem,config)
     network = build_network(config)
     weights = config.loss_weights
     if config.method=='hard_dirichlet':
         from ..methods.hard_dirichlet import HardDirichletPINN
-        return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights).compile(lr=config.lr,device=config.device)
+        return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
-        return SelfAdaptivePINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+        return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
     if config.method=='lra':
         from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
-        return LearningRateAnnealingPINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
-    return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
+        return LearningRateAnnealingPINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
+    return PINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
 
 
 def has_custom_physics(config):

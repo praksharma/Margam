@@ -25,5 +25,5 @@ class BoxDirichletNetwork(torch.nn.Module):
 
 
 class HardDirichletPINN(PINN):
-    def __init__(self,problem,network,*,bounds,value,weights=None):
-        super().__init__(problem,BoxDirichletNetwork(network,*bounds,value),weights=weights)
+    def __init__(self,problem,network,*,bounds,value,weights=None,loss_formulation="mean"):
+        super().__init__(problem,BoxDirichletNetwork(network,*bounds,value),weights=weights,loss_formulation=loss_formulation)

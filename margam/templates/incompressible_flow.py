@@ -79,15 +79,17 @@ def build_flow_pinn(config):
             constraints.append(PointConstraint(side+':'+field,torch.tensor(rows),value,operator))
     constraints.append(PointConstraint('pressure_gauge',torch.tensor([config.pressure_point]),config.pressure_value,lambda x,u:u[:,2:3]))
     problem=PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
+    from ..components.losses import apply_problem_measures
+    apply_problem_measures(problem,config)
     network=build_network(config)
     weights=config.loss_weights
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
-        return SelfAdaptivePINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+        return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
     if config.method=='lra':
         from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
-        return LearningRateAnnealingPINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
-    return PINN(problem,network,weights=weights).compile(lr=config.lr,device=config.device)
+        return LearningRateAnnealingPINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
+    return PINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
 
 
 def flow_demo_config():

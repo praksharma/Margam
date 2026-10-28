@@ -85,3 +85,13 @@ python -m examples.capture_adaptive_sampling --overwrite
 ```
 
 See [adaptive sampling](adaptive-sampling.md) for block wiring and estimator choices.
+
+## Integral loss formulation
+
+```bash
+python -m examples.integral_loss
+python -m unittest discover -s tests -p 'test_integral_loss*.py' -v
+python -m examples.capture_integral_loss --overwrite
+```
+
+See [integral loss](integral-loss.md) for measures, components and supported samplers.

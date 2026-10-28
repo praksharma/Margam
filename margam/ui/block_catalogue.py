@@ -47,7 +47,7 @@ CAPABILITIES = {
     'pde': ('Physics, residual expressions, viscosity/coefficient', 'Scalar residual or steady 2D incompressible u/v/p. No transient system or extra pointwise inputs.'),
     'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
     'network': ('Architecture, hidden layers, seed and per-architecture options', 'Pointwise fully connected, Fourier MLP/features, highway/modified/multiscale Fourier, DGM, SIREN and multiplicative Fourier/Gabor networks. Shared by baseline and SA. No neural operators.'),
-    'method': ('Variant, updates, learning rate, loss weights, device', 'Baseline or equal-constant hard Dirichlet PINN; fixed-sample full-batch Adam. Optional residual sampling blocks; no LBFGS.'),
+    'method': ('Variant, loss formulation, updates, learning rate, loss weights, device', 'Baseline or equal-constant hard Dirichlet PINN; mean MSE or domain/boundary integral loss; full-batch Adam. Optional residual sampling blocks; no LBFGS.'),
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction or u/v/p table request; no reference assumed.'),
     'monitor': ('Name, retained updates', 'Explicit bounded loss recording; closing its view does not stop recording.'),
     'reference': ('Preset, coordinate expression or mapped values', 'Explicit scalar source. Imported data requires matching coordinates; preset sources reject custom physics.'),

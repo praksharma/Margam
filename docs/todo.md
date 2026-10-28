@@ -345,3 +345,12 @@ These are proposed features; current execution still runs one supported problem.
   convention for equal-weight pools, including non-unit volume and gradients.
 - [ ] Consider field-gradient importance measures and fixed candidate pools as
   explicit options; retain residual sampling semantics for existing saved models.
+
+## Integral loss formulation (28 October 2026)
+
+- [x] Optional integral of squared PDE/BC errors using physical measures; preserve default mean MSE.
+- [x] Correct component sums, importance correction, endpoint/gauge counting measure and method integration.
+- [x] Trainer/compact controls, version migration, measure-aware checkpoint verification and UI tests.
+- [x] Document NVIDIA pointwise-integral distinction, screenshot and non-unit-domain CPU evidence.
+- [ ] Imported quadrature weights and physical measures for GeoSampler point sets.
+- [ ] Integral constraints on quantities such as total flow/flux, separate from squared-error integration.

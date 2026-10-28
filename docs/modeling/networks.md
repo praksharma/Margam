@@ -59,3 +59,7 @@ accurate on every problem. User-selected budgets and settings are retained when
 recipes are expanded/collapsed, saved and reopened.
 
 **Next:** [Train and inspect results](../use/results.md).
+
+Select a trainer or compact recipe to choose **Loss formulation**. Mean squared
+error remains the default; the optional [integral formulation](../integral-loss.md)
+uses domain volume and boundary lengths. It works with the existing architectures.

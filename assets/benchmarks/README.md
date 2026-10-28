@@ -53,3 +53,6 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 - [Adaptive sampling CPU workflow](adaptive-sampling-cpu.json): 60-update rectangle
   runs for RAR and importance sampling, with event counts and exact checkpoint
   continuation checks. This is software correctness evidence, not an accuracy study.
+
+- [Integral loss CPU workflow](integral-loss-cpu.json): non-unit-domain measure
+  scaling and exact fixed/importance checkpoint continuation; no accuracy claim.

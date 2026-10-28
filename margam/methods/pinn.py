@@ -7,6 +7,7 @@ import torch
 from copy import deepcopy
 import hashlib
 import json
+import math
 from ..backend import choose_optimiser, loss_metric
 from ..components import weighted_loss
 
@@ -16,10 +17,11 @@ class PINN:
 
     Seed before constructing the network and compiling for reproducibility.
     """
-    def __init__(self, problem, network, *, weights=None):
+    def __init__(self, problem, network, *, weights=None, loss_formulation="mean"):
         self.problem = problem
         self.network = network
         self.weights = dict(weights or {})
+        self.loss_formulation = loss_formulation
         self._compiled = False
 
     def compile(self, optimiser_string="adam", lr=1e-3,
@@ -33,6 +35,10 @@ class PINN:
         self._compiled = False
         self.sampling_controller = None
         if not isinstance(getattr(self.problem,'data_identity',''),str):raise ValueError("Problem data identity must be text.")
+        from ..components.losses import LOSS_FORMULATIONS
+        if not isinstance(self.loss_formulation,str) or self.loss_formulation not in LOSS_FORMULATIONS:raise ValueError('Unknown loss formulation.')
+        self.loss_measures={'pde':self.problem.measure,**{condition.name:condition.measure for condition in self.problem.constraints}}
+        if any(type(value) not in (int,float) or not math.isfinite(value) or value<=0 for value in self.loss_measures.values()):raise ValueError('Loss measures must be finite and positive.')
         self._data_identity=getattr(self.problem,'data_identity','')
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -106,14 +112,24 @@ class PINN:
             terms[condition.name] = (values, target, len(points))
         return terms
 
+    def loss_scale(self,name):
+        return self.loss_measures[name] if self.loss_formulation=='integral' else 1.
+
+    def point_squared_errors(self,values,target,rows):
+        values,target=self._aligned(values,target,rows)
+        error=(values-target).square()
+        return error.sum(dim=1,keepdim=True) if self.loss_formulation=='integral' else error.mean(dim=1,keepdim=True)
+
     def compute_losses(self):
-        """Return named losses before global coefficients; include sampling correction."""
-        samples=self.loss_samples()
-        terms={name:self._term(*sample) for name,sample in samples.items()}
-        if self.sampling_controller is not None and self.sampling_controller.weights is not None:
-            values,target,rows=samples['pde']
-            values,target=self._aligned(values,target,rows)
-            terms['pde']=((values-target).square().mean(dim=1,keepdim=True)*self.sampling_controller.weights).mean()
+        """Named losses before global coefficients; include sampling correction."""
+        terms={}
+        for name,sample in self.loss_samples().items():
+            if self.loss_formulation=='mean' and not (name=='pde' and self.sampling_controller is not None and self.sampling_controller.weights is not None):
+                terms[name]=self._term(*sample);continue
+            error=self.point_squared_errors(*sample)
+            if name=='pde' and self.sampling_controller is not None and self.sampling_controller.weights is not None:
+                error=error*self.sampling_controller.weights
+            terms[name]=error.mean()*self.loss_scale(name)
         return terms
 
     def train(self, iterations, display_every=1):
@@ -169,6 +185,7 @@ class PINN:
         if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
         state={'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
                'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history}
+        if self.loss_formulation!='mean':state['loss_formulation']=dict(mode=self.loss_formulation,measures=self.loss_measures)
         if self.sampling_controller is not None:state['sampling']=self.sampling_controller.state(self)
         if hasattr(self.network,'_margam_spec'):state['network_spec']=self.network._margam_spec
         return deepcopy(state)
@@ -176,8 +193,10 @@ class PINN:
     def load_training_state(self,state):
         self._require_compiled()
         fields={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}
-        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec','sampling'}:
+        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec','sampling','loss_formulation'}:
             raise ValueError('Invalid baseline checkpoint.')
+        expected_loss=None if self.loss_formulation=='mean' else dict(mode=self.loss_formulation,measures=self.loss_measures)
+        if state.get('loss_formulation')!=expected_loss:raise ValueError('Checkpoint loss formulation/measures differ from this recipe.')
         if ('sampling' in state)!=(self.sampling_controller is not None):raise ValueError('Checkpoint adaptive sampler differs from this recipe.')
         if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets differ from the current files or sampling recipe.')
         expected_spec=getattr(self.network,'_margam_spec',None)

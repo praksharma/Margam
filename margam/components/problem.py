@@ -17,6 +17,7 @@ class PointConstraint:
     points: TensorSource
     target: Union[torch.Tensor, float, Callable] = 0.0
     operator: Callable = None
+    measure: float = 1.0  # Boundary length, or unit counting measure for a point.
 
 
 @dataclass
@@ -31,3 +32,5 @@ class PINNProblem:
     constraints: Sequence[PointConstraint] = field(default_factory=tuple)
     residual_target: Union[torch.Tensor, float, Callable] = 0.0
     data_identity: str = ""  # Optional immutable identity for imported operator data.
+
+    measure: float = 1.0  # Domain volume for integral-of-squared-residual loss.

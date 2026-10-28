@@ -192,3 +192,15 @@ trainers, legacy model defaults, and UI editing/clipboard/recipe/archive workflo
 No CUDA execution or comparative numerical accuracy claim is made for the new
 samplers. The separate [CPU demo record](../assets/benchmarks/adaptive-sampling-cpu.json)
 records point counts, residual statistics and exact continuation checks.
+
+## Integral squared-error verification — 28 October 2026
+
+The full CPU/offscreen suite passed **124 tests**, with **4 skips** for unavailable
+CUDA/optional VTK checks. Eight integral-loss tests cover volume/edge-length
+scaling, point-count independence, summed vector components and gradients,
+squaring before integration, unit endpoint/gauge penalties, importance correction,
+method/checkpoint combinations, legacy defaults and compact/UI persistence. A
+separate final archive check covers importance sampling combined with integral
+loss. The manual build checked all 47 rendered pages and local links. See the
+[CPU workflow evidence](../assets/benchmarks/integral-loss-cpu.json); this establishes
+software behaviour, not improved solution accuracy.

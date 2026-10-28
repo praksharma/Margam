@@ -14,6 +14,7 @@ from ..components.outputs import OutputRequest, ReferenceSource
 from ..components.expressions import Expression
 from ..components.prepared_data import reference_values
 from ..components.export import export_csv
+from ..components.losses import LOSS_FORMULATIONS
 from ..components.sampling import SAMPLERS
 from ..components.network_config import NETWORK_NAMES, OPTION_SCHEMAS, network_options
 from .plots import RectanglePreview
@@ -1359,6 +1360,15 @@ class Window(QMainWindow):
         else:self.change('interior_data',{})
         self.selection_changed()
 
+    def loss_formulation_field(self):
+        choice=QComboBox();choice.setObjectName('loss_formulation')
+        for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
+        choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
+        choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
+        self.form.addRow('Loss formulation',choice)
+        note=QLabel('Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note.setWordWrap(True);self.form.addRow(note)
+
     def change_sampling_option(self,key,value):
         settings=deepcopy(self.config.adaptive_sampling);settings[key]=value
         self.change('adaptive_sampling',settings)
@@ -1556,6 +1566,7 @@ class Window(QMainWindow):
             note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
             self.property_section('PINN method')
             self.form.addRow(QLabel(recipe.NAME))
+            self.loss_formulation_field()
             for attribute in recipe.EXPOSED:
                 if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
                 elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
@@ -1594,7 +1605,8 @@ class Window(QMainWindow):
                 self.field('Maximum mask weight','sa_max',minimum=.000001,maximum=1000000)
                 adaptive=QCheckBox('Adapt boundary/constraint weights');adaptive.setChecked(self.config.sa_boundary)
                 adaptive.toggled.connect(lambda value:self.change('sa_boundary',value));self.form.addRow(adaptive)
-                note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show raw MSE; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
+                note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show unmasked loss; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
+            self.loss_formulation_field()
             self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)
             self.field('Mean BC weight','boundary_weight',minimum=.000001,maximum=100000)
             self.property_section('Optimisation')
@@ -1604,7 +1616,7 @@ class Window(QMainWindow):
                 self.form.addRow('Mask optimiser',QLabel('Adam · ascent'))
                 self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
             self.property_section('Trainer')
-            self.form.addRow(QLabel('Fixed samples · full-batch updates'))
+            self.form.addRow(QLabel('Full-batch updates'))
             self.field('Training updates','iterations','int',minimum=1,maximum=100000)
             self.field('Device','device','choice',choices=['cpu','auto','cuda'])
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))

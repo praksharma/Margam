@@ -289,3 +289,11 @@ rectangle runs starting from 36 grid points. RAR adds 8 points after updates 20 
 probability weights. Both reproduce the uninterrupted trajectory exactly after
 checkpointing at step 25. These checks establish schedule/continuation behaviour,
 not comparative numerical accuracy. See the [sampler guide](adaptive-sampling.md).
+
+## Integral loss workflow — 28 October 2026
+
+[CPU record](../assets/benchmarks/integral-loss-cpu.json): on a 3 × 2 rectangle,
+initial scalar PDE/BC losses match mean-MSE losses times the corresponding
+area/edge length. Fixed and importance-sampled 40-update runs resume identically
+from update 15. This verifies measure application and continuation, not solution
+accuracy or convergence superiority. See [integral loss](integral-loss.md).

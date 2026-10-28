@@ -63,7 +63,10 @@ The initial warm-up uses ordinary MSE. The probability fraction is limited to
 0–0.99 to retain positive probability everywhere; all-zero scores fall back to
 uniform probabilities. Scaling scores by their maximum before exponentiation
 avoids overflow without changing probabilities. Weights are detached, are not
-normalised by their sampled sum, and multiply only the PDE term.
+normalised by their sampled sum, and multiply only the PDE term. The optional
+[integral loss formulation](integral-loss.md) additionally applies domain measure
+and sums residual components. It supports importance sampling; RAR currently
+requires mean loss because its anchors have no uniform-domain quadrature weights.
 
 Conditional on the current network and pool, the weighted estimator and its
 network gradient target the **uniform candidate-pool MSE**. This is not the same

@@ -99,3 +99,9 @@ reproduced. Optional L-BFGS, GP-based resampling, minibatches, random mask
 initialisation, alternative mask families and transient UI problems are not
 implemented. Existing interval/rectangle scalar physics and steady u/v/p are
 supported; no 3D or ParaView work is included.
+
+The equations above describe the default mean formulation. The optional
+[integral loss](integral-loss.md) instead sums residual components and applies
+physical domain/boundary measures inside the masked objective; reported term
+losses are the corresponding unmasked integrals. Fixed SA sample masks remain
+incompatible with moving-point adaptive sampling.
