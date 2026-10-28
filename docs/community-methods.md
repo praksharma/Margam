@@ -37,3 +37,5 @@ implementations or reproduced research results.
 When adding a community method, record its paper/project, link the exact reference,
 state whether code was copied or independently implemented, and describe deliberate
 differences and current limits in its guide.
+
+The [seven Expert examples](expert-examples.md) independently implement the v1 paper equations and boundary conditions. Torus Taylor–Green and cylinder startup use explicitly labelled self-contained initial fields, not the authors’ simulation datasets. Periodicity is imposed with soft derivative constraints, and the torus auxiliary-vorticity representation includes zero-mean velocity quadrature. No JAX-PI source/data is copied.

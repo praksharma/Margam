@@ -20,12 +20,12 @@ class ExpertPINN(PINN):
     def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):
         validate_expert_problem(self.sample_config)
         if self.loss_formulation!='mean':raise ValueError('Expert PINN currently requires mean MSE.')
-        if {condition.name for condition in self.problem.constraints}!={'left','right','initial'}:raise ValueError('Expert PINN requires left, right and initial constraint sets.')
+        if not self.sample_config.is_paper_case and {condition.name for condition in self.problem.constraints}!={'left','right','initial'}:raise ValueError('Expert PINN requires left, right and initial constraint sets.')
         if any(not callable(source) and torch.as_tensor(source).ndim!=0 for source in (self.problem.residual_target,*(condition.target for condition in self.problem.constraints))):raise ValueError('Fresh Expert samples require scalar or coordinate-callable targets.')
         if optimiser_string!='adam' or metrics_string!='MSE' or optimiser is not None:raise ValueError('Expert PINN uses Adam and MSE.')
         self._expert_fingerprint=None
         super().compile(optimiser_string,lr,metrics_string,device)
-        self.initial_lr=lr;self.coefficients=dict(pde=1.,initial=1.,boundary=1.);self.balance_history=[];self._causal_min=1.
+        self.initial_lr=lr;self.coefficients=dict(pde=1.,**({'initial':1.} if self.sample_config.is_time_dependent else {}),boundary=1.);self.balance_history=[];self._causal_min=1.
         description=asdict(self.sample_config)
         for key in ('iterations','device'):description.pop(key)
         self.expert_signature=dict(algorithm='expert-guide-v1-sum-grad-norm',configuration=description,lr=lr,weights=deepcopy(self.weights))
@@ -34,6 +34,13 @@ class ExpertPINN(PINN):
         return self
 
     def _fresh_samples(self,phase):
+        if self.sample_config.is_paper_case:
+            points,conditions=self.problem.refresh_samples(phase)
+            self.collocation_point_sample=self._points(points);self.collocation_point_labels=self._target(self.problem.residual_target,self.collocation_point_sample)
+            self._constraints=[]
+            for condition in conditions:
+                points=self._points(condition.points);self._constraints.append((condition,points,self._target(condition.target,points)))
+            return
         from ..templates.poisson import sample_problem
         config=deepcopy(self.sample_config)
         offset=104729*phase
@@ -78,6 +85,7 @@ class ExpertPINN(PINN):
         samples=self.loss_samples()
         terms={name:self._term(*sample) for name,sample in samples.items()}
         # Fresh samples are stored in temporal-stratum order, keeping each (x,t) pair intact.
+        if not self.sample_config.is_time_dependent:return terms
         sample=samples['pde'];errors=self.point_squared_errors(*sample).flatten()
         chunk_losses=errors.reshape(self.options['chunks'],-1).mean(1)
         terms['pde'],causal=self.causal_objective(chunk_losses,self.options['causal_epsilon'])
@@ -85,8 +93,10 @@ class ExpertPINN(PINN):
         return terms
 
     def _groups(self,terms):
-        return dict(pde=terms['pde']*self.weights.get('pde',1.),initial=terms['initial']*self.weights.get('initial',1.),
-                    boundary=sum(value*self.weights.get(name,1.) for name,value in terms.items() if name not in ('pde','initial')))
+        groups=dict(pde=terms['pde']*self.weights.get('pde',1.))
+        if 'initial' in terms:groups['initial']=terms['initial']*self.weights.get('initial',1.)
+        groups['boundary']=sum(value*self.weights.get(name,1.) for name,value in terms.items() if name not in ('pde','initial'))
+        return groups
 
     def _balanced(self,groups):
         parameters=tuple(p for p in self.network.parameters() if p.requires_grad)

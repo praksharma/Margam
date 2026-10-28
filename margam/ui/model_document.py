@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -37,9 +37,12 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<16:
         from ..components.expert_config import expert_defaults
         c=dict(c,expert_settings=c.get('expert_settings',expert_defaults()))
+    if isinstance(c,dict) and data['version']<17:
+        c=dict(c)
+        for key,value in (('t_min',0.),('t_max',1.),('cylinder_x',.2),('cylinder_y',.2),('cylinder_radius',.05),('fourth_order',100/16**4),('startup_time',.1)):c.setdefault(key,value)
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
-    require(c['shape'] in ('Interval', 'Rectangle','SpaceTime1D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
-    for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
+    require(c['shape'] in ('Interval', 'Rectangle','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
+    for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
         require(number(c[key]), f'{key} must be finite numeric data.')
     for key,lower,upper in (('points',1,100000),('boundary_points',1,10000),
                             ('seed',0,2**31-1),('iterations',1,100000)):
@@ -62,7 +65,7 @@ def decode_document(data):
     require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert'),'Unknown PINN method.')
     require(all(number(c[key]) and c[key]>0 for key in ('sa_lr','sa_initial','sa_max')) and c['sa_initial']<=c['sa_max'] and type(c['sa_boundary']) is bool,'Invalid adaptive settings.')
     require(number(c['lra_alpha']) and 0<c['lra_alpha']<=1 and type(c['lra_interval']) is int and 1<=c['lra_interval']<=100000 and number(c['lra_epsilon']) and 0<c['lra_epsilon']<=1 and number(c['lra_max']) and 1<=c['lra_max']<=1e12,'Invalid LRA settings.')
-    require(c['physics'] in ('scalar','incompressible_2d') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
+    require(c['physics'] in ('scalar','incompressible_2d','paper_case') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
     require(isinstance(c['flow_residuals'],(list,tuple)) and len(c['flow_residuals'])==3 and all(isinstance(text,str) and len(text)<=512 for text in c['flow_residuals']),'Invalid flow residuals.')
     require(isinstance(c['pressure_point'],(list,tuple)) and len(c['pressure_point'])==2 and all(number(v) for v in c['pressure_point']),'Invalid pressure gauge point.')
     require(isinstance(c['flow_boundary'],dict) and set(c['flow_boundary'])==SIDES,'Flow boundaries need named sets.')
@@ -127,6 +130,9 @@ def decode_document(data):
             if data['version']<5 and node['kind']=='method' and isinstance(parameters,dict):parameters=dict(parameters,method=parameters.get('method','baseline'));settings=dict(settings,parameters=parameters);node['settings']=settings
             if data['version']<13 and node['kind']=='interior' and isinstance(parameters,dict):
                 parameters=dict(parameters,adaptive_sampling={});node['settings']=settings=dict(settings,parameters=parameters)
+            if data['version']<17 and node['kind'] in ('domain','predefined_pde','bc') and isinstance(parameters,dict):
+                from .graph_model import parameters_for
+                parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='method':require(parameters['method'] in ('baseline','hard_dirichlet'),'Use the self-adaptive trainer for SA-PINN settings.')
             if node['kind'] in ('rar','importance'):
@@ -135,7 +141,7 @@ def decode_document(data):
             if node['kind']=='interior':require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':16,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':17,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -153,7 +159,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':16, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':17, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

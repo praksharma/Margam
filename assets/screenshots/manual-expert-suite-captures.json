@@ -1,0 +1,17 @@
+{
+  "scope": "Actual Qt submenu and supported case inspectors; no accuracy claim.",
+  "captures": {
+    "menu": {
+      "file": "manual-expert-suite-menu.png",
+      "sha256": "38ae3ae1657140121d999c5c18fd66c2c827296e900d6ee64decf641bbe0b13b"
+    },
+    "cylinder": {
+      "file": "manual-expert-suite-cylinder.png",
+      "sha256": "92e8f76f0ff3421e22d7f898c18cc777f8034486d3ccc54efebdcafd1ff1b7f9"
+    },
+    "torus": {
+      "file": "manual-expert-suite-torus.png",
+      "sha256": "1e6348f1c57cd338ff4ac9a110633b05e6a7a27c9bee3d0f500d1285b8298ae8"
+    }
+  }
+}

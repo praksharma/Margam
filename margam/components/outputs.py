@@ -32,12 +32,7 @@ def evaluate_outputs(model, config, requests):
             raise ValueError('Evaluation resolution must be between 2 and 201.')
         lower, upper = config.bounds
         count = request.resolution
-        xs = [lower[0] + i*(upper[0]-lower[0])/(count-1) for i in range(count)]
-        if len(lower) == 1:
-            points = [[x] for x in xs]
-        else:
-            ys = [lower[1] + i*(upper[1]-lower[1])/(count-1) for i in range(count)]
-            points = [[x, y] for y in ys for x in xs]
+        points=evaluation_points(config,count)
         import torch
         import numpy as np
         prediction=model.predict(torch.tensor(points)).detach().cpu().numpy()
@@ -64,3 +59,16 @@ def evaluate_outputs(model, config, requests):
                 data['max_error_by_field']={name:float(np.max(np.abs(error[:,i]))) for i,name in enumerate(fields)}
         results[request.identifier] = data
     return results
+
+
+def evaluation_points(config,count):
+    """Bounded regular evaluation grids; discard solid-cylinder locations."""
+    import itertools
+    lower,upper=config.bounds
+    if count**len(lower)>100000:raise ValueError('Evaluation exceeds 100000 locations; reduce the per-axis resolution.')
+    axes=[[a+i*(b-a)/(count-1) for i in range(count)] for a,b in zip(lower,upper)]
+    points=[list(reversed(row)) for row in itertools.product(*reversed(axes))]
+    if getattr(config,'has_obstacle',False):
+        from ..templates.expert_examples import inside_fluid
+        points=[point for point in points if inside_fluid(config,point)]
+    return points

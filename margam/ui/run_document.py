@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import tempfile
 import zipfile
+from ..components.outputs import evaluation_points
 from .model_document import capture_model, decode_document, require, number
 
 LIMIT=256*1024*1024
@@ -22,10 +23,10 @@ def validate_run(data):
         require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field'},'Invalid output metadata.')
         size=output['size'];require(type(size) is int and 2<=size<=201,'Invalid output resolution.')
         points,values=output['points'],output['values']
-        require(isinstance(points,list) and isinstance(values,list) and len(points)==len(values)==size**len(config.bounds[0]),'Invalid output point count.')
-        vector=config.physics=='incompressible_2d'
+        require(isinstance(points,list) and isinstance(values,list) and len(points)==len(values)==len(evaluation_points(config,size)),'Invalid output point count.')
+        vector=len(config.field_names)>1
         require(output.get('fields',['u'])==list(config.field_names),'Invalid output field contract.')
-        finite_values=lambda rows:all(isinstance(row,list) and len(row)==3 and all(number(v) for v in row) for row in rows) if vector else all(number(v) for v in rows)
+        finite_values=lambda rows:all(isinstance(row,list) and len(row)==len(config.field_names) and all(number(v) for v in row) for row in rows) if vector else all(number(v) for v in rows)
         require(all(isinstance(row,list) and len(row)==len(config.bounds[0]) and all(number(v) for v in row) for row in points) and finite_values(values),'Invalid output coordinates/values.')
         require(output['steps']==steps,'Output steps do not match the run.')
         reference=output['reference']
@@ -34,7 +35,7 @@ def validate_run(data):
         if 'max_error' in output:require(number(output['max_error']),'Invalid maximum error.')
         if 'reference_name' in output:require(isinstance(output['reference_name'],str),'Invalid reference label.')
         for key in ('rmse_by_field','max_error_by_field'):
-            if key in output:require(isinstance(output[key],dict) and set(output[key])=={'u','v','p'} and all(number(v) for v in output[key].values()),'Invalid component metrics.')
+            if key in output:require(isinstance(output[key],dict) and set(output[key])==set(config.field_names) and all(number(v) for v in output[key].values()),'Invalid component metrics.')
     monitors=data['monitors'];require(isinstance(monitors,dict),'Invalid monitor histories.')
     names={'pde','total',*config.constraint_names}
     def check_record(record):return isinstance(record,dict) and set(record)==names and all(number(v) for v in record.values())

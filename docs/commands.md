@@ -131,3 +131,13 @@ python -m examples.capture_expert --overwrite
 ```
 
 See [Expert PINN](expert-pinn.md) for the paper version, formulas and limitations.
+
+## Expert example suite
+
+```bash
+python -m examples.expert_suite --device cpu
+python -m examples.expert_suite --device cuda
+python -m examples.capture_expert_suite --overwrite
+```
+
+See [case contracts and recorded results](expert-examples.md).

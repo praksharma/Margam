@@ -377,4 +377,5 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] NTK-diagonal alternative balancing, separately verified against its equations.
 - [ ] Multi-window curriculum with explicit transfer of the previous window’s final prediction to the next IC.
 - [ ] Explicit composition of causal strata with residual-adaptive sampling/imported candidate sets.
-- [ ] Additional physical problem contracts before extending Expert beyond scalar 1D space–time.
+- [x] Seven concrete Expert paper examples: scalar periodic problems, steady flow, torus and transient cylinder; labelled self-contained IC variations, dedicated submenu and physical-time exports.
+- [ ] Multi-window time marching and cavity Reynolds curriculum; separate future work, not claimed by the single-slab examples.

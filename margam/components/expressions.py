@@ -9,8 +9,8 @@ class Expression:
             raise ValueError('Expressions need 1–512 characters.')
         self.dimensions=dimensions;self.target=target;self.fields=tuple(fields)
         self.coordinates=tuple(coordinates or ('x','y')[:dimensions])
-        if self.coordinates not in (('x',),('x','y'),('x','t')) or len(self.coordinates)!=dimensions:raise ValueError('Unsupported coordinate contract.')
-        if self.fields not in (('u',),('u','v','p')):raise ValueError('Unsupported field contract.')
+        if self.coordinates not in (('x',),('x','y'),('x','t'),('x','y','t')) or len(self.coordinates)!=dimensions:raise ValueError('Unsupported coordinate contract.')
+        if self.fields not in (('u',),('u','v'),('u','v','p'),('u','v','w')):raise ValueError('Unsupported field contract.')
         try:self.root=ast.parse(text,mode='eval').body
         except SyntaxError as error:raise ValueError('Invalid mathematical expression.') from error
         if sum(1 for _ in ast.walk(self.root))>128:raise ValueError('Expression is too complex.')

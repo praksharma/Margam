@@ -18,7 +18,7 @@ from margam.templates.poisson import build_pinn
 from margam.ui.model_document import capture_model,decode_document
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 try:
- assert w.example_actions['expert_burgers'] in w.examples_1d_menu.actions()
+ assert w.example_actions['expert_burgers'] in w.expert_examples_menu.actions()
  w.load_example('expert_burgers');assert w.validate_model(),w.validation.text()
  trainer=next(n for n in w.scene.nodes() if n.kind=='expert_method')
  w.scene.clearSelection();trainer.setSelected(True);app.processEvents()

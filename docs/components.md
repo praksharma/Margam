@@ -10,7 +10,7 @@ A Python API capability is not automatically an executable UI block option.
 
 | Component | Implementation | Current support and limits |
 | --- | --- | --- |
-| Expert PINN | `margam/methods/expert.py`; recipe `margam/recipes/expert.py` | Independent Expert’s Guide v1 causal/L2-gradient-norm pipeline, fresh uniform samples, Adam decay, optional reusable RWF; scalar 1D space–time/mean MSE first; no NTK or curriculum; see [Expert PINN](expert-pinn.md) |
+| Expert PINN | `margam/methods/expert.py`; recipe `margam/recipes/expert.py` | Independent Expert’s Guide v1 causal/L2-gradient-norm pipeline, fresh uniform samples, Adam decay, optional reusable RWF; concrete scalar/2D flow/space–time cases with mean MSE; no NTK or curriculum; see [Expert PINN](expert-pinn.md) |
 | Learning-rate annealing PINN | `margam/methods/learning_rate_annealing.py`; recipe `margam/recipes/learning_rate_annealing.py` | Max PDE / mean raw constraint parameter-gradient balancing, detached scalar coefficients, EMA, cap/floor and exact resume; existing networks; no base-rate scheduler; see [LRA](lra-pinn.md) |
 | Self-adaptive PINN | `margam/methods/self_adaptive.py`; recipe `margam/recipes/self_adaptive.py` | Fixed-sample per-point squared masks, Adam descent/ascent, optional BC adaptation and full resume; no L-BFGS or GP resampling; see self-adaptive-pinn.md |
 | Baseline recipe | `margam/recipes/baseline.py` | One definition for compact/expanded network + trainer; Adam only, replaceable supported tanh network; physics and outputs external; see pinn-recipes.md |

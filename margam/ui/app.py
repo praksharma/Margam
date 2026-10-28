@@ -306,6 +306,7 @@ class Canvas(QGraphicsScene):
             if node.kind=='monitor':
                 if not 25 <= node.settings['history_limit'] <= 100000:
                     raise ValueError('Monitor history limit must be between 25 and 100000.')
+            elif node.settings['resolution']**len(config.bounds[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
             elif not 2 <= node.settings['resolution'] <= 201:
                 raise ValueError('Evaluation resolution must be between 2 and 201.')
             requests.append(OutputRequest(node.identifier,node.kind,node.settings['resolution'],reference))
@@ -493,9 +494,10 @@ class Window(QMainWindow):
         self.flow_action=self.examples_menu.addAction('2D incompressible flow');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
+        self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
+            menu=self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -863,10 +865,11 @@ class Window(QMainWindow):
             self.statusBar().showMessage('Connect this export block and train before exporting.');return False
         paraview=node.kind=='paraview'
         transient=paraview and data['config'].is_time_dependent
-        extension='.pvd' if transient else '.vti' if paraview else '.csv'
+        point_cloud=paraview and data['config'].has_obstacle and not transient
+        extension='.pvd' if transient else '.vtu' if point_cloud else '.vti' if paraview else '.csv'
         label='ParaView predictions' if paraview else 'CSV predictions'
         if path is None:
-            path,_=QFileDialog.getSaveFileName(self,'Export '+label,'prediction'+extension,'ParaView time series (*.pvd)' if transient else 'VTK ImageData (*.vti)' if paraview else 'CSV (*.csv)')
+            path,_=QFileDialog.getSaveFileName(self,'Export '+label,'prediction'+extension,'ParaView time series (*.pvd)' if transient else 'VTK point cloud (*.vtu)' if point_cloud else 'VTK ImageData (*.vti)' if paraview else 'CSV (*.csv)')
             if path and not path.lower().endswith(extension):
                 path+=extension
                 if Path(path).exists() and QMessageBox.question(self,'Replace export?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
@@ -875,6 +878,9 @@ class Window(QMainWindow):
             if paraview:
                 from ..components.paraview_export import export_vti,export_spacetime_pvd
                 if transient:export_spacetime_pvd(path,data)
+                elif point_cloud:
+                    from ..components.point_export import export_vtu
+                    export_vtu(path,data)
                 else:export_vti(path,data)
             else:export_csv(path,data)
         except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'Predictions could not be exported',str(error));return False
@@ -1270,7 +1276,7 @@ class Window(QMainWindow):
         center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
         node=Node(title,'Not configured',center.x()-85,center.y()-40)
         if node.kind in OUTPUT_KINDS:
-            node.settings['resolution']=101 if self.config.shape=='Interval' else 41
+            node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
             node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
         def add():
             self.scene.addItem(node)
@@ -1310,23 +1316,23 @@ class Window(QMainWindow):
         for node in self.scene.nodes():
             c=self.config_for_node(node)
             actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
-            details={'domain':f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+            details={'domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
                      'importance':f'{actual} points · importance',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
-                     'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
+                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'bc':'Case initial/boundary constraints' if c.is_paper_case else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
-                     'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks',
+                     'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks' if c.is_time_dependent else 'Steady · gradient balance',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
-                     'solution':'Requested x,t,u table' if c.is_time_dependent else 'Requested field results' if c.physics=='incompressible_2d' else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
-                     'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
-            if node.kind=='domain':node.title='1D space–time' if c.is_time_dependent else c.shape
-            if node.kind=='boundary':node.title='Boundary / initial points' if c.is_time_dependent else 'Boundary points'
-            if node.kind=='bc':node.title='Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
+                     'solution':'Requested field table' if c.is_time_dependent or len(c.field_names)>1 else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
+                     'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent or c.is_paper_case else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
+            if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder'}.get(c.shape,c.shape)
+            if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
+            if node.kind=='bc':node.title='Case conditions' if c.is_paper_case else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
@@ -1398,9 +1404,10 @@ class Window(QMainWindow):
             widget.setObjectName('expert_'+key);widget.setKeyboardTracking(False);widget.setRange(low,high)
             if isinstance(widget,QDoubleSpinBox):widget.setDecimals(4)
             widget.setValue(self.config.expert_settings[key])
+            if key in ('chunks','causal_epsilon') and not self.config.is_time_dependent:widget.setEnabled(False)
             widget.valueChanged.connect(lambda value,k=key:self.change_expert_option(k,value))
             self.form.addRow(label,widget)
-        note=QLabel('Margam name for the Expert’s Guide v1 pipeline. Random interior/BC/initial batches refresh each update. PDE count must divide evenly into causal time chunks. Mean MSE; scalar 1D space–time; no NTK or time-window curriculum.')
+        note=QLabel('Margam name for the Expert’s Guide v1 pipeline. Random case samples refresh each update. Transient PDE counts divide into causal time chunks; steady cases omit causal/initial weighting. Mean MSE; no NTK or time-window curriculum.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_expert_option(self,key,value):
@@ -1462,12 +1469,16 @@ class Window(QMainWindow):
             self.form.addRow(QLabel('Select a block to edit its settings.'))
         elif node.kind=='domain':
             shape=QComboBox()
-            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('SpaceTime1D','1D space–time')]:shape.addItem(label,key)
+            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
             shape.setCurrentIndex(shape.findData(self.config.shape));shape.currentIndexChanged.connect(lambda index,w=shape:self.change('shape',w.itemData(index)))
             self.form.addRow('Domain',shape)
             self.field('x minimum','x_min');self.field('x maximum','x_max')
-            if len(self.config.bounds[0])==2:
-                self.field('t start' if self.config.is_time_dependent else 'y minimum','y_min');self.field('t end' if self.config.is_time_dependent else 'y maximum','y_max')
+            if len(self.config.bounds[0])>=2:
+                self.field('t start' if self.config.shape=='SpaceTime1D' else 'y minimum','y_min');self.field('t end' if self.config.shape=='SpaceTime1D' else 'y maximum','y_max')
+            if len(self.config.bounds[0])==3:
+                self.field('t start','t_min');self.field('t end','t_max')
+            if self.config.has_obstacle:
+                self.field('Cylinder centre x','cylinder_x');self.field('Cylinder centre y','cylinder_y');self.field('Cylinder radius','cylinder_radius',minimum=.000001,maximum=100000)
             note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif role(node.kind)=='interior':
             if node.kind=='interior':
@@ -1493,6 +1504,10 @@ class Window(QMainWindow):
                 note=QLabel('The trainer scores candidates with the current PDE/network after each completed interval. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
                 note.setWordWrap(True);self.form.addRow(note)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
+        elif node.kind=='boundary' and self.config.is_paper_case:
+            note=QLabel('Named sets: '+', '.join(self.config.constraint_names)+'. Walls combine their individual open edges; the cylinder is sampled by angle. Periodic sets contain paired endpoint/edge coordinates.')
+            note.setWordWrap(True);self.form.addRow(note)
+            self.field('Points per set / edge','boundary_points','int',minimum=1,maximum=10000)
         elif node.kind=='boundary':
             if len(self.config.bounds[0])==2:
                 side_choice=QComboBox()
@@ -1537,6 +1552,11 @@ class Window(QMainWindow):
             preset=PREDEFINED_PDES[self.config.pde_preset]
             equation=QLabel(preset.equation);equation.setWordWrap(True);self.form.addRow(equation)
             note=QLabel('Domains: '+', '.join('1D space–time' if shape=='SpaceTime1D' else shape for shape in preset.shapes)+'. Boundary conditions and reference values are configured separately. Use PDE residual for editable equations.');note.setWordWrap(True);self.form.addRow(note)
+            if self.config.is_paper_case:
+                key=self.config.pde_preset
+                if key in ('expert_advection','expert_ks','expert_allen_cahn'):self.field('Advection speed' if key=='expert_advection' else 'Nonlinear coefficient α' if key=='expert_ks' else 'Reaction coefficient','source')
+                if key!='expert_advection':self.field('Second derivative coefficient β' if key=='expert_ks' else 'Viscosity / diffusion','viscosity',minimum=.000001,maximum=10000)
+                if key=='expert_ks':self.field('Fourth derivative coefficient γ','fourth_order',minimum=.000001,maximum=10000)
             if preset.forcing:
                 self.field('Squared wavenumber k²' if self.config.pde_preset=='helmholtz' else 'Coefficient c','source')
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
@@ -1565,6 +1585,13 @@ class Window(QMainWindow):
                 edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
                 self.form.addRow('Residual = 0',edit)
                 note=QLabel('Scalar expressions: '+', '.join(self.config.coordinate_names)+', u, c, nu, pi; D(u,x), '+('D(u,t), ' if self.config.is_time_dependent else '')+'laplace(u), sin/cos/exp/tanh/sqrt/abs. Laplacian is spatial only. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
+        elif node.kind=='bc' and self.config.is_paper_case:
+            from ..templates.expert_examples import condition_description
+            note=QLabel(condition_description(self.config));note.setWordWrap(True);self.form.addRow(note)
+            if self.config.pde_preset in ('expert_stokes','expert_cylinder','expert_cavity'):
+                side='top' if self.config.pde_preset=='expert_cavity' else 'left'
+                speed=QDoubleSpinBox();speed.setRange(0.,100000.);speed.setDecimals(5);speed.setValue(self.config.bc_values[side]);speed.valueChanged.connect(lambda value,s=side:self.change_bc(s,'value',value));self.form.addRow('Lid speed' if side=='top' else 'Maximum inlet speed',speed)
+            if self.config.pde_preset=='expert_cylinder':self.field('Inlet startup time','startup_time',minimum=.000001,maximum=100000)
         elif node.kind=='bc':
             if self.config.physics=='incompressible_2d':
                 side=getattr(self,'flow_bc_side','left');choice=QComboBox();choice.addItems(list(self.config.sides));choice.setCurrentText(side)
@@ -1612,7 +1639,7 @@ class Window(QMainWindow):
             token=object()
             edit.textChanged.connect(lambda text:self.change_layers(text,token))
             self.form.addRow('Hidden layers',edit)
-            if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: x, y · outputs: u, v, p'))
+            if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+' · outputs: '+', '.join(self.config.field_names)))
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
         elif node.kind in COMPACT_RECIPES:
             recipe=COMPACT_RECIPES[node.kind]

@@ -61,7 +61,7 @@ def _document(grid,time=None):
         array=_array(field,'TimeValue',[_time(time)]);array.set('NumberOfTuples','1')
     piece=ET.SubElement(image,'Piece',Extent=extent)
     attributes={'Scalars':fields[0]}
-    flow=fields==['u','v','p']
+    flow=fields in (['u','v','p'],['u','v'],['u','v','w'])
     if flow:attributes['Vectors']='velocity'
     point_data=ET.SubElement(piece,'PointData',**attributes)
     for index,name in enumerate(fields):_array(point_data,name,values[:,index])
@@ -91,7 +91,7 @@ def export_vti(path,data,*,time=None):
     return path
 
 
-def export_pvd(path,frames):
+def export_pvd(path,frames,*,unstructured=False):
     """Export (physical_time, prediction_data) frames as one playable collection.
 
     Strictly increasing times, same grid/field schema. Stage new companions and
@@ -109,10 +109,13 @@ def export_pvd(path,frames):
         for index,(time,data) in enumerate(frames):
             time=_time(time)
             if previous is not None and time<=previous:raise ValueError('Physical times must be strictly increasing; duplicate times are not frames.')
-            grid=_grid(data)
-            if schema is None:schema=grid[:4]
-            elif grid[:4]!=schema:raise ValueError('All time frames must use the same regular grid and fields.')
-            name=f'frame_{index:06d}.vti';_write(stage/name,_document(grid,time))
+            if unstructured:
+                from .point_export import point_grid,point_document
+                grid=point_grid(data);current=(tuple(map(tuple,grid[0])),tuple(grid[1]))
+            else:grid=_grid(data);current=grid[:4]
+            if schema is None:schema=current
+            elif current!=schema:raise ValueError('All time frames must use the same regular grid and fields.')
+            name=f'frame_{index:06d}.'+('vtu' if unstructured else 'vti');_write(stage/name,point_document(grid,time) if unstructured else _document(grid,time))
             ET.SubElement(collection,'DataSet',timestep=format(time,'.17g'),group='',part='0',file=destination.name+'/'+name)
             previous=time;count+=1
         if not count:raise ValueError('A time series needs at least one physical-time frame.')
@@ -125,13 +128,16 @@ def export_pvd(path,frames):
 
 
 def export_spacetime_pvd(path,data):
-    """Export one 1D spatial frame per physical time in an x-fast space–time grid."""
+    """Spatial 1D/2D frames at physical times, with optional cylinder exclusion."""
+    from .outputs import evaluation_points
     config=data.get('config')
-    if not getattr(config,'is_time_dependent',False):raise ValueError('This series requires explicit 1D space–time coordinates.')
-    count=data.get('size');points=np.asarray(data.get('points'),dtype=float);values=np.asarray(data.get('values'),dtype=float)
-    if type(count) is not int or count<2 or points.shape!=(count*count,2) or values.shape!=(count*count,) or not np.isfinite(points).all() or not np.isfinite(values).all():raise ValueError('Invalid scalar space–time result grid.')
-    xs=np.linspace(config.x_min,config.x_max,count);times=np.linspace(config.y_min,config.y_max,count)
-    expected=np.array([[x,t] for t in times for x in xs])
-    if not np.allclose(points,expected,rtol=0,atol=1e-7):raise ValueError('Space–time results must be ordered with x varying fastest.')
-    frames=((float(time),dict(points=[[float(x)] for x in xs],values=values[i*count:(i+1)*count].tolist(),fields=['u'])) for i,time in enumerate(times))
-    return export_pvd(path,frames)
+    if not getattr(config,'is_time_dependent',False):raise ValueError('Explicit space–time coordinates are required.')
+    count=data.get('size')
+    if type(count) is not int or count<2:raise ValueError('Invalid space–time resolution.')
+    expected=np.asarray(evaluation_points(config,count),dtype=float);points=np.asarray(data.get('points'),dtype=float);values=np.asarray(data.get('values'),dtype=float)
+    fields=list(data.get('fields',['u']))
+    if values.ndim==1:values=values[:,None]
+    if points.shape!=expected.shape or values.shape!=(len(expected),len(fields)) or not np.isfinite(values).all() or not np.allclose(points,expected,rtol=0,atol=1e-7):raise ValueError('Invalid ordered space–time result grid.')
+    lower,upper=config.bounds;times=np.linspace(lower[-1],upper[-1],count);per=len(points)//count
+    frames=((float(time),dict(points=points[i*per:(i+1)*per,:-1].tolist(),values=values[i*per:(i+1)*per].tolist(),fields=fields)) for i,time in enumerate(times))
+    return export_pvd(path,frames,unstructured=getattr(config,'has_obstacle',False))

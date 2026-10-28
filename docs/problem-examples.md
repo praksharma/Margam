@@ -60,3 +60,7 @@ with explicit 2D names. No new dimension or physics support is implied.
 The [2D Helmholtz example](helmholtz.md) uses the LRA paper problem with our existing
 Fourier-feature network, not its proposed architecture. It remains in the parent
 Examples menu as an explicitly 2D case.
+
+## Expert PINN examples
+
+The dedicated **File → Examples → Expert PINN examples** submenu contains Allen–Cahn, advection, Stokes channel/cylinder, Kuramoto–Sivashinsky, lid-driven cavity, torus and transient cylinder, alongside Expert Burgers. Read the [equations, initial-field variations and limitations](expert-examples.md).

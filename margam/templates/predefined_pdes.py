@@ -27,6 +27,8 @@ def resolve_predefined(config):
     if config.pde_preset not in PREDEFINED_PDES:raise ValueError('Choose an implemented predefined PDE.')
     forcing='('+config.pde_forcing+')'
     config.physics='scalar'
+    if config.pde_preset.startswith('expert_'):
+        config.physics='paper_case';config.pde_expression='';return config
     if config.pde_preset=='burgers_1d':config.pde_expression='D(u,t)+u*D(u,x)-nu*D(D(u,x),x)'
     elif config.pde_preset=='poisson':
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
@@ -47,3 +49,6 @@ def validate_predefined(config):
 
     if config.pde_preset=='burgers_1d' and (not math.isfinite(config.viscosity) or config.viscosity<=0):raise ValueError('Burgers requires positive finite viscosity ν.')
     if config.pde_preset=='helmholtz' and config.source<0:raise ValueError('Helmholtz requires non-negative c = k².')
+
+from .expert_examples import CASES
+for _key,_case in CASES.items():PREDEFINED_PDES[_key]=PDEPreset(_case['label'],_case['equation'],(_case['shape'],),False)

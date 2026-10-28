@@ -6,8 +6,7 @@
 
 Add **Results → ParaView Export** and connect a trainer or compact recipe to it.
 Set its evaluation resolution, train, then right-click **Export ParaView…** or use
-its inspector button. It writes steady predicted fields as a `.vti` file and Burgers space–time
-predictions as a `.pvd` physical-time series. The Burgers example includes a
+its inspector button. It writes steady rectangular fields as `.vti`, channel/cylinder point clouds as `.vtu`, and space–time predictions as `.pvd` physical-time series. The Burgers example includes a
 connected export block; startup graphs retain opt-in insertion. No file is written by training,
 and no viewer is launched. CSV Export remains a separate, unchanged block.
 Saved runs retain the requested predictions so they can be exported after reopening.
@@ -20,7 +19,7 @@ means N points on a line or N×N on a rectangle. It does not export training sam
 or GeoSampler/mesh nodes. Evaluation at supplied nodes is future work, recorded
 in TODO; it must preserve original coordinates, IDs and field associations.
 
-Scalar results have point array `u`; current flow results have scalar arrays `u`,
+Scalar results have point array `u`; current pressure/velocity flow results have scalar arrays `u`,
 `v`, `p` and a three-component `velocity=(u,v,0)` array suitable for vector filters.
 Coordinates retain the model's physical bounds. 2D lies at z=0, not in a fabricated
 volume. Reference/error arrays, material/cell fields, units and meshes are not part
@@ -35,7 +34,7 @@ of this initial writer. No reference solution is assumed or evaluated.
 The [VTK XML specification](https://docs.vtk.org/en/v9.6.1/vtk_file_formats/vtkxml_file_format.html)
 defines ImageData and point arrays. The [ParaView animation guide](https://docs.paraview.org/en/latest/UsersGuide/animation.html)
 explains that time-varying inputs supply the timesteps for playback.
-Each temporal VTI also contains a `TimeValue` field. Times need not be uniformly
+Each temporal VTI/VTU also contains a `TimeValue` field. Times need not be uniformly
 spaced and are not network-training updates or epochs. Time is never written as
 an extra spatial coordinate. Timestamp units are whatever physical units the
 caller supplies; no seconds or other units are inferred.
@@ -102,3 +101,7 @@ The optional real-reader test skips if VTK is absent; normal writer/UI tests sti
 run. Model format 12 reads formats 1–11; run archives remain format 2. Existing CSV
 models/archives retain their behaviour. No viewer embedding, irregular geometry,
 FEM connectivity export or input-node evaluation is included in this first pass.
+
+## Concrete obstacle and 2D transient examples
+
+The [Expert suite](expert-examples.md) evaluates 2D spatial frames at each requested physical time. Channel/cylinder exports exclude the disk and use VTU vertex cells, not FEM connectivity. Torus outputs u/v velocity and scalar w (vorticity); its derived velocity vector is (u,v,0). No 3D spatial coordinate is inferred from time.

@@ -46,8 +46,8 @@
 - Do not continue polishing or expanding in-app field heatmaps without a concrete
   user request. Preserve existing behaviour unless the user requests removal.
 - ParaView file export was explicitly requested and is supported through its own
-  opt-in block. Viewer embedding/launching, arbitrary mesh export and transient flow
-  systems remain deferred; do not introduce them during unrelated tasks.
+  opt-in block. Viewer embedding/launching and arbitrary mesh export remain deferred. Concrete
+  2D transient flow is supported by the Expert suite; do not infer generic 3D support.
 
 ## Validation and commits
 
@@ -127,3 +127,5 @@
   contain local usernames or home-directory paths. Use repository-relative demo
   paths, and inspect capture inputs before saving screenshots. Keep real local
   filesystem paths confined to local tool operations and diagnostic UI when needed.
+
+- Expert suite examples use concrete paper-case contracts. Torus Taylor–Green and cylinder startup are explicitly labelled variations. Preserve obstacle exclusion, outlet traction, cavity corner handling and physical-time PVD frames. Torus output w is scalar vorticity, not vertical velocity. Do not claim paper accuracy or multi-window/curriculum support.

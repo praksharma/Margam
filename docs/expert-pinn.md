@@ -17,7 +17,7 @@ Flax, Optax, W&B, upstream source or paper PDF is bundled/required. See
 
 ## Start with the concrete example
 
-Choose **File → Examples → 1D examples → Burgers — Expert PINN · 1D + time**.
+Choose **File → Examples → Expert PINN examples → Burgers — Expert PINN · 1D + time**.
 The physics is the existing [Burgers initial-value problem](burgers.md), with zero
 endpoint values and a sine initial profile. Insert **Expert PINN** for the compact
 recipe or **Expert trainer** for an expanded graph. Compact expansion/collapse
@@ -26,13 +26,16 @@ replaceable after expansion.
 
 ![Expert trainer on the existing Burgers physics graph](../assets/screenshots/manual-expert-trainer.png)
 
+The [seven additional paper examples](expert-examples.md) include steady 2D and
+2D space–time workflows, with explicitly labelled initial-field variations.
+
 ## What this implementation includes
 
 | Ingredient | Margam implementation |
 | --- | --- |
 | Fourier representation | Existing Gaussian Fourier feature network; default 32 Gaussian vectors and three 32-neuron tanh layers |
 | Random weight factorization (RWF) | Optional exponential per-output-row factors on fully connected, Fourier and modified Fourier networks |
-| Global loss balancing | L2 parameter-gradient norms, **sum** reference, old-weight EMA; all three groups adapt |
+| Global loss balancing | L2 parameter-gradient norms, **sum** reference, old-weight EMA; all active groups adapt |
 | Causal residual weighting | Equal-width physical-time strata, detached exponential weights from earlier residual strata |
 | Fresh random training batches | New interior, spatial BC and IC coordinates for every optimiser update; equal interior count per time stratum |
 | Optimisation | Adam, no weight decay, continuous exponential decay of its initial learning rate |
@@ -94,7 +97,7 @@ silently substituted.
 
 ## Global balancing — equations (2.12)–(2.15)
 
-There are three groups: PDE, initial, and combined spatial boundary loss. Existing
+Transient cases have three groups: PDE, initial, and combined spatial boundary loss. Steady cases omit the initial group and causal weighting. Existing
 static PDE/named-constraint weights are applied before this balancing step; spatial
 BC contributions are summed into their group. This preserves Margam’s named-set
 weight convention rather than silently replacing it with a differently pooled BC
@@ -153,8 +156,8 @@ not reproduced.
 
 ## Current limits
 
-The first Expert workflow supports scalar **1D space–time** problems and **mean
-MSE**. It rejects imported point sets and RAR/importance blocks because its causal
+Expert supports scalar **1D space–time** and the concrete steady/2D transient
+[paper examples](expert-examples.md), with **mean MSE**. It rejects imported point sets and RAR/importance blocks because its causal
 strata and per-update sampling policy need an explicit combined design before
 those can be composed. Use the other supported trainers for those samplers.
 
@@ -163,7 +166,7 @@ non-dimensionalisation, exact periodic embeddings, modified JAX MLP architecture
 mini-batch gradient accumulation, distributed training and later PirateNet/ActNet
 methods are not implemented by this recipe. These remain separate extensions.
 
-Model format 16 stores Expert recipe/trainer settings and reads earlier formats.
+Model format 17 stores Expert examples and recipe/trainer settings and reads earlier formats.
 Run archives use restricted tensor/primitive loading. Sampling seeds are derived
 from the configured seed and update index, and the last active batch is regenerated
 on resume. Mode/options/physics changes reject resume; iteration budget and device

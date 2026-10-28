@@ -5,14 +5,14 @@ from ..templates.poisson import PoissonConfig,BoundarySampling
 from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
-    'domain':('shape','x_min','x_max','y_min','y_max'),
+    'domain':('shape','x_min','x_max','y_min','y_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius'),
     'interior':('points','sampling','seed','interior_data','adaptive_sampling'),
     'rar':('points','sampling','seed','interior_data','adaptive_sampling'),
     'importance':('points','sampling','seed','interior_data','adaptive_sampling'),
     'boundary':('boundary_points','boundary_sampling','boundary_data'),
-    'predefined_pde':('pde_preset','pde_forcing','source','viscosity'),
+    'predefined_pde':('pde_preset','pde_forcing','source','viscosity','fourth_order'),
     'pde':('source','pde_expression','physics','viscosity','flow_residuals'),
-    'bc':('bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight'),
+    'bc':('bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight','startup_time'),
     'network':baseline.NETWORK_FIELDS,
     'method':baseline.TRAINING_FIELDS,
     'recipe':baseline.PARAMETERS,
@@ -25,7 +25,7 @@ PARAMETERS = {
 }
 OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method',*COMPACT_RECIPES) for attribute in attributes}
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
-OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS)})
+OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS)})
 
 def role(kind):return {'expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 

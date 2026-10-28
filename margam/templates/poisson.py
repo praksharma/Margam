@@ -33,6 +33,13 @@ class PoissonConfig:
     x_max: float = 1.0
     y_min: float = 0.0
     y_max: float = 1.0
+    t_min: float = 0.
+    t_max: float = 1.
+    cylinder_x: float = .2
+    cylinder_y: float = .2
+    cylinder_radius: float = .05
+    fourth_order: float = 100/16**4
+    startup_time: float = .1
     points: int = 64
     boundary_points: int = 16  # Default count for sides without an explicit recipe.
     adaptive_sampling: dict = field(default_factory=dict)
@@ -78,25 +85,39 @@ class PoissonConfig:
     network_options: dict = field(default_factory=dict)
 
     @property
-    def is_time_dependent(self):return self.shape=='SpaceTime1D'
+    def is_time_dependent(self):return self.shape in ('SpaceTime1D','SpaceTime2D','ChannelTime2D')
 
     @property
-    def coordinate_names(self):return ('x','t') if self.is_time_dependent else ('x','y')[:len(self.bounds[0])]
+    def is_paper_case(self):return self.pde_preset.startswith('expert_')
+
+    @property
+    def has_obstacle(self):return self.shape in ('Channel2D','ChannelTime2D')
+
+    @property
+    def coordinate_names(self):return ('x','y','t') if self.shape in ('SpaceTime2D','ChannelTime2D') else ('x','t') if self.is_time_dependent else ('x','y')[:len(self.bounds[0])]
 
     def constraint_name(self,side):return 'initial' if self.is_time_dependent and side=='bottom' else side
 
     def side_label(self,side):return 'initial (t start)' if self.is_time_dependent and side=='bottom' else side
 
     @property
-    def field_names(self):return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
+    def field_names(self):
+        if self.is_paper_case:
+            from .expert_examples import CASES
+            return CASES[self.pde_preset]['fields']
+        return ('u','v','p') if self.physics=='incompressible_2d' else ('u',)
 
     @property
     def constraint_names(self):
+        if self.is_paper_case:
+            from .expert_examples import CASES
+            return CASES[self.pde_preset]['names']
         if self.physics=='scalar':return tuple(self.constraint_name(s) for s in self.sides)
         return tuple(side+':'+field for side in self.sides for field,spec in self.flow_boundary[side].items() if spec['type']!='None')+('pressure_gauge',)
 
     @property
     def loss_weights(self):
+        if self.is_paper_case:return {'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
         if self.physics=='scalar':return {'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
         names=self.constraint_names
         return {'pde':self.pde_weight,**{name:self.boundary_weight/(len(names)-1) for name in names if name!='pressure_gauge'},'pressure_gauge':self.pressure_weight}
@@ -107,6 +128,7 @@ class PoissonConfig:
 
     @property
     def bounds(self):
+        if self.shape in ('SpaceTime2D','ChannelTime2D'):return [self.x_min,self.y_min,self.t_min],[self.x_max,self.y_max,self.t_max]
         if self.shape == 'Interval':
             return [self.x_min], [self.x_max]
         return [self.x_min, self.y_min], [self.x_max, self.y_max]
@@ -125,7 +147,7 @@ class PoissonConfig:
             if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
         if not isinstance(self.boundary_data,dict) or set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown imported boundary set.')
         for source in self.boundary_data.values():validate_mapping(source)
-        if self.shape not in ('Interval', 'Rectangle','SpaceTime1D'):
+        if self.shape not in ('Interval', 'Rectangle','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D'):
             raise ValueError('Choose Interval, Rectangle or 1D space–time.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
@@ -168,7 +190,7 @@ class PoissonConfig:
             if self.adaptive_sampling['method']=='rar' and initial>self.adaptive_sampling['maximum']:raise ValueError('RAR maximum must cover the initial interior set.')
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
-        if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
+        if self.physics not in ('scalar','incompressible_2d','paper_case'):raise ValueError('Unknown physics contract.')
         validate_expert_settings(self.expert_settings)
         if self.method=='expert':validate_expert_problem(self)
         if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert'):raise ValueError('Unknown PINN method.')
@@ -188,6 +210,10 @@ class PoissonConfig:
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
             raise ValueError('Loss weights must be finite and positive.')
+        if self.is_paper_case:
+            from .expert_examples import validate_case
+            validate_case(self);return
+        if self.shape in ('SpaceTime2D','Channel2D','ChannelTime2D'):raise ValueError('This geometry currently requires its concrete Expert example preset.')
         if self.physics=='incompressible_2d':
             from .incompressible_flow import validate_flow_config
             validate_flow_config(self);return
@@ -247,6 +273,9 @@ def build_pinn(config):
 def _build_pinn(config):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
+    if config.is_paper_case:
+        from .expert_examples import build_case
+        return build_case(config)
     if config.physics=='incompressible_2d':
         from .incompressible_flow import build_flow_pinn
         return build_flow_pinn(config)
@@ -383,6 +412,7 @@ def make_poisson_reference(config):
     from functools import partial
     from copy import deepcopy
     from ..components.outputs import ReferenceSource
+    if config.is_paper_case:raise ValueError('Expert examples need an explicit reference expression or reference data; no Poisson reference is assumed.')
     if config.physics=='incompressible_2d':
         from .incompressible_flow import make_flow_reference
         return make_flow_reference(config)

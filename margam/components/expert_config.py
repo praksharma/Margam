@@ -18,6 +18,11 @@ def validate_expert_settings(settings):
 
 def validate_expert_problem(config):
     validate_expert_settings(config.expert_settings)
+    if config.is_paper_case:
+        from ..templates.expert_examples import validate_case
+        validate_case(config)
+        if config.is_time_dependent and config.points%config.expert_settings['chunks']:raise ValueError('Interior count must divide into causal chunks.')
+        return
     if not config.is_time_dependent or config.physics!='scalar':raise ValueError('The first Expert PINN workflow requires a scalar 1D space–time problem.')
     if config.loss_formulation!='mean':raise ValueError('Expert PINN currently follows the paper mean-squared-error formulation.')
     if config.interior_data or config.boundary_data or config.adaptive_sampling:raise ValueError('Expert PINN uses its own fresh uniform batches; imported data and residual-adaptive sampler blocks are not yet compatible.')

@@ -25,6 +25,9 @@ EXAMPLE_PROBLEMS = {
 
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
+    if identifier in ('expert_allen_cahn','expert_advection','expert_stokes','expert_ks','expert_cavity','expert_torus','expert_cylinder'):
+        from .expert_examples import case_config
+        return case_config(identifier)
     if identifier=='expert_burgers':
         from .burgers import burgers_config
         from ..recipes.expert import DEFAULTS
@@ -52,3 +55,6 @@ def example_config(identifier):
         config.shape='Rectangle';config.points=144;config.boundary_points=24;config.layers=(32,32);config.iterations=2500
         config.source=0.;config.pde_forcing='2*pi*pi*sin(pi*x)*sin(pi*y)';config.method='hard_dirichlet'
     return config
+
+from .expert_examples import CASES
+for _key,_case in CASES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_case['label'],'Expert’s Guide example; see its case notes and labelled initial-field variations.','')

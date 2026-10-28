@@ -73,7 +73,7 @@ class OutputViews:
                 ('Mean BC (raw)', [(step,sum(row[s] for s in sides)/len(sides)) for step,row in records], '#7089d5'),
             ] if records else []
             if records and self.window.config.is_time_dependent:series.append(('Initial (raw)',[(step,row['initial']) for step,row in records],'#ad75ce'))
-            if records and self.window.config.physics=='incompressible_2d':series.append(('Pressure gauge (raw)',[(step,row['pressure_gauge']) for step,row in records],'#ad75ce'))
+            if records and 'pressure_gauge' in self.window.config.constraint_names:series.append(('Pressure gauge (raw)',[(step,row['pressure_gauge']) for step,row in records],'#ad75ce'))
             view.set_series(series, 'Requested training losses · log scale · retained updates only' if records else 'Connect this monitor and train to record losses.')
         else:
             data = (self.window.result or {}).get('outputs', {}).get(node.identifier)
