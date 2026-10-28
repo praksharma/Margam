@@ -6,8 +6,8 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe')),
-    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method')),
+    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe')),
+    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
 }
@@ -33,6 +33,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'scale_recipe':('Sequential residual correction · compact or expanded','Replaceable network and Scale trainer. Paper equations (4), (6), (7); previous optimizer iterate, not an ensemble. Scalar or standard u/v/p physics; no paper-specific architecture or frequency annealing.'),
+    'scale_method':('Previous-iterate correction, smoothing and Adam','Correction changes the PDE residual only. Spatial Laplacian excludes physical time; velocity smoothing plus pressure change in continuity. Corrected loss is not the original physical residual. Built-in samples and mean losses only.'),
     'expert_recipe':('Expert’s Guide v1 recommended pipeline','Margam label, not the paper’s method name. Replaceable Fourier/RWF network, causal time loss, L2-gradient group balancing, fresh uniform samples and Adam decay. Concrete scalar and 2D flow examples; Optional NTK/time marching; no Reynolds curriculum or RAR/importance combination.'),
     'expert_method':('Causal chunks, gradient-norm EMA and Adam decay','Fresh random batches on the supported scalar and 2D flow cases. Paper v1 gradient norms or NTK diagonal traces; old-weight momentum; optional sequential time windows. Network remains replaceable. Mean MSE only; no imported/adaptive points.'),
     'lra_recipe': ('LRA recipe · compact or expanded', 'Existing pointwise network plus gradient-balanced Adam trainer. One coefficient per named constraint, max-PDE/mean-constraint gradient ratio and EMA; no paper architecture or base-rate decay.'),

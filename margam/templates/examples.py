@@ -25,6 +25,9 @@ EXAMPLE_PROBLEMS = {
 
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
+    if identifier.startswith('scale_'):
+        from .scale_examples import scale_example_config
+        return scale_example_config(identifier)
     if identifier in ('expert_allen_cahn','expert_advection','expert_stokes','expert_ks','expert_cavity','expert_torus','expert_cylinder'):
         from .expert_examples import case_config
         return case_config(identifier)
@@ -58,3 +61,6 @@ def example_config(identifier):
 
 from .expert_examples import CASES
 for _key,_case in CASES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_case['label'],'Expert’s Guide example; see its case notes and labelled initial-field variations.','')
+
+EXAMPLE_PROBLEMS['scale_allen_cahn']=ExampleProblem('Allen–Cahn · 1D + time · Scale-PINN','Sequential correction; shared periodic Allen–Cahn physics and replaceable Fourier network.','')
+EXAMPLE_PROBLEMS['scale_cavity_3200']=ExampleProblem('Lid-driven cavity · 2D · Re=3200 · Scale-PINN','Velocity smoothing and pressure-continuity correction; shared cavity physics.','')

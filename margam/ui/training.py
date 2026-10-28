@@ -6,6 +6,7 @@ from PySide6.QtCore import QThread, Signal
 class TrainingWorker(QThread):
     progress = Signal(int, object)
     expert_progress = Signal(object)
+    scale_progress = Signal(object)
     sampling_updated = Signal(object)
     completed = Signal(object)
     failed = Signal(str)
@@ -37,6 +38,7 @@ class TrainingWorker(QThread):
                 events=len(model.sampling_controller.history) if model.sampling_controller is not None else 0
                 model.train(min(25, config.iterations-model.iter),display_every=0)
                 self.progress.emit(model.iter, model.loss_history[previous:])
+                if hasattr(model,'scale_summary'):self.scale_progress.emit(model.scale_summary())
                 if hasattr(model,'expert_summary'):self.expert_progress.emit(model.expert_summary())
                 if model.sampling_controller is not None:
                     for event in model.sampling_controller.history[events:]:self.sampling_updated.emit(dict(event))

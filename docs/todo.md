@@ -380,3 +380,12 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Seven concrete Expert paper examples: scalar periodic problems, steady flow, torus and transient cylinder; labelled self-contained IC variations, dedicated submenu and physical-time exports.
 - [x] Optional time marching for Expert transient examples; defaults retain a single window.
 - Reynolds curriculum and grid/parameter sweeps are outside the requested paper scope.
+
+## Scale-PINN core method
+
+- [x] Independently implement sequential correction with frozen previous optimizer weights and spatial-only smoothing.
+- [x] Explicit pressure-change correction for standard u/v/p continuity; reject undefined auxiliary-vorticity mappings.
+- [x] One recipe file, compact/expanded forms, separate trainer controls and Allen–Cahn/cavity starter submenu.
+- [x] Save/resume both network iterates and sampling phase; separate physical/corrected diagnostics and CPU/CUDA evidence.
+- [ ] Consider paper-specific architecture/frequency annealing and additional benchmark physics separately; current method scope does not claim them.
+- [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.

@@ -64,3 +64,7 @@ Examples menu as an explicitly 2D case.
 ## Expert PINN examples
 
 The dedicated **File → Examples → Expert PINN examples** submenu contains Allen–Cahn, advection, Stokes channel/cylinder, Kuramoto–Sivashinsky, lid-driven cavity, torus and transient cylinder, alongside Expert Burgers. Read the [equations, initial-field variations and limitations](expert-examples.md).
+
+## Scale-PINN starters
+
+**File → Examples → Scale-PINN examples** contains Allen–Cahn (1D + time) and lid-driven cavity (2D, Re=3200), using the existing physics with a replaceable Fourier network and Scale trainer. See [correction settings, diagnostics and differences from the paper](scale-pinn.md).

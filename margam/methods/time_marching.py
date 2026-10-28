@@ -115,6 +115,9 @@ class TimeMarchingPINN:
 
     def load_training_state(self,state):
         payload=state.get('marching') if isinstance(state,dict) else None
+        if isinstance(payload,dict) and isinstance(payload.get('configuration'),dict):
+            from ..components.scale_config import scale_defaults
+            payload=deepcopy(payload);payload['configuration'].setdefault('scale_settings',scale_defaults())
         if not isinstance(payload,dict) or set(payload)!={'configuration','completed'} or payload['configuration']!=self.signature:raise ValueError('Time-marching configuration differs.')
         completed=payload['completed']
         if not isinstance(completed,list) or len(completed)>=self.count:raise ValueError('Invalid completed time windows.')

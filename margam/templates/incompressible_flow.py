@@ -10,7 +10,7 @@ from ..components.prepared_data import read_points,normal_fingerprint
 
 
 def validate_flow_config(config):
-    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive','lra'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline, self-adaptive or LRA method.')
+    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive','lra','scale'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline, self-adaptive, LRA or Scale method.')
     if not math.isfinite(config.viscosity) or config.viscosity<=0:raise ValueError('Kinematic viscosity must be positive and finite.')
     if len(config.flow_residuals)!=3:raise ValueError('Flow needs momentum-x, momentum-y and continuity residuals.')
     for text in config.flow_residuals:Expression(text,2,fields=('u','v','p'))

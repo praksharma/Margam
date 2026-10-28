@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import json
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -495,9 +495,10 @@ class Window(QMainWindow):
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
+        self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
+            menu=self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -921,6 +922,8 @@ class Window(QMainWindow):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
+        if node.kind in ('scale_recipe','scale_method'):
+            action=menu.addAction('Scale correction diagnostics');action.triggered.connect(self.show_scale_summary)
         if node.kind in ('expert_recipe','expert_method'):
             summary=menu.addAction('Expert training summary');summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_expert_summary)
@@ -955,6 +958,14 @@ class Window(QMainWindow):
             return dict(step=latest['step'] if latest else None,pde_max=latest['pde_max'] if latest else None,
                         terms={name:dict(coefficient=value,effective_weight=value*state['settings']['global_weights'].get(name,1.),mean_gradient=latest['means'][name] if latest else None) for name,value in state['weights'].items()})
         return {}
+
+    def show_scale_summary(self):
+        model=self.last_run.model if self.last_run is not None else None
+        summary=model.scale_summary() if model is not None and hasattr(model,'scale_summary') else self.loaded_checkpoint.get('scale',{}).get('diagnostics',[])[-1] if self.loaded_checkpoint and self.loaded_checkpoint.get('scale',{}).get('diagnostics') else None
+        text='Scale-PINN · corrected training loss and original physical PDE are distinct.\n'
+        if summary and summary['physical_pde'] is not None:text+=f"Update {summary['step']}\nPhysical PDE MSE: {summary['physical_pde']:.6g}\nCorrected PDE MSE: {summary['corrected_pde']:.6g}\nCorrection RMS: {summary['correction_rms']:.6g}"
+        else:text+='Train a Scale recipe first.'
+        QMessageBox.information(self,'Scale correction diagnostics',text)
 
     def expert_summary(self):
         model=self.last_run.model if self.last_run is not None else None
@@ -1156,8 +1167,8 @@ class Window(QMainWindow):
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
         pde=self.make_node('Predefined PDE','',480,40)
-        if config.method in ('self_adaptive','lra','expert'):
-            recipe=expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+        if config.method in ('self_adaptive','lra','expert','scale'):
+            recipe=scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
             title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
             old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
@@ -1330,6 +1341,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Case initial/boundary constraints' if c.is_paper_case else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
                      'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks' if c.is_time_dependent else 'Steady · gradient balance',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
@@ -1401,6 +1413,17 @@ class Window(QMainWindow):
         else:self.change('interior_data',{})
         self.selection_changed()
 
+    def scale_settings_fields(self):
+        self.property_section('Scale-PINN correction')
+        for key,label in [('tau_sc','Sequential scale τsc'),('tau_alpha','Smoothing scale τα'),('gamma','Spatial smoothing γ'),('strength','Correction strength')]:
+            spin=QDoubleSpinBox();spin.setObjectName('scale_'+key);spin.setDecimals(8);spin.setRange(0. if key in ('gamma','strength') else .00000001,1000000.);spin.setValue(self.config.scale_settings[key]);spin.setKeyboardTracking(False)
+            spin.valueChanged.connect(lambda value,k=key:self.change_scale_option(k,value));self.form.addRow(label,spin)
+        fresh=QCheckBox('Refresh random samples every update');fresh.setObjectName('scale_fresh');fresh.setChecked(self.config.scale_settings['fresh']);fresh.toggled.connect(lambda value:self.change_scale_option('fresh',value));self.form.addRow(fresh)
+        note=QLabel('PDE residual + M(current) − stop-gradient M(previous). Previous means the last optimizer iterate, not the initial condition or a time window. Spatial smoothing excludes time. Strength 0 disables correction; physical and corrected PDE diagnostics are reported separately. Existing networks remain replaceable.');note.setWordWrap(True);self.form.addRow(note)
+
+    def change_scale_option(self,key,value):
+        settings=deepcopy(self.config.scale_settings);settings[key]=value;self.change('scale_settings',settings)
+
     def expert_settings_fields(self):
         self.property_section('Expert PINN training')
         mode=QComboBox();mode.setObjectName('expert_balance_mode');mode.addItem('Gradient norm (recommended)','gradient');mode.addItem('NTK diagonal trace','ntk')
@@ -1435,11 +1458,11 @@ class Window(QMainWindow):
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
-        if self.config.method=='expert':choice.model().item(choice.findData('integral')).setEnabled(False)
+        if self.config.method in ('expert','scale'):choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
-        note=QLabel('Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note=QLabel('Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_sampling_option(self,key,value):
@@ -1664,6 +1687,7 @@ class Window(QMainWindow):
             note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
             self.property_section('PINN method')
             self.form.addRow(QLabel(recipe.NAME))
+            if node.kind=='scale_recipe':self.scale_settings_fields()
             if node.kind=='expert_recipe':self.expert_settings_fields()
             self.loss_formulation_field()
             for attribute in recipe.EXPOSED:
@@ -1684,12 +1708,14 @@ class Window(QMainWindow):
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='scale_method':variant.addItem('Scale-PINN','scale');variant.setEnabled(False)
             if node.kind=='expert_method':variant.addItem('Expert PINN','expert');variant.setEnabled(False)
             if node.kind=='lra_method':variant.addItem('Learning-rate annealing PINN','lra');variant.setEnabled(False)
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
             if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
             self.form.addRow('Method variant',variant)
+            if node.kind=='scale_method':self.scale_settings_fields()
             if node.kind=='expert_method':self.expert_settings_fields()
             if node.kind=='lra_method':
                 self.form.addRow(QLabel('LRA · max PDE / mean constraint gradients\nScalar loss balancing; no base-rate decay'))
@@ -1891,6 +1917,7 @@ class Window(QMainWindow):
         self.set_busy(True)
         self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
         self.worker.progress.connect(self.training_progress)
+        self.worker.scale_progress.connect(self.scale_training_progress)
         self.worker.expert_progress.connect(self.expert_training_progress)
         self.worker.sampling_updated.connect(self.sampling_progress)
         self.worker.completed.connect(self.training_completed)
@@ -1900,6 +1927,9 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Preparing samples and network…')
         self.worker.start()
         return True
+
+    def scale_training_progress(self,summary):
+        self.log.appendPlainText(f"Scale update {summary['step']}: physical PDE {summary['physical_pde']:.6g}, corrected PDE {summary['corrected_pde']:.6g}, correction RMS {summary['correction_rms']:.6g}")
 
     def expert_training_progress(self,summary):
         if 'window' in summary:self.log.appendPlainText(f"Time window {summary['window']}/{summary['windows']} · local update {summary['window_step']} · trained through t={summary['trained_time_end']:.6g}" + (' · full-domain outputs held until the last window' if not summary['outputs_ready'] else ''))

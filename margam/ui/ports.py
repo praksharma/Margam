@@ -68,3 +68,8 @@ INPUTS['expert_recipe']=INPUTS['recipe']
 INPUTS['expert_method']=INPUTS['method']
 OUTPUTS['expert_recipe']=OUTPUTS['recipe']
 OUTPUTS['expert_method']=OUTPUTS['method']
+
+INPUTS['scale_recipe']=INPUTS['recipe']
+INPUTS['scale_method']=INPUTS['method']
+OUTPUTS['scale_recipe']=OUTPUTS['recipe']
+OUTPUTS['scale_method']=OUTPUTS['method']

@@ -152,3 +152,7 @@ reviewed to identify differences; implementation is independently written from
 the paper equations using existing Margam/PyTorch components. Network reuse from
 NVIDIA remains separately attributed above. Scope, differences and deferred
 components are documented in docs/expert-pinn.md.
+
+## Scale-PINN mathematical reference
+
+`margam/methods/scale.py` independently implements the equations and Algorithm 1 in Chiu, Wong, Ooi, Wei, Fan and Ong, *Scale-PINN: Learning Efficient Physics-Informed Neural Networks Through Sequential Correction*, [arXiv:2602.19475v1](https://arxiv.org/abs/2602.19475v1). The paper is not bundled. The [authors’ repository](https://github.com/chiuph/SCALE-PINN), reviewed at `5ff8219d2604de8a57a5b7a9c7db9b435c5c3257`, declares all rights reserved. No upstream code, notebooks, data or license-covered modifications are copied into Margam. Existing NVIDIA-derived networks retain their separate notices above. See docs/scale-pinn.md for implementation differences.

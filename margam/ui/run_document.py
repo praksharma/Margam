@@ -47,10 +47,11 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('marching' in checkpoint)==(config.method=='expert' and config.expert_settings['windows']>1),'Checkpoint time marching/config mismatch.')
+        require(('scale' in checkpoint)==(config.method=='scale'),'Checkpoint Scale method/state mismatch.')
         require(('expert' in checkpoint)==(config.method=='expert'),'Checkpoint Expert method/state mismatch.')
         require(('lra' in checkpoint)==(config.method=='lra'),'Checkpoint LRA state/method mismatch.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
@@ -94,7 +95,7 @@ def load_run(path):
         require(sum(entry.file_size for entry in archive.infolist())<=LIMIT,'Expanded run exceeds 256 MiB.')
     data=torch.load(path,map_location='cpu',weights_only=True)
     config=validate_run(data)
-    if data['checkpoint'] is not None and config.method=='expert':
+    if data['checkpoint'] is not None and config.method in ('expert','scale'):
         from copy import deepcopy
         from ..templates.poisson import build_pinn
         config=deepcopy(config);config.device='cpu'

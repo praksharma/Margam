@@ -1,0 +1,17 @@
+{
+  "scope": "Actual Scale controls/compact recipe/submenu; no training or accuracy claim.",
+  "captures": {
+    "trainer": {
+      "file": "manual-scale-trainer.png",
+      "sha256": "38919f220faf396adf40e5b3237b465b9801093890f641203af90fdd0881a6bf"
+    },
+    "compact": {
+      "file": "manual-scale-compact.png",
+      "sha256": "ce5a3eac66f11363f7c65c1f2d4c7427baa9e5a5ddbdadea9c09ad51d89a60e5"
+    },
+    "examples": {
+      "file": "manual-scale-examples.png",
+      "sha256": "7c36f64d83defa02e1837028a0166b1d65da7ef09cd294089e71a765b74d5692"
+    }
+  }
+}

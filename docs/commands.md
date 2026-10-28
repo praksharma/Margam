@@ -151,3 +151,13 @@ python -m examples.capture_expert_extensions --overwrite
 ```
 
 See [controls and correctness evidence](expert-training.md).
+
+## Scale-PINN
+
+```bash
+python -m examples.scale_pinn --device cpu
+python -m examples.scale_pinn --device cuda
+python -m examples.capture_scale --overwrite
+```
+
+See [Scale-PINN controls and recorded checks](scale-pinn.md).

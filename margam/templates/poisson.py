@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import math
 import json
 from ..components.sampling import sample_box, SAMPLERS
+from ..components.scale_config import scale_defaults,validate_scale_settings,validate_scale_problem
 from ..components.expert_config import expert_defaults,validate_expert_settings,validate_expert_problem
 from ..components.expressions import Expression
 from ..components.prepared_data import read_points, validate_mapping, normal_fingerprint
@@ -83,6 +84,7 @@ class PoissonConfig:
     lra_max: float = 1e6
     network_type: str = 'fcnn'
     network_options: dict = field(default_factory=dict)
+    scale_settings: dict = field(default_factory=scale_defaults)
 
     @property
     def is_time_dependent(self):return self.shape in ('SpaceTime1D','SpaceTime2D','ChannelTime2D')
@@ -191,9 +193,11 @@ class PoissonConfig:
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
         if self.physics not in ('scalar','incompressible_2d','paper_case'):raise ValueError('Unknown physics contract.')
+        validate_scale_settings(self.scale_settings)
+        if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)
         if self.method=='expert':validate_expert_problem(self)
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert'):raise ValueError('Unknown PINN method.')
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -268,6 +272,12 @@ def sample_problem(config):
 def build_pinn(config,*,initial_teacher=None,time_origin=None):
     from ..components.adaptive_sampling import configure_adaptive_sampling
     config.validate()
+    if config.method=='scale':
+        from copy import deepcopy
+        from ..methods.scale import ScalePINN
+        baseline=deepcopy(config);baseline.method='baseline'
+        model=_build_pinn(baseline)
+        return ScalePINN(model.problem,model.network,config=config).compile(lr=config.lr,device=config.device)
     if config.method=='expert' and config.expert_settings['windows']>1:
         from ..methods.time_marching import TimeMarchingPINN
         return TimeMarchingPINN(config)

@@ -14,7 +14,7 @@ class ExampleTests(unittest.TestCase):
         torch.set_num_threads(1)
         for key, example in EXAMPLE_PROBLEMS.items():
             with self.subTest(example=key):
-                if key=='burgers_1d' or key.startswith('expert_'):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
+                if key=='burgers_1d' or key.startswith(('expert_','scale_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
                 config=example_config(key)
                 model=build_pinn(config)
                 dimensions=1 if config.shape=='Interval' else 2
@@ -58,7 +58,7 @@ assert w.examples_1d_menu.title()=='1D examples'
 assert len(w.examples_1d_menu.actions())==6
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
-    expected=w.expert_examples_menu if key.startswith('expert_') else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu
+    expected=w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu
     assert action in expected.actions()
     if expected is w.examples_1d_menu:assert action not in w.examples_menu.actions()
 assert all(a.text().startswith('2D ') for a in (w.load_action,w.heat_action,w.flow_action))
@@ -71,7 +71,7 @@ for key in EXAMPLE_PROBLEMS:
     assert not w.output_views.entries
     document=capture_model(w)
     decode_document(document)
-    assert document['version']==18
+    assert document['version']==19
     from tempfile import TemporaryDirectory
     from pathlib import Path
     with TemporaryDirectory() as directory:
