@@ -11,7 +11,7 @@ LIMIT=256*1024*1024
 
 def validate_run(data):
     require(isinstance(data,dict) and set(data)=={'format','version','model','result','monitors','checkpoint'},'Invalid run archive.')
-    require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2),'Unsupported run version.')
+    require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2,3),'Unsupported run version.')
     config,nodes,_=decode_document(data['model']);kinds={n['id']:n['kind'] for n in nodes}
     result=data['result']
     require(isinstance(result,dict) and set(result)=={'outputs','steps','cancelled','device'},'Invalid run result.')
@@ -20,10 +20,21 @@ def validate_run(data):
     require(isinstance(result['outputs'],dict),'Invalid run outputs.')
     for identifier,output in result['outputs'].items():
         require(kinds.get(identifier) in ('solution','comparison','export','paraview') and isinstance(output,dict),'Unknown run output.')
-        require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field'},'Invalid output metadata.')
-        size=output['size'];require(type(size) is int and 2<=size<=201,'Invalid output resolution.')
-        points,values=output['points'],output['values']
-        require(isinstance(points,list) and isinstance(values,list) and len(points)==len(values)==len(evaluation_points(config,size)),'Invalid output point count.')
+        require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field','evaluation','point_ids','reference_provenance'},'Invalid output metadata.')
+        size=output['size'];points,values=output['points'],output['values']
+        supplied='evaluation' in output
+        if supplied:
+            from ..components.evaluation_data import validate_points
+            require(size is None and isinstance(points,list) and isinstance(values,list) and 1<=len(points)==len(values)<=100000,'Invalid supplied output count.')
+            validate_points(points,config,output.get('point_ids'))
+        else:
+            require(type(size) is int and 2<=size<=201,'Invalid output resolution.')
+            require(isinstance(points,list) and isinstance(values,list) and len(points)==len(values)==len(evaluation_points(config,size)),'Invalid output point count.')
+            require('point_ids' not in output,'Grid outputs cannot invent supplied point IDs.')
+        for name in ('evaluation','reference_provenance'):
+            if name in output:
+                metadata=output[name]
+                require(isinstance(metadata,dict) and set(metadata)=={'kind','source_name','sha256'} and metadata['kind']=='supplied' and isinstance(metadata['source_name'],str) and 0<len(metadata['source_name'])<=4096 and isinstance(metadata['sha256'],str) and len(metadata['sha256'])==64 and all(v in '0123456789abcdef' for v in metadata['sha256']),'Invalid supplied-data provenance.')
         vector=len(config.field_names)>1
         require(output.get('fields',['u'])==list(config.field_names),'Invalid output field contract.')
         finite_values=lambda rows:all(isinstance(row,list) and len(row)==len(config.field_names) and all(number(v) for v in row) for row in rows) if vector else all(number(v) for v in rows)
@@ -64,7 +75,7 @@ def validate_run(data):
             require(all(isinstance(v,torch.Tensor) and v.ndim==2 and v.shape[1]==1 and 1<=v.shape[0]<=100000 for v in adaptive['weights'].values()),'Invalid adaptive point counts.')
         require(isinstance(checkpoint['loss_history'],list) and len(checkpoint['loss_history'])==steps and all(check_record(v) for v in checkpoint['loss_history']),'Invalid checkpoint losses.')
         require(isinstance(checkpoint['training_history'],list) and len(checkpoint['training_history'])==steps and all(number(v) for v in checkpoint['training_history']),'Invalid checkpoint total losses.')
-        if data['version']==2:require(isinstance(checkpoint.get('data_fingerprint'),str),'Checkpoint data fingerprint is missing.')
+        if data['version']>=2:require(isinstance(checkpoint.get('data_fingerprint'),str),'Checkpoint data fingerprint is missing.')
     return config
 
 
@@ -72,7 +83,7 @@ def capture_run(window):
     result={key:value for key,value in window.result.items() if key!='config'}
     result['outputs']={identifier:{key:value for key,value in output.items() if key!='config'} for identifier,output in result['outputs'].items()}
     checkpoint=window.last_run.model.training_state() if window.last_run is not None and window.last_run.model is not None else window.loaded_checkpoint
-    return {'format':'margam-run','version':2,'model':capture_model(window),'result':result,
+    return {'format':'margam-run','version':3,'model':capture_model(window),'result':result,
             'monitors':window.monitor_records,'checkpoint':checkpoint}
 
 

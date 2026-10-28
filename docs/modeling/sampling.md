@@ -60,9 +60,15 @@ planar schema and label selection. It does not import arbitrary CAD or FEM meshe
 
 ## Training locations are not export locations
 
-Current prediction/export blocks evaluate on a separate regular grid. Random
-training samples are compatible with VTI export. Evaluating and exporting at the
-original GeoSampler/FEM nodes, preserving their IDs/connectivity and optional
-pointwise reference errors, is [planned work](../todo.md#future-evaluation-and-export-at-supplied-points).
+Prediction/export blocks use a separate regular grid by default. Random training
+samples are compatible with VTI export. The separate Evaluation points block
+accepts supplied CSV/NPZ coordinates and IDs; Reference data provides optional
+pointwise reference values. Mesh connectivity and direct GeoSampler integration
+remain [planned work](../todo.md#future-evaluation-and-export-at-supplied-points).
 
 **Next:** [PDEs and boundary conditions](physics.md).
+
+
+For prediction at imported coordinates, use the separate
+[Evaluation points and Reference data blocks](../evaluation-points.md). These
+leave the interior/boundary training samplers unchanged.

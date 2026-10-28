@@ -48,3 +48,23 @@ class TrainingWorker(QThread):
                                  'device': str(model.device), 'config': config})
         except Exception as error:
             self.failed.emit(f'{type(error).__name__}: {error}')
+
+
+class EvaluationWorker(QThread):
+    completed=Signal(object)
+    failed=Signal(str)
+    evaluation_only=True
+
+    def __init__(self,config,requests,*,model=None,checkpoint=None,parent=None):
+        super().__init__(parent);self.config=config;self.requests=tuple(requests);self.model=model;self.checkpoint=checkpoint;self.cancel_event=Event()
+
+    def cancel(self):self.cancel_event.set()
+
+    def run(self):
+        try:
+            from ..components.prediction import prediction_model
+            from ..components.outputs import evaluate_outputs
+            if self.model is None:self.model=prediction_model(self.config,self.checkpoint)
+            outputs=evaluate_outputs(self.model,self.config,self.requests)
+            self.completed.emit(dict(outputs=outputs,steps=self.model.iter,cancelled=self.cancel_event.is_set(),device=str(self.model.device),config=self.config))
+        except Exception as error:self.failed.emit(f'{type(error).__name__}: {error}')

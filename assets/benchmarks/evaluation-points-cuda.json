@@ -1,0 +1,202 @@
+{
+  "scope": "Supplied-point functionality and checkpoint inference check, not a paper accuracy benchmark.",
+  "device": "cuda",
+  "torch": "2.14.1+cu130",
+  "configuration": {
+    "shape": "Interval",
+    "x_min": 0.0,
+    "x_max": 1.0,
+    "y_min": 0.0,
+    "y_max": 1.0,
+    "t_min": 0.0,
+    "t_max": 1.0,
+    "cylinder_x": 0.2,
+    "cylinder_y": 0.2,
+    "cylinder_radius": 0.05,
+    "fourth_order": 0.00152587890625,
+    "startup_time": 0.1,
+    "points": 32,
+    "boundary_points": 16,
+    "adaptive_sampling": {},
+    "sampling": "grid",
+    "seed": 7,
+    "source": 2.0,
+    "layers": [
+      16,
+      16
+    ],
+    "iterations": 100,
+    "lr": 0.005,
+    "device": "cuda",
+    "loss_formulation": "mean",
+    "pde_weight": 1.0,
+    "boundary_weight": 10.0,
+    "bc_types": {
+      "left": "Dirichlet",
+      "right": "Dirichlet",
+      "bottom": "Dirichlet",
+      "top": "Dirichlet"
+    },
+    "bc_values": {
+      "left": 0.0,
+      "right": 0.0,
+      "bottom": 0.0,
+      "top": 0.0
+    },
+    "boundary_sampling": {},
+    "pde_expression": "",
+    "bc_targets": {},
+    "bc_operators": {},
+    "interior_data": {},
+    "boundary_data": {},
+    "network_seed": null,
+    "method": "baseline",
+    "expert_settings": {
+      "chunks": 8,
+      "causal_epsilon": 1.0,
+      "balance_every": 1000,
+      "momentum": 0.9,
+      "decay_rate": 0.9,
+      "decay_steps": 2000,
+      "gradient_floor": 1e-12,
+      "weight_cap": 1000000.0,
+      "balance_mode": "gradient",
+      "ntk_points": 16,
+      "windows": 1,
+      "window_steps": 1000
+    },
+    "physics": "scalar",
+    "viscosity": 0.01,
+    "flow_residuals": [
+      "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+      "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+      "D(u,x)+D(v,y)"
+    ],
+    "flow_boundary": {
+      "left": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "right": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "bottom": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      },
+      "top": {
+        "u": {
+          "type": "Dirichlet",
+          "target": "y",
+          "operator": ""
+        },
+        "v": {
+          "type": "Dirichlet",
+          "target": "0",
+          "operator": ""
+        }
+      }
+    },
+    "pressure_point": [
+      0.0,
+      0.0
+    ],
+    "pressure_value": 0.0,
+    "pressure_weight": 1.0,
+    "pde_preset": "poisson",
+    "pde_forcing": "0",
+    "sa_lr": 0.005,
+    "sa_initial": 1.0,
+    "sa_max": 1000.0,
+    "sa_boundary": false,
+    "lra_alpha": 0.9,
+    "lra_interval": 10,
+    "lra_epsilon": 1e-12,
+    "lra_max": 1000000.0,
+    "network_type": "fcnn",
+    "network_options": {},
+    "scale_settings": {
+      "tau_sc": 0.45,
+      "tau_alpha": 1.5,
+      "gamma": 0.0001,
+      "strength": 1.0,
+      "fresh": true
+    }
+  },
+  "training_steps": 100,
+  "evaluation_optimizer_updates": 0,
+  "trained_state_unchanged": true,
+  "points": [
+    [
+      0.75
+    ],
+    [
+      0.0
+    ],
+    [
+      0.25
+    ],
+    [
+      1.0
+    ]
+  ],
+  "point_ids": [
+    "node-B",
+    "node-A",
+    "node-D",
+    "node-C"
+  ],
+  "predictions": [
+    0.18802227079868317,
+    -0.009163886308670044,
+    0.19052277505397797,
+    0.01758699119091034
+  ],
+  "reference": [
+    0.1875,
+    0.0,
+    0.1875,
+    0.0
+  ],
+  "rmse": 0.010033556289291161,
+  "max_error": 0.01758699119091034,
+  "evaluation": {
+    "kind": "supplied",
+    "source_name": "supplied-points.csv",
+    "sha256": "b4c54c80654e10e8c9edd9729610177b9b5b5f5e60eda0a9ea735e1235a0a31e"
+  },
+  "reference_provenance": {
+    "kind": "supplied",
+    "source_name": "reference-values.csv",
+    "sha256": "efee702c919bafae11aee69f5e5f32248fcb96759be3538a2d94101405742ed6"
+  },
+  "exports": [
+    "comparison.csv",
+    "comparison.vtu"
+  ]
+}

@@ -70,6 +70,19 @@ def _document(grid,time=None):
     return ET.ElementTree(root)
 
 
+def _reference_arrays(tree,data):
+    """Attach explicit reference and signed error fields to VTI or VTU points."""
+    if data.get('reference') is None:return tree
+    fields=list(data.get('fields',['u']))
+    values=np.asarray(data['values'],dtype=float);reference=np.asarray(data['reference'],dtype=float)
+    if values.ndim==1:values=values[:,None]
+    if reference.ndim==1:reference=reference[:,None]
+    if reference.shape!=values.shape or values.shape!=(len(data['points']),len(fields)) or not np.isfinite(reference).all():raise ValueError('Reference arrays must match point fields.')
+    point_data=tree.getroot().find('.//PointData')
+    for i,name in enumerate(fields):_array(point_data,'ref_'+name,reference[:,i]);_array(point_data,'error_'+name,values[:,i]-reference[:,i])
+    return tree
+
+
 def _write(path,tree):
     temporary=None
     try:
@@ -86,18 +99,19 @@ def export_vti(path,data,*,time=None):
     if getattr(data.get('config'),'is_time_dependent',False):raise ValueError('Space–time results require a physical-time PVD series, not a spatial VTI plane.')
     path=Path(path)
     if path.suffix.lower()!='.vti':raise ValueError('A VTI snapshot needs a .vti filename.')
-    tree=_document(_grid(data),time)
+    tree=_reference_arrays(_document(_grid(data),time),data)
     _write(path,tree)
     return path
 
 
-def export_pvd(path,frames,*,unstructured=False):
+def export_pvd(path,frames,*,unstructured=False,supplied=False):
     """Export (physical_time, prediction_data) frames as one playable collection.
 
-    Strictly increasing times, same grid/field schema. Stage new companions and
+    Strictly increasing times and matching fields; supplied clouds may move. Stage companions and
     publish the index last: a failed replacement leaves the prior series intact.
     Keep the PVD and its companion directory together when moving the result.
     """
+    if supplied and not unstructured:raise ValueError('Supplied time frames require unstructured point clouds.')
     path=Path(path)
     if path.suffix.lower()!='.pvd':raise ValueError('A time series needs a .pvd filename.')
     stage=Path(tempfile.mkdtemp(dir=path.parent,prefix='.margam-series-'))
@@ -111,11 +125,16 @@ def export_pvd(path,frames,*,unstructured=False):
             if previous is not None and time<=previous:raise ValueError('Physical times must be strictly increasing; duplicate times are not frames.')
             if unstructured:
                 from .point_export import point_grid,point_document
-                grid=point_grid(data);current=(tuple(map(tuple,grid[0])),tuple(grid[1]))
+                grid=point_grid(data);current=tuple(grid[1]) if supplied else (tuple(map(tuple,grid[0])),tuple(grid[1]))
             else:grid=_grid(data);current=grid[:4]
             if schema is None:schema=current
             elif current!=schema:raise ValueError('All time frames must use the same regular grid and fields.')
-            name=f'frame_{index:06d}.'+('vtu' if unstructured else 'vti');_write(stage/name,point_document(grid,time) if unstructured else _document(grid,time))
+            name=f'frame_{index:06d}.'+('vtu' if unstructured else 'vti')
+            if supplied:
+                from .point_export import supplied_document
+                tree=supplied_document(data,time)
+            else:tree=_reference_arrays(point_document(grid,time) if unstructured else _document(grid,time),data)
+            _write(stage/name,tree)
             ET.SubElement(collection,'DataSet',timestep=format(time,'.17g'),group='',part='0',file=destination.name+'/'+name)
             previous=time;count+=1
         if not count:raise ValueError('A time series needs at least one physical-time frame.')
@@ -139,5 +158,9 @@ def export_spacetime_pvd(path,data):
     if values.ndim==1:values=values[:,None]
     if points.shape!=expected.shape or values.shape!=(len(expected),len(fields)) or not np.isfinite(values).all() or not np.allclose(points,expected,rtol=0,atol=1e-7):raise ValueError('Invalid ordered space–time result grid.')
     lower,upper=config.bounds;times=np.linspace(lower[-1],upper[-1],count);per=len(points)//count
-    frames=((float(time),dict(points=points[i*per:(i+1)*per,:-1].tolist(),values=values[i*per:(i+1)*per].tolist(),fields=fields)) for i,time in enumerate(times))
+    reference=data.get('reference')
+    if reference is not None:
+        reference=np.asarray(reference,dtype=float)
+        if reference.shape!=np.asarray(data['values']).shape or not np.isfinite(reference).all():raise ValueError('Reference arrays must match point fields.')
+    frames=((float(time),dict(points=points[i*per:(i+1)*per,:-1].tolist(),values=values[i*per:(i+1)*per].tolist(),fields=fields,reference=None if reference is None else reference[i*per:(i+1)*per].tolist())) for i,time in enumerate(times))
     return export_pvd(path,frames,unstructured=getattr(config,'has_obstacle',False))

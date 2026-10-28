@@ -512,7 +512,7 @@ infrastructure. Initial use cases include the high-Re Scale cavity problems and
 existing PINN/network comparisons. Keep the physical problem and independent
 evaluation points/reference data fixed across comparable trials, even when
 training samplers or point budgets change. References may come from an analytical
-solution or user-supplied numerical data, including future mesh-node evaluation.
+solution or user-supplied numerical data, including supplied mesh-node coordinates.
 Record selected error norms, seeds/repeats, training budget and runtime/hardware
 alongside checkpoints and provenance. Original physical residual, corrected
 training loss and solution error are distinct quantities; a small corrected loss
@@ -572,3 +572,14 @@ Study objectives and comparison metrics must be user-selected. Analytical
 references remain optional; exports, residual statistics and training diagnostics
 can be requested independently. Correct expansion, compatibility decisions,
 reproducibility and failure isolation come before tuning for better solutions.
+
+
+### Supplied evaluation points: first milestone delivered
+
+[Evaluation points and Reference data](evaluation-points.md) are separate blocks.
+CSV/NPZ inputs preserve coordinates, order and IDs, independently of training.
+Comparison supplies aligned reference/error arrays to CSV and ParaView outputs;
+output-only edits can reuse trained weights without optimization. Supplied clouds
+use VTU vertex cells and transient PVD frames with explicit physical times.
+Mesh topology, unit/region metadata and direct GeoSampler integration remain future
+work. This milestone does not implement the parameter-study GUI or HPC runner.

@@ -177,25 +177,27 @@ supported catalogue descriptions are shared by the library, inspector and Help.
 
 ## Future evaluation and export at supplied points
 
-- [ ] Let users choose evaluation locations from GeoSampler/prepared input data
-  or supplied FEM mesh nodes, alongside the existing regular export grid. These
-  are evaluation points and need not be the PINN training samples.
-- [ ] Evaluate predictions at those exact spatial coordinates. Preserve original
-  point/node IDs, ordering, coordinate units, boundary/region labels and provenance,
-  so results can be matched back to the source without nearest-neighbour guessing.
-- [ ] Preserve supplied mesh connectivity and node-versus-cell field association
-  when available. Do not invent connectivity for a point cloud or silently export
-  scattered nodes as uniform ImageData. Select an appropriate VTK representation
-  (e.g. PolyData for points or UnstructuredGrid when cells are supplied).
-- [ ] Accept optional reference/FEM values at the same nodes, with explicit field
-  mapping and units, and export prediction, reference and pointwise error arrays.
-  Do not require an exact solution. Define scalar/component errors and optional
-  vector norms; handle absent references and zero denominators explicitly.
-- [ ] Preserve physical times and point IDs across transient snapshots; support
-  ParaView playback of the supplied-node or mesh results. Never use optimiser
-  iterations as physical timesteps.
-- [ ] Keep this broader input → evaluation → export system a separate implementation
-  milestone. Current VTI exports still evaluate on regular line/rectangle grids.
+The first supplied-point milestone is implemented; see the
+[illustrated guide](evaluation-points.md).
+
+- [x] Separate Evaluation points and Reference data blocks with explicit CSV/NPZ
+  mapping, finite/domain checks, independent of training samples.
+- [x] Predict at exact supplied coordinates, preserving row order, integer/text IDs
+  and source fingerprints. No interpolation or automatic remeshing.
+- [x] Align supplied reference fields by ID and coordinates (or unique coordinates),
+  and export predictions, references and signed pointwise errors.
+- [x] Reevaluate output-only changes with trained weights and no optimizer updates.
+- [x] Export supplied points as VTU vertices; group transient rows into physical-time
+  PVD frames, preserving IDs and original source-row indices.
+- [x] Save results in run archives for offline viewing/export, add a wired example,
+  CPU/CUDA evidence and actual UI screenshots.
+- [ ] Preserve mesh connectivity and node-versus-cell association when supplied;
+  add an explicit topology contract rather than guessing cells from a point cloud.
+- [ ] Add explicit units, boundary/region labels and GeoSampler prepared-data
+  integration. Coordinates/values currently use the model's units without conversion.
+- [ ] Add user-selected relative/vector error norms and zero-denominator rules.
+  Current comparisons report scalar/component RMSE, maximum absolute error and
+  signed pointwise differences.
 
 Existing in-app heatmaps are left as they are. Further field-plot development is
 paused; operational training monitors and basic rectangle previews remain useful.

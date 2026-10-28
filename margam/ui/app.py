@@ -1,7 +1,7 @@
 """Block-based baseline Poisson workflow with background training."""
 from uuid import uuid4
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import replace,asdict
 from pathlib import Path
 import json
 from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, COMPACT_RECIPES, TRAINER_RECIPES
@@ -19,7 +19,7 @@ from ..components.sampling import SAMPLERS
 from ..components.network_config import NETWORK_NAMES, OPTION_SCHEMAS, network_options
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
-from .training import TrainingWorker
+from .training import TrainingWorker,EvaluationWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
@@ -104,6 +104,7 @@ class Node(QGraphicsRectItem):
         self.kind = KINDS[title]
         self.identifier = uuid4().hex
         self.settings = {"resolution": 101, "history_limit": 10000}
+        if self.kind in ('evaluation_points','reference_data'):self.settings['source_data']={}
         if self.kind in PARAMETERS:self.settings["parameters"]=parameters_for(self.kind)
         self.setBrush(QColor(colors()['base']))
         self.setPen(QPen(QColor(colors()['border']), 1.5))
@@ -262,7 +263,9 @@ class Canvas(QGraphicsScene):
             else:
                 allowed = role(source.kind) == 'method' and target.kind in OUTPUT_KINDS
                 allowed = allowed and wire.target.name == ('model' if target.kind=='comparison' else 'input')
-                allowed = allowed or (source.kind=='reference' and target.kind=='comparison' and wire.target.name=='reference')
+                allowed = allowed or (source.kind in ('reference','reference_data') and target.kind=='comparison' and wire.target.name=='reference')
+                allowed = allowed or (source.kind=='evaluation_points' and target.kind in ('solution','comparison','export','paraview') and wire.target.name=='points')
+                allowed = allowed or (source.kind=='comparison' and target.kind in ('export','paraview') and wire.target.name=='comparison')
                 if not allowed:raise ValueError('Unsupported output connection: '+source.title+' → '+target.title)
                 key=(target.identifier,wire.target.name)
                 if key in destinations:raise ValueError('Each output input accepts only one source.')
@@ -277,40 +280,54 @@ class Canvas(QGraphicsScene):
 
     def output_requests(self, config):
         self.validate_graph()
-        requests=[]
-        for node in self.nodes():
-            if node.kind not in OUTPUT_KINDS:continue
-            incoming=[w for w in self.wires if w.target.parentItem() is node]
-            if not incoming:continue
-            reference=None
+        from ..components.evaluation_data import read_point_data,align_reference
+        from ..components.outputs import evaluation_points
+        cache={};sources={}
+        def snapshot(node,reference=False):
+            if node.identifier not in sources:sources[node.identifier]=read_point_data(node.settings.get('source_data',{}),config,reference=reference)
+            return sources[node.identifier]
+        def request(node):
+            if node.identifier in cache:return cache[node.identifier]
+            incoming={wire.target.name:wire.source.parentItem() for wire in self.wires if wire.target.parentItem() is node}
+            if not incoming:return None
+            if 'comparison' in incoming:
+                if node.kind not in ('export','paraview') or set(incoming)!={'comparison'}:raise ValueError('Choose a trainer/points connection OR compared fields for export, not both.')
+                parent=request(incoming['comparison'])
+                if parent is None:raise ValueError('Connect Comparison to a trained model and reference first.')
+                value=OutputRequest(node.identifier,node.kind,parent.resolution,parent.reference,parent.point_data,parent.reference_data)
+                cache[node.identifier]=value;return value
+            model_port='model' if node.kind=='comparison' else 'input'
+            if model_port not in incoming:raise ValueError(node.title+' needs a trained-model connection.')
+            point_data=snapshot(incoming['points']) if 'points' in incoming else None
+            reference=None;reference_data=None
             if node.kind=='comparison':
-                if {w.target.name for w in incoming} != {'model','reference'}:
-                    raise ValueError('Comparison needs both a trained-model connection and a Reference connection.')
-                source=next(w.source.parentItem() for w in incoming if w.target.name=='reference')
-                text=source.settings.get('reference_expression','')
-                data=source.settings.get('reference_data',{})
-                if text and data:raise ValueError('Choose an expression or imported reference data, not both.')
-                if text:
-                    texts=[part.strip() for part in text.split(';')]
-                    if len(texts)!=len(config.field_names):raise ValueError('Provide one reference expression per field, separated by semicolons.')
-                    expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names,coordinates=config.coordinate_names) for part in texts]
-                    def evaluate(points,expressions=expressions):
-                        import torch
-                        values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
-                        return values[:,0].tolist() if len(expressions)==1 else values.tolist()
-                    reference=ReferenceSource('User reference expression',evaluate)
-                elif data:
-                    from functools import partial
-                    reference=ReferenceSource('Imported reference fields',partial(reference_values,deepcopy(data),components=len(config.field_names)))
-                else:reference=make_poisson_reference(config)
+                if 'reference' not in incoming:raise ValueError('Comparison needs both a trained-model connection and a Reference connection.')
+                source=incoming['reference']
+                if source.kind=='reference_data':reference_data=snapshot(source,True)
+                else:
+                    text=source.settings.get('reference_expression','');data=source.settings.get('reference_data',{})
+                    if text and data:raise ValueError('Choose an expression or imported reference data, not both.')
+                    if text:
+                        texts=[part.strip() for part in text.split(';')]
+                        if len(texts)!=len(config.field_names):raise ValueError('Provide one reference expression per field, separated by semicolons.')
+                        expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names,coordinates=config.coordinate_names) for part in texts]
+                        def evaluate(points,expressions=expressions):
+                            import torch
+                            values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
+                            return values[:,0].tolist() if len(expressions)==1 else values.tolist()
+                        reference=ReferenceSource('User reference expression',evaluate)
+                    elif data:
+                        from functools import partial
+                        reference=ReferenceSource('Imported reference fields',partial(reference_values,deepcopy(data),components=len(config.field_names)))
+                    else:reference=make_poisson_reference(config)
             if node.kind=='monitor':
-                if not 25 <= node.settings['history_limit'] <= 100000:
-                    raise ValueError('Monitor history limit must be between 25 and 100000.')
-            elif node.settings['resolution']**len(config.bounds[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
-            elif not 2 <= node.settings['resolution'] <= 201:
-                raise ValueError('Evaluation resolution must be between 2 and 201.')
-            requests.append(OutputRequest(node.identifier,node.kind,node.settings['resolution'],reference))
-        return requests
+                if not 25<=node.settings['history_limit']<=100000:raise ValueError('Monitor history limit must be between 25 and 100000.')
+            elif point_data is None and node.settings['resolution']**len(config.bounds[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
+            if reference_data is not None:
+                coordinates=point_data.points if point_data is not None else evaluation_points(config,node.settings['resolution'])
+                align_reference(reference_data,coordinates,point_data.point_ids if point_data is not None else None,config)
+            value=OutputRequest(node.identifier,node.kind,node.settings['resolution'],reference,point_data,reference_data);cache[node.identifier]=value;return value
+        return [value for node in self.nodes() if node.kind in OUTPUT_KINDS if (value:=request(node)) is not None]
 
     def delete_selection(self,text='Delete selection'):
         if self.locked:return
@@ -494,6 +511,7 @@ class Window(QMainWindow):
         self.flow_action=self.examples_menu.addAction('2D incompressible flow');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
+        self.evaluation_example_action=self.examples_1d_menu.addAction('Supplied evaluation points · 1D');self.evaluation_example_action.triggered.connect(self.request_evaluation_example)
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
         self.example_actions={}
@@ -564,6 +582,7 @@ class Window(QMainWindow):
         self.check_action.triggered.connect(self.validate_button.click)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
+        self.evaluate_action=run.addAction('Evaluate outputs');self.evaluate_action.triggered.connect(self.evaluate_trained_outputs)
         self.stop_action=run.addAction('Stop')
         self.stop_action.setShortcut('Ctrl+Shift+T');self.stop_action.setEnabled(False)
         self.stop_action.triggered.connect(self.cancel_button.click)
@@ -735,6 +754,7 @@ class Window(QMainWindow):
 
     def replace_model(self,data,path=None):
         config,records,connections=decode_document(data)
+        self._evaluation_model=None;self._evaluation_checkpoint=None;self._evaluation_config=None
         staged=Canvas();nodes={}
         titles={kind:title for title,kind in KINDS.items()}
         for record in records:
@@ -791,6 +811,7 @@ class Window(QMainWindow):
         try:self.replace_model(data['model'])
         except Exception as error:QMessageBox.warning(self,'Run could not be opened',str(error));return False
         self.result=deepcopy(data['result']);self.result['config']=self.config
+        self._trained_config=deepcopy(self.config)
         for output in self.result['outputs'].values():output['config']=self.config
         self.monitor_records=deepcopy(data['monitors']);self.loaded_checkpoint=data['checkpoint']
         self.progress_bar.setValue(self.result['steps']);self.update_run_actions()
@@ -866,7 +887,7 @@ class Window(QMainWindow):
             self.statusBar().showMessage('Connect this export block and train before exporting.');return False
         paraview=node.kind=='paraview'
         transient=paraview and data['config'].is_time_dependent
-        point_cloud=paraview and data['config'].has_obstacle and not transient
+        point_cloud=paraview and (data['config'].has_obstacle or 'evaluation' in data) and not transient
         extension='.pvd' if transient else '.vtu' if point_cloud else '.vti' if paraview else '.csv'
         label='ParaView predictions' if paraview else 'CSV predictions'
         if path is None:
@@ -878,7 +899,10 @@ class Window(QMainWindow):
         try:
             if paraview:
                 from ..components.paraview_export import export_vti,export_spacetime_pvd
-                if transient:export_spacetime_pvd(path,data)
+                if 'evaluation' in data:
+                    from ..components.point_export import export_supplied
+                    export_supplied(path,data)
+                elif transient:export_spacetime_pvd(path,data)
                 elif point_cloud:
                     from ..components.point_export import export_vtu
                     export_vtu(path,data)
@@ -904,6 +928,8 @@ class Window(QMainWindow):
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        if node.kind in ('solution','comparison','export','paraview'):
+            action=menu.addAction('Evaluate requested outputs');action.setEnabled(not self.is_running());action.triggered.connect(self.evaluate_trained_outputs)
         if node.kind in COMPACT_RECIPES:
             action=menu.addAction('Expand into components');action.setEnabled(not self.is_running())
             action.triggered.connect(lambda:self.expand_recipe(node))
@@ -969,7 +995,7 @@ class Window(QMainWindow):
 
     def expert_summary(self):
         model=self.last_run.model if self.last_run is not None else None
-        if model is not None and hasattr(model,'expert_summary'):return model.expert_summary()
+        if model is not None and not getattr(self.last_run,'evaluation_only',False) and hasattr(model,'expert_summary'):return model.expert_summary()
         checkpoint=self.loaded_checkpoint
         if checkpoint and 'expert' in checkpoint:
             summary=dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=None)
@@ -1193,6 +1219,35 @@ class Window(QMainWindow):
         self.statusBar().showMessage(example.label+' · '+example.description+' · views remain closed')
         return True
 
+    def request_evaluation_example(self):
+        if not self.is_running() and self.confirm_discard():self.load_evaluation_example()
+
+    def load_evaluation_example(self):
+        if self.is_running():return False
+        self.load_example('interval_poisson')
+        reference=next(n for n in self.scene.nodes() if n.kind=='reference')
+        comparison=next(n for n in self.scene.nodes() if n.kind=='comparison')
+        export=next(n for n in self.scene.nodes() if n.kind=='export')
+        for wire in list(self.scene.wires):
+            if wire.source.parentItem() is reference or wire.target.parentItem() is export:
+                self.scene.wires.remove(wire);self.scene.removeItem(wire)
+        self.scene.removeItem(reference)
+        points=self.add_node('Evaluation points');points.setPos(750,500)
+        values=self.add_node('Reference data');values.setPos(750,650)
+        points.settings['source_data']=dict(path='assets/evaluation/supplied-points.csv',coordinates='x',values='',ids='point_id')
+        values.settings['source_data']=dict(path='assets/evaluation/reference-values.csv',coordinates='x',values='u',ids='point_id')
+        # Resolve demo resources outside the repository CWD without persisting a new format.
+        root=Path(__file__).resolve().parents[2]
+        if Path.cwd()!=root:
+            for node in (points,values):node.settings['source_data']['path']=str(root/node.settings['source_data']['path'])
+        self.scene.connect_nodes(values,comparison,'reference');self.scene.connect_nodes(points,comparison,'points')
+        solution=next(n for n in self.scene.nodes() if n.kind=='solution');self.scene.connect_nodes(points,solution,'points')
+        self.scene.connect_nodes(comparison,export,'comparison')
+        paraview=self.add_node('ParaView Export');paraview.setPos(1250,360);self.scene.connect_nodes(comparison,paraview,'comparison')
+        self.graph_changed();self.validate_model();self.fit_model();self.undo_stack.clear();self.undo_stack.setClean();self.update_document_title()
+        self.statusBar().showMessage('Supplied points example · shuffled reference IDs · explicit CSV/VTU comparison exports · views remain closed')
+        return True
+
     def show_quick_insert(self,position,screen_position):
         if self.is_running() or self.scene.locked:return
         if self.quick_insert is not None:self.quick_insert.reject()
@@ -1310,7 +1365,41 @@ class Window(QMainWindow):
     def is_running(self):
         return self.worker is not None
 
+    def preserve_evaluation_weights(self):
+        model=self.last_run.model if self.last_run is not None and self.last_run.model is not None else None
+        checkpoint=self.loaded_checkpoint
+        config=getattr(self,'_trained_config',None)
+        if config is None:
+            model=getattr(self,'_evaluation_model',None);checkpoint=getattr(self,'_evaluation_checkpoint',None);config=getattr(self,'_evaluation_config',None)
+        try:
+            current=assemble(self.scene.nodes(),self.scene.wires)
+            same=config is not None and not self._resetting and asdict(current)==asdict(config)
+        except (ValueError,KeyError,AttributeError):same=False
+        self._evaluation_model=model if same else None
+        self._evaluation_checkpoint=deepcopy(checkpoint) if same and model is None else None
+        self._evaluation_config=deepcopy(config) if same else None
+
+    def evaluate_trained_outputs(self):
+        if self.is_running() or not self.validate_model():return False
+        model=self.last_run.model if self.last_run is not None and self.last_run.model is not None else None
+        checkpoint=self.loaded_checkpoint
+        config=getattr(self,'_trained_config',None)
+        if model is None and checkpoint is None:
+            model=getattr(self,'_evaluation_model',None);checkpoint=getattr(self,'_evaluation_checkpoint',None);config=getattr(self,'_evaluation_config',None)
+        if config is None or asdict(config)!=asdict(self.config) or model is None and checkpoint is None:
+            self.statusBar().showMessage('Train or reopen a matching run before evaluating outputs.');return False
+        requests=self.scene.output_requests(self.config)
+        if model is not None:checkpoint=model.training_state()
+        self.loaded_checkpoint=deepcopy(checkpoint);self._trained_config=deepcopy(config)
+        self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor'}
+        self.result=None;self.set_busy(True);self.progress_bar.setRange(0,0)
+        self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self)
+        self.worker.completed.connect(self.training_completed);self.worker.failed.connect(self.training_failed);self.worker.finished.connect(self.training_finished)
+        self.log.appendPlainText('Evaluating requested outputs · trained weights retained · no optimizer updates')
+        self.worker.start();return True
+
     def clear_run_data(self):
+        self._trained_config=None
         self.loaded_checkpoint=None
         self.result=None
         self.monitor_records={}
@@ -1323,6 +1412,7 @@ class Window(QMainWindow):
         self.update_run_actions()
 
     def graph_changed(self):
+        self.preserve_evaluation_weights()
         self.clear_run_data()
         self.output_views.sync(self.scene.nodes())
         self.sync_rectangle_previews()
@@ -1348,6 +1438,7 @@ class Window(QMainWindow):
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field table' if c.is_time_dependent or len(c.field_names)>1 else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
+                     'evaluation_points':'Supplied coordinates / IDs','reference_data':'Supplied reference fields',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent or c.is_paper_case else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if c.pde_preset=='expert_cavity':details['predefined_pde']=f'Lid-driven cavity · Re={abs(c.bc_values["top"])*(c.y_max-c.y_min)/c.viscosity:g}' if c.viscosity>0 else 'Lid-driven cavity · invalid viscosity'
             if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder'}.get(c.shape,c.shape)
@@ -1385,6 +1476,7 @@ class Window(QMainWindow):
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
     def settings_changed(self):
+        self.preserve_evaluation_weights()
         self.clear_run_data()
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         self.refresh_descriptions()
@@ -1395,6 +1487,14 @@ class Window(QMainWindow):
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
+
+    def edit_evaluation_data(self,node):
+        if self.is_running() or self.scene.locked:return
+        from .evaluation_mapping import EvaluationMappingDialog
+        try:config=self.scene.compile_config()
+        except ValueError:config=deepcopy(self.config)
+        dialog=EvaluationMappingDialog(config,node.settings.get('source_data',{}),self,reference=node.kind=='reference_data')
+        if dialog.exec()==dialog.DialogCode.Accepted:self.change_output(node,'source_data',dialog.source());self.selection_changed()
 
     def edit_point_data(self,side=None,reference=None):
         if self.is_running() or self.scene.locked:return
@@ -1762,13 +1862,21 @@ class Window(QMainWindow):
             else:
                 count=QSpinBox();count.setKeyboardTracking(False);count.setRange(2,201);count.setValue(node.settings['resolution'])
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
+                supplied=any(w.target.parentItem() is node and w.target.name in ('points','comparison') for w in self.scene.wires)
+                count.setEnabled(not supplied)
                 self.form.addRow('Evaluation points / axis',count)
-                text='Connect PINN method to this plot. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect PINN method to the upper input and Reference to the lower input. The rectangle reference requires equal constant Dirichlet edges and uses a truncated sine series.'
-            if node.kind=='paraview':text='Connect a trainer or recipe and train. Export predictions as VTI on a regular evaluation grid; training samples can be random. Flow includes a velocity vector. Steady models export a snapshot; 1D space–time models export physical-time PVD frames. Choose a filename when exporting.'
-            if node.kind=='export':text='Connect PINN method, train, then explicitly export scalar x/y/u rows. No plot or file is created automatically.'
+                if supplied:self.form.addRow(QLabel('Uses connected supplied/comparison rows; per-axis resolution is ignored.'))
+                text='Connect a trainer or recipe; optionally connect Evaluation points. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect a trainer/recipe and an explicit Reference or Reference data source; optionally connect Evaluation points. The comparison can feed an export block.'
+            if node.kind=='paraview':text='Connect a trainer/recipe with optional Evaluation points, OR connect Comparison for reference/error fields. Regular grids use VTI; supplied points use VTU vertices. Transient results use physical-time PVD frames. Choose a filename explicitly.'
+            if node.kind=='export':text='Connect a trainer/recipe with optional Evaluation points, OR connect Comparison for reference/error columns. Supplied rows preserve order and IDs. Export CSV explicitly after training or Evaluate outputs.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
+        elif node.kind in ('evaluation_points','reference_data'):
+            source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+(Path(source['path']).name if source else 'No source mapped.'));note.setWordWrap(True);self.form.addRow(note)
+            button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)
+            if source:
+                clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.change_output(n,'source_data',{}));self.form.addRow(clear)
         elif node.kind=='reference':
             expression=QLineEdit(node.settings.get('reference_expression',''))
             expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')
@@ -1882,7 +1990,7 @@ class Window(QMainWindow):
         try:
             self.config=self.scene.compile_config()
             self.config.validate();requests=self.scene.output_requests(self.config)
-        except ValueError as error:
+        except (ValueError,OSError) as error:
             message=str(error);self.validation.setText(message)
             self.log.appendPlainText('Validation: '+message)
             self.statusBar().showMessage('Model needs attention · see Properties or Messages')
@@ -1906,6 +2014,7 @@ class Window(QMainWindow):
         for node in self.scene.nodes():
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
+        self.evaluate_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions()
 
@@ -1913,6 +2022,7 @@ class Window(QMainWindow):
         if self.is_running() or not self.validate_model():return False
         self._history_epoch+=1
         self.clear_run_data()
+        self._evaluation_model=None;self._evaluation_checkpoint=None;self._evaluation_config=None
         requests=self.scene.output_requests(self.config)
         self.active_monitors={r.identifier for r in requests if r.kind=='monitor'}
         self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] if checkpoint is not None else [] for node in self.scene.nodes() if node.identifier in self.active_monitors}
@@ -1954,22 +2064,26 @@ class Window(QMainWindow):
 
     def training_completed(self,result):
         self.result=result
+        self._trained_config=deepcopy(result['config'])
         for node in self.scene.nodes():self.output_views.refresh(node)
-        status='Stopped' if result['cancelled'] else 'Completed'
+        self.progress_bar.setRange(0,max(1,self.config.iterations));self.progress_bar.setValue(result['steps'])
+        status='Evaluated outputs' if getattr(self.worker,'evaluation_only',False) else 'Stopped' if result['cancelled'] else 'Completed'
         message=f"{status} · {result['steps']} updates · {result['device']}"
         self.statusBar().showMessage(message);self.log.appendPlainText(message)
 
     def training_failed(self,message):
         self.result=None
-        self.statusBar().showMessage('Training failed · see Messages')
-        self.log.appendPlainText('Training failed: '+message)
+        self.statusBar().showMessage(('Evaluation' if getattr(self.worker,'evaluation_only',False) else 'Training')+' failed · see Messages')
+        self.log.appendPlainText(('Evaluation' if getattr(self.worker,'evaluation_only',False) else 'Training')+' failed: '+message)
         self.messages_dock.show();self.messages_dock.raise_()
 
     def training_finished(self):
         worker=self.worker;self.worker=None
         self.set_busy(False)
         if worker is not None:
-            if self.result is not None:self.last_run=worker
+            if self.result is not None:
+                previous=self.last_run;self.last_run=worker
+                if previous is not None and previous is not worker:previous.model=None;previous.deleteLater()
             else:worker.deleteLater()
         self.update_run_actions()
         if self._closing:QTimer.singleShot(0,self.close)

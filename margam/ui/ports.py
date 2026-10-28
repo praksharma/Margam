@@ -73,3 +73,14 @@ INPUTS['scale_recipe']=INPUTS['recipe']
 INPUTS['scale_method']=INPUTS['method']
 OUTPUTS['scale_recipe']=OUTPUTS['recipe']
 OUTPUTS['scale_method']=OUTPUTS['method']
+
+# Optional supplied-point sources never connect to geometry/training inputs.
+INPUTS['evaluation_points']=()
+INPUTS['reference_data']=()
+OUTPUTS['evaluation_points']=PortSpec('output','Evaluation points','evaluation_points')
+OUTPUTS['reference_data']=PortSpec('output','Reference fields','reference')
+OUTPUTS['comparison']=PortSpec('output','Compared fields','comparison_data')
+for _kind in ('solution','comparison','export','paraview'):
+    INPUTS[_kind]=INPUTS[_kind]+(PortSpec('points','Evaluation points (optional)','evaluation_points'),)
+for _kind in ('export','paraview'):
+    INPUTS[_kind]=INPUTS[_kind]+(PortSpec('comparison','Compared fields (optional)','comparison_data'),)

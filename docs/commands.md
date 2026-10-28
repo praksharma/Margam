@@ -161,3 +161,15 @@ python -m examples.capture_scale --overwrite
 ```
 
 See [Scale-PINN controls and recorded checks](scale-pinn.md).
+
+
+## Supplied-point evaluation and UI captures
+
+```bash
+python -m examples.evaluation_points --device cpu --output-dir /tmp/margam-evaluation-cpu
+python -m examples.evaluation_points --device cuda --output-dir /tmp/margam-evaluation-cuda
+python -m examples.capture_evaluation --overwrite
+```
+
+These validate supplied-point prediction/export and capture the actual isolated
+UI. See [the guide](evaluation-points.md); CUDA requires an available CUDA device.

@@ -251,3 +251,26 @@ Independent 100-update [CPU](../assets/benchmarks/expert-cpu.json) and
 balance events and exact same-device continuation. They establish implementation
 behaviour, not agreement with JAX or published accuracy. The illustrated manual
 build checks all 50 generated HTML pages and local links.
+
+
+## Supplied evaluation data
+
+`tests/test_evaluation_data.py` checks exact row/ID preservation, shuffled reference
+alignment, finite/domain validation, NPZ integer precision and object rejection,
+offline run archives, and reference/error arrays in regular and supplied exports.
+Time-series checks read the emitted XML and verify physical times, per-frame
+point counts and original source-row indices. Optional VTK-reader tests are
+skipped when VTK is unavailable; no new ParaView GUI playback claim is made.
+
+`tests/test_evaluation_ui.py` exercises separate source blocks, mapping preview,
+preflight rejection, model/run persistence, live and archived weight reuse,
+offline export and invalidation after core-physics edits.
+`tests/test_prediction.py` checks checkpoint prediction against trained networks
+across available architectures, baseline/SA/LRA/hard-BC/Scale/Expert methods and
+Expert time windows, including deletion of the original training-data file.
+
+The [CPU record](../assets/benchmarks/evaluation-points-cpu.json) and
+[CUDA record](../assets/benchmarks/evaluation-points-cuda.json) independently verify
+the four-point example after 100 updates, unchanged weights/history and no
+optimizer updates for evaluation. These validate implementation and data flow,
+not solution accuracy. See the [illustrated guide](evaluation-points.md).

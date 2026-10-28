@@ -19,8 +19,8 @@ training samples. CSV Export remains available alongside the ParaView block.
 
 *The optional ParaView Export block has its own resolution and explicit export button. [Open full size](../../assets/screenshots/manual-paraview.png).*
 
-CSV exports have `x,u`, `x,y,u`, or `x,y,u,v,p` columns. Reference values, pointwise
-errors and training losses are not included in these prediction files.
+CSV exports have `x,u`, `x,y,u`, or `x,y,u,v,p` columns. Comparison-fed CSV exports additionally include reference values and signed
+pointwise errors. Training losses remain in the monitor/run archive.
 Use a saved run when you also need training state and recorded output histories.
 
 ## Open a VTI snapshot
@@ -39,14 +39,17 @@ metadata were read back with VTK; GUI playback has not been exercised on this ho
 
 The [Burgers space–time example](../burgers.md) now uses the block to write
 physical-time PVD collections directly. Its evaluation resolution sets the spatial
-and temporal counts. Higher-dimensional transient systems remain future work.
+and temporal counts. The Expert examples also support 2D transient flow exports.
 Read the [ParaView format guide](../paraview-export.md) for the exact scope.
 
-## What comes later
+## Evaluate supplied points
 
-Evaluation at supplied GeoSampler/FEM nodes, preserved node IDs/connectivity and
-optional pointwise reference errors are [recorded in TODO](../todo.md#future-evaluation-and-export-at-supplied-points).
-The current export evaluates the network on a regular line/rectangle grid.
+Use the separate **Evaluation points** block for CSV/NPZ coordinates and optional
+IDs. Add **Reference data** for matching numerical values, connect it to Comparison,
+then connect Comparison to an export block to include reference/error arrays.
+Supplied steady points use VTU vertex cells; transient points use physical-time
+PVD/VTU frames. See the [illustrated supplied-point guide](../evaluation-points.md).
+Mesh connectivity and direct GeoSampler integration remain future work.
 
 For [Burgers](../burgers.md), CSV headings are `x,t,u`. ParaView Export writes a
 PVD collection of 1D spatial VTI frames with physical-time stamps; open the PVD

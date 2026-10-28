@@ -116,9 +116,10 @@ outward normal sign, unsupported conditions and interval Poisson convergence.
 `margam/components/outputs.py` defines OutputRequest and ReferenceSource without Qt.
 `evaluate_outputs(model, config, requests)` evaluates only declared prediction or
 comparison requests; an empty request list or monitor-only list never calls predict.
-Each request has its own identifier and 2–201 evaluation points per coordinate axis.
+Each request has its own identifier and either 2–201 regular evaluation points per
+coordinate axis or an explicit supplied-point snapshot.
 Views support finite scalar outputs and the explicit u/v/p field contract. Comparison requires an explicit
-callable reference with finite values matching those evaluation points. This first
+callable reference or mapped Reference data with finite values matching those evaluation points. This
 contract does not provide interpolation, coordinate conversion or unit conversion.
 
 The generic UI worker no longer imports or constructs the analytical interval
@@ -129,7 +130,7 @@ is separate from recording. See ui-prototype.md for menus and view lifecycle.
 ## Editor connection contracts
 
 `margam/ui/ports.py` defines the current semantic port types: geometry, interior
-points, boundary points, residual, constraints, network, PINN run, and reference.
+points, boundary points, residual, constraints, network, PINN run, reference, evaluation points and compared fields.
 These prevent incompatible editor wires; they do not add tensor-shape validation,
 units or a general execution engine. Every destination has one source; method and
 reference outputs can branch to distinct consumers. See ui-prototype.md for the
@@ -232,3 +233,11 @@ Imported normal arrays participate in checkpoint identities, even when coordinat
 and targets are unchanged. Earlier imported-normal checkpoints without that identity
 remain viewable but may require restarting training; no cross-build checkpoint
 compatibility is claimed beyond validated state/data contracts.
+
+
+## Supplied evaluation sources
+
+Evaluation points and Reference data are separate CSV/NPZ source blocks. They
+feed output requests without changing training samplers. Comparison can feed
+exports with aligned reference/error values. Exact coordinates, row order and
+integer/text IDs are preserved. See [data mappings, limits and export contracts](evaluation-points.md).

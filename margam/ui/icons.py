@@ -6,6 +6,8 @@ from .theme import colors
 
 # 24-unit artwork; no icon font, desktop theme or network dependency.
 PATHS = {
+    'evaluation_points':'M4 4h16v16H4z M8 8h1v1H8z M15 7h1v1h-1z M10 15h1v1h-1z M16 16h1v1h-1z',
+    'reference_data':'M4 3h16v18H4z M4 8h16 M9 8v13 M13 12h4 M13 16h4',
     'scale_recipe':'M3 3h18v18H3z M6 16h4l3-8 3 6h3',
     'scale_method':'M3 18h4l3-12 4 9 3-5h4 M4 4h4',
     'open':'M3 19V6h7l2 3h9l-3 10H3l3-8h14',

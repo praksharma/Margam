@@ -314,3 +314,14 @@ RWF, sum-gradient-norm updates every ten steps and Adam decay for 100 updates.
 Both retain the exact same-device trajectory after checkpoint continuation. Full
 configuration and balancing histories are recorded; no shock-reference error or
 paper accuracy is claimed. See [Expert PINN](expert-pinn.md).
+
+
+## Supplied-point evaluation workflow
+
+[CPU](../assets/benchmarks/evaluation-points-cpu.json) and
+[CUDA](../assets/benchmarks/evaluation-points-cuda.json) records cover four unsorted
+1D points and shuffled analytical references after 100 baseline updates. Rebuilt
+checkpoint predictions agree with the trained model, with zero evaluation
+optimizer updates and unchanged weights/history. These are workflow checks,
+not paper reproduction or tuned accuracy results. See the
+[illustrated guide](evaluation-points.md) for exact mappings and screenshots.

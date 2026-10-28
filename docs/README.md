@@ -72,3 +72,5 @@ capability catalogue. [Third-party attribution](../THIRD_PARTY.md) remains separ
 When adding or changing a method, update its guide, capability row, example,
 validation evidence and results index together. Do not mark a proposed feature as
 implemented or a regression threshold as a measured benchmark result.
+
+- [Evaluate supplied points](evaluation-points.md): separate coordinate/reference blocks, preserved IDs, pointwise errors and VTU/PVD export.

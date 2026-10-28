@@ -105,7 +105,7 @@ popup=w.quick_insert;popup.library.search.setText('reference')
 QTest.keyClick(popup.library.search,Qt.Key.Key_Down)
 QTest.keyClick(popup.library.tree,Qt.Key.Key_Return);app.processEvents()
 assert w.quick_insert is None
-node=next(n for n in w.scene.nodes() if n.kind=='reference')
+node=next(n for n in w.scene.nodes() if n.kind=='reference_data')
 assert (node.mapToScene(node.rect().center())-expected).manhattanLength()<1e-8
 # Tab in the inspector must retain ordinary focus navigation.
 w.name.setFocus();QTest.keyClick(w.name,Qt.Key.Key_Tab);app.processEvents()

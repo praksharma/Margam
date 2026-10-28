@@ -16,14 +16,15 @@ Saved runs retain the requested predictions so they can be exported after reopen
 **Random training points work.** The block evaluates the learned network on its
 own regular grid. That grid includes the domain endpoints/edges; resolution N
 means N points on a line or N×N on a rectangle. It does not export training samples
-or GeoSampler/mesh nodes. Evaluation at supplied nodes is future work, recorded
-in TODO; it must preserve original coordinates, IDs and field associations.
+by default. Connect the separate Evaluation points block to evaluate supplied
+CSV/NPZ coordinates and preserve their IDs; see [the guide](evaluation-points.md).
 
 Scalar results have point array `u`; current pressure/velocity flow results have scalar arrays `u`,
 `v`, `p` and a three-component `velocity=(u,v,0)` array suitable for vector filters.
 Coordinates retain the model's physical bounds. 2D lies at z=0, not in a fabricated
-volume. Reference/error arrays, material/cell fields, units and meshes are not part
-of this initial writer. No reference solution is assumed or evaluated.
+volume. Comparison-fed exports include reference and signed error arrays.
+Material/cell fields, units and mesh connectivity remain deferred; no reference
+solution is assumed for direct prediction exports.
 
 ## VTI, VTU and time
 
@@ -105,3 +106,13 @@ FEM connectivity export or input-node evaluation is included in this first pass.
 ## Concrete obstacle and 2D transient examples
 
 The [Expert suite](expert-examples.md) evaluates 2D spatial frames at each requested physical time. Channel/cylinder exports exclude the disk and use VTU vertex cells, not FEM connectivity. Torus outputs u/v velocity and scalar w (vorticity); its derived velocity vector is (u,v,0). No 3D spatial coordinate is inferred from time.
+
+
+## Supplied-point output
+
+An Evaluation points connection switches the ParaView Export block from its
+regular grid to supplied coordinates. Steady points use VTU vertices; transient
+rows use physical-time PVD/VTU frames with original source-row indices and IDs.
+Comparison-fed exports include reference and signed error arrays. No mesh cells
+are inferred. See [the supplied-point guide](evaluation-points.md) for ID encoding,
+field mappings and current limitations.

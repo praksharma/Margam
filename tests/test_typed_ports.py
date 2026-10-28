@@ -59,7 +59,7 @@ assert w.validate_model() and len(scene.output_requests(w.config))==2
 assert not w.output_views.entries
 rejected(lambda:scene.connect_nodes(method,a),'already has a source')
 reference=w.add_node('Reference');comparison=w.add_node('Comparison')
-assert not reference.inputs and comparison.output is None
+assert not reference.inputs and comparison.output.data_type=='comparison_data'
 scene.connect_nodes(method,comparison)
 rejected(lambda:scene.connect_nodes(reference,comparison,'model'),'cannot feed')
 scene.connect_nodes(reference,comparison)

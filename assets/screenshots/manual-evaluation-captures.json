@@ -1,0 +1,17 @@
+{
+  "scope": "Actual optional data blocks, mapping and four-row comparison after 100 CPU updates; no paper accuracy claim.",
+  "captures": {
+    "blocks": {
+      "file": "manual-evaluation-blocks.png",
+      "sha256": "7f430ff482f4d7f0d3f6a3691c1ab8ef59ae7d0517417e5b730d45423ea78c5a"
+    },
+    "mapping": {
+      "file": "manual-evaluation-mapping.png",
+      "sha256": "9bcfd830f3c038d23f1d923a179293cbe8548ac729909bae0feb07694cde35f5"
+    },
+    "comparison": {
+      "file": "manual-evaluation-comparison.png",
+      "sha256": "9267c8468a47bb944bf5401b4829bacbd620d8a56c413a42c7ade9e95570af25"
+    }
+  }
+}

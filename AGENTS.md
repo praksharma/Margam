@@ -81,8 +81,11 @@
   files during validation. Release test clipboard data before offscreen Qt teardown.
 - Coupled u/v/p results currently use tables/CSV. Preserve the pause on heatmap
   development. Full 3D/non-planar GeoSampler remains deferred. ParaView export is
-  opt-in; never infer physical time from training updates. Supplied-node evaluation
-  and richer mesh-aware exports are planned in docs/todo.md, not implemented yet.
+  opt-in; never infer physical time from training updates. Evaluation points and
+  Reference data blocks accept CSV/NPZ independently of training. Preserve exact
+  coordinates, row order and integer/text IDs. Align references explicitly without
+  interpolation. Supplied clouds export as VTU vertices and physical-time PVD;
+  mesh connectivity, units/region metadata and GeoSampler integration remain deferred.
 
 - Residual samplers own initial points and schedules; trainer hooks perform scoring.
   Preserve inverse-probability MSE for importance sampling and checkpoint the active

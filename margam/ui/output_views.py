@@ -17,15 +17,16 @@ class VectorResultView(QWidget):
 
     def show_result(self,data):
         fields=data.get('fields',list(data['config'].field_names));points=data['points'];reference=data.get('reference')
-        headers=[*data['config'].coordinate_names,*fields]+(['ref '+f for f in fields]+['error '+f for f in fields] if reference is not None else [])
+        ids=data.get('point_ids')
+        headers=(['point_id'] if ids is not None else [])+[*data['config'].coordinate_names,*fields]+(['ref '+f for f in fields]+['error '+f for f in fields] if reference is not None else [])
         count=min(200,len(points));self.table.setColumnCount(len(headers));self.table.setHorizontalHeaderLabels(headers);self.table.setRowCount(count)
         for index in range(count):
             values=data['values'][index];values=values if isinstance(values,list) else [values]
-            row=[*points[index],*values]
+            row=([ids[index]] if ids is not None else [])+[*points[index],*values]
             if reference is not None:
                 refs=reference[index];refs=refs if isinstance(refs,list) else [refs]
                 row.extend(refs);row.extend(a-b for a,b in zip(values,refs))
-            for column,value in enumerate(row):self.table.setItem(index,column,QTableWidgetItem(f'{value:.7g}'))
+            for column,value in enumerate(row):self.table.setItem(index,column,QTableWidgetItem(str(value) if ids is not None and column==0 else f'{value:.7g}'))
         self.table.resizeColumnsToContents()
         caption=f"Fields {', '.join(fields)} · first {count} of {len(points)} rows · {data['steps']} updates"
         if data.get('rmse_by_field'):caption+=' · RMSE '+', '.join(name+'='+f'{value:.4g}' for name,value in data['rmse_by_field'].items())
@@ -41,7 +42,7 @@ class OutputViews:
         if node.kind not in OUTPUT_KINDS or node.kind in ('export','paraview'):
             return
         if node.identifier not in self.entries:
-            view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent) else SolutionView()
+            view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()
             dock = self.window.dock(node.title, view, Qt.DockWidgetArea.BottomDockWidgetArea)
             dock.setObjectName('output-' + node.identifier)
             for other,_ in self.entries.values():
@@ -77,7 +78,7 @@ class OutputViews:
             view.set_series(series, 'Requested training losses · log scale · retained updates only' if records else 'Connect this monitor and train to record losses.')
         else:
             data = (self.window.result or {}).get('outputs', {}).get(node.identifier)
-            vector=(len(data.get('fields',[]))>1 or data['config'].is_time_dependent) if data is not None else (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent)
+            vector=(len(data.get('fields',[]))>1 or data['config'].is_time_dependent or 'evaluation' in data) if data is not None else (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires))
             if vector!=isinstance(view,VectorResultView):
                 dock,old=entry;hidden=dock.isHidden();view=VectorResultView() if vector else SolutionView()
                 dock.setWidget(view);old.deleteLater();self.entries[node.identifier]=(dock,view)

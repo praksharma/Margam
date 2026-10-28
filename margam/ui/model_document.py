@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -110,10 +110,15 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data'}, 'Invalid output settings.')
         require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
         require(isinstance(settings.get('reference_expression',''),str) and len(settings.get('reference_expression',''))<=512,'Invalid reference expression.')
         if settings.get('reference_data'):validate_mapping(settings['reference_data'])
+        if 'source_data' in settings:
+            require(node['kind'] in ('evaluation_points','reference_data') and isinstance(settings['source_data'],dict),'Invalid point source settings.')
+            if settings['source_data']:
+                from ..components.evaluation_data import validate_source
+                validate_source(settings['source_data'],reference=node['kind']=='reference_data')
         from ..recipes import COMPACT_RECIPES
         if data['version']<10 and node['kind'] in ('network',*COMPACT_RECIPES) and isinstance(settings.get('parameters'),dict):
             parameters=dict(settings['parameters'])
@@ -153,7 +158,7 @@ def decode_document(data):
             if node['kind']=='interior':require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':19,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':20,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -171,7 +176,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':19, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':20, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

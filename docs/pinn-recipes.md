@@ -49,7 +49,8 @@ baseline recipe. Unsupported or incomplete graphs still fail validation.
 
 ## Persistence and checks
 
-Model format 19 stores compact recipes while reading formats 1–18. Compact
+Model format 20 stores compact recipes and separate evaluation-data sources while
+reading formats 1–19. Compact
 settings contain the complete component parameters; loading a saved model does
 not replace them with recipe defaults. Copy/paste gives the block a fresh identity.
 Expand/collapse and expanded insertion are each one undoable edit. They are disabled
