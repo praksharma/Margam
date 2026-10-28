@@ -479,6 +479,45 @@ Method-specific parameters stay with their owning method; for example, SA's mask
 optimiser is distinct from the network optimiser and LRA is not an Adam-rate
 scheduler. Keep physics, data and evaluation choices explicit when comparing runs.
 
+### Parameter-table GUI and portable HPC handoff
+
+Refined 28 October 2026: the user wants a parameter-study workflow inspired by
+ANSYS Mechanical's parameterisation interface. Begin with a visible table of
+parameters/design points, not a requirement to duplicate whole graphs or write
+search scripts. Rows identify a block-owned parameter and its fixed value or
+finite candidate values (including explicit ranges/steps where appropriate).
+Show the resolved design-point table, combination rule, trial count and resource
+budget before export. Network and PINN component alternatives can participate
+through the same existing compatibility rules.
+
+The intended workflow is:
+
+1. Build one ordinary Margam model and choose the parameters to vary in the GUI.
+2. Inspect the finite grid/design points and export a versioned study file with
+   its base model, parameter choices, seeds, requested outputs and input references.
+3. Transfer the study and required data to the HPC system and run it with the
+   planned **margam-cli**, normally inside a Slurm batch allocation.
+4. Collect per-trial artifacts and reopen a results table in Margam to compare
+   configurations and export the selected results.
+
+The study file must be portable: relative or explicitly remappable data/artifact
+paths, no personal machine paths, executable Python payloads, credentials or
+mandatory online service. `margam-cli` is a proposed entry point, not an existing
+command. It must run without Qt/display and use the same model validation and
+numerical engine as the GUI. The first target is a deterministic finite grid;
+Hydra/Optuna/W&B integrations and richer iterator blocks can follow later.
+
+Paper reproduction and systematic solution-accuracy work come after this
+infrastructure. Initial use cases include the high-Re Scale cavity problems and
+existing PINN/network comparisons. Keep the physical problem and independent
+evaluation points/reference data fixed across comparable trials, even when
+training samplers or point budgets change. References may come from an analytical
+solution or user-supplied numerical data, including future mesh-node evaluation.
+Record selected error norms, seeds/repeats, training budget and runtime/hardware
+alongside checkpoints and provenance. Original physical residual, corrected
+training loss and solution error are distinct quantities; a small corrected loss
+must never be presented as reproduced solution accuracy.
+
 ### Compatibility is a study result
 
 Some combinations will not be compatible. Detect these before expensive work
@@ -518,9 +557,11 @@ in exported studies or job scripts.
 
 1. Define a portable, reproducible single-run/headless study entry point using
    existing model definitions and explicit input/artifact paths.
-2. Add a small finite study over existing recipes/networks, with explicit
-   combination rules, compatibility records and an optional study-results view.
-3. Add bounded local execution, cancellation, restart and collection of artifacts.
+2. Add the parameter/design-point table GUI and portable study export for a
+   deterministic finite grid over existing settings/recipes/networks, with explicit
+   combination rules and compatibility records.
+3. Add bounded local/headless execution, cancellation, restart, artifact collection
+   and a results table that can be reopened in the GUI.
 4. Export the same study for Slurm `sbatch` execution, considering job arrays,
    site-specific resources and preemption/checkpoint handling.
 5. Select and integrate search/tracking tools only after the underlying study and

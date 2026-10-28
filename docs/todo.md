@@ -289,6 +289,18 @@ paused; operational training monitors and basic rectangle previews remain useful
 See [study/sweep vision](roadmap.md#future-vision-studies-component-alternatives-and-sweeps).
 These are proposed features; current execution still runs one supported problem.
 
+- [ ] Add an ANSYS Mechanical-inspired parameter/design-point table: choose
+  block-owned parameters, fixed values/candidate lists or ranges/steps; preview
+  combinations, trial count and resource budget without copying graphs.
+- [ ] Export a portable, versioned finite-grid study file with the base model,
+  parameter choices, seeds, explicit evaluation requests and remappable data paths.
+- [ ] Provide the planned `margam-cli` headless runner for the exported file,
+  sharing GUI validation/numerical execution and requiring no Qt/display or service.
+- [ ] Make GUI → exported study → HPC/Slurm → collected GUI results the first
+  complete study workflow; deterministic grid execution precedes optional search tools.
+- [ ] Use that workflow for later paper-accuracy reproduction: fixed independent
+  evaluation data/reference, selected error norms, repeated seeds, budgets,
+  hardware/runtime and separate physical residual/corrected-loss/error columns.
 - [ ] Define a saved study containing alternative PINN recipes/components and
   parameter choices, with inspectable resolved configurations for every trial.
 - [ ] Design iterator/alternative blocks for concrete existing components. Make
