@@ -34,6 +34,7 @@ class PoissonConfig:
     y_max: float = 1.0
     points: int = 64
     boundary_points: int = 16  # Default count for sides without an explicit recipe.
+    adaptive_sampling: dict = field(default_factory=dict)
     sampling: str = 'grid'
     seed: int = 7
     source: float = 2.0
@@ -140,6 +141,13 @@ class PoissonConfig:
             from .predefined_pdes import resolve_predefined,validate_predefined
             resolve_predefined(self);validate_predefined(self)
         self.validate_sampling()
+        from ..components.adaptive_sampling import validate_adaptive_sampling
+        validate_adaptive_sampling(self.adaptive_sampling)
+        if self.adaptive_sampling:
+            if self.interior_data:raise ValueError('Adaptive candidate generation currently supports built-in domains only; imported interior points need an explicit candidate source.')
+            if self.method=='self_adaptive':raise ValueError('Adaptive sampling cannot yet move SA-PINN pointwise masks. Use baseline, hard-BC or LRA training.')
+            initial=math.isqrt(self.points)**2 if self.shape=='Rectangle' and self.sampling=='grid' else self.points
+            if self.adaptive_sampling['method']=='rar' and initial>self.adaptive_sampling['maximum']:raise ValueError('RAR maximum must cover the initial interior set.')
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
         if self.physics not in ('scalar','incompressible_2d'):raise ValueError('Unknown physics contract.')
@@ -207,6 +215,11 @@ def sample_problem(config):
 
 
 def build_pinn(config):
+    from ..components.adaptive_sampling import configure_adaptive_sampling
+    return configure_adaptive_sampling(_build_pinn(config),config)
+
+
+def _build_pinn(config):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
     if config.physics=='incompressible_2d':

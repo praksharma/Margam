@@ -41,3 +41,7 @@ For exact formats and validation rules, see [desktop persistence](../ui-prototyp
 and [validation scope](../validation.md).
 
 **Next:** [Export predictions](export.md).
+
+Adaptive sampler runs also retain active points, importance weights and the sampling
+schedule. Resume verifies the original data and settings; it does not restart the
+sampler. See [adaptive sampling and resume](../adaptive-sampling.md#saved-models-and-runs).

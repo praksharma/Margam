@@ -1,4 +1,4 @@
-"""Baseline PINN: fixed samples, strong-form residuals and full-batch updates.
+"""Baseline PINN: strong-form residuals and full-batch updates; fixed points by default.
 
 All baseline preparation, loss evaluation, optimisation and prediction live
 here. Other methods can reuse components without branching this trainer.
@@ -31,6 +31,7 @@ class PINN:
         Closure-based optimisers require a different training procedure.
         """
         self._compiled = False
+        self.sampling_controller = None
         if not isinstance(getattr(self.problem,'data_identity',''),str):raise ValueError("Problem data identity must be text.")
         self._data_identity=getattr(self.problem,'data_identity','')
         if device == "auto":
@@ -106,8 +107,14 @@ class PINN:
         return terms
 
     def compute_losses(self):
-        """Return named, unweighted physical losses."""
-        return {name:self._term(*sample) for name,sample in self.loss_samples().items()}
+        """Return named losses before global coefficients; include sampling correction."""
+        samples=self.loss_samples()
+        terms={name:self._term(*sample) for name,sample in samples.items()}
+        if self.sampling_controller is not None and self.sampling_controller.weights is not None:
+            values,target,rows=samples['pde']
+            values,target=self._aligned(values,target,rows)
+            terms['pde']=((values-target).square().mean(dim=1,keepdim=True)*self.sampling_controller.weights).mean()
+        return terms
 
     def train(self, iterations, display_every=1):
         """Run exactly iterations additional updates; return total-loss history.
@@ -121,6 +128,7 @@ class PINN:
             raise ValueError("display_every must be a non-negative integer.")
         self.network.train()
         for _ in range(iterations):
+            self._before_training_step()
             self.optimiser.zero_grad(set_to_none=True)
             terms = self.compute_losses()
             total = weighted_loss(terms, self.weights)
@@ -140,7 +148,11 @@ class PINN:
                 print(f"Iteration: {self.iter}\t Loss: {record['total']:.6g}")
         return self.training_history
 
+    def _before_training_step(self):
+        if self.sampling_controller is not None:self.sampling_controller.before_step(self)
+
     def data_fingerprint(self):
+        if self.sampling_controller is not None:return self.sampling_controller.initial_fingerprint
         digest=hashlib.sha256()
         arrays=[self.collocation_point_sample,self.collocation_point_labels]
         for _,points,target in self._constraints:arrays.extend((points,target))
@@ -157,14 +169,16 @@ class PINN:
         if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
         state={'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
                'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history}
+        if self.sampling_controller is not None:state['sampling']=self.sampling_controller.state(self)
         if hasattr(self.network,'_margam_spec'):state['network_spec']=self.network._margam_spec
         return deepcopy(state)
 
     def load_training_state(self,state):
         self._require_compiled()
         fields={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}
-        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec'}:
+        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec','sampling'}:
             raise ValueError('Invalid baseline checkpoint.')
+        if ('sampling' in state)!=(self.sampling_controller is not None):raise ValueError('Checkpoint adaptive sampler differs from this recipe.')
         if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets differ from the current files or sampling recipe.')
         expected_spec=getattr(self.network,'_margam_spec',None)
         if 'network_spec' in state:
@@ -176,6 +190,7 @@ class PINN:
         steps=state['iter']
         if type(steps) is not int or not 0<=steps<=100000 or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
             raise ValueError('Checkpoint history does not match its step count.')
+        sampling=self.sampling_controller.validate_state(self,state['sampling'],steps) if self.sampling_controller is not None else None
         expected=self.network.state_dict()
         if set(state['network'])!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[key].shape or value.dtype!=expected[key].dtype or not torch.isfinite(value).all() for key,value in state['network'].items()):
             raise ValueError('Checkpoint network does not match the configured architecture/dtype.')
@@ -189,6 +204,9 @@ class PINN:
             for name,value in values.items():
                 if isinstance(value,torch.Tensor) and (not torch.isfinite(value).all() or (name!='step' and value.shape!=parameter.shape)):
                     raise ValueError('Invalid optimiser checkpoint tensor.')
+        if sampling is not None:
+            self.collocation_point_sample,self.sampling_controller.weights,self.sampling_controller.history=sampling
+            self.collocation_point_labels=self._target(self.problem.residual_target,self.collocation_point_sample)
         self.iter=steps
         self.loss_history=deepcopy(state['loss_history']);self.training_history=list(state['training_history'])
         return self

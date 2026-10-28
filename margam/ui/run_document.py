@@ -46,7 +46,8 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('lra' in checkpoint)==(config.method=='lra'),'Checkpoint LRA state/method mismatch.')
         require(('adaptive' in checkpoint)==(config.method=='self_adaptive'),'Checkpoint method/adaptive state mismatch.')
         if config.method=='self_adaptive':
@@ -103,7 +104,11 @@ def load_run(path):
             from ..methods.hard_dirichlet import BoxDirichletNetwork
             network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
         adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
-        def dummy(name):return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
+        def dummy(name):
+            if name=='pde' and config.adaptive_sampling:
+                from ..components.sampling import sample_box
+                return torch.tensor(sample_box(*config.bounds,config.points,config.sampling,config.seed))
+            return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
         problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
         if config.method=='self_adaptive':
             from ..methods.self_adaptive import SelfAdaptivePINN
@@ -112,6 +117,8 @@ def load_run(path):
             from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
             model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
         else:model=PINN(problem,network).compile(lr=config.lr,device='cpu')
+        from ..components.adaptive_sampling import configure_adaptive_sampling
+        configure_adaptive_sampling(model,config)
         if 'data_fingerprint' not in data['checkpoint']:
             require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
             from ..templates.poisson import build_pinn

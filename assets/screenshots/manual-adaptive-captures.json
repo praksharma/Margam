@@ -1,0 +1,13 @@
+{
+  "scope": "Actual Qt adaptive sampler inspectors, light theme; no training run.",
+  "captures": {
+    "rar": {
+      "file": "manual-sampling-rar.png",
+      "sha256": "7e2658ac61d43875aafe4666a241d20dd2f1087f88d20ec927f200f03d10f5c2"
+    },
+    "importance": {
+      "file": "manual-sampling-importance.png",
+      "sha256": "172b5255b7d6b1b30d5e6d31dbbb37df75d0eabd29a84f355869d9bac666d884"
+    }
+  }
+}

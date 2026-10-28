@@ -58,6 +58,7 @@ class LearningRateAnnealingPINN(PINN):
             raise ValueError('Iterations and display interval must be non-negative integers.')
         self.network.train()
         for _ in range(iterations):
+            self._before_training_step()
             self.optimiser.zero_grad(set_to_none=True);terms=self.compute_losses()
             if any(not torch.isfinite(loss).item() for loss in terms.values()):
                 raise FloatingPointError('Non-finite LRA physical loss; no update was taken.')

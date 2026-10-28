@@ -30,6 +30,8 @@ PATHS = {
     'recipe':'M3 3h18v18H3z M7 7h10v10H7z M3 12h4 M17 12h4',
     'domain':'M3 4h18v16H3z M3 16h4 M7 20v-4',
     'interior':'M5 5h1 M11 5h1 M17 5h1 M5 11h1 M11 11h1 M17 11h1 M5 17h1 M11 17h1 M17 17h1',
+    'rar':'M3 3h18v18H3z M7 7h1 M15 7h1 M7 15h1 M12 15h6 M15 12v6',
+    'importance':'M3 3h18v18H3z M7 7h1 M15 7h1 M7 15h1 M12 12h6v6h-6z',
     'boundary':'M4 4h16v16H4z M2 4h4 M18 4h4 M2 20h4 M18 20h4 M4 10v4 M20 10v4',
     'network':'M5 5l7 7-7 7 M5 5l14 0-7 7 7 7H5 M12 12h7 M3 3h4v4H3z M3 17h4v4H3z M10 10h4v4h-4z M17 3h4v4h-4z M17 17h4v4h-4z',
     'pde':'M19 4H6l7 8-7 8h13',

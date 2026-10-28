@@ -180,3 +180,15 @@ CUDA and optional VTK-reader skips remain conditional on those runtimes being
 available; they are separate from missing Qt system libraries. A local passing
 suite does not itself confirm a remote GitHub run; verify the next workflow run
 after the change is pushed.
+
+## Residual sampling verification — 28 October 2026
+
+The full CPU/offscreen regression run passed **115 tests**, with **4 skips**
+(three CUDA-only checks and the optional external VTK reader). Nine adaptive
+sampling checks cover greedy selection and deduplication, the importance estimator
+and gradient identity, derivative-aware chunked scoring, finite-value failures,
+scalar/flow integration, phase-boundary checkpoint continuation across supported
+trainers, legacy model defaults, and UI editing/clipboard/recipe/archive workflows.
+No CUDA execution or comparative numerical accuracy claim is made for the new
+samplers. The separate [CPU demo record](../assets/benchmarks/adaptive-sampling-cpu.json)
+records point counts, residual statistics and exact continuation checks.

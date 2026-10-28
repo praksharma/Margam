@@ -5,6 +5,7 @@ from PySide6.QtCore import QThread, Signal
 
 class TrainingWorker(QThread):
     progress = Signal(int, object)
+    sampling_updated = Signal(object)
     completed = Signal(object)
     failed = Signal(str)
 
@@ -32,8 +33,11 @@ class TrainingWorker(QThread):
             if self.checkpoint is not None:model.load_training_state(self.checkpoint)
             while model.iter < config.iterations and not self.cancel_event.is_set():
                 previous = model.iter
+                events=len(model.sampling_controller.history) if model.sampling_controller is not None else 0
                 model.train(min(25, config.iterations-model.iter),display_every=0)
                 self.progress.emit(model.iter, model.loss_history[previous:])
+                if model.sampling_controller is not None:
+                    for event in model.sampling_controller.history[events:]:self.sampling_updated.emit(dict(event))
             outputs = evaluate_outputs(model, config, self.requests)
             self.completed.emit({'outputs': outputs, 'steps': model.iter,
                                  'cancelled': self.cancel_event.is_set(),

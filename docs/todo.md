@@ -327,3 +327,16 @@ These are proposed features; current execution still runs one supported problem.
 
 - [x] Add a GitHub Pages workflow that builds/checks and publishes the generated
   manual, with build-only PR validation and documented GitHub Actions source setting.
+
+## Residual-driven sampling (28 October 2026)
+
+- [x] Separate RAR and residual importance sampler blocks; keep fixed sampling default.
+- [x] Scheduled, seeded candidate scoring with derivatives and bounded scoring chunks.
+- [x] Capped duplicate-free RAR additions; fixed-budget importance draws with inverse-probability MSE.
+- [x] Baseline, hard-BC and LRA integration; fixed BCs and independent output evaluation.
+- [x] Model migration, active-point/weight history checkpointing and exact resume tests.
+- [x] Document formulas, DeepXDE differences, screenshots and CPU workflow evidence.
+- [ ] GeoSampler-provided admissible candidate sets for imported/non-box geometries.
+- [ ] Define SA-PINN mask and Adam-moment transfer before combining it with moving points.
+- [ ] Consider a sampler-owned live point-set view when there is a concrete need.
+- [ ] Revisit XPINN after a practical GeoSampler subdomain/interface sampling workflow exists.

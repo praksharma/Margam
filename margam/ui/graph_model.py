@@ -6,7 +6,9 @@ from ..recipes import baseline, self_adaptive, learning_rate_annealing, COMPACT_
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max'),
-    'interior':('points','sampling','seed','interior_data'),
+    'interior':('points','sampling','seed','interior_data','adaptive_sampling'),
+    'rar':('points','sampling','seed','interior_data','adaptive_sampling'),
+    'importance':('points','sampling','seed','interior_data','adaptive_sampling'),
     'boundary':('boundary_points','boundary_sampling','boundary_data'),
     'predefined_pde':('pde_preset','pde_forcing','source','viscosity'),
     'pde':('source','pde_expression','physics','viscosity','flow_residuals'),
@@ -20,9 +22,10 @@ PARAMETERS = {
     'lra_recipe':learning_rate_annealing.PARAMETERS,
 }
 OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
 OWNERS.update(pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -34,6 +37,10 @@ def encode_parameter(attribute,value):
 def parameters_for(kind,config=None):
     config=config or PoissonConfig()
     result={key:encode_parameter(key,getattr(config,key)) for key in PARAMETERS.get(kind,())}
+    if kind=='interior':result['adaptive_sampling']={}
+    if kind in ('rar','importance'):
+        from ..components.adaptive_sampling import sampling_defaults
+        if result['adaptive_sampling'].get('method')!=kind:result['adaptive_sampling']=sampling_defaults(kind)
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
     if kind=='sa_method':result['method']='self_adaptive'

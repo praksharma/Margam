@@ -3,7 +3,7 @@
 For task-based help with current screenshots, start with the [illustrated user manual](index.md)
 and [Your first PINN](start/first-pinn.md). F1 opens the built manual in the app.
 
-Current implementation and recorded evidence, reviewed 27 October 2026. Start with
+Current implementation and recorded evidence, reviewed 28 October 2026. Start with
 [setup and commands](../README.md); historical design discussions are labelled below.
 
 ## Using Margam
@@ -16,6 +16,7 @@ Current implementation and recorded evidence, reviewed 27 October 2026. Start wi
 | How do compact/expanded PINNs work? | [Recipes](pinn-recipes.md) |
 | Which pointwise networks are available? | [Neural networks](neural-networks.md) |
 | How does learning-rate annealing work? | [LRA method and safeguards](lra-pinn.md) |
+| How do residual refinement and importance sampling work? | [Adaptive sampling](adaptive-sampling.md) |
 | How does SA-PINN work, and which settings matter? | [SA-PINN method](self-adaptive-pinn.md) |
 | What is the paper Helmholtz example? | [Fourier/LRA Helmholtz](helmholtz.md) |
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |

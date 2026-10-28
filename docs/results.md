@@ -280,3 +280,12 @@ are not used as field-accuracy scores.
 The paper's problem is retained; its architecture, stochastic/resampling protocol,
 base-rate schedule and 40,000-update training budget are not. These results do
 not reproduce or establish superiority to its reported values. CUDA is untested.
+
+## Residual sampler workflow check — 28 October 2026
+
+[CPU evidence](../assets/benchmarks/adaptive-sampling-cpu.json) records two 60-update
+rectangle runs starting from 36 grid points. RAR adds 8 points after updates 20 and
+40 (52 final points); importance sampling retains 36 points and applies inverse
+probability weights. Both reproduce the uninterrupted trajectory exactly after
+checkpointing at step 25. These checks establish schedule/continuation behaviour,
+not comparative numerical accuracy. See the [sampler guide](adaptive-sampling.md).

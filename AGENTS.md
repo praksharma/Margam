@@ -84,6 +84,11 @@
   opt-in; never infer physical time from training updates. Supplied-node evaluation
   and richer mesh-aware exports are planned in docs/todo.md, not implemented yet.
 
+- Residual samplers own initial points and schedules; trainer hooks perform scoring.
+  Preserve inverse-probability MSE for importance sampling and checkpoint the active
+  set/history. Keep BCs/export grids separate. Reject SA masks and imported-domain
+  candidate generation until their explicit data/transfer contracts are implemented.
+
 ## User documentation
 
 - Keep task-based help under docs/start, docs/modeling and docs/use, with docs/index.md

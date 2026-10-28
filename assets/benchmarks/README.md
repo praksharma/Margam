@@ -49,3 +49,7 @@ the supplied LRA paper; the Fourier architecture, fixed samples and training
 protocol are Margam choices. Reproduce with `.venv/bin/python -m examples.run_helmholtz`
 and use a fresh filename with `--output` when saving. See [problem guide](../../docs/helmholtz.md)
 and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
+
+- [Adaptive sampling CPU workflow](adaptive-sampling-cpu.json): 60-update rectangle
+  runs for RAR and importance sampling, with event counts and exact checkpoint
+  continuation checks. This is software correctness evidence, not an accuracy study.

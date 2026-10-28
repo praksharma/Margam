@@ -27,11 +27,12 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
         for key,value in (('pde_expression',''),('bc_targets',{}),('bc_operators',{}),('interior_data',{}),('boundary_data',{}),('network_seed',None),('method','baseline'),('physics','scalar'),('viscosity',.01),('flow_residuals',FLOW_RESIDUALS),('flow_boundary',flow_boundary_defaults()),('pressure_point',(0.,0.)),('pressure_value',0.),('pressure_weight',1.),('pde_preset',''),('pde_forcing','0'),('sa_lr',.005),('sa_initial',1.),('sa_max',1000.),('sa_boundary',False),('network_type','fcnn'),('network_options',{}),('lra_alpha',.9),('lra_interval',10),('lra_epsilon',1e-12),('lra_max',1e6)):c.setdefault(key,value)
+    if isinstance(c,dict) and data['version']<13:c=dict(c,adaptive_sampling=c.get('adaptive_sampling',{}))
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight'):
@@ -67,6 +68,8 @@ def decode_document(data):
             require(isinstance(spec,dict) and set(spec)=={'type','target','operator'} and spec['type'] in ('None','Dirichlet','Neumann','Custom') and all(isinstance(spec[key],str) and len(spec[key])<=512 for key in ('target','operator')),'Invalid component boundary settings.')
     from ..templates.predefined_pdes import PREDEFINED_PDES
     require(isinstance(c['pde_preset'],str) and (not c['pde_preset'] or c['pde_preset'] in PREDEFINED_PDES) and isinstance(c['pde_forcing'],str) and len(c['pde_forcing'])<=384,'Invalid predefined PDE settings.')
+    from ..components.adaptive_sampling import validate_adaptive_sampling
+    validate_adaptive_sampling(c['adaptive_sampling'])
     recipes = c['boundary_sampling']
     require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
@@ -110,11 +113,17 @@ def decode_document(data):
                 from .graph_model import parameters_for
                 parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
             if data['version']<5 and node['kind']=='method' and isinstance(parameters,dict):parameters=dict(parameters,method=parameters.get('method','baseline'));settings=dict(settings,parameters=parameters);node['settings']=settings
+            if data['version']<13 and node['kind']=='interior' and isinstance(parameters,dict):
+                parameters=dict(parameters,adaptive_sampling={});node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='method':require(parameters['method'] in ('baseline','hard_dirichlet'),'Use the self-adaptive trainer for SA-PINN settings.')
+            if node['kind'] in ('rar','importance'):
+                validate_adaptive_sampling(parameters['adaptive_sampling'])
+                require(parameters['adaptive_sampling'].get('method')==node['kind'],'Adaptive sampler block/method mismatch.')
+            if node['kind']=='interior':require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':12,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':13,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -132,7 +141,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':12, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':13, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

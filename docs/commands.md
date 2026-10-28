@@ -75,3 +75,13 @@ replace the working environment merely to read historical results.
 
 Build, preview and screenshot-capture commands are in
 [documentation maintenance](documentation.md).
+
+## Residual-driven sampling
+
+```bash
+python -m examples.adaptive_sampling
+python -m unittest discover -s tests -p 'test_adaptive_sampling*.py' -v
+python -m examples.capture_adaptive_sampling --overwrite
+```
+
+See [adaptive sampling](adaptive-sampling.md) for block wiring and estimator choices.

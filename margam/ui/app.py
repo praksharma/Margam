@@ -1285,6 +1285,8 @@ class Window(QMainWindow):
             c=self.config_for_node(node)
             actual=int(c.points**.5)**2 if c.shape=='Rectangle' and c.sampling=='grid' else c.points
             details={'domain':f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+                     'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
+                     'importance':f'{actual} points · importance',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
                      'boundary':f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if c.shape=="Rectangle" else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
@@ -1357,6 +1359,10 @@ class Window(QMainWindow):
         else:self.change('interior_data',{})
         self.selection_changed()
 
+    def change_sampling_option(self,key,value):
+        settings=deepcopy(self.config.adaptive_sampling);settings[key]=value
+        self.change('adaptive_sampling',settings)
+
     def property_section(self,title):
         heading=QLabel(title);heading.setObjectName('section_'+title.lower().replace(' ','_'))
         font=heading.font();font.setBold(True);heading.setFont(font)
@@ -1402,14 +1408,29 @@ class Window(QMainWindow):
             if self.config.shape=='Rectangle':
                 self.field('y minimum','y_min');self.field('y maximum','y_max')
             note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
-        elif node.kind=='interior':
-            imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
+        elif role(node.kind)=='interior':
+            if node.kind=='interior':
+                imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
             if self.config.interior_data:
                 label=QLabel(self.config.interior_data['path']);label.setWordWrap(True);self.form.addRow('Imported source',label)
                 clear=QPushButton('Use built-in sampler');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
             self.field('Sampler','sampling','choice',choices=list(SAMPLERS))
             self.field('Point budget','points','int',minimum=1,maximum=100000)
             self.field('Seed','seed','int',minimum=0,maximum=2147483647)
+            if node.kind in ('rar','importance'):
+                self.property_section('Residual sampling schedule')
+                specs=[('Update every (steps)','interval',1,100000),('Candidate points','candidates',1,100000),('Residual chunk size','chunk',1,4096)]
+                if node.kind=='rar':specs += [('Points added per update','batch',1,100000),('Maximum active points','maximum',1,100000)]
+                else:specs += [('Residual power','power',.1,4.),('Residual probability fraction','mixture',0.,.99)]
+                for label,key,low,high in specs:
+                    widget=QDoubleSpinBox() if key in ('power','mixture') else QSpinBox()
+                    widget.setObjectName('sampling_'+key);widget.setKeyboardTracking(False);widget.setRange(low,high)
+                    if isinstance(widget,QDoubleSpinBox):widget.setDecimals(3)
+                    widget.setValue(self.config.adaptive_sampling[key])
+                    widget.valueChanged.connect(lambda value,k=key:self.change_sampling_option(k,value))
+                    self.form.addRow(label,widget)
+                note=QLabel('The trainer scores candidates with the current PDE/network after each completed interval. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
+                note.setWordWrap(True);self.form.addRow(note)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='boundary':
             if self.config.shape=='Rectangle':
@@ -1757,6 +1778,7 @@ class Window(QMainWindow):
         self.set_busy(True)
         self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
         self.worker.progress.connect(self.training_progress)
+        self.worker.sampling_updated.connect(self.sampling_progress)
         self.worker.completed.connect(self.training_completed)
         self.worker.failed.connect(self.training_failed)
         self.worker.finished.connect(self.training_finished)
@@ -1764,6 +1786,9 @@ class Window(QMainWindow):
         self.statusBar().showMessage('Preparing samples and network…')
         self.worker.start()
         return True
+
+    def sampling_progress(self,event):
+        self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} interior points; candidate mean residual {event['mean_residual']:.4g}, max {event['max_residual']:.4g}")
 
     def training_progress(self,step,records):
         self.progress_bar.setValue(step)

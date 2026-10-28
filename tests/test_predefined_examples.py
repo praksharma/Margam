@@ -70,7 +70,7 @@ for key in EXAMPLE_PROBLEMS:
     assert not w.output_views.entries
     document=capture_model(w)
     decode_document(document)
-    assert document['version']==12
+    assert document['version']==13
     from tempfile import TemporaryDirectory
     from pathlib import Path
     with TemporaryDirectory() as directory:
