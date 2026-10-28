@@ -3,15 +3,15 @@
   "captures": {
     "trainer": {
       "file": "manual-scale-trainer.png",
-      "sha256": "38919f220faf396adf40e5b3237b465b9801093890f641203af90fdd0881a6bf"
+      "sha256": "2f0657f0fdb178975647f2ec484cada8c1e6ca5119d2c44d5ef0014c333ed187"
     },
     "compact": {
       "file": "manual-scale-compact.png",
-      "sha256": "ce5a3eac66f11363f7c65c1f2d4c7427baa9e5a5ddbdadea9c09ad51d89a60e5"
+      "sha256": "f0ceaf15bd2b9d5f1a0131b822b76fb152e71560b6dff17019c421b9d0d2b607"
     },
     "examples": {
       "file": "manual-scale-examples.png",
-      "sha256": "7c36f64d83defa02e1837028a0166b1d65da7ef09cd294089e71a765b74d5692"
+      "sha256": "44c9b49b4517f2f9dfa3be2b55e98b0cc3fd01ba2c59683fc3339196338aba25"
     }
   }
 }

@@ -111,6 +111,7 @@ class PoissonConfig:
 
     @property
     def constraint_names(self):
+        if self.pde_preset=='kdv_1d':return ('initial','periodic_x')
         if self.is_paper_case:
             from .expert_examples import CASES
             return CASES[self.pde_preset]['names']
@@ -119,6 +120,7 @@ class PoissonConfig:
 
     @property
     def loss_weights(self):
+        if self.pde_preset=='kdv_1d':return {'pde':self.pde_weight,'initial':self.boundary_weight/2,'periodic_x':self.boundary_weight/2}
         if self.is_paper_case:return {'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
         if self.physics=='scalar':return {'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
         names=self.constraint_names
@@ -193,6 +195,9 @@ class PoissonConfig:
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
         if self.physics not in ('scalar','incompressible_2d','paper_case'):raise ValueError('Unknown physics contract.')
+        if self.pde_preset=='kdv_1d':
+            from .kdv import validate_kdv
+            validate_kdv(self)
         validate_scale_settings(self.scale_settings)
         if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)
@@ -214,6 +219,7 @@ class PoissonConfig:
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
             raise ValueError('Loss weights must be finite and positive.')
+        if self.pde_preset=='kdv_1d':return
         if self.is_paper_case:
             from .expert_examples import validate_case
             validate_case(self);return
@@ -287,6 +293,9 @@ def build_pinn(config,*,initial_teacher=None,time_origin=None):
 def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
+    if config.pde_preset=='kdv_1d':
+        from .kdv import build_kdv
+        return build_kdv(config)
     if config.is_paper_case:
         from .expert_examples import build_case
         return build_case(config,initial_teacher=initial_teacher,time_origin=time_origin)

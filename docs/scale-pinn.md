@@ -1,8 +1,8 @@
 # Scale-PINN: sequential correction
 
-Choose **File → Examples → Scale-PINN examples** for Allen–Cahn (1D + time) or
-lid-driven cavity (2D, Re=3200). Both use existing Margam physics and a replaceable
-Gaussian Fourier network. **Scale-PINN** is also available as a compact recipe
+Choose **File → Examples → Scale-PINN examples** for Allen–Cahn, five cavity
+Reynolds numbers through **Re=20,000**, Kuramoto–Sivashinsky and Korteweg–de Vries.
+All use a replaceable Gaussian Fourier network. **Scale-PINN** is also available as a compact recipe
 under **PINN recipes**, with a separate **Scale trainer** under **Training**.
 
 ![Scale examples](../assets/screenshots/manual-scale-examples.png)
@@ -12,6 +12,43 @@ Chiu, Wong, Ooi, Wei, Fan and Ong, *Scale-PINN: Learning Efficient Physics-Infor
 Neural Networks Through Sequential Correction*,
 [arXiv:2602.19475v1, 23 February 2026](https://arxiv.org/abs/2602.19475v1).
 The name expands to **Sequential Correction Algorithm for Learning Efficient PINN**.
+
+## Available problems
+
+| Example | Domain and conditions | Starting correction settings (τsc, τα, γ) |
+| --- | --- | --- |
+| Allen–Cahn | x∈[−1,1], t∈[0,1]; x²cos(πx) initially; periodic u/uₓ | (0.45, 1.5, 0.0001) |
+| Cavity Re=400 | 2D unit square; moving lid, stationary other walls, one pressure gauge | (0.06, 1, 1/400) |
+| Cavity Re=3200 | Same geometry/conditions, ν=1/3200 | (0.06, 1, 1/3200) |
+| Cavity Re=7500 | Same geometry/conditions, ν=1/7500 | (0.095, 0.5, 1/7500) |
+| Cavity Re=10,000 | Same geometry/conditions, ν=1/10,000 | (0.095, 0.5, 1/10,000) |
+| Cavity Re=20,000 | Same geometry/conditions, ν=1/20,000 | (0.095, 0.5, 1/20,000) |
+| Kuramoto–Sivashinsky | x∈[0,2π], t∈[0,0.4]; cos(x)(1+sin(x)) initially; periodic through third derivative | (0.2, 1.5, 100/16²) |
+| Korteweg–de Vries | x∈[−1,1], t∈[0,1]; cos(πx) initially; periodic through second derivative | (0.1, 20, 0.022) |
+
+Each cavity is an independent steady problem. There is no Reynolds continuation,
+curriculum or automatic sweep. ν=γ=1/Re for unit lid speed/length. The PDE block
+shows the Reynolds number implied by the current lid speed, height and viscosity.
+Changing viscosity does not silently update the independently editable γ.
+
+**Re=400, 10,000 and 20,000 are starting configurations**, borrowing correction
+settings from the inspected Re=3200/7500 notebooks. The Reynolds numbers and
+physical equations follow the paper; these are not claims that their full tuned
+configurations or high-Re accuracy were reproduced. Existing 256-point,
+32-wide starter networks are deliberately editable, not paper benchmark budgets.
+At high Re, matching a steady residual does not establish physical flow stability.
+
+KS uses uₜ+(100/16)uuₓ+(100/16²)uₓₓ+(100/16⁴)uₓₓₓₓ=0. The fourth-order coefficient
+follows the paper's Figure 1 and inspected notebook. One prose line in section
+4.4.2 prints 16² instead; it is not used. Positive second-derivative and
+fourth-derivative signs are preserved.
+
+KdV uses uₜ+uuₓ+νuₓₓₓ=0, ν=0.022². Its Scale smoothing γ=0.022 is √ν, not ν.
+The new predefined PDE exposes the nonlinear and dispersion coefficients, with
+fixed case-specific initial/periodic conditions. KdV currently supports baseline
+or Scale training; Expert time marching is not implicitly enabled for it. Both
+transient examples export physical-time PVD frames through the explicit export
+block, with no final-time training condition.
 
 ## What changes in training
 
@@ -128,9 +165,9 @@ silently combine with SA masks, LRA/NTK balancing or Expert time marching.
 
 The paper's branch/concatenation architectures, sine-first-layer frequency
 annealing and warmup-cosine schedule are **not included**. These starter examples
-use existing Margam networks and fixed Adam rate. Gray–Scott, KdV, Rayleigh–Bénard,
-airfoil and multiple-obstacle benchmark configurations are not added by this
-method change. Published timings, convergence and accuracy are not reproduced.
+use existing Margam networks and fixed Adam rate. Gray–Scott, Rayleigh–Bénard, airfoil and multiple-obstacle benchmark
+configurations remain future work. These require concrete concentration/temperature,
+initial-data or geometry contracts; no upstream datasets are silently bundled. Published timings, convergence and accuracy are not reproduced.
 
 The upstream [repository](https://github.com/chiuph/SCALE-PINN), reviewed at
 `5ff8219d2604de8a57a5b7a9c7db9b435c5c3257`, states **all rights reserved**. Its
@@ -143,7 +180,7 @@ needed. Existing NVIDIA-derived networks retain their separate attribution in
 
 [CPU evidence](../assets/benchmarks/scale-cpu.json) and
 [CUDA evidence](../assets/benchmarks/scale-cuda.json) record short, fully specified
-runs, frozen-iterate continuation and an uncorrected strength-zero control using
+runs for all eight examples, frozen-iterate continuation and an uncorrected strength-zero control using
 the same sampling sequence. They report training diagnostics, **not solution
 error**. No accuracy or speedup conclusion should be drawn from these runs.
 

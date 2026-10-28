@@ -13,6 +13,7 @@ class PDEPreset:
 
 
 PREDEFINED_PDES = {
+    'kdv_1d':PDEPreset('Korteweg–de Vries · 1D + time','uₜ + c u uₓ + ν uₓₓₓ = 0',('SpaceTime1D',),False),
     'burgers_1d': PDEPreset('Burgers · 1D + time','uₜ + u uₓ − ν uₓₓ = 0',('SpaceTime1D',),False),
     'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle')),
     'helmholtz': PDEPreset('Helmholtz', 'Δu + c u = f(x,y), c = k²', ('Interval','Rectangle')),
@@ -29,7 +30,8 @@ def resolve_predefined(config):
     config.physics='scalar'
     if config.pde_preset.startswith('expert_'):
         config.physics='paper_case';config.pde_expression='';return config
-    if config.pde_preset=='burgers_1d':config.pde_expression='D(u,t)+u*D(u,x)-nu*D(D(u,x),x)'
+    if config.pde_preset=='kdv_1d':config.pde_expression='D(u,t)+c*u*D(u,x)+nu*D(D(D(u,x),x),x)'
+    elif config.pde_preset=='burgers_1d':config.pde_expression='D(u,t)+u*D(u,x)-nu*D(D(u,x),x)'
     elif config.pde_preset=='poisson':
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
     elif config.pde_preset=='helmholtz':config.pde_expression='laplace(u)+c*u-'+forcing
@@ -51,4 +53,4 @@ def validate_predefined(config):
     if config.pde_preset=='helmholtz' and config.source<0:raise ValueError('Helmholtz requires non-negative c = k².')
 
 from .expert_examples import CASES
-for _key,_case in CASES.items():PREDEFINED_PDES[_key]=PDEPreset(_case['label'],_case['equation'],(_case['shape'],),False)
+for _key,_case in CASES.items():PREDEFINED_PDES[_key]=PDEPreset(_case['label'].replace(' · Re=3200','') if _key=='expert_cavity' else _case['label'],_case['equation'],(_case['shape'],),False)

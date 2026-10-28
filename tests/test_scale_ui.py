@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication,QDoubleSpinBox
 from margam.ui.app import Window
 from margam.ui.model_document import capture_model,decode_document
 from margam.templates.poisson import build_pinn
+from margam.templates.scale_examples import SCALE_EXAMPLES
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 def finish():
  deadline=time.monotonic()+30
@@ -21,7 +22,7 @@ def finish():
  assert w.worker is None and w.result is not None,w.log.toPlainText()
 try:
  with TemporaryDirectory() as directory:
-  for key in ('scale_allen_cahn','scale_cavity_3200'):
+  for key in SCALE_EXAMPLES:
    assert w.example_actions[key] in w.scale_examples_menu.actions()
    w.load_example(key);assert w.validate_model(),w.validation.text()
    trainer=next(n for n in w.scene.nodes() if n.kind=='scale_method');w.scene.clearSelection();trainer.setSelected(True);app.processEvents()

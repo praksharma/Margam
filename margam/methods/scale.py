@@ -7,10 +7,7 @@ from .pinn import PINN
 from ..components.scale_config import validate_scale_problem
 
 
-def derivative(value,x,axis):
-    if not value.requires_grad:return x.new_zeros((len(x),1))
-    gradient=torch.autograd.grad(value.sum(),x,create_graph=True,retain_graph=True,allow_unused=True)[0]
-    return x.new_zeros((len(x),1)) if gradient is None else gradient[:,axis:axis+1]
+from ..components.differential import derivative
 
 
 def spatial_laplacian(x,values,axes):
@@ -46,7 +43,7 @@ class ScalePINN(PINN):
 
     def _fresh_samples(self,phase):
         if not self.options['fresh']:return
-        if self.config.is_paper_case:points,conditions=self.problem.refresh_samples(phase)
+        if hasattr(self.problem,'refresh_samples'):points,conditions=self.problem.refresh_samples(phase)
         else:
             from ..templates.poisson import sample_problem
             c=deepcopy(self.config);c.seed=(c.seed+104729*phase)%2**31

@@ -387,5 +387,8 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Explicit pressure-change correction for standard u/v/p continuity; reject undefined auxiliary-vorticity mappings.
 - [x] One recipe file, compact/expanded forms, separate trainer controls and Allen–Cahn/cavity starter submenu.
 - [x] Save/resume both network iterates and sampling phase; separate physical/corrected diagnostics and CPU/CUDA evidence.
-- [ ] Consider paper-specific architecture/frequency annealing and additional benchmark physics separately; current method scope does not claim them.
+- [x] Scale cavity starting presets at Re=400, 3200, 7500, 10,000 and 20,000, plus KS and periodic KdV; distinguish configured physics from reproduced accuracy.
+- [ ] Consider paper-specific architecture/frequency annealing separately; current method scope does not claim it.
+- [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.
+- [ ] GeoSampler-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
 - [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.

@@ -62,5 +62,5 @@ def example_config(identifier):
 from .expert_examples import CASES
 for _key,_case in CASES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_case['label'],'Expert’s Guide example; see its case notes and labelled initial-field variations.','')
 
-EXAMPLE_PROBLEMS['scale_allen_cahn']=ExampleProblem('Allen–Cahn · 1D + time · Scale-PINN','Sequential correction; shared periodic Allen–Cahn physics and replaceable Fourier network.','')
-EXAMPLE_PROBLEMS['scale_cavity_3200']=ExampleProblem('Lid-driven cavity · 2D · Re=3200 · Scale-PINN','Velocity smoothing and pressure-continuity correction; shared cavity physics.','')
+from .scale_examples import SCALE_EXAMPLES
+for _key,(_label,_description) in SCALE_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,'')
