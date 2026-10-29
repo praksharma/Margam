@@ -602,3 +602,11 @@ manifest wiring. Existing basic interval/rectangle sampling stays available.
 with selectable residual-coordinate penalties and fixed/RAR sampling. Poisson
 sine and Burgers cases validate the data/gradient/state contracts. Vector and
 inverse problems and mixed advanced trainers remain explicit future work.
+
+
+### RBA milestone
+
+[Residual-based attention](rba-pinn.md) is implemented with fixed scalar points,
+detached residual-history masks, no second optimizer, and explicit state/identity
+checks. Allen–Cahn and Helmholtz examples cover both notebook initialization modes.
+Moving-point mask transfer and mixed methods remain future work.

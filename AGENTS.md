@@ -154,3 +154,9 @@
   gradients. Keep coordinate penalties explicit; zero disables a direction. Log
   raw gradient terms separately, preserve BC/IC losses and score RAR on physical
   residuals. Mean/fixed/RAR only; do not silently compose advanced trainers.
+
+- RBA uses detached normalized absolute PDE residuals and squared weighted
+  residual losses. Keep point identities fixed, both initialization modes and
+  zero-residual safety. Commit attention only after a successful update; checkpoint
+  masks separately from optimizer parameters. Never silently move or interpolate
+  attention under resampling. Keep raw and weighted PDE diagnostics distinct.

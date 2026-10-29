@@ -397,3 +397,13 @@ Implemented independently from Yu, Lu, Meng and Karniadakis (CMA 393, 114823,
 losses differentiate the full scalar residual in coordinate directions. Source
 hashes, scope and deliberate example differences are in [the guide](gpinn.md).
 No upstream code, datasets, TensorFlow or DeepXDE dependency is bundled.
+
+
+## Residual-based attention PINN
+
+Implemented independently from Anagnostopoulos, Toscano, Stergiopulos and
+Karniadakis, [CMA 421, 116805 (2024)](https://doi.org/10.1016/j.cma.2024.116805).
+The [authors' MIT repository](https://github.com/soanagno/rba-pinns) verifies the
+detached recurrence, squared weighted residual and initialization modes. Source
+hashes and differences are in [the RBA guide](rba-pinn.md). No upstream code or
+data is bundled. This is pointwise weighting, not Transformer attention.

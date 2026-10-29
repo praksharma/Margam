@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius'),
@@ -20,6 +20,8 @@ PARAMETERS = {
     'sa_recipe':self_adaptive.PARAMETERS,
     'lra_method':learning_rate_annealing.TRAINING_FIELDS,
     'lra_recipe':learning_rate_annealing.PARAMETERS,
+    'rba_method':residual_attention.TRAINING_FIELDS,
+    'rba_recipe':residual_attention.PARAMETERS,
     'gpinn_method':gradient_enhanced.TRAINING_FIELDS,
     'gpinn_recipe':gradient_enhanced.PARAMETERS,
     'scale_method':scale.TRAINING_FIELDS,
@@ -30,12 +32,12 @@ PARAMETERS = {
 PARAMETERS['interior_data']=PARAMETERS['interior']
 PARAMETERS['boundary_data']=PARAMETERS['boundary']
 
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method','gpinn_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method','gpinn_method','rba_method',*COMPACT_RECIPES) for attribute in attributes}
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
 OWNERS.update({key:'boundary' for key in PARAMETERS['boundary']})
-OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS,*scale.ADAPTIVE_FIELDS,*gradient_enhanced.ADAPTIVE_FIELDS)})
+OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS,*scale.ADAPTIVE_FIELDS,*gradient_enhanced.ADAPTIVE_FIELDS,*residual_attention.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'rba_recipe':'method','rba_method':'method','gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -54,6 +56,7 @@ def parameters_for(kind,config=None):
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
     if kind=='sa_method':result['method']='self_adaptive'
+    if kind=='rba_method':result['method']='rba'
     if kind=='gpinn_method':result['method']='gpinn'
     if kind=='scale_method':result['method']='scale'
     if kind=='expert_method':result['method']='expert'

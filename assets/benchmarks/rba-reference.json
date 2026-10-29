@@ -1,0 +1,23 @@
+{
+  "paper": "https://arxiv.org/abs/2307.00379v1",
+  "doi": "https://doi.org/10.1016/j.cma.2024.116805",
+  "paper_sha256": "a663d21aefbcabac209e8a371b2abb5280f88118466f60554db8de361136645f",
+  "repository": "https://github.com/soanagno/rba-pinns",
+  "revision": "c8ca4cb58c157367e6d7afcb3449d9139849bf61",
+  "upstream_license": "MIT",
+  "source_hashes": {
+    "README.md": "93a079d1d9d6bff103f1fb455c814eb5f914e604b9ecb392609dbba6bcd75d58",
+    "Code/Pytorch/allen-cahn_rba-sa.ipynb": "266e45f975f5fb038601d30c709eb4926b4abe50170873644316171d6e7b85cb",
+    "Code/Pytorch/helmholtz_rba-sa.ipynb": "5d4ce48243c3ff411077e1215fae0093125acf54443c1f32d49bec2c84e8a0ed"
+  },
+  "implementation": "Independent scalar PyTorch RBA recurrence and weighting; no upstream code/data bundled.",
+  "equations": {
+    "update": "lambda_next = gamma*lambda + eta*abs(r)/max(abs(r))",
+    "objective": "mean((lambda_next*r)**2)"
+  },
+  "differences": [
+    "Explicit zero-residual normalization guard.",
+    "Existing Margam soft initial/boundary constraints, pointwise networks and fixed Adam rate.",
+    "No upstream datasets, hard transforms, learning-rate schedule or accuracy reproduction."
+  ]
+}

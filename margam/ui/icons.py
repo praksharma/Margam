@@ -85,4 +85,7 @@ PATHS['boundary_data']=PATHS['reference_data']
 PATHS['gpinn_recipe']='M3 3h18v18H3z M6 17l4-10 4 7 4-5 M6 12h12'
 PATHS['gpinn_method']=PATHS['gpinn_recipe']
 
+PATHS['rba_recipe']='M3 3h18v18H3z M6 17l4-6 4 3 4-8 M6 6h4'
+PATHS['rba_method']=PATHS['rba_recipe']
+
 def icon(name):return QIcon(GlyphEngine(name))

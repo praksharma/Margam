@@ -308,3 +308,14 @@ checkpoint migrations. Its CUDA case checks differentiable residual gradients an
 resume. `tests/test_gpinn_ui.py` exercises coordinate controls, compact expansion,
 models/run archives, named monitor histories and Burgers physical-time export.
 See [records and exact scope](gpinn.md).
+
+
+## RBA
+
+`tests/test_rba.py` verifies the exact recurrence, initialization modes, stopped
+attention gradients, squared residual weighting, unchanged boundary losses, all
+network choices, fixed-point identity, failed-step atomicity and checkpoint guards.
+It checks legacy Scale/Expert/gPINN migrations and includes a CUDA-to-CPU archive
+identity case. `tests/test_rba_ui.py` checks controls, compact roundtrips, raw/weighted
+monitor histories, attention statistics, resume and physical-time PVD export.
+Evidence and exact scope are in [RBA](rba-pinn.md).

@@ -1,0 +1,17 @@
+{
+  "scope": "Actual isolated RBA controls and raw/weighted loss monitor after 30 CPU updates; no accuracy claim.",
+  "captures": {
+    "trainer": {
+      "file": "manual-rba-trainer.png",
+      "sha256": "c5d99d45fd89b7a0db20b3f4511185b4743b8c098337dfe595179d0b29e51a11"
+    },
+    "compact": {
+      "file": "manual-rba-compact.png",
+      "sha256": "93ed4566042aecd667ffe40be46905a6ef7d695b6071ef7cfdc22e3f94dd3706"
+    },
+    "monitor": {
+      "file": "manual-rba-monitor.png",
+      "sha256": "aef81e65b4ca50597cd5dc19b3d5c8757b6804b601782333b43bb881edf8cc4a"
+    }
+  }
+}

@@ -258,3 +258,11 @@ The gPINN method reuses shared physical/constraint loss samples and adds named
 coordinate derivatives of the full scalar residual. Coordinate weights and its
 state live in the separate trainer/recipe; networks remain replaceable. See
 [gPINN](gpinn.md) for mean-loss/RAR scope and saved-state contracts.
+
+
+## Residual-history attention
+
+The RBA trainer maintains detached scalar PDE-point masks on a fixed ordered set.
+Its objective squares mask times residual, leaving BC/IC terms unchanged. Raw
+physical and attention-weighted PDE curves remain distinct. The separate recipe
+and [RBA guide](rba-pinn.md) define scope, controls and checkpoints.

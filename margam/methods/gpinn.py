@@ -71,6 +71,10 @@ class GradientEnhancedPINN(PINN):
         state=super().training_state();state['gpinn']=deepcopy(self.signature);return state
 
     def load_training_state(self,state):
+        if isinstance(state,dict) and isinstance(state.get('gpinn'),dict) and isinstance(state['gpinn'].get('configuration'),dict):
+            from ..components.rba_config import rba_defaults
+            state=deepcopy(state)
+            if 'rba_settings' in self.configuration:state['gpinn']['configuration'].setdefault('rba_settings',rba_defaults())
         if not isinstance(state,dict) or state.get('gpinn')!=self.signature:raise ValueError('gPINN checkpoint gradient weights, coordinates or configuration differ.')
         names={'pde','total',*('pde_grad_'+name for name in self.directions),*(c.name for c,_,_ in self._constraints)}
         history=state.get('loss_history')

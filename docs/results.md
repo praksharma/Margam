@@ -357,3 +357,13 @@ of these new presets. See [the exact mappings and differences](scale-pinn.md#aff
 Poisson sine variation, Burgers and Burgers+RAR with six short updates, identical
 same-device continuation, raw gradient terms and requested evaluation. These
 verify software behaviour, not paper accuracy. See [the illustrated guide](gpinn.md).
+
+
+## Residual-based attention
+
+[RBA CPU](../assets/benchmarks/rba-cpu.json) and
+[CUDA](../assets/benchmarks/rba-cuda.json) records exercise Allen–Cahn and Helmholtz
+with both initialization modes, six short updates, detached point weights and
+identical same-device continuation. Raw physical and attention-weighted PDE losses
+are reported separately. These are implementation checks without accuracy or
+speedup claims. See [the illustrated guide](rba-pinn.md).

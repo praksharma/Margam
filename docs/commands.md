@@ -196,3 +196,14 @@ python -m examples.capture_gpinn --overwrite
 ```
 
 See [gPINN](gpinn.md) for the method, starting examples and recorded checks.
+
+
+## Residual-based attention
+
+```bash
+python -m examples.rba --device cpu --steps 6 --output /tmp/rba-cpu.json
+python -m examples.rba --device cuda --steps 6 --output /tmp/rba-cuda.json
+python -m examples.capture_rba --overwrite
+```
+
+See [RBA](rba-pinn.md) for fixed-point identity and initialization contracts.

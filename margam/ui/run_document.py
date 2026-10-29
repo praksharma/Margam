@@ -49,7 +49,7 @@ def validate_run(data):
             if key in output:require(isinstance(output[key],dict) and set(output[key])==set(config.field_names) and all(number(v) for v in output[key].values()),'Invalid component metrics.')
     monitors=data['monitors'];require(isinstance(monitors,dict),'Invalid monitor histories.')
     from ..components.gpinn_config import gpinn_terms
-    names={'pde','total',*config.constraint_names,*(gpinn_terms(config) if config.method=='gpinn' else ())}
+    names={'pde','total',*config.constraint_names,*(gpinn_terms(config) if config.method=='gpinn' else ()),*(['pde_weighted'] if config.method=='rba' else [])}
     def check_record(record):return isinstance(record,dict) and set(record)==names and all(number(v) for v in record.values())
     for identifier,records in monitors.items():
         require(kinds.get(identifier)=='monitor' and isinstance(records,list) and len(records)<=100000,'Invalid monitor records.')
@@ -59,10 +59,15 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('marching' in checkpoint)==(config.method=='expert' and config.expert_settings['windows']>1),'Checkpoint time marching/config mismatch.')
+        require(('rba' in checkpoint)==(config.method=='rba'),'Checkpoint RBA method/state mismatch.')
+        if config.method=='rba':
+            import torch
+            payload=checkpoint['rba']
+            require(isinstance(payload,dict) and set(payload)=={'settings','attention'} and isinstance(payload['attention'],torch.Tensor) and payload['attention'].ndim==2 and payload['attention'].shape[1]==1 and 1<=len(payload['attention'])<=100000,'Invalid RBA point weights.')
         require(('gpinn' in checkpoint)==(config.method=='gpinn'),'Checkpoint gPINN method/state mismatch.')
         require(('scale' in checkpoint)==(config.method=='scale'),'Checkpoint Scale method/state mismatch.')
         require(('expert' in checkpoint)==(config.method=='expert'),'Checkpoint Expert method/state mismatch.')
@@ -128,7 +133,9 @@ def load_run(path):
             from ..methods.hard_dirichlet import BoxDirichletNetwork
             network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
         adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
+        attention=data['checkpoint'].get('rba',{}).get('attention')
         def dummy(name):
+            if name=='pde' and attention is not None:return torch.zeros((len(attention),dimension))
             if name=='pde' and config.adaptive_sampling:
                 from ..components.sampling import sample_box
                 return torch.tensor(sample_box(*config.bounds,config.points,config.sampling,config.seed))
@@ -139,6 +146,10 @@ def load_run(path):
         if config.method=='self_adaptive':
             from ..methods.self_adaptive import SelfAdaptivePINN
             model=SelfAdaptivePINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+        elif config.method=='rba':
+            from dataclasses import asdict
+            from ..methods.rba import ResidualAttentionPINN
+            model=ResidualAttentionPINN(problem,network,settings=config.rba_settings,weights=config.loss_weights,configuration=asdict(config)).compile(lr=config.lr,device='cpu')
         elif config.method=='gpinn':
             from dataclasses import asdict
             from ..methods.gpinn import GradientEnhancedPINN

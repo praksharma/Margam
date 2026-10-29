@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -49,6 +49,9 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<22:
         from ..components.gpinn_config import gpinn_defaults
         c=dict(c,gpinn_weights=c.get('gpinn_weights',gpinn_defaults()))
+    if isinstance(c,dict) and data['version']<23:
+        from ..components.rba_config import rba_defaults
+        c=dict(c,rba_settings=c.get('rba_settings',rba_defaults()))
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
@@ -74,7 +77,9 @@ def decode_document(data):
     require(c['network_seed'] is None or type(c['network_seed']) is int and 0<=c['network_seed']<2**31,'Invalid network seed.')
     from ..components.gpinn_config import validate_gpinn_weights
     validate_gpinn_weights(c['gpinn_weights'])
-    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn'),'Unknown PINN method.')
+    from ..components.rba_config import validate_rba_settings
+    validate_rba_settings(c['rba_settings'])
+    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba'),'Unknown PINN method.')
     require(all(number(c[key]) and c[key]>0 for key in ('sa_lr','sa_initial','sa_max')) and c['sa_initial']<=c['sa_max'] and type(c['sa_boundary']) is bool,'Invalid adaptive settings.')
     require(number(c['lra_alpha']) and 0<c['lra_alpha']<=1 and type(c['lra_interval']) is int and 1<=c['lra_interval']<=100000 and number(c['lra_epsilon']) and 0<c['lra_epsilon']<=1 and number(c['lra_max']) and 1<=c['lra_max']<=1e12,'Invalid LRA settings.')
     require(c['physics'] in ('scalar','incompressible_2d','paper_case') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
@@ -137,6 +142,7 @@ def decode_document(data):
             require('parameters' in settings,'Recipe blocks require component settings.')
             COMPACT_RECIPES[node['kind']].split(settings['parameters'])
             require(type(settings['parameters']['network_seed']) is int,'Recipe network requires an explicit seed.')
+        if node['kind']=='rba_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='rba','Invalid RBA trainer settings.')
         if node['kind']=='gpinn_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='gpinn','Invalid gPINN trainer settings.')
         if node['kind']=='scale_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='scale','Invalid Scale trainer settings.')
         if node['kind']=='expert_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='expert','Invalid Expert trainer settings.')
@@ -165,7 +171,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':22,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':23,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -183,7 +189,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':22, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':23, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

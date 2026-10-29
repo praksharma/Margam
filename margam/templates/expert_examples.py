@@ -44,7 +44,7 @@ def case_config(key):
 def validate_case(c):
     if c.shape!=CASES[c.pde_preset]['shape']:raise ValueError('This Expert example needs '+CASES[c.pde_preset]['shape']+'.')
     if c.physics!='paper_case':raise ValueError('Invalid Expert example physics contract.')
-    if c.method not in ('expert','baseline','scale'):raise ValueError('These Expert examples support Expert, baseline or Scale training.')
+    if c.method not in ('expert','baseline','scale','rba'):raise ValueError('These Expert examples support Expert, baseline or Scale training.')
     if c.interior_data or c.boundary_data or c.adaptive_sampling or c.loss_formulation!='mean':raise ValueError('Expert suite currently uses built-in random samples and mean loss; imported/adaptive quadrature is not supported.')
     if c.sampling!='random':raise ValueError('Expert suite geometry sampling requires random points.')
     if not math.isfinite(c.viscosity) or c.viscosity<=0:raise ValueError('Viscosity/diffusion coefficient must be positive.')
@@ -185,6 +185,10 @@ def build_case(c,*,initial_teacher=None,time_origin=None):
     if c.method=='expert':
         from ..methods.expert import ExpertPINN
         model=ExpertPINN(problem,network,config=c,weights=c.loss_weights,initial_teacher=initial_teacher)
+    elif c.method=='rba':
+        from dataclasses import asdict
+        from ..methods.rba import ResidualAttentionPINN
+        model=ResidualAttentionPINN(problem,network,settings=c.rba_settings,weights=c.loss_weights,configuration=asdict(c))
     else:model=PINN(problem,network,weights=c.loss_weights)
     return model.compile(lr=c.lr,device=c.device)
 

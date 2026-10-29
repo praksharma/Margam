@@ -447,3 +447,15 @@ only when the user explicitly requests including it here.
 - [ ] Consider coupled/vector residual-gradient aggregation against a concrete case.
 - [ ] Define independent gradient sample sets, inverse unknown parameters and
   integral/importance combinations before exposing those options.
+
+
+## Residual-based attention PINN
+
+- [x] Implement detached residual-history recurrence and squared weighted PDE loss,
+  both notebook initialization modes, zero-residual safety and no second optimizer.
+- [x] Add one-file recipe, separate trainer, raw/weighted curves and attention statistics.
+- [x] Preserve point identity and mask state through archives; verify CPU/GPU
+  continuation, CPU loading of GPU archives, corrupt-mask guards and older methods.
+- [x] Add Allen–Cahn and 2D Helmholtz examples, actual screenshots and recorded checks.
+- [ ] Define mask transfer before permitting resampling/minibatches, coupled
+  residual attention, or dedicated training-point mask export/visualization.

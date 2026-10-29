@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace,asdict
 from pathlib import Path
 import json
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -516,9 +516,10 @@ class Window(QMainWindow):
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
         self.gpinn_examples_menu=self.examples_menu.addMenu('gPINN examples');self.gpinn_examples_menu.setIcon(icon('gpinn_recipe'))
+        self.rba_examples_menu=self.examples_menu.addMenu('RBA examples');self.rba_examples_menu.setIcon(icon('rba_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
+            menu=self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -950,6 +951,8 @@ class Window(QMainWindow):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
+        if node.kind in ('rba_recipe','rba_method'):
+            action=menu.addAction('Attention statistics');action.triggered.connect(self.show_rba_summary)
         if node.kind in ('scale_recipe','scale_method'):
             action=menu.addAction('Scale correction diagnostics');action.triggered.connect(self.show_scale_summary)
         if node.kind in ('expert_recipe','expert_method'):
@@ -1204,8 +1207,8 @@ class Window(QMainWindow):
                     self.scene.wires.remove(wire);self.scene.removeItem(wire)
                     self.scene.connect_nodes(wire.source.parentItem(),interior,wire.target.name)
             self.scene.removeItem(old_interior)
-        if config.method in ('self_adaptive','lra','expert','scale','gpinn'):
-            recipe=gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+        if config.method in ('self_adaptive','lra','expert','scale','gpinn','rba'):
+            recipe=residual_attention if config.method=='rba' else gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
             title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
             old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
@@ -1478,6 +1481,7 @@ class Window(QMainWindow):
                      'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
                      'gpinn_recipe':f'gPINN · {c.iterations} steps','gpinn_method':'Scalar residual gradients',
                      'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
                      'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks' if c.is_time_dependent else 'Steady · gradient balance',
@@ -1618,11 +1622,11 @@ class Window(QMainWindow):
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
-        if self.config.method in ('expert','scale','gpinn'):choice.model().item(choice.findData('integral')).setEnabled(False)
+        if self.config.method in ('expert','scale','gpinn','rba'):choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
-        note=QLabel('gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note=QLabel('RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_sampling_option(self,key,value):
@@ -1878,6 +1882,7 @@ class Window(QMainWindow):
             for attribute in recipe.EXPOSED:
                 if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
                 elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
+            if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
             self.form.addRow('Network optimiser',QLabel('Adam · descent'))
@@ -1894,6 +1899,7 @@ class Window(QMainWindow):
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='rba_method':variant.addItem('Residual-based attention PINN','rba');variant.setEnabled(False)
             if node.kind=='gpinn_method':variant.addItem('Gradient-enhanced PINN','gpinn');variant.setEnabled(False)
             if node.kind=='scale_method':variant.addItem('Scale-PINN','scale');variant.setEnabled(False)
             if node.kind=='expert_method':variant.addItem('Expert PINN','expert');variant.setEnabled(False)
@@ -1923,6 +1929,7 @@ class Window(QMainWindow):
             self.loss_formulation_field()
             self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)
             self.field('Mean BC weight','boundary_weight',minimum=.000001,maximum=100000)
+            if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
             self.form.addRow('Network optimiser',QLabel('Adam · descent'))
@@ -2011,6 +2018,28 @@ class Window(QMainWindow):
         attribute='bc_types' if kind=='type' else 'bc_values'
         values=deepcopy(getattr(self.config,attribute));values[side]=value
         self.change(attribute,values,edit_token)
+
+    def show_rba_summary(self):
+        model=self.last_run.model if self.last_run is not None else None
+        if model is not None and hasattr(model,'attention_summary'):summary=model.attention_summary()
+        else:
+            state=self.loaded_checkpoint
+            if not state or 'rba' not in state:self.statusBar().showMessage('Train or reopen an RBA run first.');return
+            weights=state['rba']['attention'];settings=state['rba']['settings']['settings']
+            summary=dict(step=state['iter'],minimum=weights.min().item(),mean=weights.mean().item(),maximum=weights.max().item(),asymptotic_bound=settings['rate']/(1-settings['decay']),weighted_pde=state['loss_history'][-1]['pde_weighted'] if state['loss_history'] else None)
+        QMessageBox.information(self,'RBA attention statistics','\n'.join(f'{key}: {value}' for key,value in summary.items()))
+
+    def rba_settings_fields(self):
+        self.property_section('Residual-based attention')
+        for key,label,low,high in [('decay','History decay',0.,.999999),('rate','Attention rate',.00000001,1000.)]:
+            widget=QDoubleSpinBox();widget.setDecimals(8);widget.setRange(low,high);widget.setKeyboardTracking(False);widget.setValue(self.config.rba_settings[key]);widget.setObjectName('rba_'+key)
+            widget.valueChanged.connect(lambda value,name=key:self.change_rba_setting(name,value));self.form.addRow(label,widget)
+        choice=QComboBox();choice.addItem('Zero start (notebook mode 1)','zero');choice.addItem('Normalized first residual (mode 2)','normalized');choice.setCurrentIndex(choice.findData(self.config.rba_settings['initialization']));choice.setObjectName('rba_initialization')
+        choice.currentIndexChanged.connect(lambda i,w=choice:self.change_rba_setting('initialization',w.itemData(i)));self.form.addRow('Initialization',choice)
+        note=QLabel('Fixed PDE points only. Detached attention weights have no optimizer and do not affect BC/IC terms. The attention rate is separate from Adam learning rate.');note.setWordWrap(True);self.form.addRow(note)
+
+    def change_rba_setting(self,key,value):
+        settings=deepcopy(self.config.rba_settings);settings[key]=value;self.change('rba_settings',settings)
 
     def gpinn_settings_fields(self):
         self.property_section('PDE residual gradients')

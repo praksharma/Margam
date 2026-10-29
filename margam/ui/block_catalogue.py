@@ -6,8 +6,8 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe')),
-    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method')),
+    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe')),
+    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method'),('RBA trainer','rba_method')),
     'Evaluation data': (('Evaluation points','evaluation_points'),('Reference data','reference_data')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
@@ -34,6 +34,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'rba_recipe':('RBA · residual-based attention · compact or expanded','Replaceable network and RBA trainer. Detached pointwise PDE attention; no transformer or second optimizer. Fixed samples only.'),
+    'rba_method':('Residual-history decay, attention rate and initialization','Updates detached point weights from normalized absolute residuals, then minimizes squared weighted residuals. BC/IC losses stay unchanged. Fixed scalar samples; no resampling or combined attention methods.'),
     'gpinn_recipe':('gPINN · scalar residual-gradient enhancement · compact or expanded','Replaceable network and gPINN trainer. Separate coordinate-gradient losses; fixed points or physical-residual RAR; no inverse parameters or combined balancing methods.'),
     'gpinn_method':('Coordinate weights, Adam and raw gradient diagnostics','Adds squared derivatives of the full scalar PDE residual, including forcing derivatives. Mean losses only; zero disables a direction. Boundary/initial conditions stay unchanged.'),
     'interior_data':('Prepared CSV/NPZ coordinates','Explicit fixed collocation points. Replaces Interior sampler; uses coordinate bounds. No normals, target values or automatic resampling.'),
