@@ -341,5 +341,5 @@ The automatic-export follow-up additionally verifies reading generated arrays fr
 a saved project, preserving an existing NetCDF file when no generated samples are
 available, prefilled interior/boundary roles and editable per-boundary names. The
 real annulus example now saves and reloads a Jorvik document before automatically
-exporting it. Ten focused persistence/integration tests and the 60-page manual
+exporting it. Ten focused persistence/integration tests and the 61-page manual
 build passed after this change.
