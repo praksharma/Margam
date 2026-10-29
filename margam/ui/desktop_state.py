@@ -31,6 +31,9 @@ class DesktopState:
         if self.settings.contains('geometry'):w.restoreGeometry(self.settings.value('geometry'))
         if self.settings.contains('layout'):w.restoreState(self.settings.value('layout'))
         configure_theme(QApplication.instance(),self.settings.value('theme','light'))
+        device=self.settings.value('execution_device','auto')
+        if device not in ('auto','cpu','cuda') or device=='cuda' and not w._cuda_available:device='auto'
+        w.set_application_device(device,remember=False)
         collapsed=self.settings.value('collapsed',[]) or []
         if isinstance(collapsed,str):collapsed=[collapsed]
         tree=w.library.tree

@@ -480,3 +480,6 @@ only when the user explicitly requests including it here.
 
 - [x] Explicit boundary-to-PDE point connections, including all new File → Examples graphs; no arrow means no boundary PDE rows.
 - [x] Preserve fixed boundary PDE anchors under adaptive sampling and bin causal boundary/initial rows by physical time.
+
+- [x] Persistent application-wide Automatic/CPU/GPU selection for training, continuation and inference.
+- [x] Expanded information buttons for inspector settings, dropdown choices, checkboxes and block descriptions.

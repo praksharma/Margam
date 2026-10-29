@@ -137,4 +137,6 @@ def assemble(nodes,wires,*,require_all=True):
                 raise ValueError('Jorvik snapshot changed or is missing. Update from Jorvik again.')
     workspace=getattr(domain.scene(),'project_workspace',None)
     if workspace is not None:config=workspace().resolve_config(config)
+    execution_device=getattr(domain.scene(),'execution_device',None)
+    if execution_device is not None:config.device=execution_device()
     return config

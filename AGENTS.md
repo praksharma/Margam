@@ -180,3 +180,17 @@
   anchors with unit importance weights, and physical-time causal bins. Reject
   extra boundary rows as domain-volume integral quadrature; never silently mix
   measures. Exclude pressure gauges and mean-velocity anchors from geometry rows.
+
+- Desktop execution device is an application-wide preference (Automatic/CPU/CUDA),
+  overriding legacy per-block values. Keep CLI options explicit and independent.
+  Preserve trained weights on device changes; rebuild prediction weights on the
+  chosen target when needed. Resume must honor the global selection. Data and UI
+  preparation stay on CPU. Lock device changes during running jobs/editors.
+- Inspector and library information buttons open scrollable descriptions with
+  actual choices/limits. Reuse existing widgets; avoid inventing unsupported
+  parameter semantics in fallback help.
+
+- Add a dedicated setting-help description when introducing numerical controls;
+  explain its meaning and interactions. Available choices and limits are read
+  from the live widget, including disabled choices. Keep fallback descriptions
+  limited to actual widget values and block capabilities.

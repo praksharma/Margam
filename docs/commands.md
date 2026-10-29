@@ -58,9 +58,10 @@ belongs in `assets/benchmarks/` and is indexed by [recorded results](results.md)
 
 A CUDA-enabled Torch build and a compatible NVIDIA driver are both required for
 GPU training. A CPU-only build reports `torch.version.cuda == None`; selecting
-`cuda` in Margam cannot add GPU support to that build. In the trainer or compact
-recipe inspector choose **Trainer → Device → auto** (CUDA when available, CPU
-otherwise) or **cuda** (require CUDA). Example configurations still default to CPU.
+`cuda` in Margam cannot add GPU support to that build. Use the application-wide
+**Device** menu: Automatic uses CUDA when available, CPU otherwise. CPU and GPU
+are explicit choices. It controls training, resumed training and inference across
+all blocks. Command-line examples retain their explicit device options.
 
 ### Replace CPU-only Torch in the existing environment
 
@@ -232,3 +233,11 @@ See [PDE point selection](modeling/physics.md#arrows-choose-where-the-pde-is-enf
 CUDA_VISIBLE_DEVICES='' .venv/bin/python -m examples.pde_collocation --device cpu --output build/pde-collocation-cpu.json
 .venv/bin/python -m examples.pde_collocation --device cuda --output build/pde-collocation-cuda.json
 ```
+
+## Device and setting-help captures
+
+```sh
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_device_help --overwrite
+```
+
+See [application device and expanded descriptions](use/results.md#choose-the-application-device).

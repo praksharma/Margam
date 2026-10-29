@@ -2,9 +2,10 @@
 from PySide6.QtCore import Qt, Signal, QMimeData, QEvent
 from PySide6.QtGui import QDrag
 from .icons import icon
+from .setting_help import show_information
 from ..components.network_config import NETWORK_NAMES
 from .block_catalogue import BLOCK_GROUPS, BLOCK_MIME, KINDS, describe_block
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QDialog, QLabel, QHBoxLayout, QToolButton
 
 
 class LibraryTree(QTreeWidget):
@@ -58,7 +59,9 @@ class BlockLibrary(QWidget):
         self.tree.setAccessibleName('Block categories')
         layout.addWidget(self.tree)
         self.description=QLabel('Select a block to see supported settings and limits.');self.description.setWordWrap(True)
-        layout.addWidget(self.description)
+        row=QHBoxLayout();row.addWidget(self.description,1)
+        self.info_button=QToolButton();self.info_button.setText('i');self.info_button.setAutoRaise(True);self.info_button.setAccessibleName('Explain selected library block');self.info_button.setToolTip('Show full block description');self.info_button.setEnabled(False)
+        self.info_button.clicked.connect(self.show_description);row.addWidget(self.info_button,0,Qt.AlignmentFlag.AlignTop);layout.addLayout(row)
         self.tree.currentItemChanged.connect(self.describe_item)
         for name, blocks in BLOCK_GROUPS.items():
             group = QTreeWidgetItem(self.tree, [name])
@@ -78,6 +81,11 @@ class BlockLibrary(QWidget):
     def describe_item(self,item,previous=None):
         title=item.data(0,Qt.ItemDataRole.UserRole) if item else None
         self.description.setText(describe_block(KINDS[title]) if title else 'Choose a supported component from this category.')
+        self.info_button.setEnabled(bool(title))
+
+    def show_description(self):
+        item=self.tree.currentItem();title=item.data(0,Qt.ItemDataRole.UserRole) if item else None
+        if title:return show_information(self.window(),title,describe_block(KINDS[title]))
 
     def activate_item(self, item, column=0):
         title = item.data(0, Qt.ItemDataRole.UserRole)

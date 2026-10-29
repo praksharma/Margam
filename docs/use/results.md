@@ -49,3 +49,42 @@ it is not silently interpolated from an arbitrary FEM mesh. The heat rectangle
 reference is a labelled truncated series, not a universal exact solution.
 
 **Next:** [Save or resume](saving.md), or [export predictions](export.md).
+
+
+## Choose the application device
+
+Use **Device → Automatic**, **CPU** or **GPU** once for the application. Automatic
+uses CUDA when available and otherwise the CPU. The menu identifies the available
+GPU and disables that choice when CUDA is unavailable. The status bar shows the
+effective target. This preference is remembered locally and overrides older
+per-block/model device values when a model is opened or an example is loaded.
+
+![One Device menu controls execution for all blocks](../../assets/screenshots/manual-device-menu.png)
+
+Training, checkpoint continuation and inference all use the selection. Changing
+it preserves trained weights; the next output evaluation reconstructs prediction
+weights on the selected target without optimizer updates. It does not recompute
+already displayed results automatically. Device changes are disabled while a job
+or external geometry editor is running. Data preparation, geometry, tables and
+file export continue on the CPU. The current GPU option uses the first CUDA
+device; additional accelerator backends and per-GPU indexing are not implemented.
+
+Command-line scripts retain their explicit `--device`/configuration options; this
+menu is a desktop preference. Model/run archives continue to record numerical
+configuration and the actual device used for recorded outputs.
+
+## Read fuller setting descriptions
+
+Click **i** beside an inspector setting or checkbox for an expanded description,
+its current value, available dropdown choices or numeric limits, and the block’s
+supported scope. The popup is scrollable and can stay open while you inspect other
+settings. Common numerical, network and advanced trainer options have additional
+explanations. Controls without a dedicated explanation show their current choices
+or limits with the block context.
+
+![Expanded learning-rate explanation](../../assets/screenshots/manual-setting-info.png)
+
+Use the block-header **i**, the block library’s **i**, or right-click **Help** to
+read the full block description without fitting it into the narrow properties pane.
+
+![Block description in its own window](../../assets/screenshots/manual-block-info.png)

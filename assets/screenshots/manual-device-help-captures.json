@@ -1,0 +1,17 @@
+{
+  "generator": "examples.capture_device_help",
+  "files": {
+    "manual-device-menu.png": {
+      "bytes": 8581,
+      "sha256": "77f5687af96311b7dca2071af049b64c0a0d5f28ea0ada6fdd3179446d82b6d7"
+    },
+    "manual-setting-info.png": {
+      "bytes": 38272,
+      "sha256": "5baf408cfb7471cfa4f53e533f49185e381fdc3cdd89ceb42350318cc4023d27"
+    },
+    "manual-block-info.png": {
+      "bytes": 22102,
+      "sha256": "c38ac7a20120dcd80be2e8d20387fdada25fb3dbf9e3974580664a8e3789efe7"
+    }
+  }
+}

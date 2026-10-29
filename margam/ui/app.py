@@ -25,6 +25,8 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS, compatible
 from .edit_history import EditCommand
+from .setting_help import HelpFormLayout, show_information
+from .device_settings import DeviceSettings, same_physics
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
 from .desktop_state import DesktopState
@@ -42,7 +44,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
-    QSpinBox, QPushButton, QProgressBar, QHBoxLayout, QCheckBox, QMessageBox, QFileDialog, QInputDialog,
+    QSpinBox, QPushButton, QToolButton, QProgressBar, QHBoxLayout, QCheckBox, QMessageBox, QFileDialog, QInputDialog,
 )
 
 
@@ -343,7 +345,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(JorvikGeometryActions,QMainWindow):
+class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -351,6 +353,7 @@ class Window(JorvikGeometryActions,QMainWindow):
         self._resetting=False
         self._history_replaying=False
         self._history_epoch=0
+        self.application_device = 'auto'
         self.config = PoissonConfig()
         self.worker = None
         self.loaded_checkpoint = None
@@ -402,6 +405,7 @@ class Window(JorvikGeometryActions,QMainWindow):
         toolbar.addWidget(self.progress_bar)
         self.scene=Canvas()
         self.scene.project_workspace=lambda:self.project_workspace
+        self.scene.execution_device=self.execution_device
         self.view=CanvasView(self.scene)
         self.view.panModeChanged.connect(self.pan_action.setChecked)
         self.view.blockInsertRequested.connect(self.add_node)
@@ -583,6 +587,7 @@ class Window(JorvikGeometryActions,QMainWindow):
         self.stop_action.triggered.connect(self.cancel_button.click)
         self.resume_action=run.addAction('Resume checkpoint…');self.resume_action.setEnabled(False)
         self.resume_action.triggered.connect(lambda:self.resume_training())
+        self.setup_device_menu()
         help_menu=self.menuBar().addMenu('Help')
         self.manual_action=help_menu.addAction('User manual');self.manual_action.setShortcut('F1')
         self.manual_action.triggered.connect(self.open_manual)
@@ -846,7 +851,6 @@ class Window(JorvikGeometryActions,QMainWindow):
             if not accepted:return False
         if type(additional) is not int or not 1<=additional<=100000-checkpoint['iter']:return False
         self.change('iterations',checkpoint['iter']+additional)
-        self.change('device','cpu')
         return self.start_training(checkpoint=checkpoint)
 
     def push_edit(self,text,redo,undo,merge_key=None):
@@ -1067,7 +1071,7 @@ class Window(JorvikGeometryActions,QMainWindow):
 
     def block_help(self, node):
         text=describe_block(node.kind)
-        QMessageBox.information(self,node.title,text)
+        return show_information(self,node.title,text)
 
     def open_rectangle_preview(self, node, show_samples):
         if not isValid(node) or node.scene() is not self.scene or node.kind!='domain' or self.config_for_node(node).shape!='Rectangle':
@@ -1450,7 +1454,7 @@ class Window(JorvikGeometryActions,QMainWindow):
             model=getattr(self,'_evaluation_model',None);checkpoint=getattr(self,'_evaluation_checkpoint',None);config=getattr(self,'_evaluation_config',None)
         try:
             current=assemble(self.scene.nodes(),self.scene.wires)
-            same=config is not None and not self._resetting and asdict(current)==asdict(config)
+            same=config is not None and not self._resetting and same_physics(current,config)
         except (ValueError,KeyError,AttributeError):same=False
         self._evaluation_model=model if same else None
         self._evaluation_checkpoint=deepcopy(checkpoint) if same and model is None else None
@@ -1463,13 +1467,14 @@ class Window(JorvikGeometryActions,QMainWindow):
         config=getattr(self,'_trained_config',None)
         if model is None and checkpoint is None:
             model=getattr(self,'_evaluation_model',None);checkpoint=getattr(self,'_evaluation_checkpoint',None);config=getattr(self,'_evaluation_config',None)
-        if config is None or asdict(config)!=asdict(self.config) or model is None and checkpoint is None:
+        if config is None or not same_physics(config,self.config) or model is None and checkpoint is None:
             self.statusBar().showMessage('Train or reopen a matching run before evaluating outputs.');return False
         requests=self.scene.output_requests(self.config)
         if model is not None:checkpoint=model.training_state()
         self.loaded_checkpoint=deepcopy(checkpoint);self._trained_config=deepcopy(config)
         self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor'}
         self.result=None;self.set_busy(True);self.progress_bar.setRange(0,0)
+        if model is not None and str(model.device)!=self.execution_device():model=None
         self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self)
         self.worker.completed.connect(self.training_completed);self.worker.failed.connect(self.training_failed);self.worker.finished.connect(self.training_finished)
         self.log.appendPlainText('Evaluating requested outputs · trained weights retained · no optimizer updates')
@@ -1542,9 +1547,11 @@ class Window(JorvikGeometryActions,QMainWindow):
         try:base=assemble(self.scene.nodes(),self.scene.wires,require_all=False)
         except ValueError:base=self.config
         result=overlay(base,node.kind,node.settings['parameters']) if node.kind in PARAMETERS else deepcopy(base)
+        result.device=self.execution_device()
         return self.project_workspace.resolve_config(result)
 
     def change(self,attribute,value,edit_token=None):
+        if attribute=='device':return self.set_application_device(value)
         node=self.parameter_owner(attribute)
         old=deepcopy(getattr(self.config_for_node(node),attribute)) if node else deepcopy(getattr(self.config,attribute))
         if old==value:return
@@ -1689,6 +1696,7 @@ class Window(JorvikGeometryActions,QMainWindow):
         else:
             widget=QDoubleSpinBox();widget.setKeyboardTracking(False);widget.setDecimals(6);widget.setRange(minimum,maximum);widget.setValue(value)
             widget.valueChanged.connect(lambda number:self.change(attribute,number,token))
+        widget.setProperty('help_key',attribute)
         self.form.addRow(label,widget)
         return widget
 
@@ -1703,11 +1711,13 @@ class Window(JorvikGeometryActions,QMainWindow):
         self.update_clipboard_actions()
         self.open_output_action.setEnabled(node is not None and node.kind in OUTPUT_KINDS)
         self.detail.setText(node.detail if node else '')
-        body=QWidget();self.form=QFormLayout(body)
+        body=QWidget();self.form=HelpFormLayout(body,self,describe_block(node.kind) if node else '')
         self.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         if node is not None and role(node.kind)=='pde':
             label=QLabel('PDE collocation: '+{'interior':'interior only','boundary':'boundary only','both':'interior + boundary / initial points'}[self.config.pde_points]+'. Connect points to this block to choose where the residual is enforced.');label.setWordWrap(True);self.form.addRow(label)
         if node is not None:
+            heading=QWidget();row=QHBoxLayout(heading);row.setContentsMargins(0,0,0,0);row.addWidget(QLabel(node.title))
+            info=QToolButton();info.setText('i');info.setAutoRaise(True);info.setObjectName('block_info');info.setAccessibleName('About '+node.title);info.clicked.connect(lambda:self.block_help(node));row.addWidget(info);row.addStretch();self.form.addRow(heading)
             capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
         if node is None:
             self.form.addRow(QLabel('Select a block to edit its settings.'))
@@ -1932,7 +1942,7 @@ class Window(JorvikGeometryActions,QMainWindow):
                 self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
             self.property_section('Trainer')
             self.field('Training updates','iterations','int',minimum=1,maximum=100000)
-            self.field('Device','device','choice',choices=['cpu','auto','cuda'])
+            self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
         elif node.kind in TRAINER_RECIPES:
             self.property_section('PINN method')
@@ -1980,7 +1990,7 @@ class Window(JorvikGeometryActions,QMainWindow):
             self.property_section('Trainer')
             self.form.addRow(QLabel('Full-batch updates'))
             self.field('Training updates','iterations','int',minimum=1,maximum=100000)
-            self.field('Device','device','choice',choices=['cpu','auto','cuda'])
+            self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))
         elif node.kind in OUTPUT_KINDS:
             name=QLineEdit(node.title)
@@ -2181,6 +2191,7 @@ class Window(JorvikGeometryActions,QMainWindow):
         self.examples_menu.setEnabled(not busy)
         self.recipe_menu.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
+        self.device_menu.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)

@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication,QMessageBox
 from margam.ui.app import Window
 assert 'torch' not in sys.modules
 app=QApplication([]);w=Window(state_directory=False)
+torch_before='torch' in sys.modules  # Device availability is checked at desktop startup.
 assert w.manual_action.text()=='User manual' and w.manual_action.shortcut().toString()=='F1'
 with patch('margam.ui.app.Path.is_file',return_value=True),patch('margam.ui.app.QDesktopServices.openUrl',return_value=True) as browser:
     assert w.open_manual();url=browser.call_args.args[0]
@@ -20,7 +21,7 @@ with patch('margam.ui.app.Path.is_file',return_value=False),patch.object(QMessag
     assert 'examples.documentation build' in dialog.call_args.args[2]
 with patch('margam.ui.app.Path.is_file',return_value=True),patch('margam.ui.app.QDesktopServices.openUrl',return_value=False),patch.object(QMessageBox,'warning') as warning:
     assert not w.open_manual();warning.assert_called_once()
-assert 'torch' not in sys.modules
+assert ('torch' in sys.modules)==torch_before
 app.clipboard().clear();w.undo_stack.setClean();w.close();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),capture_output=True,text=True,timeout=30)

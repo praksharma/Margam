@@ -1,6 +1,6 @@
 {
-  "recorded_utc": "2026-10-29T21:48:17.319784+00:00",
-  "application_parent": "6a2d32834c0d0fc2138a354e8166951d272ec1a0",
+  "recorded_utc": "2026-10-29T22:01:27.023841+00:00",
+  "application_parent": "b31fa6a0c4216a061aa7dff1aed7b41a3365521f",
   "tracked_changes": true,
   "scope": "Actual Qt walkthrough captures and one default baseline run; not a numerical benchmark.",
   "qt_platform": "offscreen",
@@ -169,11 +169,11 @@
   "captures": {
     "workspace": {
       "file": "manual-workspace.png",
-      "sha256": "87dad9dba855a31bb208fe3f1d75950a1fe2f6673f3c1037340e7be7c81c6eee"
+      "sha256": "386d4ad3cd165fc82ade39f9a07a9a0ce0e66fe0d0be2d86c987df0b8b64d090"
     },
     "library": {
       "file": "manual-library.png",
-      "sha256": "de666ef9a5e4c51b7568706a392a9c55e229f92530dfa4d15baa3461ab5564bd"
+      "sha256": "36a5a6352eed959eef91b93f43fcb2d80e442c3601b8b20378a6b62ebdd1352c"
     },
     "examples": {
       "file": "manual-examples.png",
@@ -185,7 +185,7 @@
     },
     "domain": {
       "file": "manual-domain.png",
-      "sha256": "685879807093707732bf80aa6ee08bd1d170fdbf0f7267f4b9338eda618e378a"
+      "sha256": "462f20eec2655dcfa760d038a196918d01f5296a034c9501ad25de7f44456170"
     },
     "samples": {
       "file": "manual-samples.png",
@@ -193,15 +193,15 @@
     },
     "interior": {
       "file": "manual-interior.png",
-      "sha256": "cce46cfe5d35b5520edc674dcc3401093249585dcd8f3a31c574dacf60a24b64"
+      "sha256": "c21c2e516e3604c3ca049535433c96d855581660dd087102eccaf98bbeed8d49"
     },
     "boundary-points": {
       "file": "manual-boundary-points.png",
-      "sha256": "c026041d6d14660c90d7c25235296d4b369acd0a1c56be3a317359107fc795fd"
+      "sha256": "a56a253474eeefd3e7c3e00753e8b2b459df5adcac16cb471bd3a60780a14893"
     },
     "boundary-condition": {
       "file": "manual-boundary-condition.png",
-      "sha256": "bca8e3a6cfd12e811fbfb11ad2914b4ef036225a1e5e54bfa7e5c0a82eb95192"
+      "sha256": "2b9ca9d08783291fce4ba6d7f22adfe6e7a2dcfa1c3d0723ae9a2a5e59d7a463"
     },
     "map-data": {
       "file": "manual-map-data.png",
@@ -209,7 +209,7 @@
     },
     "helmholtz-pde": {
       "file": "manual-helmholtz-pde.png",
-      "sha256": "fc644955ed372c490a675e125e1b07e75fd455cedfd83c97b75667d2c68380ab"
+      "sha256": "44e1e54c2ba27471f641bf0ac854f3290b3431cb0054bbe321d325e642957571"
     },
     "network-choices": {
       "file": "manual-network-choices.png",
@@ -217,31 +217,31 @@
     },
     "fourier-settings": {
       "file": "manual-fourier-settings.png",
-      "sha256": "52217da28addf246f09b3cafb56772fee65912d28403e8ada6a93fac58c6b4a0"
+      "sha256": "e02002fe1acdf52cb1392bab9966f96b811526de69e378dd3ba21596b00aff03"
     },
     "sa-settings": {
       "file": "manual-sa-settings.png",
-      "sha256": "84db92e8bb1159f60b31990ac904eb4be2eadf89da66875431b50194041a1bfb"
+      "sha256": "e7a493d9fc9fcd1aedf962f09143ecc40603db7ae3d9c1b79b2249ac9e1541aa"
     },
     "training-settings": {
       "file": "manual-training-settings.png",
-      "sha256": "bdf06ebe7cc18d7868035587dedbca5b7fcadb401175f8c713b933e2a2f60a6d"
+      "sha256": "f96fea804d5df7eed599da0dc48b15273fdca319d9b2e60578c547fd2b0dbafa"
     },
     "expanded": {
       "file": "manual-expanded.png",
-      "sha256": "3910d92528e451b1bb9b7c8ec9f2952da86105bf9cc6ad5621f53ae6e02d9de3"
+      "sha256": "bb18112ed9692964e1db30e06e51b157cdedba46d1936d8e43528f34d0595ae5"
     },
     "compact": {
       "file": "manual-compact.png",
-      "sha256": "5de84200a6fbe69a7db35ef5e9682da794fb6fd04b5480e29ec2de57761ba081"
+      "sha256": "e77b3e9ad8469750e05bc3380b9b163e964d803bd4516657e8f568c23b2a050f"
     },
     "monitor": {
       "file": "manual-monitor.png",
-      "sha256": "9d8895d7e9b63af5eba10d409c6bfdc70c46274426878d19dd9965af65096b64"
+      "sha256": "4a4edcd7664df250c13e81e243e1d49f354f75a6bc5b2eab453ab1a8bf726950"
     },
     "comparison": {
       "file": "manual-comparison.png",
-      "sha256": "24d9b9a51e811189ddbd50359bed9aa315fe77fe13edab363e99705f9ebf4dbe"
+      "sha256": "d8538f08e28daa5398b3c72ea6ac8e1acfc6ceae39070600fc59fc9a213ac7af"
     },
     "save-menu": {
       "file": "manual-save-menu.png",
@@ -249,7 +249,7 @@
     },
     "paraview": {
       "file": "manual-paraview.png",
-      "sha256": "061a066f6530e56429aec346ddc9999bcb6c2054e0f256d8b9147c8c2a37c9f9"
+      "sha256": "c560ae85004ff70d5e4106deaca1ce4c31d513a89fef5499ee7e33497736a47e"
     },
     "help": {
       "file": "manual-help.png",

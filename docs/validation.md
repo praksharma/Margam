@@ -359,3 +359,19 @@ Expert with connected boundary/initial PDE points. See the
 [point-selection guide](modeling/physics.md#arrows-choose-where-the-pde-is-enforced)
 for records, screenshots and reproducible commands. These checks establish
 implementation behaviour and same-device continuation, not solution accuracy.
+
+
+## Application device and expanded help
+
+`tests/test_application_device.py` verifies local preference persistence, overriding
+legacy per-block device values, unavailable-GPU behaviour, execution locking and
+expanded parameter/dropdown/library descriptions. A separate CUDA run verifies CPU
+training, weight-preserving GPU inference, GPU continuation and CPU inference using
+only the application menu. The final focused persistence/help run passed nine cases
+with its CUDA case skipped in the CPU-only run; that CUDA case passed separately.
+The illustrated manual build checked 61 rendered pages.
+
+```sh
+CUDA_VISIBLE_DEVICES='' QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest tests.test_help_ui tests.test_application_device tests.test_block_insertion tests.test_model_files_ui tests.test_evaluation_ui tests.test_desktop_state -v
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest tests.test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection -v
+```
