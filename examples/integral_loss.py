@@ -12,7 +12,7 @@ def main():
     from margam.templates.poisson import PoissonConfig,build_pinn
     from margam.components.adaptive_sampling import sampling_defaults
     torch.set_num_threads(1)
-    config=PoissonConfig(x_max=3.,y_max=2.,points=16,boundary_points=8,layers=(16,16),iterations=40)
+    config=PoissonConfig(pde_points='interior',x_max=3.,y_max=2.,points=16,boundary_points=8,layers=(16,16),iterations=40)
     mean=build_pinn(config);mean_losses={key:value.item() for key,value in mean.compute_losses().items()}
     config.loss_formulation='integral';integral=build_pinn(config)
     losses={key:value.item() for key,value in integral.compute_losses().items()}

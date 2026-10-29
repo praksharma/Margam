@@ -15,7 +15,7 @@ def main():
     points=[[i/40,j/40] for j in range(41) for i in range(41)];records=[]
     for method,weight in (('baseline',10.),('baseline',100.),('hard_dirichlet',1.)):
         for seed in (7,17,27):
-            config=heat_demo_config();config.seed=seed;config.network_seed=seed;config.boundary_weight=weight;config.method=method
+            config=heat_demo_config();config.pde_points='both';config.seed=seed;config.network_seed=seed;config.boundary_weight=weight;config.method=method
             model=build_pinn(config);model.train(config.iterations,display_every=0)
             prediction=model.predict(torch.tensor(points)).reshape(-1).tolist()
             reference=rectangle_reference(config,points)

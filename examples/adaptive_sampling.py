@@ -19,8 +19,8 @@ def main():
                 scope='Scheduling, point counts and exact checkpoint resume; no numerical accuracy comparison.',runs={})
     for sampler in ('rar','importance'):
         settings=sampling_defaults(sampler);settings.update(interval=20,candidates=256,chunk=64)
-        if sampler=='rar':settings.update(batch=8,maximum=64)
-        config=PoissonConfig(points=36,boundary_points=8,layers=(16,16),iterations=60,adaptive_sampling=settings)
+        if sampler=='rar':settings.update(batch=8,maximum=96)
+        config=PoissonConfig(pde_points='both',points=36,boundary_points=8,layers=(16,16),iterations=60,adaptive_sampling=settings)
         started=time.perf_counter();model=build_pinn(config);initial=len(model.collocation_point_sample)
         model.train(25,display_every=0);checkpoint=model.training_state()
         resumed=build_pinn(config);resumed.load_training_state(checkpoint)

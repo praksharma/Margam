@@ -54,3 +54,66 @@ Do not add a reference merely to make the graph look complete.
 For physical time dependence, start with [Burgers — 1D + time](../burgers.md).
 It uses `(x,t)` coordinates, two spatial BC traces and a separate initial profile,
 with no final-time condition. Its preset uses `u_t + u*u_x - nu*u_xx = 0`.
+
+
+## Arrows choose where the PDE is enforced
+
+The PDE block accepts **Collocation points** and **Additional boundary points
+(optional)**. This applies to both PDE residual and Predefined PDE.
+
+- An interior source connected to Collocation points enforces the PDE there.
+- A boundary source connected to the additional input adds those boundary rows to
+  the PDE loss. Without that arrow, boundary rows are not added.
+- A boundary source can instead connect directly to Collocation points for a
+  boundary-only residual; remove the unused interior sampler in that graph.
+- The independent arrow from Boundary data/points to Boundary condition controls
+  BC losses. Connecting a boundary source to the PDE does not remove its BC loss.
+
+![Interior and boundary arrows feed the PDE independently](../../assets/screenshots/manual-collocation-both.png)
+
+*Both arrows: residual evaluated on the combined point rows; boundary operators
+are still evaluated separately through the Boundary condition block.*
+
+![Without the extra boundary arrow the PDE uses only interior points](../../assets/screenshots/manual-collocation-interior.png)
+
+*No boundary arrow to the PDE means no extra boundary PDE rows.*
+
+New templates and File → Examples include the boundary-to-PDE arrow. Existing
+saved models retain their original wiring and sampling behaviour. The low-level
+`PoissonConfig` API keeps `pde_points='interior'` for compatibility; scripts can
+explicitly select `'both'` or `'boundary'`. Example scripts select their intended
+mode explicitly. Points are concatenated without deduplication: shared corners or
+repeated input rows retain their sampling multiplicity. The PDE term is one mean
+squared residual over the selected rows, not an additional BC term. Preset forcing
+is evaluated at the added rows too. For transient problems, the connected boundary
+source may also contain initial points. Periodic examples include paired faces;
+pressure gauges and mean-velocity anchors are not geometric boundary point sets.
+
+RAR retains the boundary PDE anchors while growing the interior set. Importance
+sampling resamples interior rows with inverse-probability weights and retains
+boundary anchors at unit weight. RAR's maximum is the total active PDE-row budget,
+including connected boundary anchors. Fixed SA/RBA masks include all selected PDE
+rows. Expert causal weighting bins added rows by their physical time, preserving
+complete coordinate tuples, and Scale refreshes the selected point sets together.
+
+**Integral loss is different:** its PDE term is a domain-volume quadrature.
+Disconnect the extra boundary PDE arrow for that mode; otherwise validation explains
+the incompatibility. Boundary operators keep their own boundary measure. Margam
+never assigns volume quadrature weights to extra boundary points automatically.
+
+Boundary collocation is an explicit modelling choice. Imported points are not
+geometrically filtered, and users may omit nonsmooth corners or incompatible
+initial traces from the PDE dataset. There is no universal paper convention: for
+example, the [upstream gPINN Burgers residual-only setup](https://github.com/lu-group/gpinn/blob/main/src/burgers.py) explicitly uses zero
+boundary/initial samples. The graph supports either choice.
+
+
+The [CPU](../../assets/benchmarks/pde-collocation-cpu.json) and
+[CUDA](../../assets/benchmarks/pde-collocation-cuda.json) checks verify selected
+PDE row counts and exact same-device continuation for baseline, importance, gPINN,
+RBA and Expert training. These are correctness checks, not accuracy benchmarks.
+
+```sh
+CUDA_VISIBLE_DEVICES='' .venv/bin/python -m examples.pde_collocation --device cpu --output build/pde-collocation-cpu.json
+.venv/bin/python -m examples.pde_collocation --device cuda --output build/pde-collocation-cuda.json
+```

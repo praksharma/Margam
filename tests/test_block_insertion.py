@@ -47,7 +47,7 @@ node=next(n for n in w.scene.nodes() if n.kind=='monitor')
 assert (node.mapToScene(node.rect().center())-scene_position).manhattanLength()<1e-8
 assert all(n.pos()==old_positions[n.identifier] for n in w.scene.nodes() if n.identifier in old_positions)
 assert view.transform().m11()==old_zoom
-assert len(w.scene.wires)==7 and not w.output_views.entries
+assert len(w.scene.wires)==8 and not w.output_views.entries
 assert w.validate_model()  # An unconnected optional output is allowed.
 count=len(w.scene.nodes())
 for payload in (b'not a block',b'\xff',b'x'*101):

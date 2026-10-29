@@ -19,6 +19,10 @@ app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents(
 try:
  for example,trainer_kind in [('interval_poisson','method'),('self_adaptive_poisson','sa_method'),('lra_poisson','lra_method')]:
     w.load_example(example)
+    # Volume quadrature uses interior points; remove the explicit boundary PDE arrow.
+    wire=next(wire for wire in w.scene.wires if wire.target.name=='boundary_points')
+    w.scene.wires.remove(wire);w.scene.removeItem(wire)
+    assert w.scene.compile_config().pde_points=='interior'
     trainer=next(n for n in w.scene.nodes() if n.kind==trainer_kind)
     w.scene.clearSelection();trainer.setSelected(True);app.processEvents()
     choice=w.property_scroll.findChild(QComboBox,'loss_formulation');assert choice
@@ -32,7 +36,7 @@ try:
     w.scene.clearSelection();compact.setSelected(True);app.processEvents()
     choice=w.property_scroll.findChild(QComboBox,'loss_formulation');assert choice.currentData()=='integral'
     w.expand_recipe(compact);assert asdict(w.scene.compile_config())==before
-    doc=capture_model(w);assert doc['version']==25;decode_document(doc)
+    doc=capture_model(w);assert doc['version']==26;decode_document(doc)
     with TemporaryDirectory() as directory:
         p=Path(directory)/'integral.json';assert w.save_model(p) and w.load_model(p)
         assert asdict(w.scene.compile_config())==before

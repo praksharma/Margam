@@ -51,7 +51,7 @@ def main():
     with TemporaryDirectory(prefix='margam-jorvik-check-') as directory:
         path,selections=sample_annulus(directory);report=inspect_selection(path,selections)
         lower,upper=report['bounds']
-        config=PoissonConfig(shape='Prepared2D',x_min=lower[0],y_min=lower[1],x_max=upper[0],y_max=upper[1],
+        config=PoissonConfig(pde_points='both',shape='Prepared2D',x_min=lower[0],y_min=lower[1],x_max=upper[0],y_max=upper[1],
                              source=0.,layers=(8,8),interior_data=report['interior'],
                              boundary_data={name:item['mapping'] for name,item in report['boundaries'].items()})
         config.bc_types.update(inner='Dirichlet',outer='Dirichlet');config.bc_values.update(inner=1.,outer=0.)

@@ -23,7 +23,7 @@ EXAMPLE_PROBLEMS = {
 }
 
 
-def example_config(identifier):
+def _example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
     if identifier.startswith('rba_'):
         from .rba_examples import rba_example_config
@@ -76,3 +76,9 @@ for _key,(_label,_description,_reference) in GPINN_EXAMPLES.items():EXAMPLE_PROB
 
 from .rba_examples import RBA_EXAMPLES
 for _key,(_label,_description,_reference) in RBA_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,_reference)
+
+
+def example_config(identifier):
+    config=_example_config(identifier)
+    config.pde_points='both'
+    return config

@@ -45,12 +45,14 @@ class GPINNTests(unittest.TestCase):
         for key in ('gpinn_poisson_2d','gpinn_burgers','gpinn_burgers_rar'):
             with self.subTest(case=key):
                 c=example_config(key);c.points=8;c.boundary_points=2;c.layers=(4,4)
+                from margam.templates.poisson import BoundarySampling
+                c.boundary_sampling={side:BoundarySampling(2,c.boundary_recipe(side).method,c.boundary_recipe(side).seed) for side in c.sides}
                 if c.adaptive_sampling:c.adaptive_sampling.update(interval=2,candidates=20,batch=3,maximum=20,chunk=8)
                 full=build_pinn(c);full.train(5,0);part=build_pinn(c);part.train(2,0);resumed=build_pinn(c);resumed.load_training_state(part.training_state());resumed.train(3,0)
                 self.assertEqual(full.loss_history,resumed.loss_history)
                 for name,value in full.network.state_dict().items():torch.testing.assert_close(value,resumed.network.state_dict()[name],rtol=0,atol=0)
                 self.assertEqual(set(full.loss_history[0]),{'pde','total',*c.constraint_names,*('pde_grad_'+n for n in c.coordinate_names)})
-                if c.adaptive_sampling:self.assertEqual(len(full.collocation_point_sample),14)
+                if c.adaptive_sampling:self.assertEqual(len(full.collocation_point_sample),20)  # 8 interior + 6 boundary/initial anchors + 6 RAR rows.
                 altered=deepcopy(c);altered.gpinn_weights['x']*=2
                 with self.assertRaisesRegex(ValueError,'gPINN checkpoint'):build_pinn(altered).load_training_state(part.training_state())
         from margam.components.network_config import NETWORK_NAMES

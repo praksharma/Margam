@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window, Wire
-from margam.ui.ports import INPUTS, OUTPUTS
+from margam.ui.ports import INPUTS, OUTPUTS, compatible
 from margam.ui.block_catalogue import KINDS
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 scene=w.scene
@@ -23,7 +23,7 @@ assert set(INPUTS)==set(OUTPUTS)==set(KINDS.values())
 assert set(method.inputs)=={'pde','boundary','network'}
 assert len({port.pos().y() for port in method.inputs.values()})==3
 assert not nodes['domain'].inputs and not network.inputs
-assert all(wire.source.data_type==wire.target.data_type for wire in scene.wires)
+assert all(compatible(wire.source.data_type,wire.target.data_type) for wire in scene.wires)
 assert {wire.target.name for wire in scene.wires if wire.target.parentItem() is method}=={'pde','boundary','network'}
 assert w.validate_model()
 # A rejected native drag must not change the graph or clear trained results.

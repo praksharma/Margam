@@ -1,0 +1,37 @@
+{
+  "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch": "2.14.1+cu130",
+  "scope": "Boundary-inclusive PDE loss and exact same-device 2+2 continuation; no accuracy claim.",
+  "runs": [
+    {
+      "method": "baseline",
+      "pde_rows": 10,
+      "exact_resume": true,
+      "updates": 4
+    },
+    {
+      "method": "importance",
+      "pde_rows": 10,
+      "exact_resume": true,
+      "updates": 4
+    },
+    {
+      "method": "gpinn",
+      "pde_rows": 10,
+      "exact_resume": true,
+      "updates": 4
+    },
+    {
+      "method": "rba",
+      "pde_rows": 10,
+      "exact_resume": true,
+      "updates": 4
+    },
+    {
+      "method": "expert",
+      "pde_rows": 22,
+      "exact_resume": true,
+      "updates": 4
+    }
+  ]
+}

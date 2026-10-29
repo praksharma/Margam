@@ -56,6 +56,9 @@ class AdaptiveSampler:
         if initial.shape[1]!=len(lower) or not torch.isfinite(initial).all() or ((initial<initial.new_tensor(lower))|(initial>initial.new_tensor(upper))).any():raise ValueError('Adaptive initial points must lie in the configured interval/rectangle.')
         self.settings=deepcopy(settings);self.bounds=(list(lower),list(upper));self.seed=seed
         self.initial_count=len(model.collocation_point_sample)
+        self.boundary_anchors=None
+        if getattr(model.problem,'boundary_anchor_count',0):
+            self.boundary_anchors=model.collocation_point_sample[-model.problem.boundary_anchor_count:].detach().clone()
         self.initial_fingerprint=model.data_fingerprint()
         self.weights=None;self.history=[]
 
@@ -100,9 +103,12 @@ class AdaptiveSampler:
         else:
             probabilities=importance_probabilities(scores,s['power'],s['mixture'])
             generator=torch.Generator(device='cpu').manual_seed(event_seed)
-            indices=torch.multinomial(probabilities,self.initial_count,replacement=True,generator=generator)
+            count=self.initial_count-(len(self.boundary_anchors) if self.boundary_anchors is not None else 0)
+            indices=torch.multinomial(probabilities,count,replacement=True,generator=generator)
             points=candidates[indices.to(candidates.device)]
             weights=(1/(len(scores)*probabilities[indices])).to(device=model.device,dtype=model.dtype).unsqueeze(1)
+            if self.boundary_anchors is not None:
+                points=torch.cat((points,self.boundary_anchors));weights=torch.cat((weights,weights.new_ones((len(self.boundary_anchors),1))))
         labels=model._target(model.problem.residual_target,points)
         if not torch.isfinite(labels).all():raise FloatingPointError('Non-finite adaptive PDE targets; sampling was not changed.')
         model.collocation_point_sample=points.detach();model.collocation_point_labels=labels
@@ -135,6 +141,10 @@ class AdaptiveSampler:
         expected_events=(steps-1)//self.settings['interval'] if steps else 0
         if len(history)!=expected_events and not (self.settings['method']=='rar' and count>=self.settings['maximum']):raise ValueError('Missing adaptive sampling history.')
         if len(points)!=count:raise ValueError('Adaptive point count does not match history.')
+        if self.boundary_anchors is not None:
+            n=len(self.boundary_anchors);start=self.initial_count-n if self.settings['method']=='rar' else len(points)-n
+            if not torch.equal(points[start:start+n].to(self.boundary_anchors.device),self.boundary_anchors):raise ValueError('Adaptive checkpoint changed fixed boundary PDE anchors.')
+            if weights is not None and not torch.equal(weights[-n:],torch.ones_like(weights[-n:])):raise ValueError('Boundary PDE anchors need unit importance weights.')
         if self.settings['method']=='importance' and history:
             if not isinstance(weights,torch.Tensor) or weights.shape!=(count,1) or weights.dtype!=model.dtype or not torch.isfinite(weights).all() or (weights<=0).any() or (weights>1/(1-self.settings['mixture'])+1e-4).any():raise ValueError('Invalid importance weights.')
         elif weights is not None:raise ValueError('Unexpected importance weights.')
@@ -143,5 +153,9 @@ class AdaptiveSampler:
 
 def configure_adaptive_sampling(model,config):
     if config.adaptive_sampling:
+        if config.pde_points=='both':
+            from ..templates.poisson import sample_problem
+            from .collocation import boundary_rows
+            _,sets=sample_problem(config);model.problem.boundary_anchor_count=len(boundary_rows(config,sets))
         model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed)
     return model

@@ -219,3 +219,16 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_jorvik --overwrit
 ```
 
 See [geometry documents and NetCDF updates](jorvik.md).
+
+## PDE collocation wiring screenshots
+
+```sh
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_collocation --overwrite
+```
+
+See [PDE point selection](modeling/physics.md#arrows-choose-where-the-pde-is-enforced).
+
+```sh
+CUDA_VISIBLE_DEVICES='' .venv/bin/python -m examples.pde_collocation --device cpu --output build/pde-collocation-cpu.json
+.venv/bin/python -m examples.pde_collocation --device cuda --output build/pde-collocation-cuda.json
+```

@@ -33,7 +33,7 @@ try:
  w.undo_stack.undo();assert 'slope' in w.scene.compile_config().sides
  w.undo_stack.redo();assert 'slope' not in w.scene.compile_config().sides
  w.undo_stack.undo();assert 'slope' in w.scene.compile_config().sides
- document=capture_model(w);assert document['version']==25;decode_document(document)
+ document=capture_model(w);assert document['version']==26;decode_document(document)
  with TemporaryDirectory() as directory:
   directory=Path(directory);path=directory/'triangle.margam.json';assert w.save_model(path);assert w.load_model(path)
   assert capture_model(w)==document

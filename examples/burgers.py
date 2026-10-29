@@ -18,7 +18,7 @@ def main():
     from margam.templates.poisson import build_pinn
     from margam.components.outputs import OutputRequest,evaluate_outputs
     from margam.components.paraview_export import export_spacetime_pvd
-    torch.set_num_threads(1);config=burgers_config();config.iterations=args.steps
+    torch.set_num_threads(1);config=burgers_config();config.pde_points='both';config.iterations=args.steps
     model=build_pinn(config);split=args.steps//2
     model.train(split,display_every=0);checkpoint=model.training_state()
     resumed=build_pinn(config);resumed.load_training_state(checkpoint)

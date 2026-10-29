@@ -14,10 +14,10 @@
   "updates": 4,
   "exact_same_device_resume": true,
   "final_loss": {
-    "pde": 0.006794853135943413,
-    "inner": 0.32072722911834717,
-    "outer": 0.1919429451227188,
-    "total": 0.26312994956970215
+    "pde": 0.006705569103360176,
+    "inner": 0.32003283500671387,
+    "outer": 0.19243526458740234,
+    "total": 0.2629396319389343
   },
   "scope": "Interchange and training correctness check, not an accuracy benchmark."
 }

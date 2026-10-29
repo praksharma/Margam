@@ -137,8 +137,10 @@ def load_run(path):
         def dummy(name):
             if name=='pde' and attention is not None:return torch.zeros((len(attention),dimension))
             if name=='pde' and config.adaptive_sampling:
-                from ..components.sampling import sample_box
-                return torch.tensor(sample_box(*config.bounds,config.points,config.sampling,config.seed))
+                from ..templates.poisson import sample_problem
+                from ..components.collocation import collocation_rows
+                points,sets=sample_problem(config)
+                return torch.tensor(collocation_rows(config,points,sets))
             return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
         problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
         from ..components.losses import apply_problem_measures

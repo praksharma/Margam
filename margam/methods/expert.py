@@ -55,7 +55,8 @@ class ExpertPINN(PINN):
         for index,row in enumerate(interior):
             fraction=(row[1]-lower[1])/(upper[1]-lower[1])
             row[1]=lower[1]+(index//per+fraction)*(upper[1]-lower[1])/chunks
-        self.collocation_point_sample=self._points(interior)
+        from ..components.collocation import collocation_rows
+        self.collocation_point_sample=self._points(collocation_rows(config,interior,boundaries))
         self.collocation_point_labels=self._target(self.problem.residual_target,self.collocation_point_sample)
         samples={config.constraint_name(side):rows for side,rows in boundaries.items()}
         self._constraints=[(condition,self._points(samples[condition.name]),self._target(condition.target,self._points(samples[condition.name]))) for condition,_,_ in self._constraints]
@@ -97,7 +98,15 @@ class ExpertPINN(PINN):
         # Fresh samples are stored in temporal-stratum order, keeping each (x,t) pair intact.
         if not self.sample_config.is_time_dependent:return terms
         sample=samples['pde'];errors=self.point_squared_errors(*sample).flatten()
-        chunk_losses=errors.reshape(self.options['chunks'],-1).mean(1)
+        if self.sample_config.pde_points=='interior':chunk_losses=errors.reshape(self.options['chunks'],-1).mean(1)
+        else:
+            # Added boundary/initial rows have variable counts per physical-time bin.
+            lower,upper=self.sample_config.bounds;chunks=self.options['chunks']
+            times=self.collocation_point_sample[:,-1]
+            bins=((times-lower[-1])/(upper[-1]-lower[-1])*chunks).long().clamp(0,chunks-1)
+            groups=[errors[bins==index] for index in range(chunks)]
+            if any(group.numel()==0 for group in groups):raise ValueError('Each causal time bin needs PDE collocation samples.')
+            chunk_losses=torch.stack([group.mean() for group in groups])
         terms['pde'],causal=self.causal_objective(chunk_losses,self.options['causal_epsilon'])
         self._causal_min=causal.detach().min().item()
         return terms
@@ -187,7 +196,7 @@ class ExpertPINN(PINN):
             if isinstance(configuration,dict):
                 from ..templates.poisson import PoissonConfig
                 defaults=asdict(PoissonConfig())
-                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights','rba_settings'):configuration.setdefault(key,defaults[key])
+                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights','rba_settings','pde_points'):configuration.setdefault(key,defaults[key])
             saved=configuration.get('expert_settings')
             if isinstance(saved,dict):payload['settings']['configuration']['expert_settings']={**expert_defaults(),**saved}
         if not isinstance(payload,dict) or set(payload)!={'settings','coefficients','history'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')

@@ -69,6 +69,9 @@ class ResidualAttentionPINN(PINN):
         state=super().training_state();state['rba']=deepcopy(dict(settings=self.signature,attention=self.attention));return state
 
     def load_training_state(self,state):
+        if isinstance(state,dict) and isinstance(state.get('rba'),dict) and isinstance(state['rba'].get('settings'),dict) and isinstance(state['rba']['settings'].get('configuration'),dict):
+            state=deepcopy(state)
+            if 'pde_points' in self.signature.get('configuration',{}):state['rba']['settings']['configuration'].setdefault('pde_points','interior')
         self._require_compiled();payload=state.get('rba') if isinstance(state,dict) else None
         if not isinstance(payload,dict) or set(payload)!={'settings','attention'} or payload['settings']!=self.signature:raise ValueError('RBA checkpoint configuration differs.')
         value=payload['attention'];steps=state.get('iter');cap=max(1. if self.settings['initialization']=='normalized' else 0.,self.settings['rate']/(1-self.settings['decay']))

@@ -16,7 +16,7 @@ app=QApplication([]);w=Window(state_directory=False);w.show()
 for _ in range(3):app.processEvents()
 assert len(w.scene.nodes())==7
 w.heat_action.trigger();app.processEvents()
-assert len(w.scene.nodes())==11 and len(w.scene.wires)==11
+assert len(w.scene.nodes())==11 and len(w.scene.wires)==12
 assert len(w.scene.output_requests(w.config))==3
 assert w.validate_model()
 assert not w.output_views.entries and not w.rectangle_previews

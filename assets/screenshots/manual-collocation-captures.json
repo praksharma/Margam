@@ -1,0 +1,22 @@
+{
+  "generator": "examples.capture_collocation",
+  "counts": {
+    "both": 128,
+    "interior": 64,
+    "boundary": 64
+  },
+  "files": {
+    "manual-collocation-both.png": {
+      "bytes": 206125,
+      "sha256": "61124a33113a60bbcb66b961304e841450d7c9ef312713cfc54037d67ff643d0"
+    },
+    "manual-collocation-interior.png": {
+      "bytes": 201961,
+      "sha256": "7b2c696a60ac086ee48a2a49c799dc0761eb81a576b95088c80d601894c03556"
+    },
+    "manual-collocation-boundary.png": {
+      "bytes": 198979,
+      "sha256": "451cd3de54377bb2466558c805416d1b7d51dc4d344420ba730d8b6eef89e1d2"
+    }
+  }
+}

@@ -23,7 +23,7 @@ from .training import TrainingWorker,EvaluationWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
-from .ports import INPUTS, OUTPUTS
+from .ports import INPUTS, OUTPUTS, compatible
 from .edit_history import EditCommand
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
@@ -91,10 +91,6 @@ class Wire(QGraphicsPathItem):
         path.cubicTo(a + QPointF(bend, 0), b - QPointF(bend, 0), b)
         self.setPath(path)
 
-
-REQUIRED_EDGES = {("domain","interior"),("domain","boundary"),
-                  ("interior","pde"),("boundary","bc"),("pde","method"),
-                  ("bc","method"),("network","method")}
 
 CORE_KINDS = {"domain", "interior", "boundary", "pde", "bc", "network", "method"}
 
@@ -201,7 +197,7 @@ class Canvas(QGraphicsScene):
             return 'Connect an output to an input.'
         if source.parentItem() is target.parentItem():
             return 'A block cannot connect to itself.'
-        if source.data_type != target.data_type:
+        if not compatible(source.data_type,target.data_type):
             return f'{source.label} cannot feed {target.label}. Choose a compatible input.'
         for wire in self.wires:
             if wire is ignore:continue
@@ -234,8 +230,8 @@ class Canvas(QGraphicsScene):
 
     def connect_nodes(self, source, target, input_name=None):
         if input_name is None and source.output is not None:
-            matches=[port for port in target.inputs.values() if port.data_type==source.output.data_type]
-            if len(matches)==1:input_name=matches[0].name
+            matches=[port for port in target.inputs.values() if compatible(source.output.data_type,port.data_type)]
+            if matches:input_name=matches[0].name
         port=target.inputs.get(input_name)
         return self.connect_ports(source.output,port)
 
@@ -244,24 +240,15 @@ class Canvas(QGraphicsScene):
 
     def validate_graph(self):
         nodes = self.nodes()
-        compact=any(n.kind in COMPACT_RECIPES for n in nodes)
-        expected=CORE_KINDS-{'network'} if compact else CORE_KINDS
-        required=REQUIRED_EDGES-{('network','method')} if compact else REQUIRED_EDGES
-        if compact and any(n.kind=='network' for n in nodes):raise ValueError('A compact recipe owns its network. Expand it before replacing the network.')
-        for kind in expected:
-            if sum(role(n.kind) == kind for n in nodes) != 1:
-                raise ValueError(f'The graph needs exactly one {kind} block.')
-        core_edges = set()
-        destinations = set()
+        # The executable dependencies determine which point sources are required.
+        destinations=set()
         for wire in self.wires:
             error=self.connection_error(wire.source,wire.target,ignore=wire)
             if error:raise ValueError(error)
             source,target = wire.source.parentItem(),wire.target.parentItem()
-            edge = (role(source.kind),role(target.kind))
             if role(source.kind) in CORE_KINDS and role(target.kind) in CORE_KINDS:
-                if edge not in required or edge in core_edges:
-                    raise ValueError('Unsupported or duplicate core connection.')
-                core_edges.add(edge)
+                allowed_edges={('domain','interior'),('domain','boundary'),('interior','pde'),('boundary','pde'),('boundary','bc'),('pde','method'),('bc','method'),('network','method')}
+                if (role(source.kind),role(target.kind)) not in allowed_edges:raise ValueError('Unsupported core connection.')
             else:
                 allowed = role(source.kind) == 'method' and target.kind in OUTPUT_KINDS
                 allowed = allowed and wire.target.name == ('model' if target.kind=='comparison' else 'input')
@@ -272,9 +259,10 @@ class Canvas(QGraphicsScene):
                 key=(target.identifier,wire.target.name)
                 if key in destinations:raise ValueError('Each output input accepts only one source.')
                 destinations.add(key)
-        missing=required-core_edges
-        if missing:
-            raise ValueError('Missing connections: '+', '.join(f'{a} → {b}' for a,b in sorted(missing)))
+        for kind in ('domain','boundary','pde','bc','method'):
+            if sum(role(node.kind)==kind for node in nodes)!=1:raise ValueError(f'The graph needs exactly one {kind} block.')
+        try:assemble(nodes,self.wires)
+        except ValueError as error:raise ValueError('Missing connections or invalid graph: '+str(error)) from error
 
     def compile_config(self):
         self.validate_graph()
@@ -1156,6 +1144,7 @@ class Window(JorvikGeometryActions,QMainWindow):
                      ('PINN method','Baseline PINN',730,160)]
         nodes=[self.make_node(*d) for d in definitions]
         for a,b in [(0,1),(0,2),(1,3),(2,4),(3,6),(4,6),(5,6)]:self.scene.connect_nodes(nodes[a],nodes[b])
+        self.scene.connect_nodes(nodes[2],nodes[3],'boundary_points')
         self.refresh_descriptions()
         nodes[0].setSelected(True)
 
@@ -1252,7 +1241,8 @@ class Window(JorvikGeometryActions,QMainWindow):
             self.scene.removeItem(old_method)
         for node in self.scene.nodes():
             if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,config)
-        self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(pde,method)
+        boundary=next(n for n in self.scene.nodes() if role(n.kind)=='boundary')
+        self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(boundary,pde,'boundary_points');self.scene.connect_nodes(pde,method)
         comparison=None
         output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export') if example.reference else ('Training Monitor','Solution Plot','CSV Export','ParaView Export')
         for index,title in enumerate(output_titles):
@@ -1715,6 +1705,8 @@ class Window(JorvikGeometryActions,QMainWindow):
         self.detail.setText(node.detail if node else '')
         body=QWidget();self.form=QFormLayout(body)
         self.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        if node is not None and role(node.kind)=='pde':
+            label=QLabel('PDE collocation: '+{'interior':'interior only','boundary':'boundary only','both':'interior + boundary / initial points'}[self.config.pde_points]+'. Connect points to this block to choose where the residual is enforced.');label.setWordWrap(True);self.form.addRow(label)
         if node is not None:
             capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
         if node is None:

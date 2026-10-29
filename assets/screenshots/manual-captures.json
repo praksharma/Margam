@@ -1,19 +1,28 @@
 {
-  "recorded_utc": "2026-10-27T23:14:13.839701+00:00",
-  "application_parent": "af9bd7da103f7e2b88e498cf9714688fbd038e87",
+  "recorded_utc": "2026-10-29T21:48:17.319784+00:00",
+  "application_parent": "6a2d32834c0d0fc2138a354e8166951d272ec1a0",
   "tracked_changes": true,
   "scope": "Actual Qt walkthrough captures and one default baseline run; not a numerical benchmark.",
   "qt_platform": "offscreen",
   "pyside": "6.12.0",
-  "torch": "2.14.1+cpu",
+  "torch": "2.14.1+cu130",
   "configuration": {
     "shape": "Interval",
     "x_min": 0.0,
     "x_max": 1.0,
     "y_min": 0.0,
     "y_max": 1.0,
+    "t_min": 0.0,
+    "t_max": 1.0,
+    "cylinder_x": 0.2,
+    "cylinder_y": 0.2,
+    "cylinder_radius": 0.05,
+    "fourth_order": 0.00152587890625,
+    "startup_time": 0.1,
+    "pde_points": "both",
     "points": 32,
     "boundary_points": 16,
+    "adaptive_sampling": {},
     "sampling": "grid",
     "seed": 7,
     "source": 2.0,
@@ -24,6 +33,7 @@
     "iterations": 1500,
     "lr": 0.005,
     "device": "cpu",
+    "loss_formulation": "mean",
     "pde_weight": 1.0,
     "boundary_weight": 10.0,
     "bc_types": {
@@ -46,6 +56,20 @@
     "boundary_data": {},
     "network_seed": 7,
     "method": "baseline",
+    "expert_settings": {
+      "chunks": 8,
+      "causal_epsilon": 1.0,
+      "balance_every": 1000,
+      "momentum": 0.9,
+      "decay_rate": 0.9,
+      "decay_steps": 2000,
+      "gradient_floor": 1e-12,
+      "weight_cap": 1000000.0,
+      "balance_mode": "gradient",
+      "ntk_points": 16,
+      "windows": 1,
+      "window_steps": 1000
+    },
     "physics": "scalar",
     "viscosity": 0.01,
     "flow_residuals": [
@@ -120,31 +144,48 @@
     "lra_epsilon": 1e-12,
     "lra_max": 1000000.0,
     "network_type": "fcnn",
-    "network_options": {}
+    "network_options": {},
+    "rba_settings": {
+      "decay": 0.999,
+      "rate": 0.001,
+      "initialization": "zero"
+    },
+    "gpinn_weights": {
+      "x": 0.01,
+      "y": 0.01,
+      "t": 0.01
+    },
+    "scale_settings": {
+      "tau_sc": 0.45,
+      "tau_alpha": 1.5,
+      "gamma": 0.0001,
+      "strength": 1.0,
+      "fresh": true
+    }
   },
   "run_steps": 1500,
-  "observed_comparison_rmse": 0.0001941966387788102,
+  "observed_comparison_rmse": 0.030883662809210972,
   "capture_tool_sha256": "e016bb8b44eeac976262804960c486cf5561822c8f83ca363eb956d7ee67b70b",
   "captures": {
     "workspace": {
       "file": "manual-workspace.png",
-      "sha256": "dd2f7c833020ab82cbb648ba26181f41d0d86642fe1f7ca6b57cfd2c9779ce0b"
+      "sha256": "87dad9dba855a31bb208fe3f1d75950a1fe2f6673f3c1037340e7be7c81c6eee"
     },
     "library": {
       "file": "manual-library.png",
-      "sha256": "8935050c8899e55545f0485eda3f859658cb1c261508b43a49e2cda1f4a8ce46"
+      "sha256": "de666ef9a5e4c51b7568706a392a9c55e229f92530dfa4d15baa3461ab5564bd"
     },
     "examples": {
       "file": "manual-examples.png",
-      "sha256": "d9ed3cb7093a485d6a87eca502466fde455ad8c109fb724858c29bd34a84ff36"
+      "sha256": "448dbdf511c3a6ece8a7a8282df9aa6e994ff6548a92e1f20d796496a326ec99"
     },
     "examples-1d": {
       "file": "manual-examples-1d.png",
-      "sha256": "258dab6cb49dcb5730a451e128e883f9c4b3d9f741cb96f0c269a456f9a5d35a"
+      "sha256": "511ea34f6a01eeb7faf474e0c69ab85a32d9634939f9fe3e3afa472e872ef7da"
     },
     "domain": {
       "file": "manual-domain.png",
-      "sha256": "0736135bf166e82dec096d38d0b82bdc12138422223b389107246cdbdeaf0ef9"
+      "sha256": "685879807093707732bf80aa6ee08bd1d170fdbf0f7267f4b9338eda618e378a"
     },
     "samples": {
       "file": "manual-samples.png",
@@ -156,7 +197,7 @@
     },
     "boundary-points": {
       "file": "manual-boundary-points.png",
-      "sha256": "e47d4e73d6eaf7f633682ceed15af7c970537ab5b7bc25a18be1dbbc59fd985c"
+      "sha256": "c026041d6d14660c90d7c25235296d4b369acd0a1c56be3a317359107fc795fd"
     },
     "boundary-condition": {
       "file": "manual-boundary-condition.png",
@@ -168,39 +209,39 @@
     },
     "helmholtz-pde": {
       "file": "manual-helmholtz-pde.png",
-      "sha256": "928698fbab7601254107c32e2b3aef8dfb2c0edd5c047843d9442ecdf57e71e2"
+      "sha256": "fc644955ed372c490a675e125e1b07e75fd455cedfd83c97b75667d2c68380ab"
     },
     "network-choices": {
       "file": "manual-network-choices.png",
-      "sha256": "4dc30daece72d6ad61722831fb5df4563181aaf2d03e7a22767fe2ab476d1d7f"
+      "sha256": "df38a37ce51cb85b6cce2274b7c4ef81284f688211ac2fdc4a8c90a0d5ac264d"
     },
     "fourier-settings": {
       "file": "manual-fourier-settings.png",
-      "sha256": "cc672c98742a807d8087acf14ff82cf0a77065fc4a131d6681411cb4d0253442"
+      "sha256": "52217da28addf246f09b3cafb56772fee65912d28403e8ada6a93fac58c6b4a0"
     },
     "sa-settings": {
       "file": "manual-sa-settings.png",
-      "sha256": "ec40d91be06a99f96f76b99a3e21f4ff45790c6db5b6a829f1f0c6185d218e32"
+      "sha256": "84db92e8bb1159f60b31990ac904eb4be2eadf89da66875431b50194041a1bfb"
     },
     "training-settings": {
       "file": "manual-training-settings.png",
-      "sha256": "4d36d31c035ad5d347d25e04291ac3fd4a22dbc0d1fd7c4671c933d901cd29aa"
+      "sha256": "bdf06ebe7cc18d7868035587dedbca5b7fcadb401175f8c713b933e2a2f60a6d"
     },
     "expanded": {
       "file": "manual-expanded.png",
-      "sha256": "b0c29a5559c5566e057aa4f1417ba1b2b0ad8334a029de7035812a8f5b107fa1"
+      "sha256": "3910d92528e451b1bb9b7c8ec9f2952da86105bf9cc6ad5621f53ae6e02d9de3"
     },
     "compact": {
       "file": "manual-compact.png",
-      "sha256": "99bfd894cc5aeac3f92b838a1f48a61b9906326e2b9bbe04ba1b3754a748b331"
+      "sha256": "5de84200a6fbe69a7db35ef5e9682da794fb6fd04b5480e29ec2de57761ba081"
     },
     "monitor": {
       "file": "manual-monitor.png",
-      "sha256": "397d825738e2d15ca69e51a5a5619e4e59292d96bbb73a6f1276cc03ef6f316c"
+      "sha256": "9d8895d7e9b63af5eba10d409c6bfdc70c46274426878d19dd9965af65096b64"
     },
     "comparison": {
       "file": "manual-comparison.png",
-      "sha256": "efe2212768dc931f95f4274e7cb898129874fc05e2bb21a302054bcdb8758819"
+      "sha256": "24d9b9a51e811189ddbd50359bed9aa315fe77fe13edab363e99705f9ebf4dbe"
     },
     "save-menu": {
       "file": "manual-save-menu.png",
@@ -208,7 +249,7 @@
     },
     "paraview": {
       "file": "manual-paraview.png",
-      "sha256": "99c3ebbd8e6c257b7e2dec45216e8a2725972c7088d7aefc828508e3a166aa0a"
+      "sha256": "061a066f6530e56429aec346ddc9999bcb6c2054e0f256d8b9147c8c2a37c9f9"
     },
     "help": {
       "file": "manual-help.png",

@@ -33,7 +33,7 @@ def main():
     torch.set_num_threads(1);points=torch.linspace(0,1,201)[:,None];reference=points*(1-points);records=[]
     for kind in NETWORK_NAMES:
         for method in ('baseline','self_adaptive'):
-            config=PoissonConfig(shape='Interval',points=32,layers=(16,16),network_seed=args.seed,
+            config=PoissonConfig(pde_points='both',shape='Interval',points=32,layers=(16,16),network_seed=args.seed,
                                  lr=.001 if kind=='siren' else .003,boundary_weight=10.,method=method,
                                  network_type=kind,network_options=smoke_options(kind),iterations=args.iterations)
             record=dict(network=kind,method=method,config=asdict(config))

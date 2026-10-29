@@ -16,7 +16,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--device',choices=['cpu','cuda'],default='cpu');parser.add_argument('--steps',type=int,default=100);parser.add_argument('--output-dir',type=Path,default=Path('build/training-data-demo'));parser.add_argument('--record',type=Path);args=parser.parse_args()
     if not 1<=args.steps<=99998:parser.error('Use 1–99998 training updates.')
     root=Path(__file__).resolve().parents[1];directory=root/'assets/training/triangle';torch.set_num_threads(1)
-    c=prepared_triangle_config(directory);c.device=args.device;c.iterations=args.steps
+    c=prepared_triangle_config(directory);c.pde_points='both';c.device=args.device;c.iterations=args.steps
     interior,sets=read_training_sets(c);m=build_pinn(c);m.train(args.steps,0)
     resumed=build_pinn(c);resumed.load_training_state(m.training_state());resumed.train(2,0);m.train(2,0)
     identical=m.loss_history==resumed.loss_history and all(torch.equal(value,resumed.network.state_dict()[name]) for name,value in m.network.state_dict().items())

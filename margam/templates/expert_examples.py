@@ -176,11 +176,12 @@ def build_case(c,*,initial_teacher=None,time_origin=None):
     from ..components.problem import PINNProblem
     from ..nn.factory import build_network
     from ..methods.pinn import PINN
+    from ..components.collocation import collocation_rows
     network=build_network(c);points,sets=samples(c)
-    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(points),make_constraints(c,network,sets,time_origin=time_origin))
+    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(collocation_rows(c,points,sets)),make_constraints(c,network,sets,time_origin=time_origin))
     def refresh(phase):
         points,sets=samples(c,phase)
-        return points,make_constraints(c,network,sets,time_origin=time_origin)
+        return collocation_rows(c,points,sets),make_constraints(c,network,sets,time_origin=time_origin)
     problem.refresh_samples=refresh
     if c.method=='expert':
         from ..methods.expert import ExpertPINN

@@ -34,7 +34,7 @@ geometry, theme and collapsed library groups persist independently of models.
 
 ## Build the graph
 
-The expanded problem consists of domain → interior sampler → PDE residual,
+The expanded problem consists of domain → collocation sources → PDE residual,
 domain → boundary points → boundary condition, a selected pointwise network, and a trainer consuming
 the PDE/BC/network inputs. Compact recipes hide the network/trainer pair.
 
@@ -207,3 +207,5 @@ rate and, for SA, its separate mask Adam ascent rate), and **Trainer** (update
 budget and device). These are inspector labels, not new graph blocks or a change
 to numerical training, recipe ownership or checkpoint format. LRA balancing
 settings belong to the method; they do not decay Adam's base learning rate.
+
+PDE point inclusion follows [explicit collocation arrows](modeling/physics.md#arrows-choose-where-the-pde-is-enforced). New examples include the boundary arrow; old saved graphs are unchanged.

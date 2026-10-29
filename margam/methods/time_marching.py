@@ -122,6 +122,7 @@ class TimeMarchingPINN:
             payload['configuration'].setdefault('gpinn_weights',gpinn_defaults())
             from ..components.rba_config import rba_defaults
             payload['configuration'].setdefault('rba_settings',rba_defaults())
+            payload['configuration'].setdefault('pde_points','interior')
         if not isinstance(payload,dict) or set(payload)!={'configuration','completed'} or payload['configuration']!=self.signature:raise ValueError('Time-marching configuration differs.')
         completed=payload['completed']
         if not isinstance(completed,list) or len(completed)>=self.count:raise ValueError('Invalid completed time windows.')

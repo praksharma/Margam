@@ -103,3 +103,12 @@ OUTPUTS['rba_method']=OUTPUTS['method']
 
 INPUTS['jorvik_geometry']=()
 OUTPUTS['jorvik_geometry']=OUTPUTS['domain']
+
+
+def compatible(source_type,target_type):
+    return source_type==target_type or target_type=='collocation_points' and source_type in ('interior_points','boundary_points')
+
+
+for _kind in ('pde','predefined_pde'):
+    INPUTS[_kind]=(PortSpec('input','Collocation points','collocation_points'),
+                   PortSpec('boundary_points','Additional boundary points (optional)','boundary_points'))

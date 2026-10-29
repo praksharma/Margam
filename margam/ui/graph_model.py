@@ -98,25 +98,36 @@ def assemble(nodes,wires,*,require_all=True):
     pde=source(method,'pde','pde');bc=source(method,'boundary','bc')
     network=source(method,'network','network') if method.kind in TRAINER_RECIPES else None
     if method.kind in COMPACT_RECIPES:COMPACT_RECIPES[method.kind].split(method.settings['parameters'])
-    interior=source(pde,'input','interior');boundary=source(bc,'input','boundary')
-    domain=source(interior,'input','domain')
-    if source(boundary,'input','domain') is not domain:raise ValueError('Interior and boundary sets must use the same geometry instance for this problem.')
-    used=[domain,interior,boundary,pde,bc]+([network] if network else [])+[method]
+    boundary=source(bc,'input','boundary')
+    primary=incoming.get((pde.identifier,'input'))
+    if primary is None or role(primary.kind) not in ('interior','boundary'):
+        raise ValueError('Missing connections: collocation points → PDE residual.')
+    additional=incoming.get((pde.identifier,'boundary_points'))
+    if additional is not None and (role(additional.kind)!='boundary' or additional is not boundary):
+        raise ValueError('The additional PDE boundary input must use the same boundary point source as the BC block.')
+    if role(primary.kind)=='boundary' and (primary is not boundary or additional is not None):
+        raise ValueError('Use the BC boundary source once for boundary-only PDE collocation.')
+    interior=primary if role(primary.kind)=='interior' else None
+    domain=source(boundary,'input','domain')
+    if interior is not None and source(interior,'input','domain') is not domain:
+        raise ValueError('Interior and boundary sets must use the same geometry instance for this problem.')
+    used=[domain]+([interior] if interior else [])+[boundary,pde,bc]+([network] if network else [])+[method]
     if require_all and any(node.kind in PARAMETERS and node not in used for node in nodes):raise ValueError('Unconnected core blocks are not executable; remove them or wire a single supported problem.')
     config=PoissonConfig()
     for node in used:config=overlay(config,node.kind,node.settings['parameters'])
+    config.pde_points='boundary' if interior is None else 'both' if additional is not None else 'interior'
     if domain.kind=='jorvik_geometry' and (domain.settings.get('jorvik_files',{}).get('needs_update') or not domain.settings.get('jorvik',{}).get('sha256')):
         raise ValueError('Update from Jorvik before training this geometry.')
-    if interior.kind=='interior_data' and not config.interior_data:raise ValueError('Map a coordinate source on Interior data.')
+    if interior is not None and interior.kind=='interior_data' and not config.interior_data:raise ValueError('Map a coordinate source on Interior data.')
     if boundary.kind=='boundary_data' and not config.boundary_data:raise ValueError('Map at least one named set on Boundary data.')
-    if config.shape=='Prepared2D' and (interior.kind!='interior_data' or boundary.kind!='boundary_data'):raise ValueError('Prepared 2D uses Interior data and Boundary data blocks.')
+    if config.shape=='Prepared2D' and ((interior is not None and interior.kind!='interior_data') or boundary.kind!='boundary_data'):raise ValueError('Prepared 2D uses Interior data and Boundary data blocks.')
     if require_all and domain.kind=='jorvik_geometry':
         import hashlib
         from pathlib import Path
         workspace=getattr(domain.scene(),'project_workspace',None)
         if workspace is None:raise ValueError('Open the owning Margam project before training Jorvik data.')
         from ..components.prepared_data import LIMIT
-        sources=[config.interior_data,*config.boundary_data.values()]
+        sources=([config.interior_data] if config.interior_data else [])+list(config.boundary_data.values())
         for name in {workspace().resolve(source_data['path']) for source_data in sources}:
             path=Path(name)
             if not path.is_file() or path.stat().st_size>LIMIT:

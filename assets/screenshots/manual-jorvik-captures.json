@@ -3,8 +3,8 @@
   "case": "Actual saved Jorvik annulus document and automatic sample export.",
   "files": {
     "manual-jorvik-geometry.png": {
-      "bytes": 213486,
-      "sha256": "053e8e42d79eaa0396f026db637aba646cce212ea3189660a2fa639a147747bf"
+      "bytes": 216648,
+      "sha256": "dbfb4ba32198a00804fd14ea40999f03d9f5cd0ff229d391682d9405cd28eb12"
     },
     "manual-jorvik-datasets.png": {
       "bytes": 29299,

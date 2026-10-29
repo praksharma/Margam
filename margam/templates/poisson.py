@@ -41,6 +41,7 @@ class PoissonConfig:
     cylinder_radius: float = .05
     fourth_order: float = 100/16**4
     startup_time: float = .1
+    pde_points: str = 'interior'  # Legacy/direct API default; UI graphs choose by wiring.
     points: int = 64
     boundary_points: int = 16  # Default count for sides without an explicit recipe.
     adaptive_sampling: dict = field(default_factory=dict)
@@ -149,12 +150,13 @@ class PoissonConfig:
             side, BoundarySampling(self.boundary_points, 'grid', 8 + sides.index(side)))
 
     def validate_sampling(self):
+        if self.pde_points not in ('interior','boundary','both'):raise ValueError('Choose interior, boundary or both PDE collocation sets.')
         if self.interior_data:
             validate_mapping(self.interior_data)
             if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
         from ..components.training_data import valid_boundary_name
         if not isinstance(self.boundary_data,dict) or len(self.boundary_data)>64 or any(not valid_boundary_name(name) for name in self.boundary_data) or self.shape!='Prepared2D' and set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown or invalid imported boundary set.')
-        if self.shape=='Prepared2D' and (not self.interior_data or not self.boundary_data):raise ValueError('Prepared 2D requires interior data and at least one named boundary set.')
+        if self.shape=='Prepared2D' and ((self.pde_points!='boundary' and not self.interior_data) or not self.boundary_data):raise ValueError('Prepared 2D requires interior data and at least one named boundary set.')
         for source in self.boundary_data.values():validate_mapping(source)
         if self.shape not in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D'):
             raise ValueError('Choose Interval, Rectangle or 1D space–time.')
@@ -189,6 +191,8 @@ class PoissonConfig:
         validate_adaptive_sampling(self.adaptive_sampling)
         from ..components.losses import LOSS_FORMULATIONS
         if not isinstance(self.loss_formulation,str) or self.loss_formulation not in LOSS_FORMULATIONS:raise ValueError('Unknown loss formulation.')
+        if self.loss_formulation=='integral' and self.pde_points!='interior':raise ValueError('Domain integral loss needs interior quadrature only; disconnect boundary points from the PDE block.')
+        if self.adaptive_sampling and self.pde_points=='boundary':raise ValueError('Boundary-only PDE points cannot use an interior adaptive sampler.')
         if self.loss_formulation=='integral':
             if self.interior_data or self.boundary_data:raise ValueError('Integral loss on imported points requires explicit quadrature weights; use built-in geometry samples for now.')
             if self.adaptive_sampling.get('method')=='rar':raise ValueError('Integral loss cannot treat RAR anchors as uniform quadrature. Use fixed uniform-domain sampling or importance sampling.')
@@ -196,6 +200,10 @@ class PoissonConfig:
             if self.interior_data:raise ValueError('Adaptive candidate generation currently supports built-in domains only; imported interior points need an explicit candidate source.')
             if self.method=='self_adaptive':raise ValueError('Adaptive sampling cannot yet move SA-PINN pointwise masks. Use baseline, hard-BC or LRA training.')
             initial=math.isqrt(self.points)**2 if len(self.bounds[0])==2 and self.sampling=='grid' else self.points
+            if self.pde_points=='both':
+                from ..components.collocation import boundary_rows
+                _,sets=sample_problem(self);initial+=len(boundary_rows(self,sets))
+            if initial>100000:raise ValueError('Adaptive PDE collocation supports at most 100000 active rows including boundary anchors.')
             if self.adaptive_sampling['method']=='rar' and initial>self.adaptive_sampling['maximum']:raise ValueError('RAR maximum must cover the initial interior set.')
         if type(self.sa_boundary) is not bool or any(not math.isfinite(v) or v<=0 for v in (self.sa_lr,self.sa_initial,self.sa_max)) or self.sa_initial>self.sa_max:raise ValueError('Invalid self-adaptive rate, initial weight or cap.')
         if type(self.lra_alpha) not in (int,float) or type(self.lra_epsilon) not in (int,float) or type(self.lra_max) not in (int,float) or not math.isfinite(self.lra_alpha) or not 0<self.lra_alpha<=1 or type(self.lra_interval) is not int or not 1<=self.lra_interval<=100000 or not math.isfinite(self.lra_epsilon) or not 0<self.lra_epsilon<=1 or not math.isfinite(self.lra_max) or not 1<=self.lra_max<=1e12:raise ValueError('Invalid LRA smoothing, interval, gradient floor or coefficient cap.')
@@ -370,7 +378,8 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     expression=Expression(config.pde_expression,len(config.bounds[0]),coordinates=config.coordinate_names) if config.pde_expression else None
     def residual(x, u):
         return expression(x,u,source=config.source,viscosity=config.viscosity) if expression else laplacian(u,x) + config.source
-    problem = PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
+    from ..components.collocation import collocation_rows
+    problem = PINNProblem(residual,torch.tensor(collocation_rows(config,interior,boundaries)),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     lower,upper = config.bounds
     from ..components.losses import apply_problem_measures
     apply_problem_measures(problem,config)

@@ -40,6 +40,7 @@ def main():
             interior=next(n for n in window.scene.nodes() if n.kind=='interior_data');boundary=next(n for n in window.scene.nodes() if n.kind=='boundary_data')
             window.scene.connect_nodes(interior,next(n for n in window.scene.nodes() if n.kind=='pde'))
             window.scene.connect_nodes(boundary,next(n for n in window.scene.nodes() if n.kind=='bc'))
+            window.scene.connect_nodes(boundary,next(n for n in window.scene.nodes() if n.kind=='pde'),'boundary_points')
             positions={'jorvik_geometry':(0,160),'interior_data':(240,40),'boundary_data':(240,270),'pde':(480,40),'bc':(480,270),'network':(480,440),'method':(730,160)}
             for node in window.scene.nodes():node.setPos(*positions[node.kind])
             assert window.validate_model();window.show_block_properties(geometry);window.fit_model();save(window,'geometry')

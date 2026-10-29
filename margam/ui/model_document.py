@@ -9,7 +9,7 @@ import tempfile
 
 from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults
 from ..components.sampling import SAMPLERS
-from .ports import INPUTS, OUTPUTS
+from .ports import INPUTS, OUTPUTS, compatible
 
 MAX_BYTES = 4 * 1024 * 1024
 SIDES = {'left', 'right', 'bottom', 'top'}
@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -52,7 +52,9 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<23:
         from ..components.rba_config import rba_defaults
         c=dict(c,rba_settings=c.get('rba_settings',rba_defaults()))
+    if isinstance(c,dict) and data['version']<26:c=dict(c,pde_points=c.get('pde_points','interior'))
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
+    require(c['pde_points'] in ('interior','boundary','both'),'Invalid PDE collocation selection.')
     require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
         require(number(c[key]), f'{key} must be finite numeric data.')
@@ -189,7 +191,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':25,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':26,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -199,7 +201,7 @@ def decode_document(data):
         source = OUTPUTS[by_id[wire['source']]['kind']]
         targets = {spec.name:spec for spec in INPUTS[by_id[wire['target']]['kind']]}
         target = targets.get(wire['input'])
-        require(source is not None and target is not None and source.data_type == target.data_type, 'Incompatible saved wire ports.')
+        require(source is not None and target is not None and compatible(source.data_type,target.data_type), 'Incompatible saved wire ports.')
         key = (wire['target'], wire['input'])
         require(key not in occupied, 'A saved input has multiple sources.')
         occupied.add(key)
@@ -207,12 +209,18 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':25, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':26, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],
             'wires':[{'source':w.source.parentItem().identifier,'target':w.target.parentItem().identifier,'input':w.target.name}
                      for w in window.scene.wires]}
+    from .graph_model import role
+    pdes=[node for node in window.scene.nodes() if role(node.kind)=='pde']
+    if len(pdes)==1:
+        primary=next((wire.source.parentItem() for wire in window.scene.wires if wire.target.parentItem() is pdes[0] and wire.target.name=='input'),None)
+        extra=any(wire.target.parentItem() is pdes[0] and wire.target.name=='boundary_points' for wire in window.scene.wires)
+        if primary is not None:document['config']['pde_points']='boundary' if role(primary.kind)=='boundary' else 'both' if extra else 'interior'
     workspace=getattr(window,'project_workspace',None)
     return workspace.portable_document(document) if workspace is not None else document
 

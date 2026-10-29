@@ -17,7 +17,7 @@ def read_training_sets(config,*,check_physics=True):
         tolerance=np.maximum((upper-lower)*1e-7,1e-12)
         if ((rows[0]<lower-tolerance)|(rows[0]>upper+tolerance)).any():raise ValueError('Prepared training points lie outside the coordinate bounds.')
         return rows
-    interior=read(config.interior_data,True)
+    interior=read(config.interior_data,True) if config.interior_data else (np.empty((0,dimension)),None,None)
     boundaries={name:read(source) for name,source in config.boundary_data.items()}
     if sum(len(value[0]) for value in boundaries.values())>100000:raise ValueError('Prepared boundaries support at most 100000 points in total.')
     if not check_physics:return interior,boundaries

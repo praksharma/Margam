@@ -78,7 +78,8 @@ def build_flow_pinn(config):
                 return expr(x,source=config.source,viscosity=config.viscosity,normal=n)
             constraints.append(PointConstraint(side+':'+field,torch.tensor(rows),value,operator))
     constraints.append(PointConstraint('pressure_gauge',torch.tensor([config.pressure_point]),config.pressure_value,lambda x,u:u[:,2:3]))
-    problem=PINNProblem(residual,torch.tensor(interior),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
+    from ..components.collocation import collocation_rows
+    problem=PINNProblem(residual,torch.tensor(collocation_rows(config,interior,boundaries)),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
     from ..components.losses import apply_problem_measures
     apply_problem_measures(problem,config)
     network=build_network(config)

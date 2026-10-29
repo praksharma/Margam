@@ -16,7 +16,7 @@ def main():
     if not 2<=args.steps<=100000:parser.error('Use 2–100000 steps.')
     torch.set_num_threads(1);cases={}
     for key in CASES if args.case=='all' else [args.case]:
-        c=case_config(key);c.device=args.device;c.points=32;c.boundary_points=4;c.layers=(16,16);c.network_options['features']=4
+        c=case_config(key);c.pde_points='both';c.device=args.device;c.points=32;c.boundary_points=4;c.layers=(16,16);c.network_options['features']=4
         c.iterations=args.steps;c.expert_settings.update(chunks=4,balance_every=2)
         m=build_pinn(c);phase=args.steps//2;m.train(phase,display_every=0)
         n=build_pinn(c);n.load_training_state(m.training_state());m.train(args.steps-phase,display_every=0);n.train(args.steps-phase,display_every=0)

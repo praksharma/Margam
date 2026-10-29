@@ -171,3 +171,12 @@
   zero-residual safety. Commit attention only after a successful update; checkpoint
   masks separately from optimizer parameters. Never silently move or interpolate
   attention under resampling. Keep raw and weighted PDE diagnostics distinct.
+
+- PDE collocation follows point-source arrows. The optional boundary input adds
+  geometric boundary/initial rows; without that wire do not append them. Allow a
+  boundary source on the primary collocation input too. Keep BC operators separate.
+  New example graphs wire both sources, while old documents/API defaults remain
+  interior-only. Preserve duplicates, forcing derivatives, adaptive boundary
+  anchors with unit importance weights, and physical-time causal bins. Reject
+  extra boundary rows as domain-volume integral quadrature; never silently mix
+  measures. Exclude pressure gauges and mean-velocity anchors from geometry rows.

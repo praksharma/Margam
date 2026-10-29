@@ -477,3 +477,6 @@ only when the user explicitly requests including it here.
 - [ ] Per-named-boundary loss coefficients in Margam's BC/loss controls.
 
 - [x] Prefilled dataset table with metadata-based roles, editable boundary names and explicit Ignore opt-out.
+
+- [x] Explicit boundary-to-PDE point connections, including all new File → Examples graphs; no arrow means no boundary PDE rows.
+- [x] Preserve fixed boundary PDE anchors under adaptive sampling and bin causal boundary/initial rows by physical time.

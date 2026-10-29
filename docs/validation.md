@@ -343,3 +343,19 @@ available, prefilled interior/boundary roles and editable per-boundary names. Th
 real annulus example now saves and reloads a Jorvik document before automatically
 exporting it. Ten focused persistence/integration tests and the 61-page manual
 build passed after this change.
+
+## Explicit PDE collocation connections
+
+`tests/test_pde_collocation.py` verifies interior-only, boundary-only and combined
+coordinates against the actual physical residual loss; independent BC rows;
+arrow removal and model migration; fixed adaptive anchors and exact continuation;
+and a training update for every File → Examples configuration. Updated UI tests
+cover optional boundary wiring, imported point counts, integral quadrature without
+the boundary arrow, refinement budgets and model/run archive round trips.
+
+The full CPU regression run completed 219 tests: 210 passed, 9 skipped. Separate
+CPU/CUDA continuation records cover baseline, importance sampling, gPINN, RBA and
+Expert with connected boundary/initial PDE points. See the
+[point-selection guide](modeling/physics.md#arrows-choose-where-the-pde-is-enforced)
+for records, screenshots and reproducible commands. These checks establish
+implementation behaviour and same-device continuation, not solution accuracy.

@@ -36,7 +36,7 @@ with TemporaryDirectory() as directory:
         deadline=time.monotonic()+20
         while w.worker is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.005)
     assert w.result is not None and w.result['outputs'][comparison.identifier]['reference_name']=='User reference expression'
-    assert len(w.last_run.model.collocation_point_sample)==3
+    assert len(w.last_run.model.collocation_point_sample)==3+sum(len(points) for condition,points,target in w.last_run.model._constraints)
     state=w.last_run.model.training_state()
     path.write_text('position\n0.1\n0.5\n0.9\n')
     from margam.templates.poisson import build_pinn

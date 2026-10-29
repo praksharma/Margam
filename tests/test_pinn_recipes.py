@@ -29,7 +29,7 @@ outputs={n.identifier for n in w.scene.nodes() if n.kind in ('monitor','solution
 compact=w.collapse_recipe(root)
 assert compact and compact.identifier==root.identifier
 assert asdict(w.scene.compile_config())==original
-assert len(w.scene.nodes())==10 and len(w.scene.wires)==10
+assert len(w.scene.nodes())==10 and len(w.scene.wires)==11
 assert not w.output_views.entries
 collapsed_doc=capture_model(w)
 w.undo_edit();assert capture_model(w)==original_doc

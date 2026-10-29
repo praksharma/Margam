@@ -61,7 +61,8 @@ class ExpertTests(unittest.TestCase):
         model=build_pinn(small());before=model.collocation_point_sample.clone();fingerprint=model.data_fingerprint()
         for phase in (0,1,7):
             model._fresh_samples(phase);points=model.collocation_point_sample
-            for chunk,rows in enumerate(points.reshape(4,8,2)):
+            self.assertGreater(len(points),32)
+            for chunk,rows in enumerate(points[:32].reshape(4,8,2)):
                 self.assertTrue(((rows[:,1]>=chunk/4)&(rows[:,1]<=(chunk+1)/4)).all())
                 self.assertTrue(((rows[:,0]>=-1)&(rows[:,0]<=1)).all())
             self.assertEqual(model.data_fingerprint(),fingerprint)

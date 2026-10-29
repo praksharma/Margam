@@ -48,7 +48,9 @@ class ScalePINN(PINN):
             from ..templates.poisson import sample_problem
             c=deepcopy(self.config);c.seed=(c.seed+104729*phase)%2**31
             c.boundary_sampling={side:replace(c.boundary_recipe(side),seed=(c.boundary_recipe(side).seed+104729*phase)%2**31) for side in c.sides}
-            points,sets=sample_problem(c);by_name={c.constraint_name(side):rows for side,rows in sets.items()}
+            points,sets=sample_problem(c)
+            from ..components.collocation import collocation_rows
+            points=collocation_rows(c,points,sets);by_name={c.constraint_name(side):rows for side,rows in sets.items()}
             conditions=[]
             for condition,_,_ in self._constraints:
                 rows=by_name.get(condition.name,by_name.get(condition.name.split(':')[0]))
@@ -114,6 +116,7 @@ class ScalePINN(PINN):
             payload=deepcopy(payload);payload['settings']['configuration'].setdefault('gpinn_weights',gpinn_defaults())
             from ..components.rba_config import rba_defaults
             payload['settings']['configuration'].setdefault('rba_settings',rba_defaults())
+            payload['settings']['configuration'].setdefault('pde_points','interior')
         if not isinstance(payload,dict) or set(payload)!={'settings','previous','diagnostics'} or payload['settings']!=self.signature:raise ValueError('Scale-PINN checkpoint configuration differs.')
         expected=self.previous.state_dict();previous=payload['previous'];records=payload['diagnostics'];steps=state.get('iter')
         if not isinstance(previous,dict) or set(previous)!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[name].shape or value.dtype!=expected[name].dtype or not torch.isfinite(value).all() for name,value in previous.items()):raise ValueError('Invalid Scale previous-iterate network.')

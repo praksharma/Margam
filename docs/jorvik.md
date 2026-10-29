@@ -38,7 +38,9 @@ require Jorvik. Importing a model never launches the external editor automatical
    by letters, digits, `_` or `-`.
 6. Confirm the update. Margam creates or updates **Interior data** and **Boundary
    data** blocks connected to this geometry. Connect their outputs to the PDE and
-   Boundary condition blocks, respectively. Remove the original rectangle/samplers
+   Boundary condition blocks, respectively. Also connect Boundary data to the PDE
+   block's optional boundary input if you want the PDE enforced there. Without
+   that arrow, it is not. Remove the original rectangle/samplers
    if replacing an existing template; each executable graph has one geometry.
 7. Assign the PDE and boundary types/targets in Margam. For result outputs, supply
    an explicit **Evaluation points** block; Margam does not fill the geometry's

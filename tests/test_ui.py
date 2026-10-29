@@ -19,7 +19,7 @@ w = Window(state_directory=False)
 w.show()
 for _ in range(3):app.processEvents()
 assert w.view.viewport().rect().contains(w.view.mapFromScene(w.scene.itemsBoundingRect()).boundingRect())
-assert len(w.scene.wires) == 7
+assert len(w.scene.wires) == 8
 assert not w.output_views.entries
 assert w.messages_dock.isHidden()
 assert not w.rectangle_previews

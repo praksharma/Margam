@@ -29,7 +29,8 @@ def until_finished(timeout=45):
     app.processEvents()
 
 # Removing a required edge must block execution, rather than train a hidden model.
-wire=w.scene.wires.pop()
+wire=next(wire for wire in w.scene.wires if wire.target.name=='network')
+w.scene.wires.remove(wire)
 source,target=wire.source.parentItem(),wire.target.parentItem()
 w.scene.removeItem(wire)
 assert not w.start_training()
@@ -40,7 +41,7 @@ QTest.mousePress(w.view.viewport(),Qt.MouseButton.LeftButton,Qt.KeyboardModifier
 QTest.mouseMove(w.view.viewport(),end,20)
 QTest.mouseRelease(w.view.viewport(),Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier,end)
 app.processEvents()
-assert len(w.scene.wires)==7, 'Port drag did not restore the connection'
+assert len(w.scene.wires)==8, 'Port drag did not restore the connection'
 
 # Training alone creates no predictions, reference comparison or plot windows.
 w.change('iterations',25)
