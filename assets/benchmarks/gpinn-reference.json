@@ -1,0 +1,20 @@
+{
+  "paper": "https://arxiv.org/abs/2111.02801",
+  "doi": "https://doi.org/10.1016/j.cma.2022.114823",
+  "paper_sha256": "bc419dc2472e31a7c5e16876d5917cff44c569479c4f098e5ca8048d54fdcdfa",
+  "repository": "https://github.com/lu-group/gpinn",
+  "revision": "09dd5903c326389f041341ed8cfe4984b24278cd",
+  "upstream_license": "Apache-2.0",
+  "source_hashes": {
+    "README.md": "51ba0f108f160ab75f6841bb2e05c112ec3b4f56223c6cc0032f290043fa8dc6",
+    "src/poisson_2d.py": "bb7485f27231da59f6480a5162b81333cbf1d8e61bc605cf8f9d512b78f4f414",
+    "src/burgers.py": "657d27db73a033e0ff5e3244ab53cee8ba93d6ecbd5c2cb4995600aba725768e"
+  },
+  "implementation": "Independent PyTorch scalar residual-gradient implementation; no upstream code/data bundled.",
+  "differences": [
+    "Poisson example uses a manufactured sine variation instead of the paper polynomial bump.",
+    "Burgers uses existing soft boundary/initial constraints rather than the upstream hard output transform.",
+    "Same collocation points serve physical and gradient losses; Adam only, no inverse parameters or L-BFGS.",
+    "RAR scores the physical residual using the existing Margam sampler."
+  ]
+}

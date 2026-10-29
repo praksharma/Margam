@@ -49,8 +49,8 @@ baseline recipe. Unsupported or incomplete graphs still fail validation.
 
 ## Persistence and checks
 
-Model format 21 stores compact recipes and separate training/evaluation sources while
-reading formats 1–20. Compact
+Model format 22 stores compact recipes, gPINN settings and separate data sources
+while reading formats 1–21. Compact
 settings contain the complete component parameters; loading a saved model does
 not replace them with recipe defaults. Copy/paste gives the block a fresh identity.
 Expand/collapse and expanded insertion are each one undoable edit. They are disabled

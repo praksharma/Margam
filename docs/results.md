@@ -348,3 +348,12 @@ with six updates, reduced widths/point counts, checkpoint continuation and an
 uncorrected control. All same-device continuations were identical. Earlier
 Gaussian-network records are retained as historical evidence, not measurements
 of these new presets. See [the exact mappings and differences](scale-pinn.md#affine-inputs-and-trainable-sine-features).
+
+
+## Gradient-enhanced PINN
+
+[CPU](../assets/benchmarks/gpinn-cpu.json) and
+[CUDA](../assets/benchmarks/gpinn-cuda.json) records cover the manufactured 2D
+Poisson sine variation, Burgers and Burgers+RAR with six short updates, identical
+same-device continuation, raw gradient terms and requested evaluation. These
+verify software behaviour, not paper accuracy. See [the illustrated guide](gpinn.md).

@@ -90,3 +90,8 @@ INPUTS['interior_data']=INPUTS['interior']
 INPUTS['boundary_data']=INPUTS['boundary']
 OUTPUTS['interior_data']=OUTPUTS['interior']
 OUTPUTS['boundary_data']=OUTPUTS['boundary']
+
+INPUTS['gpinn_recipe']=INPUTS['recipe']
+INPUTS['gpinn_method']=INPUTS['method']
+OUTPUTS['gpinn_recipe']=OUTPUTS['recipe']
+OUTPUTS['gpinn_method']=OUTPUTS['method']

@@ -25,7 +25,7 @@ class PredictionTests(unittest.TestCase):
         for name,value in before['network'].items():torch.testing.assert_close(value,restored.training_state()['network'][name],rtol=0,atol=0)
 
     def test_methods_architectures_and_time_windows(self):
-        for method in ('baseline','self_adaptive','lra','hard_dirichlet'):
+        for method in ('baseline','self_adaptive','lra','hard_dirichlet','gpinn'):
             with self.subTest(method=method):self.check_prediction(PoissonConfig(shape='Interval',method=method))
         for network in NETWORK_NAMES:
             with self.subTest(network=network):self.check_prediction(PoissonConfig(shape='Interval',network_type=network))

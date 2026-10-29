@@ -74,6 +74,9 @@ class OutputViews:
                 ('Mean BC (raw)', [(step,sum(row[s] for s in sides)/len(sides)) for step,row in records], '#7089d5'),
             ] if records else []
             if records and self.window.config.is_time_dependent:series.append(('Initial (raw)',[(step,row['initial']) for step,row in records],'#ad75ce'))
+            if self.window.config.method=='gpinn':
+                from ..components.gpinn_config import gpinn_terms
+                for term in gpinn_terms(self.window.config):series.append((term+' (raw)',[(step,row[term]) for step,row in records],{'x':'#ad75ce','y':'#cc7840','t':'#417ec1'}[term[-1]]))
             if records and 'pressure_gauge' in self.window.config.constraint_names:series.append(('Pressure gauge (raw)',[(step,row['pressure_gauge']) for step,row in records],'#ad75ce'))
             view.set_series(series, 'Requested training losses · log scale · retained updates only' if records else 'Connect this monitor and train to record losses.')
         else:

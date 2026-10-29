@@ -387,3 +387,13 @@ equations and trainable sine projections from SCALE-PINN notebooks. Source hashe
 exact mappings and architecture differences are recorded in
 [the Scale guide](scale-pinn.md#affine-inputs-and-trainable-sine-features). No upstream
 code/data was copied; the shared trunk is Margam's existing implementation.
+
+
+## Gradient-enhanced PINN (gPINN)
+
+Implemented independently from Yu, Lu, Meng and Karniadakis (CMA 393, 114823,
+2022), [paper](https://arxiv.org/abs/2111.02801),
+[authors' Apache-2.0 repository](https://github.com/lu-group/gpinn). The additional
+losses differentiate the full scalar residual in coordinate directions. Source
+hashes, scope and deliberate example differences are in [the guide](gpinn.md).
+No upstream code, datasets, TensorFlow or DeepXDE dependency is bundled.

@@ -25,6 +25,9 @@ EXAMPLE_PROBLEMS = {
 
 def example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
+    if identifier.startswith('gpinn_'):
+        from .gpinn_examples import gpinn_example_config
+        return gpinn_example_config(identifier)
     if identifier.startswith('scale_'):
         from .scale_examples import scale_example_config
         return scale_example_config(identifier)
@@ -64,3 +67,6 @@ for _key,_case in CASES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_case['lab
 
 from .scale_examples import SCALE_EXAMPLES
 for _key,(_label,_description) in SCALE_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,'')
+
+from .gpinn_examples import GPINN_EXAMPLES
+for _key,(_label,_description,_reference) in GPINN_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,_reference)

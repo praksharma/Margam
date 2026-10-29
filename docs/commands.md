@@ -185,3 +185,14 @@ python -m examples.capture_training_data --overwrite
 
 See [Prepared training data](training-data.md) for mappings, mixed conditions and
 current scope. CUDA requires an available CUDA device.
+
+
+## Gradient-enhanced PINN
+
+```bash
+python -m examples.gpinn --device cpu --steps 6 --output /tmp/gpinn-cpu.json
+python -m examples.gpinn --device cuda --steps 6 --output /tmp/gpinn-cuda.json
+python -m examples.capture_gpinn --overwrite
+```
+
+See [gPINN](gpinn.md) for the method, starting examples and recorded checks.

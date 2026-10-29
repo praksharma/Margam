@@ -82,4 +82,7 @@ class GlyphEngine(QIconEngine):
 PATHS['interior_data']=PATHS['evaluation_points']
 PATHS['boundary_data']=PATHS['reference_data']
 
+PATHS['gpinn_recipe']='M3 3h18v18H3z M6 17l4-10 4 7 4-5 M6 12h12'
+PATHS['gpinn_method']=PATHS['gpinn_recipe']
+
 def icon(name):return QIcon(GlyphEngine(name))

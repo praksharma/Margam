@@ -594,3 +594,11 @@ triangular mixed-BC example exercises training, checkpoint continuation and exac
 supplied-point export. Unknown-domain evaluation requires explicit points. This
 is not direct CAD/mesh import, transient prepared flow or automatic GeoSampler
 manifest wiring. Existing basic interval/rectangle sampling stays available.
+
+
+### gPINN milestone
+
+[Scalar gradient-enhanced PINN](gpinn.md) is available as a recipe and trainer,
+with selectable residual-coordinate penalties and fixed/RAR sampling. Poisson
+sine and Burgers cases validate the data/gradient/state contracts. Vector and
+inverse problems and mixed advanced trainers remain explicit future work.

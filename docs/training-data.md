@@ -115,7 +115,7 @@ Keep coordinates and targets in consistent units before import.
 
 ## Supported methods and persistence
 
-The first non-rectangular workflow supports steady 2D scalar baseline, LRA and
+The first non-rectangular workflow supports steady 2D scalar baseline, LRA, gPINN and
 fixed-point SA-PINN trainers, with the existing replaceable networks. Poisson,
 Helmholtz and reaction–diffusion presets support Prepared 2D; PDE residual also
 accepts restricted scalar expressions. No special network is required.
@@ -125,8 +125,8 @@ RAR/importance candidate generation on unknown geometry, Expert/Scale fresh
 sampling, arbitrary flow data and transient/physical-3D prepared geometry remain
 outside this milestone. The built-in geometry workflows keep their existing scope.
 
-Model format 21 stores block-owned mappings and named conditions while reading
-formats 1–20. Saved runs retain evaluated rows and weights; archived results can
+Model format 22 stores block-owned mappings and named conditions while reading
+formats 1–21. Saved runs retain evaluated rows and weights; archived results can
 be reopened/exported without training files. Resuming training requires the
 original numerical coordinates, targets and operator normals. Changing these
 rejects a checkpoint rather than continuing against different data.

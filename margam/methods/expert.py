@@ -187,7 +187,7 @@ class ExpertPINN(PINN):
             if isinstance(configuration,dict):
                 from ..templates.poisson import PoissonConfig
                 defaults=asdict(PoissonConfig())
-                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings'):configuration.setdefault(key,defaults[key])
+                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights'):configuration.setdefault(key,defaults[key])
             saved=configuration.get('expert_settings')
             if isinstance(saved,dict):payload['settings']['configuration']['expert_settings']={**expert_defaults(),**saved}
         if not isinstance(payload,dict) or set(payload)!={'settings','coefficients','history'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')

@@ -148,3 +148,9 @@
   projection in the separate Affine Fourier NN architecture. Preserve physical
   units by default, keep normalization explicit, and do not silently migrate old
   fixed-Fourier checkpoints or claim upstream trunk/head equivalence.
+
+- gPINN differentiates the full scalar residual including forcing/coordinate-callable
+  targets, not its square or just the solution. Preserve higher-order parameter
+  gradients. Keep coordinate penalties explicit; zero disables a direction. Log
+  raw gradient terms separately, preserve BC/IC losses and score RAR on physical
+  residuals. Mean/fixed/RAR only; do not silently compose advanced trainers.

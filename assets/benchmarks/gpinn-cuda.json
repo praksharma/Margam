@@ -1,0 +1,623 @@
+{
+  "scope": "Short software correctness checks, not paper reproduction or tuned accuracy.",
+  "paper": "https://arxiv.org/abs/2111.02801",
+  "torch": "2.14.1+cu130",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "cases": {
+    "gpinn_poisson_2d": {
+      "configuration": {
+        "shape": "Rectangle",
+        "x_min": 0.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 4,
+        "adaptive_sampling": {},
+        "sampling": "grid",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 6,
+        "lr": 0.001,
+        "device": "cuda",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 10.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {},
+        "pde_expression": "laplace(u)+c+(2*pi*pi*sin(pi*x)*sin(pi*y))",
+        "bc_targets": {},
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": null,
+        "method": "gpinn",
+        "expert_settings": {
+          "chunks": 8,
+          "causal_epsilon": 1.0,
+          "balance_every": 1000,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "gradient",
+          "ntk_points": 16,
+          "windows": 1,
+          "window_steps": 1000
+        },
+        "physics": "scalar",
+        "viscosity": 0.01,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "poisson",
+        "pde_forcing": "2*pi*pi*sin(pi*x)*sin(pi*y)",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fcnn",
+        "network_options": {},
+        "gpinn_weights": {
+          "x": 1e-05,
+          "y": 1e-05,
+          "t": 0.0
+        },
+        "scale_settings": {
+          "tau_sc": 0.45,
+          "tau_alpha": 1.5,
+          "gamma": 0.0001,
+          "strength": 1.0,
+          "fresh": true
+        }
+      },
+      "steps": 6,
+      "checkpoint_resume_identical": true,
+      "effective_loss_weights": {
+        "pde": 1.0,
+        "left": 2.5,
+        "right": 2.5,
+        "bottom": 2.5,
+        "top": 2.5,
+        "pde_grad_x": 1e-05,
+        "pde_grad_y": 1e-05
+      },
+      "initial_losses": {
+        "pde": 91.44877624511719,
+        "pde_grad_x": 946.2618408203125,
+        "pde_grad_y": 955.6275634765625,
+        "left": 0.0300213061273098,
+        "right": 0.3573818802833557,
+        "bottom": 0.1318780779838562,
+        "top": 0.22522619366645813,
+        "total": 93.32906341552734
+      },
+      "final_losses": {
+        "pde": 90.14696502685547,
+        "pde_grad_x": 942.5220947265625,
+        "pde_grad_y": 953.4278564453125,
+        "left": 0.02988777682185173,
+        "right": 0.39357835054397583,
+        "bottom": 0.13033872842788696,
+        "top": 0.2587789297103882,
+        "total": 92.1973876953125
+      },
+      "active_points": 16,
+      "sampling_history": [],
+      "evaluation_rows": 25,
+      "rmse": 0.40263338359813877
+    },
+    "gpinn_burgers": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": -1.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 4,
+        "adaptive_sampling": {},
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 6,
+        "lr": 0.001,
+        "device": "cuda",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 10.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {
+          "left": {
+            "points": 64,
+            "method": "random",
+            "seed": 8
+          },
+          "right": {
+            "points": 64,
+            "method": "random",
+            "seed": 9
+          },
+          "bottom": {
+            "points": 64,
+            "method": "random",
+            "seed": 10
+          }
+        },
+        "pde_expression": "D(u,t)+u*D(u,x)-nu*D(D(u,x),x)",
+        "bc_targets": {
+          "bottom": "-sin(pi*x)"
+        },
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": null,
+        "method": "gpinn",
+        "expert_settings": {
+          "chunks": 8,
+          "causal_epsilon": 1.0,
+          "balance_every": 1000,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "gradient",
+          "ntk_points": 16,
+          "windows": 1,
+          "window_steps": 1000
+        },
+        "physics": "scalar",
+        "viscosity": 0.003183098861837907,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "burgers_1d",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fcnn",
+        "network_options": {},
+        "gpinn_weights": {
+          "x": 0.0001,
+          "y": 0.0,
+          "t": 0.0001
+        },
+        "scale_settings": {
+          "tau_sc": 0.45,
+          "tau_alpha": 1.5,
+          "gamma": 0.0001,
+          "strength": 1.0,
+          "fresh": true
+        }
+      },
+      "steps": 6,
+      "checkpoint_resume_identical": true,
+      "effective_loss_weights": {
+        "pde": 1.0,
+        "left": 3.3333333333333335,
+        "right": 3.3333333333333335,
+        "initial": 3.3333333333333335,
+        "pde_grad_x": 0.0001,
+        "pde_grad_t": 0.0001
+      },
+      "initial_losses": {
+        "pde": 0.05400531738996506,
+        "pde_grad_x": 0.004095995798707008,
+        "pde_grad_t": 0.006885380018502474,
+        "left": 0.029173195362091064,
+        "right": 0.3531566262245178,
+        "initial": 0.7477730512619019,
+        "total": 3.8210158348083496
+      },
+      "final_losses": {
+        "pde": 0.02025146596133709,
+        "pde_grad_x": 0.001994605176150799,
+        "pde_grad_t": 0.002841996494680643,
+        "left": 0.007057996932417154,
+        "right": 0.2113656997680664,
+        "initial": 0.6748079061508179,
+        "total": 2.997690439224243
+      },
+      "active_points": 16,
+      "sampling_history": [],
+      "evaluation_rows": 25,
+      "rmse": null
+    },
+    "gpinn_burgers_rar": {
+      "configuration": {
+        "shape": "SpaceTime1D",
+        "x_min": -1.0,
+        "x_max": 1.0,
+        "y_min": 0.0,
+        "y_max": 1.0,
+        "t_min": 0.0,
+        "t_max": 1.0,
+        "cylinder_x": 0.2,
+        "cylinder_y": 0.2,
+        "cylinder_radius": 0.05,
+        "fourth_order": 0.00152587890625,
+        "startup_time": 0.1,
+        "points": 16,
+        "boundary_points": 4,
+        "adaptive_sampling": {
+          "method": "rar",
+          "interval": 2,
+          "candidates": 32,
+          "chunk": 16,
+          "batch": 2,
+          "maximum": 64
+        },
+        "sampling": "random",
+        "seed": 7,
+        "source": 0.0,
+        "layers": [
+          8,
+          8
+        ],
+        "iterations": 6,
+        "lr": 0.001,
+        "device": "cuda",
+        "loss_formulation": "mean",
+        "pde_weight": 1.0,
+        "boundary_weight": 10.0,
+        "bc_types": {
+          "left": "Dirichlet",
+          "right": "Dirichlet",
+          "bottom": "Dirichlet",
+          "top": "Dirichlet"
+        },
+        "bc_values": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "boundary_sampling": {
+          "left": {
+            "points": 64,
+            "method": "random",
+            "seed": 8
+          },
+          "right": {
+            "points": 64,
+            "method": "random",
+            "seed": 9
+          },
+          "bottom": {
+            "points": 64,
+            "method": "random",
+            "seed": 10
+          }
+        },
+        "pde_expression": "D(u,t)+u*D(u,x)-nu*D(D(u,x),x)",
+        "bc_targets": {
+          "bottom": "-sin(pi*x)"
+        },
+        "bc_operators": {},
+        "interior_data": {},
+        "boundary_data": {},
+        "network_seed": null,
+        "method": "gpinn",
+        "expert_settings": {
+          "chunks": 8,
+          "causal_epsilon": 1.0,
+          "balance_every": 1000,
+          "momentum": 0.9,
+          "decay_rate": 0.9,
+          "decay_steps": 2000,
+          "gradient_floor": 1e-12,
+          "weight_cap": 1000000.0,
+          "balance_mode": "gradient",
+          "ntk_points": 16,
+          "windows": 1,
+          "window_steps": 1000
+        },
+        "physics": "scalar",
+        "viscosity": 0.003183098861837907,
+        "flow_residuals": [
+          "u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)",
+          "u*D(v,x)+v*D(v,y)+D(p,y)-nu*laplace(v)",
+          "D(u,x)+D(v,y)"
+        ],
+        "flow_boundary": {
+          "left": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "right": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "bottom": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          },
+          "top": {
+            "u": {
+              "type": "Dirichlet",
+              "target": "y",
+              "operator": ""
+            },
+            "v": {
+              "type": "Dirichlet",
+              "target": "0",
+              "operator": ""
+            }
+          }
+        },
+        "pressure_point": [
+          0.0,
+          0.0
+        ],
+        "pressure_value": 0.0,
+        "pressure_weight": 1.0,
+        "pde_preset": "burgers_1d",
+        "pde_forcing": "0",
+        "sa_lr": 0.005,
+        "sa_initial": 1.0,
+        "sa_max": 1000.0,
+        "sa_boundary": false,
+        "lra_alpha": 0.9,
+        "lra_interval": 10,
+        "lra_epsilon": 1e-12,
+        "lra_max": 1000000.0,
+        "network_type": "fcnn",
+        "network_options": {},
+        "gpinn_weights": {
+          "x": 0.0001,
+          "y": 0.0,
+          "t": 0.0001
+        },
+        "scale_settings": {
+          "tau_sc": 0.45,
+          "tau_alpha": 1.5,
+          "gamma": 0.0001,
+          "strength": 1.0,
+          "fresh": true
+        }
+      },
+      "steps": 6,
+      "checkpoint_resume_identical": true,
+      "effective_loss_weights": {
+        "pde": 1.0,
+        "left": 3.3333333333333335,
+        "right": 3.3333333333333335,
+        "initial": 3.3333333333333335,
+        "pde_grad_x": 0.0001,
+        "pde_grad_t": 0.0001
+      },
+      "initial_losses": {
+        "pde": 0.05400531738996506,
+        "pde_grad_x": 0.004095995798707008,
+        "pde_grad_t": 0.006885380018502474,
+        "left": 0.029173195362091064,
+        "right": 0.3531566262245178,
+        "initial": 0.7477730512619019,
+        "total": 3.8210158348083496
+      },
+      "final_losses": {
+        "pde": 0.0216531865298748,
+        "pde_grad_x": 0.0017367451218888164,
+        "pde_grad_t": 0.0023547676391899586,
+        "left": 0.007055474445223808,
+        "right": 0.21135443449020386,
+        "initial": 0.6748048067092896,
+        "total": 2.9990358352661133
+      },
+      "active_points": 20,
+      "sampling_history": [
+        {
+          "step": 2,
+          "points": 18,
+          "mean_residual": 0.19134905841201544,
+          "max_residual": 0.22782769799232483
+        },
+        {
+          "step": 4,
+          "points": 20,
+          "mean_residual": 0.14206327218562365,
+          "max_residual": 0.188018336892128
+        }
+      ],
+      "evaluation_rows": 25,
+      "rmse": null
+    }
+  }
+}

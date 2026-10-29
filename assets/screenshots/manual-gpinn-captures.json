@@ -1,0 +1,17 @@
+{
+  "scope": "Actual isolated gPINN recipe/trainer and raw gradient-loss monitor after 30 CPU updates; no accuracy claim.",
+  "captures": {
+    "trainer": {
+      "file": "manual-gpinn-trainer.png",
+      "sha256": "0e46146dae0662a376800f5e435e64491cb34dfaa80fef4d64abd3e7a53db3c6"
+    },
+    "compact": {
+      "file": "manual-gpinn-compact.png",
+      "sha256": "0e573376e20ce7c92d42c67654161a86d62d24f322c093fb36d4d68cdcc1b8ff"
+    },
+    "monitor": {
+      "file": "manual-gpinn-monitor.png",
+      "sha256": "41ac41df2529267dd1c87e76158def4eb7798160de7c00404873426d6ad1f22f"
+    }
+  }
+}

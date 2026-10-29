@@ -250,3 +250,11 @@ using the same typed PDE-point and boundary-set outputs. Prepared 2D uses its bo
 only for coordinate scaling/validation and reads all actual training locations.
 Its named scalar sets require explicit normals for normal-dependent operators;
 targets/types stay separate from the mapping. See [scope and contracts](training-data.md).
+
+
+## Gradient-enhanced scalar losses
+
+The gPINN method reuses shared physical/constraint loss samples and adds named
+coordinate derivatives of the full scalar residual. Coordinate weights and its
+state live in the separate trainer/recipe; networks remain replaceable. See
+[gPINN](gpinn.md) for mean-loss/RAR scope and saved-state contracts.

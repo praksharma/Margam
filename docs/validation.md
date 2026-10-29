@@ -297,3 +297,14 @@ resume, changed-map rejection and historical fixed-Fourier loading.
 `tests/test_affine_fourier_ui.py` checks editable mappings, save/load and compact
 recipe roundtrips. Scale and pointwise-network suites also cover the new option.
 New CPU/CUDA short-run evidence is linked from [the Scale guide](scale-pinn.md).
+
+
+## gPINN
+
+`tests/test_gpinn.py` verifies full-residual/forcing/callable-target derivatives,
+backpropagation into weights, constant derivative zeros, disabled baseline identity,
+non-finite update guards, RAR continuation, method incompatibilities and legacy
+checkpoint migrations. Its CUDA case checks differentiable residual gradients and
+resume. `tests/test_gpinn_ui.py` exercises coordinate controls, compact expansion,
+models/run archives, named monitor histories and Burgers physical-time export.
+See [records and exact scope](gpinn.md).

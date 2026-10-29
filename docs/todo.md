@@ -434,3 +434,16 @@ These are proposed features; current execution still runs one supported problem.
 
 GeoSampler integration is on hold while its author improves it. Resume that work
 only when the user explicitly requests including it here.
+
+
+## Gradient-enhanced PINN
+
+- [x] Implement scalar gPINN full-residual coordinate-gradient losses, including
+  forcing/target derivatives, independently from Yu et al.
+- [x] Add one-file recipe, compact/expanded trainer, per-coordinate weights,
+  gradient monitor terms and strict checkpoint/model persistence.
+- [x] Add 2D Poisson sine variation, Burgers and Burgers+RAR examples; verify
+  CPU/CUDA derivatives, exact same-device resume, UI/export and document differences.
+- [ ] Consider coupled/vector residual-gradient aggregation against a concrete case.
+- [ ] Define independent gradient sample sets, inverse unknown parameters and
+  integral/importance combinations before exposing those options.

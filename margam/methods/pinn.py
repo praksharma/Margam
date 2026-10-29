@@ -98,12 +98,15 @@ class PINN:
     def _term(self, values, target, rows):
         return self.metric(*self._aligned(values,target,rows))
 
+    def pde_samples(self,points):
+        residual=self.problem.residual(points,self.network(points))
+        return {'pde':(residual,self.collocation_point_labels,len(points))}
+
     def loss_samples(self):
         """Shared fresh derivative graphs and shape data for each physical term."""
         self._require_compiled()
         points = self.collocation_point_sample.detach().requires_grad_(True)
-        residual = self.problem.residual(points, self.network(points))
-        terms = {"pde": (residual, self.collocation_point_labels, len(points))}
+        terms=self.pde_samples(points)
         for condition, sample, target in self._constraints:
             points = sample.detach().requires_grad_(condition.operator is not None)
             values = self.network(points)

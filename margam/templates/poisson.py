@@ -84,6 +84,7 @@ class PoissonConfig:
     lra_max: float = 1e6
     network_type: str = 'fcnn'
     network_options: dict = field(default_factory=dict)
+    gpinn_weights: dict = field(default_factory=lambda: dict(x=.01,y=.01,t=.01))
     scale_settings: dict = field(default_factory=scale_defaults)
 
     @property
@@ -205,11 +206,14 @@ class PoissonConfig:
             from ..components.affine_inputs import affine_map
             from ..components.network_config import network_options
             affine_map(network_options(self.network_type,self.network_options)['input_transform'],self.coordinate_names)
+        from ..components.gpinn_config import validate_gpinn_weights,validate_gpinn_problem
+        validate_gpinn_weights(self.gpinn_weights)
+        if self.method=='gpinn':validate_gpinn_problem(self)
         validate_scale_settings(self.scale_settings)
         if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)
         if self.method=='expert':validate_expert_problem(self)
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale'):raise ValueError('Unknown PINN method.')
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -231,7 +235,7 @@ class PoissonConfig:
             from .expert_examples import validate_case
             validate_case(self);return
         if self.shape in ('SpaceTime2D','Channel2D','ChannelTime2D'):raise ValueError('This geometry currently requires its concrete Expert example preset.')
-        if self.shape=='Prepared2D' and (self.physics!='scalar' or self.method not in ('baseline','lra','self_adaptive') or self.is_paper_case):raise ValueError('Prepared 2D currently supports scalar baseline, LRA and fixed-point SA-PINN; box transforms and fresh samplers do not apply.')
+        if self.shape=='Prepared2D' and (self.physics!='scalar' or self.method not in ('baseline','lra','self_adaptive','gpinn') or self.is_paper_case):raise ValueError('Prepared 2D currently supports scalar baseline, LRA, gPINN and fixed-point SA-PINN; box transforms and fresh samplers do not apply.')
         if self.physics=='incompressible_2d':
             from .incompressible_flow import validate_flow_config
             validate_flow_config(self);return
@@ -377,6 +381,10 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
         return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+    if config.method=='gpinn':
+        from dataclasses import asdict
+        from ..methods.gpinn import GradientEnhancedPINN
+        return GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=weights,configuration=asdict(config)).compile(lr=config.lr,device=config.device)
     if config.method=='lra':
         from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
         return LearningRateAnnealingPINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
