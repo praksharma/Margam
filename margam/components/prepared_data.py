@@ -24,7 +24,7 @@ def validate_mapping(source):
         raise ValueError('Data mapping needs path, coordinates, normals and values.')
     if not all(isinstance(value,str) and len(value)<=4096 for value in source.values()) or not source['path'] or not source['coordinates']:
         raise ValueError('Choose a data path and an explicit coordinate mapping.')
-    if Path(source['path']).suffix.lower() not in ('.csv','.npz'):raise ValueError('Prepared data supports CSV or NPZ.')
+    if Path(source['path']).suffix.lower() not in ('.csv','.npz','.nc'):raise ValueError('Prepared data supports CSV, NPZ or a mapped Jorvik NetCDF snapshot.')
 
 
 def read_points(source,dimension,components=1):
@@ -52,6 +52,16 @@ def read_points(source,dimension,components=1):
         points=np.asarray(points,dtype=float)
         normals=np.asarray(normal_rows,dtype=float) if normal_rows else None
         values=np.asarray(values,dtype=float) if values else None
+    elif path.suffix.lower()=='.nc':
+        from .jorvik_data import read_array
+        raw,axes=read_array(path,source['coordinates']);points=raw[:,axes]
+        normals=None
+        if source['normals']:
+            normal_rows,normal_axes=read_array(path,source['normals'])
+            if normal_axes!=axes:raise ValueError('Coordinates and normals must use the same source axes.')
+            normals=normal_rows[:,axes]
+        if source['values']:raise ValueError('Jorvik supplies geometry samples, not boundary target values.')
+        values=None
     else:
         with zipfile.ZipFile(path) as archive:
             if sum(item.file_size for item in archive.infolist())>LIMIT:raise ValueError('Expanded NPZ data exceeds 64 MiB.')

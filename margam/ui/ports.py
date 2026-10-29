@@ -100,3 +100,6 @@ INPUTS['rba_recipe']=INPUTS['recipe']
 INPUTS['rba_method']=INPUTS['method']
 OUTPUTS['rba_recipe']=OUTPUTS['recipe']
 OUTPUTS['rba_method']=OUTPUTS['method']
+
+INPUTS['jorvik_geometry']=()
+OUTPUTS['jorvik_geometry']=OUTPUTS['domain']

@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -121,10 +121,17 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data','jorvik'}, 'Invalid output settings.')
         require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
         require(isinstance(settings.get('reference_expression',''),str) and len(settings.get('reference_expression',''))<=512,'Invalid reference expression.')
         if settings.get('reference_data'):validate_mapping(settings['reference_data'])
+        if 'jorvik' in settings:
+            j=settings['jorvik']
+            require(node['kind']=='jorvik_geometry' and isinstance(j,dict) and set(j)=={'axes','datasets','sha256'},'Invalid Jorvik settings.')
+            require(j['axes'] in ([0,1],[0,2],[1,2]) and isinstance(j['sha256'],str) and len(j['sha256'])==64 and all(c in '0123456789abcdef' for c in j['sha256']),'Invalid Jorvik snapshot identity.')
+            require(isinstance(j['datasets'],dict) and 1<=len(j['datasets'])<=65,'Invalid Jorvik dataset assignments.')
+            for identity,record in j['datasets'].items():
+                require(isinstance(identity,str) and 0<len(identity)<=512 and isinstance(record,dict) and set(record)=={'role','name'} and record['role'] in ('interior','boundary') and isinstance(record['name'],str) and 0<len(record['name'])<=256,'Invalid Jorvik dataset role.')
         if 'source_data' in settings:
             require(node['kind'] in ('evaluation_points','reference_data') and isinstance(settings['source_data'],dict),'Invalid point source settings.')
             if settings['source_data']:
@@ -171,7 +178,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':23,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':24,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -189,12 +196,14 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':23, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':24, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],
             'wires':[{'source':w.source.parentItem().identifier,'target':w.target.parentItem().identifier,'input':w.target.name}
                      for w in window.scene.wires]}
+    workspace=getattr(window,'project_workspace',None)
+    return workspace.portable_document(document) if workspace is not None else document
 
 
 def unique_keys(pairs):

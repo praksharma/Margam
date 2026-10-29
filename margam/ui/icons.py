@@ -6,6 +6,7 @@ from .theme import colors
 
 # 24-unit artwork; no icon font, desktop theme or network dependency.
 PATHS = {
+    'jorvik_geometry':'M3 18l5-14h8l5 14H3z M8 4l4 14 4-14 M3 18l9-7 9 7',
     'evaluation_points':'M4 4h16v16H4z M8 8h1v1H8z M15 7h1v1h-1z M10 15h1v1h-1z M16 16h1v1h-1z',
     'reference_data':'M4 3h16v18H4z M4 8h16 M9 8v13 M13 12h4 M13 16h4',
     'scale_recipe':'M3 3h18v18H3z M6 16h4l3-8 3 6h3',

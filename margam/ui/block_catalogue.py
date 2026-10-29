@@ -2,7 +2,7 @@
 
 # Category, then (display title, existing template kind).
 BLOCK_CATEGORIES = {
-    'Geometry': (('Rectangle', 'domain'),),
+    'Geometry': (('Rectangle', 'domain'),('Jorvik geometry','jorvik_geometry')),
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
@@ -34,6 +34,7 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'jorvik_geometry':('Owned Jorvik document and explicit NetCDF update','Edit in the separate Jorvik application. One planar 2D interior dataset and named boundaries. Connect prepared data blocks; physics and evaluation points remain explicit.'),
     'rba_recipe':('RBA · residual-based attention · compact or expanded','Replaceable network and RBA trainer. Detached pointwise PDE attention; no transformer or second optimizer. Fixed samples only.'),
     'rba_method':('Residual-history decay, attention rate and initialization','Updates detached point weights from normalized absolute residuals, then minimizes squared weighted residuals. BC/IC losses stay unchanged. Fixed scalar samples; no resampling or combined attention methods.'),
     'gpinn_recipe':('gPINN · scalar residual-gradient enhancement · compact or expanded','Replaceable network and gPINN trainer. Separate coordinate-gradient losses; fixed points or physical-residual RAR; no inverse parameters or combined balancing methods.'),

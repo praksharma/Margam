@@ -29,6 +29,7 @@ See [installation help](docs/start/install.md) for setup details.
 
 - [Illustrated user manual](docs/index.md)
 - [Your first PINN](docs/start/first-pinn.md)
+- [Geometry documents with Jorvik](docs/jorvik.md)
 - [Technical reference](docs/README.md)
 - [Development and experiment commands](docs/commands.md)
 - [Roadmap and planned work](docs/todo.md)

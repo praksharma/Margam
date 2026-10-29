@@ -3,6 +3,8 @@
 Model recovery is separate from saved model files and numerical run archives.
 """
 from pathlib import Path
+import shutil
+from .project_workspace import ProjectWorkspace
 from uuid import uuid4
 from PySide6.QtCore import QSettings, QStandardPaths, QTimer, QLockFile
 from PySide6.QtWidgets import QMessageBox, QApplication
@@ -40,17 +42,21 @@ class DesktopState:
 
     def autosave(self):
         w=self.window
+        if w.project_workspace.busy:return False
         if w.undo_stack.isClean():self.clear();return False
         try:
             if self.lock is None:
                 self.lock=QLockFile(str(self.path)+'.lock');self.lock.setStaleLockTime(0)
                 if not self.lock.tryLock(0):self.lock=None;return False
-            write_model(self.path,capture_model(w));return True
+            w.project_workspace.snapshot_to(self.path,lambda path:write_model(path,capture_model(w)));return True
         except (OSError,ValueError,TypeError) as error:
             w.statusBar().showMessage('Draft recovery could not be saved: '+str(error));return False
 
     def clear(self):
-        try:self.path.unlink(missing_ok=True)
+        try:
+            self.path.unlink(missing_ok=True)
+            owned=ProjectWorkspace.companion(self.path)
+            if owned.exists():shutil.rmtree(owned)
         except OSError as error:self.window.statusBar().showMessage('Could not remove recovery draft: '+str(error))
         if self.lock is not None:self.lock.unlock();self.lock=None
 
@@ -68,11 +74,25 @@ class DesktopState:
                     QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No|QMessageBox.StandardButton.Cancel,
                     QMessageBox.StandardButton.Yes)
                 if answer==QMessageBox.StandardButton.Cancel:return False
-                if answer==QMessageBox.StandardButton.No:path.unlink(missing_ok=True);continue
+                if answer==QMessageBox.StandardButton.No:
+                    path.unlink(missing_ok=True)
+                    owned=ProjectWorkspace.companion(path)
+                    if owned.exists():shutil.rmtree(owned)
+                    continue
                 if not self.window.confirm_discard():return False
-                self.window.replace_model(data)
+                recovered=ProjectWorkspace()
+                try:
+                    owned=ProjectWorkspace.companion(path)
+                    if owned.exists():shutil.copytree(owned,recovered.directory,dirs_exist_ok=True)
+                    self.window.replace_model(data,workspace=recovered)
+                except Exception:
+                    recovered.close()
+                    raise
                 self.window.undo_stack.resetClean()
-                if self.autosave():path.unlink(missing_ok=True)
+                if self.autosave():
+                    path.unlink(missing_ok=True)
+                    owned=ProjectWorkspace.companion(path)
+                    if owned.exists():shutil.rmtree(owned)
                 self.window.statusBar().showMessage('Recovered unsaved model · use Save model as to keep it')
                 return True
             finally:lock.unlock()

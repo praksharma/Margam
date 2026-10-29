@@ -319,3 +319,20 @@ It checks legacy Scale/Expert/gPINN migrations and includes a CUDA-to-CPU archiv
 identity case. `tests/test_rba_ui.py` checks controls, compact roundtrips, raw/weighted
 monitor histories, attention statistics, resume and physical-time PVD export.
 Evidence and exact scope are in [RBA](rba-pinn.md).
+
+
+## Jorvik geometry documents
+
+`tests/test_jorvik.py` uses the installed Jorvik exporter to check unequal NetCDF
+dimensions, planar coordinate/normal validation, explicit dataset roles, document
+creation, editor command/locking, undoable updates, BC cleanup, unchanged state on
+failed updates, portable Save/Save As, relocation and snapshot tampering. Desktop
+state tests also recover owned documents. The full CPU regression run completed
+213 tests: 204 passed and 9 skipped. The local installed Jorvik version was built
+from commit `795c5ff`. A separate isolated-process smoke check launched that editor
+on an empty owned document and verified the lock was released on exit.
+
+The [annulus interchange record](../assets/benchmarks/jorvik-exchange.json) checks
+real CAD-derived samples, hole/outer normal orientation and exact CPU checkpoint
+continuation. The manual build checked 60 rendered pages. See the illustrated
+[Jorvik workflow](jorvik.md) for current scope and reproducible commands.

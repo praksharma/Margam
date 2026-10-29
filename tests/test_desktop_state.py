@@ -18,6 +18,8 @@ with TemporaryDirectory() as directory:
     w=Window(state_directory=directory);w.show();app.processEvents()
     w.library.tree.topLevelItem(0).setExpanded(False)
     w.properties_dock.hide();w.change('points',81)
+    owned=w.project_workspace.directory
+    (owned/'domain.jorvik').write_bytes(b'owned fixture')
     state=w.desktop_state
     assert state.autosave() and state.path.exists()
     other=Window(state_directory=directory)
@@ -28,6 +30,7 @@ with TemporaryDirectory() as directory:
     state.timer.stop();state.lock.unlock();state.lock=None
     with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
         assert other.desktop_state.offer_recovery()
+    assert (other.project_workspace.directory/'domain.jorvik').read_bytes()==b'owned fixture'
     assert other.config.points==81 and other.isWindowModified()
     assert not other.output_views.entries and other.model_path is None
     other.undo_stack.setClean();other.desktop_state.clear()

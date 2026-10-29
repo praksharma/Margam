@@ -29,15 +29,17 @@ PARAMETERS = {
     'expert_method':expert.TRAINING_FIELDS,
     'expert_recipe':expert.PARAMETERS,
 }
+PARAMETERS['jorvik_geometry']=PARAMETERS['domain']
 PARAMETERS['interior_data']=PARAMETERS['interior']
 PARAMETERS['boundary_data']=PARAMETERS['boundary']
 
 OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method','gpinn_method','rba_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS.update({key:'domain' for key in PARAMETERS['domain']})
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
 OWNERS.update({key:'boundary' for key in PARAMETERS['boundary']})
 OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS,*scale.ADAPTIVE_FIELDS,*gradient_enhanced.ADAPTIVE_FIELDS,*residual_attention.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'rba_recipe':'method','rba_method':'method','gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'jorvik_geometry':'domain','rba_recipe':'method','rba_method':'method','gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -61,6 +63,7 @@ def parameters_for(kind,config=None):
     if kind=='scale_method':result['method']='scale'
     if kind=='expert_method':result['method']='expert'
     if kind=='lra_method':result['method']='lra'
+    if kind=='jorvik_geometry':result['shape']='Prepared2D'
     if kind=='network' and result['network_seed'] is None:result['network_seed']=config.seed
     return result
 
@@ -102,7 +105,25 @@ def assemble(nodes,wires,*,require_all=True):
     if require_all and any(node.kind in PARAMETERS and node not in used for node in nodes):raise ValueError('Unconnected core blocks are not executable; remove them or wire a single supported problem.')
     config=PoissonConfig()
     for node in used:config=overlay(config,node.kind,node.settings['parameters'])
+    if domain.kind=='jorvik_geometry' and not domain.settings.get('jorvik',{}).get('sha256'):
+        raise ValueError('Update from Jorvik before training this geometry.')
     if interior.kind=='interior_data' and not config.interior_data:raise ValueError('Map a coordinate source on Interior data.')
     if boundary.kind=='boundary_data' and not config.boundary_data:raise ValueError('Map at least one named set on Boundary data.')
     if config.shape=='Prepared2D' and (interior.kind!='interior_data' or boundary.kind!='boundary_data'):raise ValueError('Prepared 2D uses Interior data and Boundary data blocks.')
+    if require_all and domain.kind=='jorvik_geometry':
+        import hashlib
+        from pathlib import Path
+        workspace=getattr(domain.scene(),'project_workspace',None)
+        if workspace is None:raise ValueError('Open the owning Margam project before training Jorvik data.')
+        from ..components.prepared_data import LIMIT
+        sources=[config.interior_data,*config.boundary_data.values()]
+        for name in {workspace().resolve(source_data['path']) for source_data in sources}:
+            path=Path(name)
+            if not path.is_file() or path.stat().st_size>LIMIT:
+                raise ValueError('Jorvik snapshot changed or is missing. Update from Jorvik again.')
+            with path.open('rb') as stream:digest=hashlib.file_digest(stream,'sha256').hexdigest()
+            if digest!=domain.settings['jorvik']['sha256']:
+                raise ValueError('Jorvik snapshot changed or is missing. Update from Jorvik again.')
+    workspace=getattr(domain.scene(),'project_workspace',None)
+    if workspace is not None:config=workspace().resolve_config(config)
     return config

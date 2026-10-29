@@ -464,7 +464,11 @@ only when the user explicitly requests including it here.
 ### Jorvik project documents
 
 - [x] Lazy temporary owned-file workspace; first-save transfer and Save As copy.
-- [ ] Jorvik geometry block owning a `.jorvik` document and `.nc` export.
-- [ ] Edit action, editor-process tracking and safe save/close while editing.
-- [ ] Explicit NetCDF update, dataset-role mapping and relative owned-file links.
-- [ ] Crash recovery for unsaved owned documents alongside model recovery.
+- [x] Jorvik geometry block owning a `.jorvik` document and `.nc` export.
+- [x] Edit action, editor-process tracking and safe save/close while editing.
+- [x] Explicit NetCDF update, dataset-role mapping and relative owned-file links.
+- [x] Crash recovery for unsaved owned documents alongside model recovery.
+
+- [ ] Import supplied evaluation datasets and mesh connectivity from Jorvik, with an explicit export contract.
+- [ ] Copy/paste owned geometry documents as independent copies.
+- [ ] Detect geometry/export freshness beyond fixed snapshot identity; users currently explicitly export and apply.

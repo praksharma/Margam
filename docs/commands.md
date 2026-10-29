@@ -207,3 +207,15 @@ python -m examples.capture_rba --overwrite
 ```
 
 See [RBA](rba-pinn.md) for fixed-point identity and initialization contracts.
+
+## Jorvik geometry integration
+
+Install a sibling Jorvik checkout in the existing environment:
+
+```sh
+uv pip install --python .venv/bin/python ../Jorvik
+CUDA_VISIBLE_DEVICES='' .venv/bin/python -m examples.jorvik_exchange --output assets/benchmarks/jorvik-exchange.json
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_jorvik --overwrite
+```
+
+See [geometry documents and NetCDF updates](jorvik.md).

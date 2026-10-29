@@ -25,6 +25,7 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
+from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
@@ -33,7 +34,7 @@ from .run_document import capture_run, save_run, load_run
 from .model_document import capture_model, decode_document, read_model, write_model, unique_keys, MAX_BYTES
 from .theme import colors, configure_theme, theme_name
 from .icons import icon
-from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData, QSize, QUrl
+from PySide6.QtCore import Qt, QPointF, QTimer, Signal, Slot, QMimeData, QSize, QUrl, QStandardPaths
 from shiboken6 import isValid
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QActionGroup, QUndoStack, QAction, QDesktopServices
 from PySide6.QtWidgets import (
@@ -354,7 +355,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(QMainWindow):
+class Window(JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -412,6 +413,7 @@ class Window(QMainWindow):
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         toolbar.addWidget(self.progress_bar)
         self.scene=Canvas()
+        self.scene.project_workspace=lambda:self.project_workspace
         self.view=CanvasView(self.scene)
         self.view.panModeChanged.connect(self.pan_action.setChecked)
         self.view.blockInsertRequested.connect(self.add_node)
@@ -637,6 +639,8 @@ class Window(QMainWindow):
         identifiers={node.identifier for node in self.scene.nodes() if node.isSelected()}
         if not identifiers:return False
         document=capture_model(self)
+        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or 'margam-owned:' in json.dumps(node['settings'])) for node in document['nodes']):
+            self.statusBar().showMessage('Copying project-owned geometry/data blocks is not supported yet.');return False
         document['nodes']=[n for n in document['nodes'] if n['id'] in identifiers]
         document['wires']=[wire for wire in document['wires'] if wire['source'] in identifiers and wire['target'] in identifiers]
         content=json.dumps(document,allow_nan=False).encode('utf-8')
@@ -701,6 +705,8 @@ class Window(QMainWindow):
 
     def confirm_discard(self):
         self.commit_inspector()
+        if self.project_workspace.busy:
+            self.statusBar().showMessage('Close Jorvik before saving, replacing or closing this project.');return False
         if self.undo_stack.isClean():return True
         answer=QMessageBox.question(self,'Unsaved model',
             'Save changes to the current model before continuing?',
@@ -716,9 +722,21 @@ class Window(QMainWindow):
         else:self.reset_template()
         return True
 
+    def model_dialog_directory(self):
+        state=getattr(self,'desktop_state',None)
+        saved=state.settings.value('project_directory','') if state is not None else ''
+        if saved and Path(saved).is_dir():return Path(saved)
+        documents=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
+        if (documents/'Margam').is_dir():return documents/'Margam'
+        return documents if documents.is_dir() else Path.home()
+
+    def remember_model_directory(self,path):
+        state=getattr(self,'desktop_state',None)
+        if state is not None:state.settings.setValue('project_directory',str(Path(path).absolute().parent))
+
     def save_model_as(self):
         if self.is_running() or self.scene.locked:return False
-        path,_=QFileDialog.getSaveFileName(self,'Save Margam model',self.model_path or 'model.margam.json',
+        path,_=QFileDialog.getSaveFileName(self,'Save Margam model',self.model_path or str(self.model_dialog_directory()/'model.margam.json'),
                                          'Margam model (*.margam.json *.json)')
         if not path:return False
         if not path.lower().endswith('.json'):
@@ -733,17 +751,22 @@ class Window(QMainWindow):
         self.commit_inspector()
         path=path or self.model_path
         if not path:return self.save_model_as()
-        try:self.project_workspace.save(path, lambda target: write_model(target,capture_model(self)))
+        document=capture_model(self)
+        try:self.project_workspace.save(path, lambda target: write_model(target,document))
         except (OSError,ValueError,TypeError) as error:
             QMessageBox.warning(self,'Model could not be saved',str(error));return False
+        self.config.interior_data=deepcopy(document['config']['interior_data'])
+        self.config.boundary_data=deepcopy(document['config']['boundary_data'])
+        self.config=self.project_workspace.resolve_config(self.config)
         self.model_path=str(Path(path).absolute())
         self.undo_stack.setClean();self._history_epoch+=1;self.update_document_title()
+        self.remember_model_directory(path)
         self.statusBar().showMessage('Saved model · '+Path(path).name)
         return True
 
     def open_model(self):
         if self.is_running() or self.scene.locked:return False
-        path,_=QFileDialog.getOpenFileName(self,'Open Margam model',str(Path(self.model_path).parent) if self.model_path else '',
+        path,_=QFileDialog.getOpenFileName(self,'Open Margam model',str(Path(self.model_path).parent) if self.model_path else str(self.model_dialog_directory()),
                                          'Margam model (*.margam.json *.json)')
         return self.load_model(path) if path else False
 
@@ -757,7 +780,7 @@ class Window(QMainWindow):
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             QMessageBox.warning(self,'Model could not be opened',str(error));return False
 
-    def replace_model(self,data,path=None):
+    def replace_model(self,data,path=None,workspace=None):
         config,records,connections=decode_document(data)
         self._evaluation_model=None;self._evaluation_checkpoint=None;self._evaluation_config=None
         staged=Canvas();nodes={}
@@ -781,10 +804,11 @@ class Window(QMainWindow):
         finally:
             self.scene.blockSignals(False);self._resetting=False
         self.project_workspace.close()
-        self.project_workspace = ProjectWorkspace(path)
+        self.project_workspace = workspace or ProjectWorkspace(path)
         self.model_path=str(Path(path).absolute()) if path else None;self._history_epoch+=1
         self.settings_changed();self.selection_changed();self.fit_model()
         self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
+        if path:self.remember_model_directory(path)
         self.statusBar().showMessage('Opened model · validate before training')
         return True
 
@@ -924,6 +948,7 @@ class Window(QMainWindow):
 
     def open_block(self,node):
         if not isValid(node) or node.scene() is not self.scene:return
+        if node.kind=='jorvik_geometry':return self.edit_jorvik(node)
         if node.kind in COMPACT_RECIPES:return self.expand_recipe(node)
         if node.kind in ('export','paraview'):return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
@@ -935,6 +960,9 @@ class Window(QMainWindow):
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        if node.kind=='jorvik_geometry':
+            for label,callback in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:
+                action=menu.addAction(label);action.setEnabled(not self.is_running() and not self.scene.locked);action.triggered.connect(lambda checked=False,fn=callback:fn(node))
         if node.kind in ('solution','comparison','export','paraview'):
             action=menu.addAction('Evaluate requested outputs');action.setEnabled(not self.is_running());action.triggered.connect(self.evaluate_trained_outputs)
         if node.kind in COMPACT_RECIPES:
@@ -1403,6 +1431,10 @@ class Window(QMainWindow):
         if self.is_running() or self.scene.locked or title not in KINDS:return
         center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
         node=Node(title,'Not configured',center.x()-85,center.y()-40)
+        if node.kind=='jorvik_geometry':
+            try:self.jorvik_document(node,create=True)
+            except (OSError,ValueError,ImportError) as error:
+                QMessageBox.warning(self,'Jorvik document could not be created',str(error));return
         if node.kind in OUTPUT_KINDS:
             node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
             node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
@@ -1503,6 +1535,7 @@ class Window(QMainWindow):
             if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
             if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
+            details['jorvik_geometry']='Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
             node.update()
@@ -1518,7 +1551,8 @@ class Window(QMainWindow):
     def config_for_node(self,node):
         try:base=assemble(self.scene.nodes(),self.scene.wires,require_all=False)
         except ValueError:base=self.config
-        return overlay(base,node.kind,node.settings['parameters']) if node.kind in PARAMETERS else deepcopy(base)
+        result=overlay(base,node.kind,node.settings['parameters']) if node.kind in PARAMETERS else deepcopy(base)
+        return self.project_workspace.resolve_config(result)
 
     def change(self,attribute,value,edit_token=None):
         node=self.parameter_owner(attribute)
@@ -1568,6 +1602,13 @@ class Window(QMainWindow):
     def edit_point_data(self,side=None,reference=None):
         if self.is_running() or self.scene.locked:return
         source=reference.settings.get('reference_data',{}) if reference is not None else self.config.boundary_data.get(side,{}) if side else self.config.interior_data
+        if source and Path(source['path']).suffix.lower()=='.nc':
+            from ..components.prepared_data import read_points
+            try:
+                points,normals,_=read_points(source,2)
+                QMessageBox.information(self,'Jorvik sample dataset',str(len(points))+' points · '+('outward normals supplied' if normals is not None else 'no normals')+'\n'+str(points[:5])+'\nChange dataset assignments with Update from Jorvik on its geometry block.')
+            except (OSError,ValueError,ImportError) as error:QMessageBox.warning(self,'Dataset could not be read',str(error))
+            return
         dialog=DataMappingDialog(len(self.config.bounds[0]),source,self,coordinate_only=reference is None and side is None,components=len(self.config.field_names) if reference is not None else 1,allow_values=reference is not None or self.config.physics=='scalar',require_values=reference is not None)
         if dialog.exec()!=DataMappingDialog.DialogCode.Accepted:return
         if reference is not None:self.change_output(reference,'reference_data',dialog.source())
@@ -1678,6 +1719,7 @@ class Window(QMainWindow):
             capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
         if node is None:
             self.form.addRow(QLabel('Select a block to edit its settings.'))
+        elif node.kind=='jorvik_geometry':self.jorvik_fields(node)
         elif node.kind=='domain':
             shape=QComboBox()
             for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('Prepared2D','Prepared 2D points'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
@@ -2127,7 +2169,7 @@ class Window(QMainWindow):
                 from ..components.training_data import read_training_sets
                 read_training_sets(self.config)
             requests=self.scene.output_requests(self.config)
-        except (ValueError,OSError) as error:
+        except (ValueError,OSError,ImportError) as error:
             message=str(error);self.validation.setText(message)
             self.log.appendPlainText('Validation: '+message)
             self.statusBar().showMessage('Model needs attention · see Properties or Messages')

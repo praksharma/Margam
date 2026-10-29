@@ -56,8 +56,8 @@ Ordinary models without owned files do not create an empty companion folder.
 A failed save retains the temporary working files so saving can be retried.
 Discarding or closing the model removes its temporary working folder.
 
-This establishes the file lifecycle for future Jorvik geometry documents
-(`.jorvik`) and NetCDF exports (`.nc`). The geometry block and automatic import
-are not implemented yet. Existing external CSV/NPZ references remain external;
-this change does not copy them or make them portable. Temporary owned files are
-not yet included in desktop crash recovery.
+[Jorvik geometry documents](../jorvik.md) and their NetCDF snapshots use this owned
+folder. Their paths are stored relative to the project workspace. Existing external
+CSV/NPZ references remain external. Desktop recovery copies owned files alongside
+the recovery model; it pauses during external editing and resumes when the editor
+closes. Close Jorvik before saving, switching projects or closing Margam.

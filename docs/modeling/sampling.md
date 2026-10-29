@@ -81,3 +81,8 @@ blocks. For non-rectangular steady scalar geometry, select **Prepared 2D points*
 and map user-named boundary sets. Assign their conditions downstream; use explicit
 evaluation points rather than a bounding-box output grid. Try the triangle under
 File → Examples. See [the illustrated guide](../training-data.md).
+
+## Geometry in an external editor
+
+Use [Jorvik geometry](../jorvik.md) for an owned geometry document and explicit
+NetCDF sample updates. The first supported workflow is planar 2D scalar physics.

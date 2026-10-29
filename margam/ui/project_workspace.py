@@ -55,3 +55,51 @@ class ProjectWorkspace:
         if self._temporary is not None:
             self._temporary.cleanup()
             self._temporary = None
+
+    def resolve(self, value):
+        if not value.startswith('margam-owned:'):
+            return value
+        relative = value.removeprefix('margam-owned:')
+        root = self.directory.resolve()
+        candidate = (root / relative).resolve()
+        if not relative or not candidate.is_relative_to(root) or candidate == root:
+            raise ValueError('Invalid project-owned file reference.')
+        return str(candidate)
+
+    def portable(self, value):
+        if not isinstance(value,str) or value.startswith('margam-owned:'):
+            return value
+        root = self.companion(self.model_path) if self.model_path else Path(self._temporary.name) if self._temporary else None
+        if root is not None and Path(value).is_absolute():
+            try: return 'margam-owned:' + Path(value).relative_to(root).as_posix()
+            except ValueError: pass
+        return value
+
+    def portable_document(self, value):
+        if isinstance(value,dict):
+            return {key:self.portable(item) if key=='path' else self.portable_document(item) for key,item in value.items()}
+        if isinstance(value,list):return [self.portable_document(item) for item in value]
+        return value
+
+    def resolve_config(self, config):
+        from copy import deepcopy
+        config = deepcopy(config)
+        if config.interior_data:config.interior_data['path']=self.resolve(config.interior_data['path'])
+        for source in config.boundary_data.values():source['path']=self.resolve(source['path'])
+        return config
+
+    def snapshot_to(self, path, writer):
+        """Recovery copy without changing the active document or its working location."""
+        source = self.companion(self.model_path) if self.model_path else Path(self._temporary.name) if self._temporary else None
+        destination = self.companion(path)
+        with tempfile.TemporaryDirectory(dir=Path(path).parent,prefix='.owned-recovery-') as folder:
+            staging=Path(folder)/'new';backup=Path(folder)/'old'
+            if source is not None and source.exists():shutil.copytree(source,staging)
+            if destination.exists():destination.rename(backup)
+            try:
+                if staging.exists():staging.rename(destination)
+                writer(path)
+            except Exception:
+                if destination.exists():shutil.rmtree(destination)
+                if backup.exists():backup.rename(destination)
+                raise

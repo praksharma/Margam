@@ -1,0 +1,23 @@
+{
+  "case": "Jorvik annulus / steady scalar Laplace",
+  "device": "cpu",
+  "source_axes": [
+    0,
+    1
+  ],
+  "counts": {
+    "interior": 97,
+    "inner": 17,
+    "outer": 29
+  },
+  "outward_normals_verified": true,
+  "updates": 4,
+  "exact_same_device_resume": true,
+  "final_loss": {
+    "pde": 0.006794853135943413,
+    "inner": 0.32072722911834717,
+    "outer": 0.1919429451227188,
+    "total": 0.26312994956970215
+  },
+  "scope": "Interchange and training correctness check, not an accuracy benchmark."
+}

@@ -143,7 +143,14 @@
 
 - Scale high-Re cavity entries are independent starting presets, not solved benchmarks or a curriculum. Keep ν and default γ at 1/Re for unit lid speed/length and display Re from current parameters. KdV uses third-order dispersion and periodic matching through second derivative; KS fourth-order coefficient is 100/16⁴. Preserve physical-time exports and label borrowed tuning settings.
 
-- GeoSampler integration is on hold until the user explicitly asks to resume it.
+- Jorvik geometry documents are explicitly enabled for steady planar 2D scalar
+  imported samples. Keep the editor in a separate process using the root environment.
+  New documents use `.jorvik`; exports use `domain.nc` beside `domain.jorvik`.
+  Apply NetCDF updates explicitly with dataset-role selection, stable region IDs,
+  verified planar conormals and immutable owned snapshots. Never assign PDE/BC
+  physics from labels or infer mesh topology. Preserve relative owned references,
+  Save As isolation, owned-file recovery and the editor lock during save/close.
+  Broader GeoSampler/3D integration remains deferred.
 - New Scale examples use notebook-specific affine inputs and a trainable sine
   projection in the separate Affine Fourier NN architecture. Preserve physical
   units by default, keep normalization explicit, and do not silently migrate old
