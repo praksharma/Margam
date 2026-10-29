@@ -87,6 +87,12 @@
   interpolation. Supplied clouds export as VTU vertices and physical-time PVD;
   mesh connectivity, units/region metadata and GeoSampler integration remain deferred.
 
+- Prepared 2D uses separate Interior data and Boundary data blocks, with coordinate
+  bounds for scaling only. Keep free boundary labels and target/operator physics
+  separate. Require explicit unit outward normals for normal-dependent conditions
+  and explicit evaluation points; never fill an unknown domain with box samples.
+  The current non-rectangular contract is steady planar scalar baseline/LRA/fixed-SA.
+
 - Residual samplers own initial points and schedules; trainer hooks perform scoring.
   Preserve inverse-probability MSE for importance sampling and checkpoint the active
   set/history. Keep BCs/export grids separate. Reject SA masks and imported-domain

@@ -72,3 +72,12 @@ remain [planned work](../todo.md#future-evaluation-and-export-at-supplied-points
 For prediction at imported coordinates, use the separate
 [Evaluation points and Reference data blocks](../evaluation-points.md). These
 leave the interior/boundary training samplers unchanged.
+
+
+## Separate prepared training sources
+
+**Sampling → Interior data / Boundary data** provide dedicated CSV/NPZ source
+blocks. For non-rectangular steady scalar geometry, select **Prepared 2D points**
+and map user-named boundary sets. Assign their conditions downstream; use explicit
+evaluation points rather than a bounding-box output grid. Try the triangle under
+File → Examples. See [the illustrated guide](../training-data.md).

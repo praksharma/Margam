@@ -128,6 +128,7 @@ class PoissonConfig:
 
     @property
     def sides(self):
+        if self.shape=='Prepared2D':return tuple(self.boundary_data)
         return ('left','right','bottom') if self.is_time_dependent else ('left', 'right') if self.shape == 'Interval' else ('left', 'right', 'bottom', 'top')
 
     @property
@@ -149,9 +150,11 @@ class PoissonConfig:
         if self.interior_data:
             validate_mapping(self.interior_data)
             if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
-        if not isinstance(self.boundary_data,dict) or set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown imported boundary set.')
+        from ..components.training_data import valid_boundary_name
+        if not isinstance(self.boundary_data,dict) or len(self.boundary_data)>64 or any(not valid_boundary_name(name) for name in self.boundary_data) or self.shape!='Prepared2D' and set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown or invalid imported boundary set.')
+        if self.shape=='Prepared2D' and (not self.interior_data or not self.boundary_data):raise ValueError('Prepared 2D requires interior data and at least one named boundary set.')
         for source in self.boundary_data.values():validate_mapping(source)
-        if self.shape not in ('Interval', 'Rectangle','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D'):
+        if self.shape not in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D'):
             raise ValueError('Choose Interval, Rectangle or 1D space–time.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
@@ -224,6 +227,7 @@ class PoissonConfig:
             from .expert_examples import validate_case
             validate_case(self);return
         if self.shape in ('SpaceTime2D','Channel2D','ChannelTime2D'):raise ValueError('This geometry currently requires its concrete Expert example preset.')
+        if self.shape=='Prepared2D' and (self.physics!='scalar' or self.method not in ('baseline','lra','self_adaptive') or self.is_paper_case):raise ValueError('Prepared 2D currently supports scalar baseline, LRA and fixed-point SA-PINN; box transforms and fresh samplers do not apply.')
         if self.physics=='incompressible_2d':
             from .incompressible_flow import validate_flow_config
             validate_flow_config(self);return
@@ -258,6 +262,10 @@ class PoissonConfig:
 def sample_problem(config):
     """Return interior and named boundary coordinates, before assigning physics."""
     config.validate_sampling()
+    if config.shape=='Prepared2D':
+        from ..components.training_data import read_training_sets
+        interior,boundaries=read_training_sets(config,check_physics=False)
+        return interior[0].tolist(),{name:rows[0].tolist() for name,rows in boundaries.items()}
     lower, upper = config.bounds
     interior = read_points(config.interior_data,len(lower))[0].tolist() if config.interior_data else sample_box(lower, upper, config.points, config.sampling, config.seed)
     if config.shape == 'Interval':
@@ -307,13 +315,18 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     from ..methods import PINN
     from ..nn.factory import build_network
     from ..utils import laplacian
-    interior, boundaries = sample_problem(config)
+    imported_sets=None
+    if config.shape=='Prepared2D':
+        from ..components.training_data import read_training_sets
+        imported_interior,imported_sets=read_training_sets(config)
+        interior=imported_interior[0].tolist();boundaries={name:rows[0].tolist() for name,rows in imported_sets.items()}
+    else:interior, boundaries = sample_problem(config)
     torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
     normals = {'left': (-1.,0.), 'right': (1.,0.), 'bottom': (0.,-1.), 'top': (0.,1.)}
     constraints = [];normal_identities={}
     for side, rows in boundaries.items():
-        imported=read_points(config.boundary_data[side],len(config.bounds[0])) if config.boundary_data.get(side) else None
-        normal=normals[side][:len(rows[0])]
+        imported=imported_sets[side] if imported_sets is not None else read_points(config.boundary_data[side],len(config.bounds[0])) if config.boundary_data.get(side) else None
+        normal=normals.get(side,(0.,0.))[:len(rows[0])]
         if imported is not None:
             if imported[1] is not None:normal_identities[side]=normal_fingerprint(imported[1])
             normal=imported[1].tolist() if imported[1] is not None else normal

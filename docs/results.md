@@ -325,3 +325,14 @@ checkpoint predictions agree with the trained model, with zero evaluation
 optimizer updates and unchanged weights/history. These are workflow checks,
 not paper reproduction or tuned accuracy results. See the
 [illustrated guide](evaluation-points.md) for exact mappings and screenshots.
+
+
+## Prepared triangular training domain
+
+The [CPU](../assets/benchmarks/training-data-cpu.json) and
+[CUDA](../assets/benchmarks/training-data-cuda.json) records use 55 interior points
+and three 12-row boundary sets for Δu−4=0 on a triangle, with mixed imported
+Dirichlet/Neumann data. Each records 100 initial plus two resumed updates, exact
+same-device continuation, source hashes and supplied-point CSV/VTU export. The
+short runs are untuned workflow checks. See [the guide](training-data.md) for the
+manufactured reference, errors, screenshots and reproducible commands.

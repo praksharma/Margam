@@ -406,3 +406,18 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.
 - [ ] GeoSampler-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
 - [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.
+
+
+## Prepared training-data blocks
+
+- [x] Add separate Interior data and Boundary data blocks, preserving old inspector imports.
+- [x] Add Prepared 2D coordinate bounds and arbitrary named scalar boundary sets, with
+  optional mapped targets/normals and downstream Dirichlet/Neumann/Custom assignment.
+- [x] Reject missing/out-of-bounds data, missing required normals, conflicting targets,
+  unsupported samplers/transforms and implicit bounding-box evaluation grids.
+- [x] Add a mixed-BC triangle example, CPU/CUDA continuation/export evidence, actual
+  UI screenshots and [the illustrated guide](training-data.md).
+- [ ] Extend prepared geometry to concrete coupled/transient use cases when their
+  point-set, gauge and initial/boundary contracts are specified.
+- [ ] Wire prepared GeoSampler manifests into graphs automatically; preserve mesh
+  connectivity, units and region metadata through an explicit contract.

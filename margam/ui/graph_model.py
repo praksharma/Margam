@@ -25,11 +25,15 @@ PARAMETERS = {
     'expert_method':expert.TRAINING_FIELDS,
     'expert_recipe':expert.PARAMETERS,
 }
+PARAMETERS['interior_data']=PARAMETERS['interior']
+PARAMETERS['boundary_data']=PARAMETERS['boundary']
+
 OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method',*COMPACT_RECIPES) for attribute in attributes}
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
+OWNERS.update({key:'boundary' for key in PARAMETERS['boundary']})
 OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS,*scale.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -41,7 +45,7 @@ def encode_parameter(attribute,value):
 def parameters_for(kind,config=None):
     config=config or PoissonConfig()
     result={key:encode_parameter(key,getattr(config,key)) for key in PARAMETERS.get(kind,())}
-    if kind=='interior':result['adaptive_sampling']={}
+    if kind in ('interior','interior_data'):result['adaptive_sampling']={}
     if kind in ('rar','importance'):
         from ..components.adaptive_sampling import sampling_defaults
         if result['adaptive_sampling'].get('method')!=kind:result['adaptive_sampling']=sampling_defaults(kind)
@@ -66,6 +70,9 @@ def overlay(config,kind,parameters):
         from ..templates.predefined_pdes import resolve_predefined
         resolve_predefined(config)
     elif kind=='pde':config.pde_preset=''
+    if config.shape=='Prepared2D':
+        for name in config.sides:
+            config.bc_types.setdefault(name,'Dirichlet');config.bc_values.setdefault(name,0.)
     return config
 
 
@@ -89,4 +96,7 @@ def assemble(nodes,wires,*,require_all=True):
     if require_all and any(node.kind in PARAMETERS and node not in used for node in nodes):raise ValueError('Unconnected core blocks are not executable; remove them or wire a single supported problem.')
     config=PoissonConfig()
     for node in used:config=overlay(config,node.kind,node.settings['parameters'])
+    if interior.kind=='interior_data' and not config.interior_data:raise ValueError('Map a coordinate source on Interior data.')
+    if boundary.kind=='boundary_data' and not config.boundary_data:raise ValueError('Map at least one named set on Boundary data.')
+    if config.shape=='Prepared2D' and (interior.kind!='interior_data' or boundary.kind!='boundary_data'):raise ValueError('Prepared 2D uses Interior data and Boundary data blocks.')
     return config

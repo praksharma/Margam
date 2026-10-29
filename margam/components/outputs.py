@@ -75,6 +75,7 @@ def evaluate_outputs(model, config, requests):
 def evaluation_points(config,count):
     """Bounded regular evaluation grids; discard solid-cylinder locations."""
     import itertools
+    if config.shape=='Prepared2D':raise ValueError('Prepared geometry requires an Evaluation points connection; a bounding-box grid is not its domain.')
     lower,upper=config.bounds
     if count**len(lower)>100000:raise ValueError('Evaluation exceeds 100000 locations; reduce the per-axis resolution.')
     axes=[[a+i*(b-a)/(count-1) for i in range(count)] for a,b in zip(lower,upper)]

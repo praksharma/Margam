@@ -509,6 +509,7 @@ class Window(QMainWindow):
         self.examples_menu.addAction(self.load_action)
         self.examples_menu.addAction(self.heat_action)
         self.flow_action=self.examples_menu.addAction('2D incompressible flow');self.flow_action.triggered.connect(lambda:self.request_template('flow'))
+        self.prepared_example_action=self.examples_menu.addAction('2D prepared triangle · imported data');self.prepared_example_action.triggered.connect(self.request_training_data_example)
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
         self.evaluation_example_action=self.examples_1d_menu.addAction('Supplied evaluation points · 1D');self.evaluation_example_action.triggered.connect(self.request_evaluation_example)
@@ -1219,6 +1220,41 @@ class Window(QMainWindow):
         self.statusBar().showMessage(example.label+' · '+example.description+' · views remain closed')
         return True
 
+    def request_training_data_example(self):
+        if not self.is_running() and self.confirm_discard():self.load_training_data_example()
+
+    def load_training_data_example(self):
+        if self.is_running() or self.scene.locked:return False
+        from ..templates.prepared_triangle import prepared_triangle_config
+        root=Path(__file__).resolve().parents[2]
+        directory=Path('assets/training/triangle') if Path.cwd()==root else root/'assets/training/triangle'
+        self.reset_template();self._resetting=True;self.config=prepared_triangle_config(directory)
+        for old_kind,title in [('interior','Interior data'),('boundary','Boundary data')]:
+            old=next(n for n in self.scene.nodes() if n.kind==old_kind)
+            new=self.make_node(title,'',old.pos().x(),old.pos().y())
+            for wire in list(self.scene.wires):
+                if wire.source.parentItem() is old or wire.target.parentItem() is old:
+                    self.scene.wires.remove(wire);self.scene.removeItem(wire)
+                    if wire.source.parentItem() is old:self.scene.connect_nodes(new,wire.target.parentItem(),wire.target.name)
+                    else:self.scene.connect_nodes(wire.source.parentItem(),new,wire.target.name)
+            self.scene.removeItem(old)
+        for node in self.scene.nodes():
+            if node.kind in PARAMETERS:node.settings['parameters']=parameters_for(node.kind,self.config)
+        method=next(n for n in self.scene.nodes() if n.kind=='method')
+        monitor=self.add_node('Training Monitor');monitor.setPos(1000,-80);self.scene.connect_nodes(method,monitor)
+        comparison=self.add_node('Comparison');comparison.setPos(1000,130);self.scene.connect_nodes(method,comparison)
+        reference=self.add_node('Reference');reference.setPos(730,530);reference.settings['reference_expression']='x*x+y*y';self.scene.connect_nodes(reference,comparison)
+        points=self.add_node('Evaluation points');points.setPos(730,370)
+        points.settings['source_data']=dict(path=str(directory/'evaluation.csv'),coordinates='x,y',values='',ids='point_id');self.scene.connect_nodes(points,comparison)
+        for i,title in enumerate(('CSV Export','ParaView Export')):
+            output=self.add_node(title);output.setPos(1240,130+i*150);self.scene.connect_nodes(comparison,output)
+        self._resetting=False;self.scene.clearSelection()
+        next(n for n in self.scene.nodes() if n.kind=='boundary_data').setSelected(True)
+        self.settings_changed();self.validate_model();self.fit_model()
+        self.undo_stack.clear();self.undo_stack.setClean();self.update_document_title()
+        self.statusBar().showMessage('Prepared triangle · named imported sets · mixed scalar conditions · supplied evaluation points · views stay closed')
+        return True
+
     def request_evaluation_example(self):
         if not self.is_running() and self.confirm_discard():self.load_evaluation_example()
 
@@ -1427,8 +1463,9 @@ class Window(QMainWindow):
             details={'domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
                      'importance':f'{actual} points · importance',
+                     'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 else 2} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
@@ -1441,7 +1478,7 @@ class Window(QMainWindow):
                      'evaluation_points':'Supplied coordinates / IDs','reference_data':'Supplied reference fields',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent or c.is_paper_case else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if c.pde_preset=='expert_cavity':details['predefined_pde']=f'Lid-driven cavity · Re={abs(c.bc_values["top"])*(c.y_max-c.y_min)/c.viscosity:g}' if c.viscosity>0 else 'Lid-driven cavity · invalid viscosity'
-            if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder'}.get(c.shape,c.shape)
+            if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder','Prepared2D':'Coordinate bounds'}.get(c.shape,c.shape)
             if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
             if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
@@ -1495,6 +1532,17 @@ class Window(QMainWindow):
         except ValueError:config=deepcopy(self.config)
         dialog=EvaluationMappingDialog(config,node.settings.get('source_data',{}),self,reference=node.kind=='reference_data')
         if dialog.exec()==dialog.DialogCode.Accepted:self.change_output(node,'source_data',dialog.source());self.selection_changed()
+
+    def add_boundary_data_set(self):
+        if self.is_running():return
+        if len(self.config.boundary_data)>=64:self.validation.setText('At most 64 boundary sets are supported.');return
+        if self.config.shape=='Prepared2D':name,ok=QInputDialog.getText(self,'Add boundary point set','Set name (letters, digits, underscore or hyphen):')
+        else:name,ok=QInputDialog.getItem(self,'Add boundary point set','Named side:',list(self.config.sides),0,False)
+        if not ok:return
+        from ..components.training_data import valid_boundary_name
+        if not valid_boundary_name(name) or name in self.config.boundary_data:
+            self.validation.setText('Use a unique set name starting with a letter; pde and total are reserved.');return
+        self.edit_point_data(name)
 
     def edit_point_data(self,side=None,reference=None):
         if self.is_running() or self.scene.locked:return
@@ -1611,7 +1659,7 @@ class Window(QMainWindow):
             self.form.addRow(QLabel('Select a block to edit its settings.'))
         elif node.kind=='domain':
             shape=QComboBox()
-            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
+            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('Prepared2D','Prepared 2D points'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
             shape.setCurrentIndex(shape.findData(self.config.shape));shape.currentIndexChanged.connect(lambda index,w=shape:self.change('shape',w.itemData(index)))
             self.form.addRow('Domain',shape)
             self.field('x minimum','x_min');self.field('x maximum','x_max')
@@ -1621,7 +1669,27 @@ class Window(QMainWindow):
                 self.field('t start','t_min');self.field('t end','t_max')
             if self.config.has_obstacle:
                 self.field('Cylinder centre x','cylinder_x');self.field('Cylinder centre y','cylinder_y');self.field('Cylinder radius','cylinder_radius',minimum=.000001,maximum=100000)
-            note=QLabel('Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel('Coordinate bounds for scaling and validation only. Prepared 2D uses supplied training and evaluation points; no rectangle is filled.' if self.config.shape=='Prepared2D' else 'Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
+        elif node.kind=='interior_data':
+            source=self.config.interior_data
+            note=QLabel(Path(source['path']).name if source else 'No collocation source mapped.');note.setWordWrap(True);self.form.addRow(note)
+            button=QPushButton('Map / preview interior coordinates…');button.clicked.connect(lambda:self.edit_point_data());self.form.addRow(button)
+            if source:
+                clear=QPushButton('Clear interior source');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
+            self.form.addRow(QLabel('Fixed supplied coordinates; sampler counts and seeds do not resample these rows.'))
+        elif node.kind=='boundary_data':
+            choice=QComboBox();choice.setObjectName('imported_boundary_set')
+            for name in self.config.boundary_data:choice.addItem(name)
+            side=getattr(self,'boundary_side','')
+            if side in self.config.boundary_data:choice.setCurrentText(side)
+            side=choice.currentText()
+            choice.currentTextChanged.connect(self.select_boundary_side);self.form.addRow('Named set',choice)
+            add=QPushButton('Add named point set…');add.clicked.connect(self.add_boundary_data_set);self.form.addRow(add)
+            if side:
+                label=QLabel(Path(self.config.boundary_data[side]['path']).name);label.setWordWrap(True);self.form.addRow('Source',label)
+                button=QPushButton('Map / preview this set…');button.clicked.connect(lambda checked=False,name=side:self.edit_point_data(name));self.form.addRow(button)
+                remove=QPushButton('Remove this set');remove.clicked.connect(lambda checked=False,name=side:self.clear_point_data(name));self.form.addRow(remove)
+            note=QLabel('Each set maps coordinates, optional outward unit normals and optional scalar targets. Assign Dirichlet, Neumann or Custom in Boundary condition. Prepared 2D allows user-named sets; built-in domains retain their existing side names.');note.setWordWrap(True);self.form.addRow(note)
         elif role(node.kind)=='interior':
             if node.kind=='interior':
                 imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
@@ -1758,9 +1826,12 @@ class Window(QMainWindow):
                     row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
                     combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types[side])
                     value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
+                    mapped_values=self.config.boundary_data.get(side,{}).get('values','')
+                    value.setEnabled(not mapped_values)
                     combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
                     value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
                     layout.addWidget(combo);layout.addWidget(value);self.form.addRow(self.config.side_label(side).capitalize(),row)
+                    if mapped_values:self.form.addRow(self.config.side_label(side)+' target source',QLabel('Imported values: '+mapped_values))
                     target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
                     target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
@@ -1989,7 +2060,11 @@ class Window(QMainWindow):
     def validate_model(self):
         try:
             self.config=self.scene.compile_config()
-            self.config.validate();requests=self.scene.output_requests(self.config)
+            self.config.validate()
+            if self.config.shape=='Prepared2D':
+                from ..components.training_data import read_training_sets
+                read_training_sets(self.config)
+            requests=self.scene.output_requests(self.config)
         except (ValueError,OSError) as error:
             message=str(error);self.validation.setText(message)
             self.log.appendPlainText('Validation: '+message)

@@ -84,3 +84,9 @@ for _kind in ('solution','comparison','export','paraview'):
     INPUTS[_kind]=INPUTS[_kind]+(PortSpec('points','Evaluation points (optional)','evaluation_points'),)
 for _kind in ('export','paraview'):
     INPUTS[_kind]=INPUTS[_kind]+(PortSpec('comparison','Compared fields (optional)','comparison_data'),)
+
+# Prepared training sources replace their corresponding built-in samplers.
+INPUTS['interior_data']=INPUTS['interior']
+INPUTS['boundary_data']=INPUTS['boundary']
+OUTPUTS['interior_data']=OUTPUTS['interior']
+OUTPUTS['boundary_data']=OUTPUTS['boundary']

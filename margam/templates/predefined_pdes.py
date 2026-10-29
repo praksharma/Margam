@@ -15,9 +15,9 @@ class PDEPreset:
 PREDEFINED_PDES = {
     'kdv_1d':PDEPreset('Korteweg–de Vries · 1D + time','uₜ + c u uₓ + ν uₓₓₓ = 0',('SpaceTime1D',),False),
     'burgers_1d': PDEPreset('Burgers · 1D + time','uₜ + u uₓ − ν uₓₓ = 0',('SpaceTime1D',),False),
-    'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle')),
-    'helmholtz': PDEPreset('Helmholtz', 'Δu + c u = f(x,y), c = k²', ('Interval','Rectangle')),
-    'reaction_diffusion': PDEPreset('Reaction–diffusion', '−Δu + c u = f(x,y)', ('Interval','Rectangle')),
+    'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle','Prepared2D')),
+    'helmholtz': PDEPreset('Helmholtz', 'Δu + c u = f(x,y), c = k²', ('Interval','Rectangle','Prepared2D')),
+    'reaction_diffusion': PDEPreset('Reaction–diffusion', '−Δu + c u = f(x,y)', ('Interval','Rectangle','Prepared2D')),
     'advection_diffusion_1d': PDEPreset('Advection–diffusion · 1D', 'c uₓ − ν uₓₓ = f(x)', ('Interval',)),
     'incompressible_2d': PDEPreset('Steady incompressible flow · 2D', 'Momentum x/y + ∂u/∂x + ∂v/∂y = 0', ('Rectangle',),False),
 }

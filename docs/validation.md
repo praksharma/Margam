@@ -274,3 +274,16 @@ The [CPU record](../assets/benchmarks/evaluation-points-cpu.json) and
 the four-point example after 100 updates, unchanged weights/history and no
 optimizer updates for evaluation. These validate implementation and data flow,
 not solution accuracy. See the [illustrated guide](evaluation-points.md).
+
+
+## Prepared training-data blocks
+
+`tests/test_training_data.py` checks manufactured triangle residuals and imported
+Dirichlet/Neumann operators, explicit outward normals, coordinate bounds, NPZ
+mappings, unsupported combinations, document validation and exact CPU continuation
+for baseline/LRA/fixed-SA. Flipped normals invalidate the checkpoint identity.
+`tests/test_training_data_ui.py` checks separate source inspectors, named-set
+selection, validation before worker startup, model/run persistence, resume, undo
+and offline archived export. CPU/CUDA evidence and actual UI captures are linked
+in [the prepared-data guide](training-data.md). These are implementation checks,
+not a solution-accuracy benchmark.

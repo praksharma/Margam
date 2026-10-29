@@ -241,3 +241,12 @@ Evaluation points and Reference data are separate CSV/NPZ source blocks. They
 feed output requests without changing training samplers. Comparison can feed
 exports with aligned reference/error values. Exact coordinates, row order and
 integer/text IDs are preserved. See [data mappings, limits and export contracts](evaluation-points.md).
+
+
+## Prepared training sources
+
+Interior data and Boundary data replace the corresponding built-in sampler blocks
+using the same typed PDE-point and boundary-set outputs. Prepared 2D uses its box
+only for coordinate scaling/validation and reads all actual training locations.
+Its named scalar sets require explicit normals for normal-dependent operators;
+targets/types stay separate from the mapping. See [scope and contracts](training-data.md).

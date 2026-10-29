@@ -1,0 +1,17 @@
+{
+  "scope": "Actual isolated prepared triangle UI, named-set mapping and downstream scalar boundary controls; no accuracy claim.",
+  "captures": {
+    "blocks": {
+      "file": "manual-training-data-blocks.png",
+      "sha256": "114607dc758fefe8993cc00266246bd57e0daf51c698195006eedd8ccf1029ce"
+    },
+    "mapping": {
+      "file": "manual-training-data-mapping.png",
+      "sha256": "2cb371762050561194eeeacf2c9c13451da678b9dd4c34eb588e74051bcd28d9"
+    },
+    "conditions": {
+      "file": "manual-training-data-conditions.png",
+      "sha256": "9dc678db1993150f69a0e8e15bd574f9ef186d5735fa26e011044062539a11a6"
+    }
+  }
+}

@@ -173,3 +173,15 @@ python -m examples.capture_evaluation --overwrite
 
 These validate supplied-point prediction/export and capture the actual isolated
 UI. See [the guide](evaluation-points.md); CUDA requires an available CUDA device.
+
+
+## Prepared non-rectangular training example
+
+```bash
+python -m examples.training_data --device cpu --output-dir /tmp/margam-training-data-cpu
+python -m examples.training_data --device cuda --output-dir /tmp/margam-training-data-cuda
+python -m examples.capture_training_data --overwrite
+```
+
+See [Prepared training data](training-data.md) for mappings, mixed conditions and
+current scope. CUDA requires an available CUDA device.

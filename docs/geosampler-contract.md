@@ -22,8 +22,8 @@ The destination must be new. It contains `dataset-000.npz`, etc., plus `mapping.
 with original labels, source hash, source axes, plane coordinate and unchanged units
 metadata. Map each prepared dataset explicitly in Margam: `points` for coordinates,
 `normals` only when present, and no target values until physics is assigned. The
-current scalar/flow builder uses named boundary slots; their labels do not infer
-CAD topology. Arbitrary Dirichlet point sets do not need normals. Normal-dependent
+built-in scalar/flow builder uses named side slots; Prepared 2D scalar models
+accept user-named sets. Neither naming scheme infers CAD topology. Arbitrary Dirichlet point sets do not need normals. Normal-dependent
 operators on off-box sets require explicit unit normals with outward orientation
 supplied by the data provider. No units or normal sign is inferred.
 
@@ -37,3 +37,13 @@ Full 3D coordinate/field support, non-axis-aligned reductions, NetCDF manifests,
 automatic region-to-BC linking and live CAD selection remain deferred extensions.
 The implemented planar bridge is tested against the upstream schema contract;
 no claim of validating every CAD model or upstream release is made.
+
+
+## Use prepared labels in a non-rectangular scalar model
+
+The [Interior data and Boundary data blocks](training-data.md) now accept the
+prepared coordinate/normal arrays. Choose Prepared 2D points, map the interior
+file, add each selected boundary label, then assign scalar conditions downstream.
+Labels have no inferred normal direction; normal-dependent conditions require
+explicit outward unit arrays. The existing preparation helper remains separate
+from graph editing; automatic mapping.json-to-graph wiring is not implemented.

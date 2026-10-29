@@ -583,3 +583,14 @@ output-only edits can reuse trained weights without optimization. Supplied cloud
 use VTU vertex cells and transient PVD frames with explicit physical times.
 Mesh topology, unit/region metadata and direct GeoSampler integration remain future
 work. This milestone does not implement the parameter-study GUI or HPC runner.
+
+
+### Prepared training data: planar scalar milestone
+
+[Interior data and Boundary data](training-data.md) now replace built-in samplers
+with explicit CSV/NPZ sources. Prepared 2D uses coordinate bounds, user-named sets
+and downstream condition assignment, with explicit normals where needed. A
+triangular mixed-BC example exercises training, checkpoint continuation and exact
+supplied-point export. Unknown-domain evaluation requires explicit points. This
+is not direct CAD/mesh import, transient prepared flow or automatic GeoSampler
+manifest wiring. Existing basic interval/rectangle sampling stays available.

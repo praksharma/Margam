@@ -3,7 +3,7 @@
 # Category, then (display title, existing template kind).
 BLOCK_CATEGORIES = {
     'Geometry': (('Rectangle', 'domain'),),
-    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
+    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
     'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe')),
@@ -34,6 +34,8 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'interior_data':('Prepared CSV/NPZ coordinates','Explicit fixed collocation points. Replaces Interior sampler; uses coordinate bounds. No normals, target values or automatic resampling.'),
+    'boundary_data':('Named CSV/NPZ point sets, optional outward normals and values','Replaces Boundary points. Assign physics downstream in Boundary condition. Prepared 2D permits user-named scalar boundary sets; no CAD import or inferred normals.'),
     'evaluation_points':('CSV/NPZ coordinates and optional point IDs','Supplied evaluation rows only. Preserve original coordinates, row order and integer/text IDs. Connect to result blocks; never used for training. No implicit extrapolation or geometry inference.'),
     'reference_data':('CSV/NPZ reference fields and matching coordinates/IDs','Connect to Comparison. Map fields in model order; exact coordinate/ID alignment, no interpolation. Does not modify the PDE or training conditions.'),
     'scale_recipe':('Sequential residual correction · compact or expanded','Replaceable network and Scale trainer. Paper equations (4), (6), (7); previous optimizer iterate, not an ensemble. Scalar or standard u/v/p physics; no paper-specific architecture or frequency annealing.'),

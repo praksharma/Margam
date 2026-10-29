@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -47,7 +47,7 @@ def decode_document(data):
         from ..components.scale_config import scale_defaults
         c=dict(c,scale_settings=c.get('scale_settings',scale_defaults()))
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
-    require(c['shape'] in ('Interval', 'Rectangle','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
+    require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
         require(number(c[key]), f'{key} must be finite numeric data.')
     for key,lower,upper in (('points',1,100000),('boundary_points',1,10000),
@@ -56,16 +56,17 @@ def decode_document(data):
     require(isinstance(c['layers'], (list,tuple)) and len(c['layers']) <= 256 and all(type(v) is int and abs(v) <= 1000000 for v in c['layers']), 'Invalid network layers.')
     from ..components.network_config import network_options
     network_options(c['network_type'],c['network_options'])
+    from ..components.training_data import valid_boundary_name
     for key in ('bc_types','bc_values'):
-        require(isinstance(c[key],dict) and set(c[key]) == SIDES, 'Boundary settings need all four named sides.')
+        require(isinstance(c[key],dict) and SIDES<=set(c[key]) and len(c[key])<=68 and all(valid_boundary_name(name) for name in c[key]), 'Invalid named boundary settings.')
     require(all(v in ('Dirichlet','Neumann','Custom') for v in c['bc_types'].values()), 'Unsupported boundary condition.')
     require(all(number(v) for v in c['bc_values'].values()), 'Boundary targets must be finite.')
     require(isinstance(c['pde_expression'],str) and len(c['pde_expression'])<=512, 'Invalid PDE expression.')
     for key in ('bc_targets','bc_operators'):
-        require(isinstance(c[key],dict) and set(c[key])<=SIDES and all(isinstance(v,str) and len(v)<=512 for v in c[key].values()), 'Invalid boundary expression data.')
+        require(isinstance(c[key],dict) and len(c[key])<=68 and all(valid_boundary_name(name) for name in c[key]) and all(isinstance(v,str) and len(v)<=512 for v in c[key].values()), 'Invalid boundary expression data.')
     from ..components.prepared_data import validate_mapping
     if c['interior_data']:validate_mapping(c['interior_data'])
-    require(isinstance(c['boundary_data'],dict) and set(c['boundary_data'])<=SIDES,'Invalid imported boundary mappings.')
+    require(isinstance(c['boundary_data'],dict) and len(c['boundary_data'])<=64 and all(valid_boundary_name(name) for name in c['boundary_data']),'Invalid imported boundary mappings.')
     for source in c['boundary_data'].values():validate_mapping(source)
     require(c['network_seed'] is None or type(c['network_seed']) is int and 0<=c['network_seed']<2**31,'Invalid network seed.')
     require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale'),'Unknown PINN method.')
@@ -155,10 +156,10 @@ def decode_document(data):
             if node['kind'] in ('rar','importance'):
                 validate_adaptive_sampling(parameters['adaptive_sampling'])
                 require(parameters['adaptive_sampling'].get('method')==node['kind'],'Adaptive sampler block/method mismatch.')
-            if node['kind']=='interior':require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
+            if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':20,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':21,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -176,7 +177,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    return {'format':'margam-model', 'version':20, 'config':asdict(window.config),
+    return {'format':'margam-model', 'version':21, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

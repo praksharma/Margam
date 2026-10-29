@@ -32,7 +32,7 @@ try:
     w.scene.clearSelection();compact.setSelected(True);app.processEvents()
     choice=w.property_scroll.findChild(QComboBox,'loss_formulation');assert choice.currentData()=='integral'
     w.expand_recipe(compact);assert asdict(w.scene.compile_config())==before
-    doc=capture_model(w);assert doc['version']==20;decode_document(doc)
+    doc=capture_model(w);assert doc['version']==21;decode_document(doc)
     with TemporaryDirectory() as directory:
         p=Path(directory)/'integral.json';assert w.save_model(p) and w.load_model(p)
         assert asdict(w.scene.compile_config())==before

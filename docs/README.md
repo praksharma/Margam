@@ -74,3 +74,5 @@ validation evidence and results index together. Do not mark a proposed feature a
 implemented or a regression threshold as a measured benchmark result.
 
 - [Evaluate supplied points](evaluation-points.md): separate coordinate/reference blocks, preserved IDs, pointwise errors and VTU/PVD export.
+
+- [Prepared training data](training-data.md): separate interior/boundary sources, free planar labels and a triangular mixed-BC example.

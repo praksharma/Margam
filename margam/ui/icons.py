@@ -79,4 +79,7 @@ class GlyphEngine(QIconEngine):
         return result
 
 
+PATHS['interior_data']=PATHS['evaluation_points']
+PATHS['boundary_data']=PATHS['reference_data']
+
 def icon(name):return QIcon(GlyphEngine(name))
