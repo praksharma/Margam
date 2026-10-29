@@ -50,6 +50,28 @@ outer-boundary points. Dataset roles are explicit; labels do not decide physics.
 *The geometry block opens its document in the external editor. This capture applies
 an actual annulus export to a newly created block; its editor document starts empty.*
 
+## Optional existing files
+
+Both browse buttons are optional. A new block still starts with an empty document
+and defaults to `domain.nc` beside it.
+
+- **Browse existing project… (optional)** accepts `.jorvik` or legacy `.gsproj`.
+  Margam validates and copies it into this project's owned files. Editing this copy
+  does not overwrite the original. Choosing a different document requires an
+  explicit sample update before training and resets any custom export selection.
+- **Browse sample export… (optional)** accepts an existing Jorvik `.nc` file with
+  any filename. Margam validates and copies it into its owned files. **Update from
+  Jorvik** then uses this selected copy, with the usual dataset-role mapping.
+  Selecting the file alone does not apply its datasets. To pick up later external
+  changes, browse the export again.
+- **Use export beside geometry document** clears the optional export override and
+  restores the adjacent `domain.nc` default.
+
+Both selections are undoable, survive Save/Save As and recovery, and move with the
+project companion folder. Cancelling a picker leaves the block unchanged. The
+named BC sets remain separate for physics assignment; per-boundary loss weight
+controls are separate future work.
+
 ## Updates and boundary identity
 
 Each applied update copies the NetCDF file to an immutable, uniquely named snapshot.

@@ -75,9 +75,29 @@ with TemporaryDirectory() as directory:
     for node in list(w.scene.nodes()):
         if node.kind in ('domain','interior','boundary'):w.delete_block(node)
     geometry=w.add_node('Jorvik geometry')
+    initial=w.jorvik_document(geometry)
+    from jorvik.project import create_empty_project
+    external=Path(directory)/'existing.gsproj';create_empty_project(external)
+    original=external.read_bytes()
+    with patch('margam.ui.jorvik_geometry.QFileDialog.getOpenFileName',return_value=('','')):
+        assert not w.browse_jorvik(geometry,'document')
+    assert w.jorvik_document(geometry)==initial
+    assert w.browse_jorvik(geometry,'document',external)
+    assert external.read_bytes()==original and w.jorvik_document(geometry)!=external
+    w.undo_edit();assert w.jorvik_document(geometry)==initial
+    w.redo_edit()
     project=w.jorvik_document(geometry)
     assert project.suffix=='.jorvik' and project.exists()
     fixture(project.with_suffix('.nc'))
+    external_nc=Path(directory)/'different-name.nc';shutil.copyfile(project.with_suffix('.nc'),external_nc)
+    assert w.browse_jorvik(geometry,'export',external_nc)
+    chosen=w.jorvik_export(geometry);assert chosen!=external_nc and chosen.read_bytes()==external_nc.read_bytes()
+    assert w.use_adjacent_jorvik_export(geometry) and w.jorvik_export(geometry)==project.with_suffix('.nc')
+    w.undo_edit();assert w.jorvik_export(geometry)==chosen
+    before_bad=capture_model(w);broken=Path(directory)/'bad.jorvik';broken.write_bytes(b'bad')
+    with patch.object(QMessageBox,'warning'):
+        assert not w.browse_jorvik(geometry,'document',broken)
+    assert capture_model(w)==before_bad
     assert w.update_jorvik(geometry,SELECTION,confirm=False)
     interior=next(n for n in w.scene.nodes() if n.kind=='interior_data')
     boundary=next(n for n in w.scene.nodes() if n.kind=='boundary_data')
@@ -106,6 +126,13 @@ with TemporaryDirectory() as directory:
     config=w.scene.compile_config();assert config.shape=='Prepared2D'
     assert len(read_training_sets(config)[0][0])==3
     doc=capture_model(w);decode_document(doc)
+    from copy import deepcopy
+    invalid=deepcopy(doc)
+    record=next(n for n in invalid['nodes'] if n['kind']=='jorvik_geometry')
+    record['settings']['jorvik_files']['document']='margam-owned:../outside.jorvik'
+    try:decode_document(invalid)
+    except ValueError:pass
+    else:raise AssertionError('Escaping project file reference accepted')
     assert 'margam-owned:' in str(doc) and str(project.parent) not in str(doc)
     original=Path(directory)/'first.margam.json'
     assert w.save_model(original) and not project.exists()
@@ -114,7 +141,7 @@ with TemporaryDirectory() as directory:
     assert 'margam-owned:' in original.read_text()
     assert w.validate_model()
     # Changing the editable export cannot mutate the previously applied snapshot.
-    export=w.jorvik_document(geometry).with_suffix('.nc');export.write_bytes(b'incomplete')
+    export=w.jorvik_export(geometry);export.write_bytes(b'incomplete')
     before=capture_model(w)
     with patch.object(QMessageBox,'warning'):
         assert not w.update_jorvik(geometry,SELECTION,confirm=False)

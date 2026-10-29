@@ -472,3 +472,6 @@ only when the user explicitly requests including it here.
 - [ ] Import supplied evaluation datasets and mesh connectivity from Jorvik, with an explicit export contract.
 - [ ] Copy/paste owned geometry documents as independent copies.
 - [ ] Detect geometry/export freshness beyond fixed snapshot identity; users currently explicitly export and apply.
+
+- [x] Optional existing Jorvik project and NetCDF export browse buttons, using validated owned copies.
+- [ ] Per-named-boundary loss coefficients in Margam's BC/loss controls.

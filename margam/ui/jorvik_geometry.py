@@ -4,10 +4,11 @@ import hashlib
 from pathlib import Path
 import shutil
 import sys
+from zipfile import BadZipFile
 from uuid import uuid4
 from PySide6.QtCore import QProcess, QIODevice, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QFormLayout, QLabel, QComboBox, QLineEdit, QMessageBox, QPushButton
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QFormLayout, QLabel, QComboBox, QLineEdit, QMessageBox, QPushButton, QFileDialog
 from ..components.jorvik_data import records, inspect_selection
 from .graph_model import parameters_for
 
@@ -44,12 +45,64 @@ class DatasetDialog(QDialog):
 
 class JorvikGeometryActions:
     def jorvik_document(self,node,create=False):
-        path=Path(self.project_workspace.resolve('margam-owned:'+document_relative(node.identifier)))
+        reference=node.settings.get('jorvik_files',{}).get('document','margam-owned:'+document_relative(node.identifier))
+        path=Path(self.project_workspace.resolve(reference))
         if create and not path.exists():
             from jorvik.project import create_empty_project
             path.parent.mkdir(parents=True,exist_ok=True)
             create_empty_project(path)
         return path
+
+    def jorvik_export(self,node):
+        reference=node.settings.get('jorvik_files',{}).get('export')
+        return Path(self.project_workspace.resolve(reference)) if reference else self.jorvik_document(node).with_suffix('.nc')
+
+    def browse_jorvik(self,node,kind,path=None):
+        if self.is_running() or self.scene.locked:return False
+        if kind not in ('document','export'):raise ValueError('Unknown Jorvik file role.')
+        if path is None:
+            title,pattern=('Choose existing Jorvik project','Jorvik project (*.jorvik *.gsproj)') if kind=='document' else ('Choose Jorvik sample export','NetCDF samples (*.nc)')
+            path,_=QFileDialog.getOpenFileName(self,title,str(self.jorvik_document(node).parent),pattern)
+        if not path:return False
+        copied=None
+        try:
+            source=Path(path)
+            if kind=='document':
+                if source.suffix.lower() not in ('.jorvik','.gsproj'):raise ValueError('Choose a Jorvik project file.')
+                from jorvik.project import load_project
+                load_project(source)
+            else:
+                if source.suffix.lower()!='.nc':raise ValueError('Choose a NetCDF sample export.')
+                records(source)
+            relative=Path(document_relative(node.identifier)).parent/'imports'/uuid4().hex/('domain.jorvik' if kind=='document' else 'domain.nc')
+            copied=Path(self.project_workspace.resolve('margam-owned:'+relative.as_posix()))
+            copied.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,copied)
+            # Check the owned copy before changing any block settings.
+            if kind=='document':load_project(copied)
+            else:records(copied)
+            old=deepcopy(node.settings);new=deepcopy(old)
+            files=new.setdefault('jorvik_files',{})
+            files[kind]='margam-owned:'+relative.as_posix()
+            if kind=='document':
+                files.pop('export',None);files['needs_update']=True
+            def apply(settings):
+                node.settings=deepcopy(settings);self.graph_changed();self.selection_changed()
+            self.push_edit('Choose Jorvik '+kind,lambda:apply(new),lambda:apply(old))
+            self.statusBar().showMessage('Copied '+source.name+' into this project · Update from Jorvik to apply samples')
+            return True
+        except (OSError,ValueError,TypeError,KeyError,ImportError,BadZipFile) as error:
+            if copied is not None:copied.unlink(missing_ok=True)
+            QMessageBox.warning(self,'Jorvik file could not be selected',str(error));return False
+
+    def use_adjacent_jorvik_export(self,node):
+        if self.is_running() or self.scene.locked:return False
+        old=deepcopy(node.settings);new=deepcopy(old)
+        new.get('jorvik_files',{}).pop('export',None)
+        if old==new:return False
+        def apply(settings):
+            node.settings=deepcopy(settings);self.graph_changed();self.selection_changed()
+        self.push_edit('Use adjacent Jorvik export',lambda:apply(new),lambda:apply(old))
+        return True
 
     def edit_jorvik(self,node):
         if self.is_running() or self.scene.locked:return False
@@ -85,7 +138,7 @@ class JorvikGeometryActions:
         if self.is_running() or self.scene.locked:return False
         snapshot=None
         try:
-            path=self.jorvik_document(node).with_suffix('.nc')
+            path=self.jorvik_export(node)
             previous=node.settings.get('jorvik',{})
             if selections is None:
                 dialog=DatasetDialog(path,previous,self)
@@ -134,6 +187,7 @@ class JorvikGeometryActions:
                     datasets[identity]=dict(role='interior',name=record['label'])
             for name,record in report['boundaries'].items():datasets[record['identity']]=dict(role='boundary',name=name)
             new[node.identifier]['jorvik']=dict(axes=report['axes'],datasets=datasets,sha256=report['sha256'])
+            if 'jorvik_files' in new[node.identifier]:new[node.identifier]['jorvik_files']['needs_update']=False
             interior=new[sources['interior_data'].identifier]['parameters'];interior.update(interior_data=mapping(report['interior']),adaptive_sampling={})
             boundary=new[sources['boundary_data'].identifier]['parameters'];boundary['boundary_data']={name:mapping(record['mapping']) for name,record in report['boundaries'].items()}
             for physics_node in physics_nodes:
@@ -163,7 +217,14 @@ class JorvikGeometryActions:
 
     def jorvik_fields(self,node):
         path=self.jorvik_document(node)
-        label=QLabel(document_relative(node.identifier));label.setToolTip(str(path));label.setWordWrap(True);self.form.addRow('Geometry document',label)
+        relative=node.settings.get('jorvik_files',{}).get('document','margam-owned:'+document_relative(node.identifier)).removeprefix('margam-owned:')
+        label=QLabel(relative);label.setToolTip(str(path));label.setWordWrap(True);self.form.addRow('Geometry document',label)
+        browse=QPushButton('Browse existing project… (optional)');browse.clicked.connect(lambda:self.browse_jorvik(node,'document'));self.form.addRow(browse)
+        export=self.jorvik_export(node)
+        label=QLabel(export.name+(' · selected copy' if node.settings.get('jorvik_files',{}).get('export') else ' · beside geometry document'));label.setToolTip(str(export));self.form.addRow('Sample export',label)
+        browse=QPushButton('Browse sample export… (optional)');browse.clicked.connect(lambda:self.browse_jorvik(node,'export'));self.form.addRow(browse)
+        if node.settings.get('jorvik_files',{}).get('export'):
+            reset=QPushButton('Use export beside geometry document');reset.clicked.connect(lambda:self.use_adjacent_jorvik_export(node));self.form.addRow(reset)
         folder=QPushButton('Open working folder');folder.clicked.connect(lambda:QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.parent))));self.form.addRow(folder)
         note=QLabel('In Jorvik, save the document and export samples as domain.nc in the same folder. Close Jorvik, then Update. Choose Interior / Boundary datasets explicitly. Supported: axis-aligned planar 2D scalar problems; evaluation points remain separate.');note.setWordWrap(True);self.form.addRow(note)
         for text,action in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:

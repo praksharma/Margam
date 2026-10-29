@@ -27,7 +27,7 @@ try:
  nodes={n.kind:n for n in w.scene.nodes()};points=nodes['evaluation_points'];ref=nodes['reference_data'];comparison=nodes['comparison'];export=nodes['export'];pv=nodes['paraview']
  assert w.scene.connection_error(points.output,nodes['interior'].inputs['input'])
  dialog=EvaluationMappingDialog(w.config,points.settings['source_data'],w);assert dialog.check();assert 'node-B' in dialog.preview.toPlainText();dialog.deleteLater()
- doc=capture_model(w);assert doc['version']==24;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==25;decode_document(doc)
  w.change('iterations',3);w.change('device','cpu');assert w.start_training();finish()
  model=w.last_run.model;before=model.training_state();data=w.result['outputs'][comparison.identifier]
  assert data['point_ids']==['node-B','node-A','node-D','node-C'] and data['points']==[[.75],[0.],[.25],[1.]]

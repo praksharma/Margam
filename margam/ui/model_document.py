@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -121,10 +121,21 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data','jorvik'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data','jorvik','jorvik_files'}, 'Invalid output settings.')
         require(type(settings['resolution']) is int and 2 <= settings['resolution'] <= 201 and type(settings['history_limit']) is int and 25 <= settings['history_limit'] <= 100000, 'Unsupported output settings.')
         require(isinstance(settings.get('reference_expression',''),str) and len(settings.get('reference_expression',''))<=512,'Invalid reference expression.')
         if settings.get('reference_data'):validate_mapping(settings['reference_data'])
+        if 'jorvik_files' in settings:
+            from pathlib import PurePosixPath
+            files=settings['jorvik_files']
+            require(node['kind']=='jorvik_geometry' and isinstance(files,dict) and set(files)<={'document','export','needs_update'},'Invalid Jorvik file choices.')
+            if 'needs_update' in files:require(type(files['needs_update']) is bool,'Invalid Jorvik update state.')
+            for kind in ('document','export'):
+                if kind not in files:continue
+                value=files[kind]
+                require(isinstance(value,str) and value.startswith('margam-owned:') and len(value)<=4096,'Jorvik choices must be project-owned.')
+                relative=PurePosixPath(value.removeprefix('margam-owned:'))
+                require(not relative.is_absolute() and '..' not in relative.parts and '\\' not in value and relative.suffix==('.jorvik' if kind=='document' else '.nc'),'Invalid owned Jorvik file path.')
         if 'jorvik' in settings:
             j=settings['jorvik']
             require(node['kind']=='jorvik_geometry' and isinstance(j,dict) and set(j)=={'axes','datasets','sha256'},'Invalid Jorvik settings.')
@@ -178,7 +189,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':24,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':25,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -196,7 +207,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':24, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':25, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

@@ -105,7 +105,7 @@ def assemble(nodes,wires,*,require_all=True):
     if require_all and any(node.kind in PARAMETERS and node not in used for node in nodes):raise ValueError('Unconnected core blocks are not executable; remove them or wire a single supported problem.')
     config=PoissonConfig()
     for node in used:config=overlay(config,node.kind,node.settings['parameters'])
-    if domain.kind=='jorvik_geometry' and not domain.settings.get('jorvik',{}).get('sha256'):
+    if domain.kind=='jorvik_geometry' and (domain.settings.get('jorvik_files',{}).get('needs_update') or not domain.settings.get('jorvik',{}).get('sha256')):
         raise ValueError('Update from Jorvik before training this geometry.')
     if interior.kind=='interior_data' and not config.interior_data:raise ValueError('Map a coordinate source on Interior data.')
     if boundary.kind=='boundary_data' and not config.boundary_data:raise ValueError('Map at least one named set on Boundary data.')

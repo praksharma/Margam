@@ -1535,7 +1535,7 @@ class Window(JorvikGeometryActions,QMainWindow):
             if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
             if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
-            details['jorvik_geometry']='Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
+            details['jorvik_geometry']='Selected document · update samples' if node.settings.get('jorvik_files',{}).get('needs_update') else 'Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
             node.update()

@@ -31,7 +31,7 @@ try:
    settings=dict(w.config.adaptive_sampling,interval=2,candidates=20,batch=2,maximum=20);w.change('adaptive_sampling',settings)
   trainer=next(n for n in w.scene.nodes() if n.kind=='gpinn_method');compact=w.collapse_recipe(trainer);assert compact
   w.show_block_properties(compact);assert w.property_scroll.findChild(QDoubleSpinBox,'gpinn_weight_x');w.expand_recipe(compact)
-  doc=capture_model(w);assert doc['version']==24;decode_document(doc)
+  doc=capture_model(w);assert doc['version']==25;decode_document(doc)
   assert w.start_training();finish();assert w.result['steps']==3
   record=w.last_run.model.loss_history[-1];assert 'pde_grad_x' in record
   monitor=next(n for n in w.scene.nodes() if n.kind=='monitor');w.open_block(monitor);app.processEvents()
