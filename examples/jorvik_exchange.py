@@ -30,7 +30,15 @@ def sample_annulus(directory):
                        resolution=32,compute_mode='reproducible',cpu_threads=1)
         if region:request['boundary_region']=region_snapshot(regions,geometry,region['id'])
         batches.append(sample_geometry(request))
-    path=directory/'domain.nc';export_samples(batches,path)
+    from jorvik.project import save_project
+    state=dict(mode='edge',selection=[],selected_area=None,boundary_regions=regions,
+               show_points=True,through=False,show_grid=False,show_axes=True,isolate=False,isolate_geometry=False,point_size=5,
+               geometry_visibility=dict(geometry=True,faces=True,edges=True,hiddenFaces=[],isolatedFaces=None),
+               controls=dict(method='sobol',compute_mode='reproducible',resolution=32,count=97,seed=42,cpu_threads=1,label='interior',target='interior'))
+    project=directory/'domain.jorvik'
+    save_project(project,geometry,[(batch,'Generated',True) for batch in batches],state)
+    from margam.components.jorvik_data import export_saved_project
+    path=directory/'domain.nc';assert export_saved_project(project,path)==3
     return path,{'interior':('interior','interior'),'inner':('boundary','inner'),'outer':('boundary','outer')}
 
 

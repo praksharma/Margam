@@ -27,6 +27,7 @@ def fixture(path, *, nonplanar=False, normal_kind='outward_conormal'):
                          normal_validation='fixture',boundary_region={'id':label+'-stable'})
         batches.append(batch)
     export_samples(batches,path)
+    return batches
 
 
 SELECTION={'interior':('interior','interior'),'base':('boundary','base'),'wall':('boundary','wall')}
@@ -47,6 +48,23 @@ class JorvikDataTests(unittest.TestCase):
             points,normals,_=read_points(report['boundaries']['wall']['mapping'],2)
             self.assertEqual(points.shape,(4,2));np.testing.assert_array_equal(normals,np.tile([-1,0],(4,1)))
             self.assertEqual(report['boundaries']['base']['identity'],'base-stable')
+
+    def test_export_saved_project_and_missing_samples(self):
+        from unittest.mock import patch
+        from margam.components.jorvik_data import export_saved_project
+        from jorvik.project import create_empty_project
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'domain.nc';batches=fixture(path)
+            path.unlink()
+            manifest={'areas':[dict(status='Generated',area=batch) for batch in batches]}
+            with patch('jorvik.project.load_project',return_value=(manifest,None)):
+                self.assertEqual(export_saved_project('saved.jorvik',path),3)
+            report=inspect_selection(path,SELECTION)
+            self.assertEqual(len(report['boundaries']),2)
+            original=path.read_bytes()
+            empty=Path(directory)/'empty.jorvik';create_empty_project(empty)
+            with self.assertRaisesRegex(ValueError,'No generated samples'):export_saved_project(empty,path)
+            self.assertEqual(path.read_bytes(),original)
 
     def test_nonplanar_and_invalid_roles(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -106,6 +124,13 @@ with TemporaryDirectory() as directory:
     pde=next(n for n in w.scene.nodes() if n.kind=='pde')
     bc=next(n for n in w.scene.nodes() if n.kind=='bc')
     w.scene.connect_nodes(interior,pde);w.scene.connect_nodes(boundary,bc)
+    from margam.ui.jorvik_geometry import DatasetDialog
+    dialog=DatasetDialog(w.jorvik_export(geometry),{},w)
+    assert dialog.selection()==SELECTION
+    assert dialog.table.rowCount()==3
+    assert [alias.isEnabled() for label,choice,alias in dialog.rows]==[False,True,True]
+    dialog.rows[1][2].setText('renamed');assert dialog.selection()['base']==('boundary','renamed')
+    dialog.close()
     from PySide6.QtCore import QProcess
     with patch.object(QProcess,'start'):
         assert w.edit_jorvik(geometry)

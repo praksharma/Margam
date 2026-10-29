@@ -17,4 +17,5 @@ physical units in the GEO definition.
 
 In Margam, open the Jorvik geometry block's editor, then import `rectangle.geo`.
 Select its four edges to create boundary regions, sample the face interior and
-boundaries, and export `domain.nc` beside the owned `domain.jorvik` document.
+boundaries, and save the owned `domain.jorvik` document. Margam exports its saved
+generated samples automatically; close Jorvik and use Update to apply them.

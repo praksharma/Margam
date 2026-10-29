@@ -32,10 +32,9 @@ def main():
                 if node.kind in ('domain','interior','boundary'):window.delete_block(node)
             geometry=window.add_node('Jorvik geometry')
             import shutil
-            shutil.copyfile(export,window.jorvik_document(geometry).with_suffix('.nc'))
+            assert window.browse_jorvik(geometry,'document',export.with_suffix('.jorvik'))
             dialog=DatasetDialog(export,{},window)
-            for label,choice,alias in dialog.rows:
-                choice.setCurrentText(selections[label][0].title());alias.setText(label)
+            assert dialog.selection()==selections
             dialog.resize(700,430);dialog.show();save(dialog,'datasets');dialog.close()
             assert window.update_jorvik(geometry,selections,confirm=False)
             interior=next(n for n in window.scene.nodes() if n.kind=='interior_data');boundary=next(n for n in window.scene.nodes() if n.kind=='boundary_data')
@@ -44,7 +43,7 @@ def main():
             positions={'jorvik_geometry':(0,160),'interior_data':(240,40),'boundary_data':(240,270),'pde':(480,40),'bc':(480,270),'network':(480,440),'method':(730,160)}
             for node in window.scene.nodes():node.setPos(*positions[node.kind])
             assert window.validate_model();window.show_block_properties(geometry);window.fit_model();save(window,'geometry')
-        manifest.write_text(json.dumps(dict(generator='examples.capture_jorvik',case='Actual Jorvik annulus export; Margam-owned editor document starts empty.',files={path.name:dict(bytes=path.stat().st_size,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for path in paths.values()}),indent=2)+'\n')
+        manifest.write_text(json.dumps(dict(generator='examples.capture_jorvik',case='Actual saved Jorvik annulus document and automatic sample export.',files={path.name:dict(bytes=path.stat().st_size,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for path in paths.values()}),indent=2)+'\n')
     finally:window.undo_stack.setClean();window.close();app.clipboard().clear();app.processEvents()
 
 

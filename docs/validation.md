@@ -336,3 +336,10 @@ The [annulus interchange record](../assets/benchmarks/jorvik-exchange.json) chec
 real CAD-derived samples, hole/outer normal orientation and exact CPU checkpoint
 continuation. The manual build checked 60 rendered pages. See the illustrated
 [Jorvik workflow](jorvik.md) for current scope and reproducible commands.
+
+The automatic-export follow-up additionally verifies reading generated arrays from
+a saved project, preserving an existing NetCDF file when no generated samples are
+available, prefilled interior/boundary roles and editable per-boundary names. The
+real annulus example now saves and reloads a Jorvik document before automatically
+exporting it. Ten focused persistence/integration tests and the 60-page manual
+build passed after this change.

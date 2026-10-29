@@ -19,19 +19,23 @@ Margam `geometry` extra declares the NetCDF reader dependencies, xarray and SciP
 installing Jorvik supplies those too. Margam's ordinary built-in domains do not
 require Jorvik. Importing a model never launches the external editor automatically.
 
-## Edit, export and apply
+## Edit, save and apply
 
 1. Add **Jorvik geometry** from the block library. It creates an empty `.jorvik`
    document in the current project's working folder.
 2. Right-click the block → **Edit in Jorvik**, or double-click it. Import your
    geometry, define named boundary regions and generate samples there.
-3. Save the Jorvik document. Export the generated datasets as **domain.nc** beside
-   **domain.jorvik**. The block's **Open working folder** button shows that folder.
-   Saving the editor document alone does not create the NetCDF export.
+3. Save the Jorvik document after generating samples. Margam reads its saved
+   generated datasets and exports **domain.nc** automatically when the editor
+   closes. No manual export step is needed. It also regenerates the export when
+   you choose Update, so a stale adjacent NetCDF file is not reused.
 4. Close Jorvik. Back in Margam, right-click → **Update from Jorvik**.
-5. Choose the source coordinate plane, exactly one **Interior** dataset and one
-   or more **Boundary** datasets. Leave other datasets as **Ignore**. Enter a
-   unique boundary name starting with a letter; letters, digits, `_` and `-` follow.
+5. Review the dataset table. Roles are preselected from Jorvik sampling metadata;
+   boundary names are prefilled from the exported labels and remain editable.
+   Each boundary dataset has its own row. Confirm the coordinate plane, one
+   **Interior** dataset and one or more **Boundary** datasets. **Ignore** is an
+   explicit opt-out, not the default. Boundary names start with a letter, followed
+   by letters, digits, `_` or `-`.
 6. Confirm the update. Margam creates or updates **Interior data** and **Boundary
    data** blocks connected to this geometry. Connect their outputs to the PDE and
    Boundary condition blocks, respectively. Remove the original rectangle/samplers
@@ -43,12 +47,13 @@ require Jorvik. Importing a model never launches the external editor automatical
 ![Select independently sized datasets and their roles](../assets/screenshots/manual-jorvik-datasets.png)
 
 *Real Jorvik annulus export: 97 interior points, 17 inner-boundary points and 29
-outer-boundary points. Dataset roles are explicit; labels do not decide physics.*
+outer-boundary points. Metadata selects the default roles; editable names preserve
+the exported labels. No PDE or BC type is inferred from a name.*
 
 ![Jorvik geometry with separate prepared data sources](../assets/screenshots/manual-jorvik-geometry.png)
 
 *The geometry block opens its document in the external editor. This capture applies
-an actual annulus export to a newly created block; its editor document starts empty.*
+a saved annulus document and automatically exports its generated samples.*
 
 ## Optional existing files
 
@@ -71,6 +76,24 @@ Both selections are undoable, survive Save/Save As and recovery, and move with t
 project companion folder. Cancelling a picker leaves the block unchanged. The
 named BC sets remain separate for physics assignment; per-boundary loss weight
 controls are separate future work.
+
+## Generated samples and separate boundaries
+
+Margam exports samples that already exist in the saved Jorvik document; it does
+not generate new samples or choose sampling budgets. If the saved document has no
+generated datasets, Update explains that samples must be generated and saved first.
+Ungenerated sampling requests are not exported. Export errors leave the last applied
+snapshot unchanged. There is no silent fallback to an older adjacent NetCDF file.
+
+For four independent rectangle BCs, create and sample four named boundary regions
+in Jorvik. A single dataset containing all edges remains one set; Margam does not
+split it or invent names from the entity tags. Multiple interior datasets still
+require choosing one for this executor. Unknown metadata asks for a role rather
+than defaulting to Ignore. Previous boundary aliases remain selected by stable ID.
+
+An optional **Browse sample export** selection bypasses automatic project export:
+that selected copy is the chosen data source. Use **Use export beside geometry
+document** to return to automatically exporting the saved project samples.
 
 ## Updates and boundary identity
 
@@ -99,8 +122,8 @@ avoid merging unrelated project files.
 
 While Jorvik is open, editing, saving, project replacement and closing Margam are
 blocked. Close Jorvik first, so it cannot continue writing to a folder being moved
-or deleted. Closing it marks the Margam document modified, but does not apply its
-export automatically. Desktop recovery includes owned files from its last recovery
+or deleted. Closing it marks the Margam document modified and exports its saved generated
+samples. Applying those datasets still requires Update and confirmation. Desktop recovery includes owned files from its last recovery
 snapshot; recovery is paused during external editing and queued when the editor
 closes. Discard removes temporary working files, not saved project folders.
 

@@ -6,11 +6,10 @@ import shutil
 import sys
 from zipfile import BadZipFile
 from uuid import uuid4
-from PySide6.QtCore import QProcess, QIODevice, QUrl
+from PySide6.QtCore import QProcess, QIODevice, QUrl, Qt
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QFormLayout, QLabel, QComboBox, QLineEdit, QMessageBox, QPushButton, QFileDialog
-from ..components.jorvik_data import records, inspect_selection
-from .graph_model import parameters_for
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QFormLayout, QLabel, QComboBox, QLineEdit, QMessageBox, QPushButton, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+from ..components.jorvik_data import records, inspect_selection, export_saved_project
 
 
 def document_relative(identifier):
@@ -22,20 +21,32 @@ class DatasetDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle('Update from Jorvik · planar 2D samples')
         layout=QVBoxLayout(self);form=QFormLayout();layout.addLayout(form)
-        note=QLabel('Choose one interior dataset and named boundaries. Geometry supplies samples, not PDEs or BC types. Normals are used only when verified.');note.setWordWrap(True);layout.addWidget(note)
+        note=QLabel('Generated datasets are listed below. Interior and boundary roles come from Jorvik metadata. Boundary names are prefilled and can be renamed; each boundary remains a separate set.');note.setWordWrap(True);layout.addWidget(note)
         self.axes=QComboBox()
         for axes in ((0,1),(0,2),(1,2)):self.axes.addItem('Problem x,y ← source '+','.join('xyz'[axis] for axis in axes),axes)
         self.axes.setCurrentIndex(((0,1),(0,2),(1,2)).index(tuple(previous.get('axes',[0,1]))));form.addRow('Coordinate plane',self.axes)
-        self.rows=[]
-        for record in records(path):
+        exported=records(path)
+        self.table=QTableWidget(len(exported),4);self.table.setHorizontalHeaderLabels(['Dataset','Points','Use as','Boundary name'])
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.verticalHeader().hide();self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        header=self.table.horizontalHeader()
+        for column in (0,3):header.setSectionResizeMode(column,QHeaderView.ResizeMode.Stretch)
+        for column in (1,2):header.setSectionResizeMode(column,QHeaderView.ResizeMode.ResizeToContents)
+        layout.addWidget(self.table);self.rows=[]
+        for row,record in enumerate(exported):
             metadata=record['metadata'];identity=metadata.get('boundary_region',{}).get('id') or 'label:'+record['label']
             old=previous.get('datasets',{}).get(identity,{})
-            choice=QComboBox();choice.addItems(['Ignore','Interior','Boundary'])
-            choice.setCurrentText(old.get('role','Ignore').title())
+            default='interior' if metadata.get('target')=='interior' or metadata.get('entity_dimension')==2 else 'boundary' if metadata.get('entity_dimension')==1 else 'choose role…'
+            choice=QComboBox();choice.addItems(['Interior','Boundary','Ignore','Choose role…'])
+            choice.setCurrentText(old.get('role',default).capitalize())
             alias=QLineEdit(old.get('name',record['label']));alias.setMaxLength(64)
-            form.addRow(record['label']+' · '+str(metadata.get('count','?'))+' points',choice)
-            form.addRow('Boundary name',alias)
+            alias.setEnabled(choice.currentText()=='Boundary')
+            choice.currentTextChanged.connect(lambda text,widget=alias:widget.setEnabled(text=='Boundary'))
+            for column,text in [(0,record['label']),(1,str(metadata.get('count','?')))]:
+                item=QTableWidgetItem(text);item.setFlags(Qt.ItemFlag.ItemIsEnabled);self.table.setItem(row,column,item)
+            self.table.setCellWidget(row,2,choice);self.table.setCellWidget(row,3,alias)
             self.rows.append((record['label'],choice,alias))
+        self.resize(800,min(600,220+45*len(exported)))
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
 
@@ -124,12 +135,21 @@ class JorvikGeometryActions:
             self.jorvik_process=None;self.project_workspace.busy=False;self.set_busy(False)
             self.undo_stack.resetClean()
             if self.desktop_state is not None:self.desktop_state.queue()
-            self.statusBar().showMessage('Jorvik closed · Update from Jorvik to apply exported samples' if not args or args[0]==0 else 'Jorvik exited with an error · check editor.log in its working folder')
+            if not args or args[0]==0:
+                if node.settings.get('jorvik_files',{}).get('export'):
+                    self.statusBar().showMessage('Jorvik closed · selected NetCDF copy remains active; clear that override to use saved project samples')
+                else:
+                    try:
+                        count=export_saved_project(self.jorvik_document(node),self.jorvik_export(node))
+                        self.statusBar().showMessage(f'Exported {count} saved Jorvik datasets · Update from Jorvik to apply')
+                    except (OSError,ValueError,TypeError,KeyError,ImportError,BadZipFile) as error:
+                        self.statusBar().showMessage('Jorvik closed · '+str(error))
+            else:self.statusBar().showMessage('Jorvik exited with an error · check editor.log in its working folder')
             process.deleteLater()
         process.finished.connect(finished)
         def failed(error):
             self.statusBar().showMessage('Jorvik launch failed · check editor.log')
-            if error==QProcess.ProcessError.FailedToStart:finished()
+            if error==QProcess.ProcessError.FailedToStart:finished(-1)
         process.errorOccurred.connect(failed);process.start()
         self.statusBar().showMessage('Editing in Jorvik · close its window before saving or updating Margam')
         return True
@@ -139,6 +159,8 @@ class JorvikGeometryActions:
         snapshot=None
         try:
             path=self.jorvik_export(node)
+            if not node.settings.get('jorvik_files',{}).get('export'):
+                export_saved_project(self.jorvik_document(node),path)
             previous=node.settings.get('jorvik',{})
             if selections is None:
                 dialog=DatasetDialog(path,previous,self)
@@ -211,7 +233,7 @@ class JorvikGeometryActions:
             self.push_edit('Update from Jorvik',redo,lambda:apply(old,False))
             self.statusBar().showMessage('Applied Jorvik snapshot · assign BC physics and connect supplied evaluation points')
             return True
-        except (OSError,ValueError,TypeError,KeyError,ImportError) as error:
+        except (OSError,ValueError,TypeError,KeyError,ImportError,BadZipFile) as error:
             if snapshot is not None:snapshot.unlink(missing_ok=True)
             QMessageBox.warning(self,'Jorvik update could not be applied',str(error));return False
 
@@ -226,6 +248,6 @@ class JorvikGeometryActions:
         if node.settings.get('jorvik_files',{}).get('export'):
             reset=QPushButton('Use export beside geometry document');reset.clicked.connect(lambda:self.use_adjacent_jorvik_export(node));self.form.addRow(reset)
         folder=QPushButton('Open working folder');folder.clicked.connect(lambda:QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.parent))));self.form.addRow(folder)
-        note=QLabel('In Jorvik, save the document and export samples as domain.nc in the same folder. Close Jorvik, then Update. Choose Interior / Boundary datasets explicitly. Supported: axis-aligned planar 2D scalar problems; evaluation points remain separate.');note.setWordWrap(True);self.form.addRow(note)
+        note=QLabel('In Jorvik, generate samples and save the document. Margam exports its saved samples automatically when the editor closes or when you Update. Roles and boundary names are prefilled. An optional selected NetCDF copy overrides this export. Supported: axis-aligned planar 2D scalar problems; evaluation points remain separate.');note.setWordWrap(True);self.form.addRow(note)
         for text,action in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:
             button=QPushButton(text);button.clicked.connect(lambda checked=False,callback=action:callback(node));self.form.addRow(button)

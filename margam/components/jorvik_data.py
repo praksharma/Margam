@@ -118,3 +118,15 @@ def inspect_selection(path, selections, axes=(0,1)):
     if np.any(lower>=upper): raise ValueError('Selected points need nonzero extent in both problem coordinates.')
     return dict(interior=interior[0],boundaries=boundaries,bounds=[lower.tolist(),upper.tolist()],
                 axes=list(axes),sha256=hashlib.sha256(Path(path).read_bytes()).hexdigest())
+
+
+def export_saved_project(project, destination):
+    """Export already-generated arrays from Jorvik's validated saved document."""
+    from jorvik.project import load_project
+    from jorvik.export import export_samples
+    manifest, _ = load_project(project)
+    batches=[record['area'] for record in manifest['areas'] if record['status']=='Generated']
+    if not batches:
+        raise ValueError('No generated samples in the saved Jorvik document. Generate samples in Jorvik and save the project first.')
+    export_samples(batches,destination)
+    return len(batches)

@@ -146,7 +146,11 @@
 - Jorvik geometry documents are explicitly enabled for steady planar 2D scalar
   imported samples. Keep the editor in a separate process using the root environment.
   New documents use `.jorvik`; exports use `domain.nc` beside `domain.jorvik`.
-  Apply NetCDF updates explicitly with dataset-role selection, stable region IDs,
+  Export saved generated arrays automatically on editor close and Update, using
+  Jorvik project validation and atomic export; never regenerate samples or silently
+  fall back to stale exports. An explicitly browsed NetCDF copy overrides this.
+  Prefill dataset roles from metadata and boundary names from labels; Ignore is
+  opt-in. Apply updates explicitly with dataset-role review, stable region IDs,
   verified planar conormals and immutable owned snapshots. Never assign PDE/BC
   physics from labels or infer mesh topology. Preserve relative owned references,
   Save As isolation, owned-file recovery and the editor lock during save/close.

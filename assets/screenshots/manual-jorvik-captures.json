@@ -1,14 +1,14 @@
 {
   "generator": "examples.capture_jorvik",
-  "case": "Actual Jorvik annulus export; Margam-owned editor document starts empty.",
+  "case": "Actual saved Jorvik annulus document and automatic sample export.",
   "files": {
     "manual-jorvik-geometry.png": {
-      "bytes": 203556,
-      "sha256": "052bffab9803520fb854f270632f82e99b13ca4acc83018ff799a662fc4daba2"
+      "bytes": 213486,
+      "sha256": "053e8e42d79eaa0396f026db637aba646cce212ea3189660a2fa639a147747bf"
     },
     "manual-jorvik-datasets.png": {
-      "bytes": 31329,
-      "sha256": "912d7f655d8fbb22d9bd9506537a615417cd53ca7f9d22c5efd737fa6107bdec"
+      "bytes": 29299,
+      "sha256": "250aa38730325f3f948627b8ada18d21f978b241ff17b6407eea8b92020b4f23"
     }
   }
 }
