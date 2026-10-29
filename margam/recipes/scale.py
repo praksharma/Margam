@@ -1,6 +1,5 @@
 """One replaceable network plus the independent Scale-PINN correction trainer."""
 from copy import deepcopy
-import math
 from . import baseline
 from ..components.scale_config import scale_defaults
 NAME='Scale-PINN'
@@ -14,7 +13,7 @@ COMPONENTS=(('network','Neural network',(-240,320),NETWORK_FIELDS),(ROOT,'Scale 
 CONNECTIONS=(('network',ROOT,'network'),)
 INPUTS=baseline.INPUTS
 OUTPUT=baseline.OUTPUT
-DEFAULTS=dict(deepcopy(baseline.DEFAULTS),method='scale',lr=.001,scale_settings=scale_defaults(),network_type='fourier',network_options=dict(encoding='gaussian',features=16,scale=1/(2*math.pi)),layers=[32,32,32])
+DEFAULTS=dict(deepcopy(baseline.DEFAULTS),method='scale',lr=.001,scale_settings=scale_defaults(),network_type='affine_fourier',network_options=dict(input_transform='',features=32,cycles=1.,normalize_inputs=False,activation='silu'),layers=[32,32,32])
 
 
 def split(parameters):

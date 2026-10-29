@@ -2,7 +2,8 @@
 
 Choose **File → Examples → Scale-PINN examples** for Allen–Cahn, five cavity
 Reynolds numbers through **Re=20,000**, Kuramoto–Sivashinsky and Korteweg–de Vries.
-All use a replaceable Gaussian Fourier network. **Scale-PINN** is also available as a compact recipe
+New examples use a replaceable **Affine Fourier NN**, with the input equations
+from their corresponding notebooks and a trainable sinusoidal projection. **Scale-PINN** is also available as a compact recipe
 under **PINN recipes**, with a separate **Scale trainer** under **Training**.
 
 ![Scale examples](../assets/screenshots/manual-scale-examples.png)
@@ -195,3 +196,71 @@ Tests additionally cover the spatial-only polynomial Laplacian, pressure-to-
 continuity mapping, first-step correction gradients, disabled-correction baseline
 equivalence, non-finite updates, corrupted previous states, graph expansion and
 saved GUI runs.
+
+
+## Affine inputs and trainable sine features
+
+Select the Neural network block and choose **Affine Fourier NN**. The architecture
+is available to other PINN recipes too; it is separate from the Scale correction
+algorithm. Existing saved Gaussian-Fourier networks retain their original settings
+and weights when reopened. No checkpoint is silently converted.
+
+![Affine Fourier settings on the cavity network](../assets/screenshots/manual-scale-network.png){ .portrait }
+
+| Scale example | Affine inputs in physical coordinates | Sine projection |
+| --- | --- | --- |
+| Cavity, all five Re presets | `x; y; x-1; y-1` | sin(2π(Wφ+b)) |
+| Allen–Cahn | `t; x` | sin(2π(Wφ+b)) |
+| KdV | `t; x; t-1` | sin(2π(Wφ+b)) |
+| KS | `t; x/(2*pi); t-0.4` | sin(4π(Wφ+b)) |
+
+These match the inspected notebook input equations, including Margam's named
+(x,t) coordinate convention. Allen–Cahn does not add shifted copies. The KS
+shift is its example's physical end time; if you change that time, edit the
+explicit mapping as needed. The new compact Scale recipe uses physical identity
+inputs by default, because a generic recipe has no specific physical example.
+
+The projection weights **and bias train** with the network. This differs from
+our existing fixed Gaussian Fourier feature matrix. Physical coordinates are
+used by default: **Normalize before affine mapping** is off for these examples.
+Turning it on explicitly maps bounds to [0,1] first, changing the meaning of the
+affine expressions and frequency scale.
+
+Expressions are semicolon-separated coordinate combinations, using x/y/t as
+available, constants, `pi`, addition/subtraction and multiplication/division by
+constants. For example `x-1`, `(x-2)/4` and `2*x-y` are valid. Nonlinear expressions,
+functions, executable Python, missing coordinates and zero denominators are
+rejected. Blank means the current coordinate order. Limits are 16 expressions,
+1024 characters and finite coefficients with magnitude at most 10⁶.
+
+**Trainable sine features** controls projection width (1–256); **Sine multiplier
+(× 2π)** controls phase scaling. Cavity examples default to 128 features; the
+scalar examples use 32. Trunk activation/layers remain independently configurable.
+The trunk receives sine features rather than an implicit raw-input/sine/cosine
+concatenation. Fixed/standard Fourier architectures remain available separately.
+
+This is an independent implementation of the observed input equations and
+learned sine mapping. It retains Margam's shared replaceable trunk/output layer;
+it does not reproduce the cavity's branched heads or KdV/KS's concatenation of
+intermediate activations. The projection uses independent He-uniform weight
+initialization and zero bias; the existing trunk initialization remains unchanged.
+A shifted affine expansion can collapse algebraically to another affine map,
+but its parameterization and initialization differ. It is not a claim that every
+shift adds an independent frequency.
+
+Sources: upstream [cavity notebook](https://github.com/chiuph/SCALE-PINN/blob/main/ns-ldc/plot_benchmark_pinn_ldc3200.ipynb),
+[KdV notebook](https://github.com/chiuph/SCALE-PINN/blob/main/kdv/plot_benchmark_kdv.ipynb),
+[KS notebook](https://github.com/chiuph/SCALE-PINN/blob/main/ks/plot_benchmark_ks.ipynb) and
+[Allen–Cahn notebook](https://github.com/chiuph/SCALE-PINN/blob/main/ac/plot_benchmark_ac.ipynb).
+The [inspection record](../assets/benchmarks/affine-fourier-reference.json) stores
+source hashes and implementation differences. Upstream declares all rights reserved;
+no code or data was copied into the new implementation.
+
+The [affine CPU record](../assets/benchmarks/scale-affine-cpu.json) and
+[affine CUDA record](../assets/benchmarks/scale-affine-cuda.json) exercise all eight
+cases with smaller networks, short training, checkpoint continuation and an
+uncorrected control. These are implementation checks, not accuracy comparisons.
+Earlier Gaussian-network evidence above remains historical. Unit tests verify
+affine values, physical-coordinate derivatives through fourth order, trainable
+projection updates, invalid-expression rejection, old-network loading and UI
+persistence through compact/expanded recipes.

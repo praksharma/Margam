@@ -142,3 +142,9 @@
 - Scale-PINN is an independent paper-based trainer. Keep w^(k-1) frozen, compute its spatial derivatives before detaching the correction, and snapshot w^k before the optimizer step. Time is never a smoothing dimension. Flow correction maps velocity to momentum and pressure change to continuity; reject undefined mappings. Preserve both iterates in archives and distinguish physical PDE MSE from corrected training loss. The upstream repository declares all rights reserved; do not copy code/data.
 
 - Scale high-Re cavity entries are independent starting presets, not solved benchmarks or a curriculum. Keep ν and default γ at 1/Re for unit lid speed/length and display Re from current parameters. KdV uses third-order dispersion and periodic matching through second derivative; KS fourth-order coefficient is 100/16⁴. Preserve physical-time exports and label borrowed tuning settings.
+
+- GeoSampler integration is on hold until the user explicitly asks to resume it.
+- New Scale examples use notebook-specific affine inputs and a trainable sine
+  projection in the separate Affine Fourier NN architecture. Preserve physical
+  units by default, keep normalization explicit, and do not silently migrate old
+  fixed-Fourier checkpoints or claim upstream trunk/head equivalence.

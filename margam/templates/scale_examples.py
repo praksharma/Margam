@@ -29,4 +29,10 @@ def scale_example_config(key):
         c.boundary_sampling={side:BoundarySampling(32,'random',i+1) for i,side in enumerate(c.sides)}
         c.scale_settings.update(tau_sc=.1,tau_alpha=20.,gamma=.022);c.boundary_weight=2000.
     else:c.boundary_weight=100.
+    # Notebook input equations, translated from (t,x) into Margam's named (x,t) coordinates.
+    if key.startswith('scale_cavity_'):transform='x; y; x-1; y-1';features=128;cycles=1.
+    elif key=='scale_ks':transform=f't; x/(2*pi); t-{c.y_max:g}';features=32;cycles=2.
+    elif key=='scale_kdv':transform='t; x; t-1';features=32;cycles=1.
+    else:transform='t; x';features=32;cycles=1.
+    c.network_options.update(input_transform=transform,features=features,cycles=cycles,normalize_inputs=False)
     return c

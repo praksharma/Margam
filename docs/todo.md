@@ -421,3 +421,16 @@ These are proposed features; current execution still runs one supported problem.
   point-set, gauge and initial/boundary contracts are specified.
 - [ ] Wire prepared GeoSampler manifests into graphs automatically; preserve mesh
   connectivity, units and region metadata through an explicit contract.
+
+
+## Affine Fourier mapping
+
+- [x] Add a separate Affine Fourier NN architecture with restricted affine input
+  expressions, optional normalization, learned projection/bias and sine scale.
+- [x] Select notebook-specific cavity, Allen–Cahn, KdV and KS input maps in Scale
+  examples; preserve existing saved fixed-Fourier networks without migration.
+- [x] Check physical derivatives, trainable projection, checkpoint compatibility,
+  recipe/UI persistence and short CPU/CUDA continuation; document architecture differences.
+
+GeoSampler integration is on hold while its author improves it. Resume that work
+only when the user explicitly requests including it here.

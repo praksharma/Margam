@@ -336,3 +336,15 @@ Dirichlet/Neumann data. Each records 100 initial plus two resumed updates, exact
 same-device continuation, source hashes and supplied-point CSV/VTU export. The
 short runs are untuned workflow checks. See [the guide](training-data.md) for the
 manufactured reference, errors, screenshots and reproducible commands.
+
+
+## Scale affine Fourier input mapping
+
+New Scale examples now use explicit notebook affine input equations and a learned
+sine projection, selected through the separate Affine Fourier NN architecture.
+The [CPU](../assets/benchmarks/scale-affine-cpu.json) and
+[CUDA](../assets/benchmarks/scale-affine-cuda.json) checks cover all eight cases
+with six updates, reduced widths/point counts, checkpoint continuation and an
+uncorrected control. All same-device continuations were identical. Earlier
+Gaussian-network records are retained as historical evidence, not measurements
+of these new presets. See [the exact mappings and differences](scale-pinn.md#affine-inputs-and-trainable-sine-features).

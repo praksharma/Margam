@@ -15,6 +15,9 @@ def build_network(config):
     elif kind in ('fourier','fourier_mlp'):
         from .fourier import FourierNetwork
         network=FourierNetwork(inputs,outputs,layers,bounds,options,angular=kind=='fourier_mlp')
+    elif kind=='affine_fourier':
+        from .affine_fourier import AffineFourierNetwork
+        network=AffineFourierNetwork(inputs,outputs,layers,bounds,options,config.coordinate_names)
     elif kind=='highway_fourier':
         from .highway import HighwayFourierNetwork
         network=HighwayFourierNetwork(inputs,outputs,layers,bounds,options)

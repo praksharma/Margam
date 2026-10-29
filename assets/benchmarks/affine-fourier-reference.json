@@ -1,0 +1,27 @@
+{
+  "scope": "Input equations inspected from local upstream notebooks; independent implementation, no upstream code copied.",
+  "repository": "https://github.com/chiuph/SCALE-PINN",
+  "sources": {
+    "ac/plot_benchmark_ac.ipynb": "cd46b58d0200285ff7ae122a746d513cccea41d89e2465c9b2a85d4e5b7e8a65",
+    "kdv/plot_benchmark_kdv.ipynb": "1d473eac97fbc62ff886c00d445f105cdecef19b2489b6742b3902dd6cf824eb",
+    "ks/plot_benchmark_ks.ipynb": "29e91569d6189128975a1b20ff83c87fc730a948f3673fb22e09399b6044ee0c",
+    "ns-ldc/plot_benchmark_pinn_ldc3200.ipynb": "0266f7ecac945c29478ff6a37c31276268bf1dd1a7b49a49dd4de89a53a5c4ab",
+    "ns-ldc/plot_benchmark_pinn_ldc7500.ipynb": "bd8530b6f39eff974b5bd93e395b40e26993a09854be0d9e4933f721345aefcc"
+  },
+  "maps": {
+    "cavity": "x; y; x-1; y-1",
+    "allen_cahn": "t; x",
+    "kdv": "t; x; t-1",
+    "ks": "t; x/(2*pi); t-0.4"
+  },
+  "sine_multiplier_times_2pi": {
+    "cavity": 1,
+    "allen_cahn": 1,
+    "kdv": 1,
+    "ks": 2
+  },
+  "differences": [
+    "Margam keeps its replaceable shared trunk and output layer, not upstream branched heads or KdV/KS dense concatenation.",
+    "Torch initialization is independently seeded; no claim of JAX numerical or paper accuracy reproduction."
+  ]
+}

@@ -112,7 +112,7 @@ class ScaleTests(unittest.TestCase):
     def test_cuda_derivatives_checkpoint_and_cpu_archive_validation(self):
         c=small(device='cuda');m=build_pinn(c);m.train(3,0);n=build_pinn(c);n.load_training_state(m.training_state());m.train(1,0);n.train(1,0)
         for name,value in m.network.state_dict().items():torch.testing.assert_close(value,n.network.state_dict()[name],rtol=1e-5,atol=1e-7)
-        self.assertTrue(m.previous.features.frequencies.is_cuda)
+        self.assertTrue(m.previous.affine_matrix.is_cuda)
         from margam.ui.run_document import save_run,load_run
         data=dict(format='margam-run',version=2,model=dict(format='margam-model',version=19,config=asdict(c),nodes=[],wires=[]),result=dict(outputs={},steps=4,cancelled=False,device='cuda'),monitors={},checkpoint=m.training_state())
         with TemporaryDirectory() as directory:

@@ -378,3 +378,12 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.
 - [ ] GeoSampler-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
 - [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.
+
+
+## Scale notebook input mapping
+
+The separate Affine Fourier NN independently implements observed affine input
+equations and trainable sine projections from SCALE-PINN notebooks. Source hashes,
+exact mappings and architecture differences are recorded in
+[the Scale guide](scale-pinn.md#affine-inputs-and-trainable-sine-features). No upstream
+code/data was copied; the shared trunk is Margam's existing implementation.

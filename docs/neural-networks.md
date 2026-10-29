@@ -9,7 +9,7 @@ or Gabor finds the network component; select the architecture in its properties.
 
 ## Choose and edit a network
 
-1. Load a problem from **File → Examples**. The existing examples start with FCNN.
+1. Load a problem from **File → Examples**. Different examples select their own starting architectures.
 2. If the PINN is compact, double-click it to expose the network/trainer pair.
 3. Select **Neural network → Architecture**, then choose the implementation.
 4. Edit its own frequency/gate/omega settings and hidden widths/seed. Equal-width
@@ -19,7 +19,7 @@ or Gabor finds the network component; select the architecture in its properties.
 6. Validate/train and open only the connected output views you need. Save the run
    before changing architecture if you want to retain its weights/results.
 
-![Actual Architecture selector with all ten implemented choices](../assets/screenshots/guide-architectures.png)
+![Earlier Architecture selector; Affine Fourier NN is now an additional choice](../assets/screenshots/guide-architectures.png)
 
 The [worked example](visual-guide.md#3-configure-the-siren-worked-example) separates
 SIREN omega controls from the SA trainer controls. For example, `omega=10` belongs
@@ -31,8 +31,10 @@ UI evidence; the measured comparisons and their settings are in [results](result
 
 Every supported network maps independent coordinate rows `(N,D)` to field rows
 `(N,C)`: D=1 or 2 and C=1 for scalar physics or 3 for steady u/v/p. Domain bounds
-supply fixed [0,1] coordinate normalisation, preserving physical-coordinate chain
-rules and avoiding batch-dependent predictions/derivatives. Seeded initialisation
+supply fixed [0,1] coordinate normalisation for the original networks. Affine
+Fourier NN instead uses physical coordinates by default, with an explicit option
+to normalize first. Both preserve physical-coordinate chain rules and avoid
+batch-dependent predictions/derivatives. Seeded initialisation
 and Fourier/Gabor sampling use Torch's RNG. No batch normalisation, dropout, grid
 input or dependencies between sample rows are introduced.
 
@@ -49,6 +51,7 @@ and training procedure.
 | --- | --- | --- |
 | Fully connected / `fcnn` | Original tanh, Xavier-normal MLP, unchanged | [FCNN.py](../margam/nn/FCNN.py) |
 | Fourier MLP (angular) / `fourier_mlp` | Raw coordinates + sine/cosine of exp-spaced angular frequencies → smooth MLP | [fourier.py](../margam/nn/fourier.py) |
+| Affine Fourier NN / `affine_fourier` | Explicit affine inputs → trainable dense projection → sine → smooth trunk | [affine_fourier.py](../margam/nn/affine_fourier.py) |
 | Fourier feature NN / `fourier` | Raw coordinates + fixed 2π Fourier features → smooth MLP | [fourier.py](../margam/nn/fourier.py) |
 | Highway Fourier NN / `highway_fourier` | Fourier trunk with a shared sigmoid transform gate and linear carry projection | [highway.py](../margam/nn/highway.py) |
 | Modified Fourier NN / `modified_fourier` | Two fixed input encoders mixed multiplicatively through hidden states | [modified_fourier.py](../margam/nn/modified_fourier.py) |
@@ -202,3 +205,12 @@ weights. Existing disabled settings preserve checkpoint architecture description
 The [Expert PINN guide](expert-pinn.md#random-weight-factorization) explains its
 paper reference, initialization and derivative checks. This is reusable outside
 the Expert recipe and is not a new neural-operator architecture.
+
+
+## Affine Fourier NN
+
+The additional `affine_fourier` architecture applies explicit affine coordinate
+expressions, a trainable dense projection and sine features before its shared
+trunk. Unlike the existing fixed Gaussian features, both projection weights and
+bias optimize with the network. Physical coordinates are the default; optional
+normalization is explicit. See [settings, example equations and limits](scale-pinn.md#affine-inputs-and-trainable-sine-features).

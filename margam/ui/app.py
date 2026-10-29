@@ -1847,7 +1847,7 @@ class Window(QMainWindow):
             architecture.setCurrentIndex(architecture.findData(self.config.network_type))
             architecture.currentIndexChanged.connect(lambda index,w=architecture:self.change_network_type(w.itemData(index)))
             self.form.addRow('Architecture',architecture)
-            note=QLabel('Pointwise coordinates → fields · fixed domain scaling. No neural operators. Changing architecture resets its options; trainer settings stay separate.');note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel('Affine coordinate expressions → trainable sine features → trunk. Physical units by default; normalization is optional. Projection weights and bias train with the network.' if self.config.network_type=='affine_fourier' else 'Pointwise coordinates → fields · fixed domain scaling. No neural operators. Changing architecture resets its options; trainer settings stay separate.');note.setWordWrap(True);self.form.addRow(note)
             self.network_option_fields()
             edit=QLineEdit(', '.join(map(str,self.config.layers)))
             edit.setPlaceholderText('16, 16')
@@ -2031,6 +2031,9 @@ class Window(QMainWindow):
             elif kind=='bool':
                 widget=QCheckBox();widget.setChecked(value)
                 widget.toggled.connect(lambda v,k=key,t=token:self.change_network_option(k,v,t))
+            elif kind=='text':
+                widget=QLineEdit(value);widget.setMinimumWidth(240);widget.setPlaceholderText('Blank: coordinate order; e.g. x; y; x-1; y-1')
+                widget.editingFinished.connect(lambda k=key,w=widget:self.change_network_option(k,w.text().strip()))
             elif kind=='list':
                 widget=QLineEdit(', '.join(map(str,value)))
                 widget.editingFinished.connect(lambda k=key,w=widget:self.change_network_list(k,w.text()))

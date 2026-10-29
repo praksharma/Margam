@@ -4,7 +4,7 @@ import math
 
 NETWORK_NAMES = {
     'fcnn':'Fully connected', 'fourier_mlp':'Fourier MLP (angular)',
-    'fourier':'Fourier feature NN', 'highway_fourier':'Highway Fourier NN',
+    'affine_fourier':'Affine Fourier NN', 'fourier':'Fourier feature NN', 'highway_fourier':'Highway Fourier NN',
     'modified_fourier':'Modified Fourier NN', 'multiscale_fourier':'Multiscale Fourier NN',
     'dgm':'DGM network', 'siren':'SIREN', 'fourier_filter':'Multiplicative Fourier NN',
     'gabor_filter':'Multiplicative Gabor NN',
@@ -29,6 +29,11 @@ FOURIER={
 OPTION_SCHEMAS = {
     'fcnn':{},
     'fourier_mlp':{'modes':number('Angular modes',4,1,32,'int'),'scale':number('Angular frequency scale',1.,.001,64.),'activation':ACTIVATION,'skip_connections':SKIP},
+    'affine_fourier':{'input_transform':dict(label='Affine inputs (semicolon separated)',kind='text',default=''),
+        'normalize_inputs':flag('Normalize before affine mapping'),
+        'features':number('Trainable sine features',32,1,256,'int'),
+        'cycles':number('Sine multiplier (× 2π)',1.,.001,64.),
+        'activation':choice('Trunk activation','silu',('tanh','silu','sin')),'skip_connections':SKIP},
     'fourier':FOURIER,
     'highway_fourier':dict(FOURIER,transform_fourier=flag('Fourier transform gate',True),project_fourier=flag('Fourier carry projector',False)),
     'modified_fourier':FOURIER,
@@ -53,12 +58,16 @@ def network_options(kind,options):
     result={key:deepcopy(spec['default']) for key,spec in schema.items()};result.update(deepcopy(options))
     for key,value in result.items():
         spec=schema[key];option_kind=spec['kind']
-        if option_kind=='bool':valid=type(value) is bool
+        if option_kind=='text':valid=isinstance(value,str) and len(value)<=1024
+        elif option_kind=='bool':valid=type(value) is bool
         elif option_kind=='choice':valid=isinstance(value,str) and value in spec['choices']
         else:
             rows=value if option_kind=='list' else [value]
             valid=isinstance(rows,(list,tuple)) and 1<=len(rows)<=16 and all(type(v) in ((int,) if option_kind=='int' else (int,float)) and math.isfinite(v) and spec['minimum']<=v<=spec['maximum'] for v in rows)
         if not valid:raise ValueError('Invalid network setting: '+spec['label'])
+    if kind=='affine_fourier':
+        from .affine_inputs import affine_map
+        affine_map(result['input_transform'],('x','y','t'))
     if kind=='multiscale_fourier' and len(result['scales'])>4:raise ValueError('Use at most four Gaussian scales.')
     return result
 

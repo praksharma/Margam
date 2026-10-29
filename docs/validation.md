@@ -287,3 +287,13 @@ selection, validation before worker startup, model/run persistence, resume, undo
 and offline archived export. CPU/CUDA evidence and actual UI captures are linked
 in [the prepared-data guide](training-data.md). These are implementation checks,
 not a solution-accuracy benchmark.
+
+
+## Affine Fourier features
+
+`tests/test_affine_fourier.py` checks notebook input equations, physical units,
+fourth-order derivatives with/without normalization, projection updates, exact CPU
+resume, changed-map rejection and historical fixed-Fourier loading.
+`tests/test_affine_fourier_ui.py` checks editable mappings, save/load and compact
+recipe roundtrips. Scale and pointwise-network suites also cover the new option.
+New CPU/CUDA short-run evidence is linked from [the Scale guide](scale-pinn.md).

@@ -201,6 +201,10 @@ class PoissonConfig:
         if self.pde_preset=='kdv_1d':
             from .kdv import validate_kdv
             validate_kdv(self)
+        if self.network_type=='affine_fourier':
+            from ..components.affine_inputs import affine_map
+            from ..components.network_config import network_options
+            affine_map(network_options(self.network_type,self.network_options)['input_transform'],self.coordinate_names)
         validate_scale_settings(self.scale_settings)
         if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)

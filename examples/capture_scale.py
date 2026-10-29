@@ -12,7 +12,7 @@ def main():
     from margam.ui.app import Window
     from margam.ui.theme import configure_theme
     from examples.documentation import validate_public_text
-    root=Path(__file__).resolve().parents[1];os.chdir(root);out=root/'assets/screenshots';paths={name:out/('manual-scale-'+name+'.png') for name in ('trainer','compact','examples')};manifest=out/'manual-scale-captures.json'
+    root=Path(__file__).resolve().parents[1];os.chdir(root);out=root/'assets/screenshots';paths={name:out/('manual-scale-'+name+'.png') for name in ('trainer','compact','examples','network')};manifest=out/'manual-scale-captures.json'
     if not args.overwrite and any(path.exists() for path in (*paths.values(),manifest)):parser.error('Captures exist; use --overwrite.')
     app=QApplication([]);configure_theme(app,'light');w=Window(state_directory=False);w.resize(1560,1250);w.show()
     def save(name,widget):
@@ -23,6 +23,7 @@ def main():
         if not widget.grab().save(str(paths[name])):raise RuntimeError('Capture failed.')
     try:
         w.load_example('scale_cavity_20000');assert w.validate_model(),w.validation.text();trainer=next(n for n in w.scene.nodes() if n.kind=='scale_method');w.scene.clearSelection();trainer.setSelected(True);app.processEvents();w.fit_model();save('trainer',w)
+        w.show_block_properties(next(n for n in w.scene.nodes() if n.kind=='network'));save('network',w.properties_dock)
         compact=w.collapse_recipe(trainer);assert compact;w.scene.clearSelection();compact.setSelected(True);app.processEvents();w.fit_model();save('compact',w)
         w.scale_examples_menu.popup(w.mapToGlobal(QPoint(20,50)));save('examples',w.scale_examples_menu);w.scale_examples_menu.close()
         manifest.write_text(json.dumps(dict(scope='Actual Scale controls/compact recipe/submenu; no training or accuracy claim.',captures={name:dict(file=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for name,path in paths.items()}),indent=2)+'\n')
