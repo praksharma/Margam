@@ -1,0 +1,26 @@
+{
+  "source": "https://gmsh.info/doc/texinfo/gmsh.html#t1",
+  "description": "Independent STEP and GEO construction of the rectangle outline in Gmsh tutorial t1; not a downloaded original STEP file.",
+  "bounds": {
+    "x": [
+      0,
+      0.1
+    ],
+    "y": [
+      0,
+      0.3
+    ],
+    "z": [
+      0,
+      0
+    ]
+  },
+  "validation": {
+    "step_import": "passed",
+    "step_interior_domain": "open_or_nonplanar",
+    "geo_interior_domain": "planar",
+    "geo_interior_samples": 32,
+    "faces": 1,
+    "edges": 4
+  }
+}
