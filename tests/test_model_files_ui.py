@@ -26,8 +26,12 @@ with TemporaryDirectory() as directory:
     monitor=next(n for n in w.scene.nodes() if n.kind=='monitor')
     w.rename_output(monitor,'My losses');w.change_output(monitor,'history_limit',150)
     monitor.setPos(1250,-100)
+    temporary=w.project_workspace.directory
+    (temporary/"domain.jorvik").write_bytes(b"fixture")
     expected=capture_model(w)
     assert w.isWindowModified() and w.save_model(path)
+    assert not temporary.exists()
+    assert (w.project_workspace.directory/"domain.jorvik").read_bytes()==b"fixture"
     assert not w.isWindowModified() and w.model_path==str(path)
     w.change('source',3)
     assert w.isWindowModified()
@@ -96,8 +100,9 @@ with TemporaryDirectory() as directory:
     # Incomplete graphs can be saved and reopened as drafts, then fail Run validation.
     network=next(n for n in w.scene.nodes() if n.kind=='network')
     w.scene.clearSelection();network.setSelected(True);w.delete_selected()
-    assert w.save_model(path)
-    assert w.load_model(path) and not w.validate_model()
+    draft_path=Path(directory)/'draft.margam.json'
+    assert w.save_model(draft_path)
+    assert w.load_model(draft_path) and not w.validate_model()
     w.undo_stack.setClean();assert w.close()
 app.processEvents()
 '''

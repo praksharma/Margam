@@ -459,3 +459,12 @@ only when the user explicitly requests including it here.
 - [x] Add Allen–Cahn and 2D Helmholtz examples, actual screenshots and recorded checks.
 - [ ] Define mask transfer before permitting resampling/minibatches, coupled
   residual attention, or dedicated training-point mask export/visualization.
+
+
+### Jorvik project documents
+
+- [x] Lazy temporary owned-file workspace; first-save transfer and Save As copy.
+- [ ] Jorvik geometry block owning a `.jorvik` document and `.nc` export.
+- [ ] Edit action, editor-process tracking and safe save/close while editing.
+- [ ] Explicit NetCDF update, dataset-role mapping and relative owned-file links.
+- [ ] Crash recovery for unsaved owned documents alongside model recovery.

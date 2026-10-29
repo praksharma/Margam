@@ -25,6 +25,7 @@ from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
 from .ports import INPUTS, OUTPUTS
 from .edit_history import EditCommand
+from .project_workspace import ProjectWorkspace
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
 from .graph_model import role, PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
@@ -372,6 +373,7 @@ class Window(QMainWindow):
         self.quick_insert = None
         self._closing = False
         self.model_path = None
+        self.project_workspace = ProjectWorkspace()
         self._paste_serial = 0
         self.setWindowTitle('Margam · baseline PINN builder')
         self.resize(1480,950)
@@ -731,7 +733,7 @@ class Window(QMainWindow):
         self.commit_inspector()
         path=path or self.model_path
         if not path:return self.save_model_as()
-        try:write_model(path,capture_model(self))
+        try:self.project_workspace.save(path, lambda target: write_model(target,capture_model(self)))
         except (OSError,ValueError,TypeError) as error:
             QMessageBox.warning(self,'Model could not be saved',str(error));return False
         self.model_path=str(Path(path).absolute())
@@ -778,6 +780,8 @@ class Window(QMainWindow):
             for wire in self.scene.wires:self.scene.addItem(wire);wire.update_path()
         finally:
             self.scene.blockSignals(False);self._resetting=False
+        self.project_workspace.close()
+        self.project_workspace = ProjectWorkspace(path)
         self.model_path=str(Path(path).absolute()) if path else None;self._history_epoch+=1
         self.settings_changed();self.selection_changed();self.fit_model()
         self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
@@ -1139,6 +1143,8 @@ class Window(QMainWindow):
         self.populate_template();self.settings_changed();self.fit_model()
         self.log.appendPlainText('Loaded the rectangle Poisson template.')
         self._resetting=False
+        self.project_workspace.close()
+        self.project_workspace = ProjectWorkspace()
         self.model_path=None;self.undo_stack.setClean();self.update_document_title()
         self.update_history_actions()
 
@@ -2241,6 +2247,7 @@ class Window(QMainWindow):
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        self.project_workspace.close()
         if self.desktop_state is not None:self.desktop_state.close()
         if not getattr(self,'_selection_disconnected',False):
             self.scene.selectionChanged.disconnect(self.selection_changed)

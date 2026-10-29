@@ -45,3 +45,19 @@ and [validation scope](../validation.md).
 Adaptive sampler runs also retain active points, importance weights and the sampling
 schedule. Resume verifies the original data and settings; it does not restart the
 sampler. See [adaptive sampling and resume](../adaptive-sampling.md#saved-models-and-runs).
+
+## Project-owned files
+
+Unsaved models have a private temporary working folder, created only when a
+component needs files. First Save copies these files beside the model into
+`<name>_files`; Save As copies them for the new model and preserves the original.
+Keep the model and its companion folder together when moving a project.
+Ordinary models without owned files do not create an empty companion folder.
+A failed save retains the temporary working files so saving can be retried.
+Discarding or closing the model removes its temporary working folder.
+
+This establishes the file lifecycle for future Jorvik geometry documents
+(`.jorvik`) and NetCDF exports (`.nc`). The geometry block and automatic import
+are not implemented yet. Existing external CSV/NPZ references remain external;
+this change does not copy them or make them portable. Temporary owned files are
+not yet included in desktop crash recovery.
