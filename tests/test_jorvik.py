@@ -142,11 +142,14 @@ with TemporaryDirectory() as directory:
         assert not w.scene.locked and not w.project_workspace.busy
     assert w.validate_model()
     bc.settings['parameters']['bc_values']['base']=5.
+    bc.settings['parameters']['bc_weights']['base']=4.
     w.result={'sentinel':True}
     renamed=dict(SELECTION,base=('boundary','floor'))
     assert w.update_jorvik(geometry,renamed,confirm=False)
     assert 'base' not in bc.settings['parameters']['bc_values'] and w.result is None
+    assert 'base' not in bc.settings['parameters']['bc_weights']
     w.undo_edit();assert bc.settings['parameters']['bc_values']['base']==5.
+    assert bc.settings['parameters']['bc_weights']['base']==4.
     assert geometry.settings['jorvik']['datasets']['base-stable']['name']=='base'
     config=w.scene.compile_config();assert config.shape=='Prepared2D'
     assert len(read_training_sets(config)[0][0])==3

@@ -39,5 +39,7 @@ def build_kdv(c):
     problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(points),conditions(c,network,sets))
     def refresh(phase):
         points,sets=samples(c,phase);return points,conditions(c,network,sets)
+    from ..components.losses import apply_boundary_identity
+    apply_boundary_identity(problem,c)
     problem.refresh_samples=refresh
     return PINN(problem,network,weights=c.loss_weights).compile(lr=c.lr,device=c.device)

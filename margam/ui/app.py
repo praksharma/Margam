@@ -1876,6 +1876,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             if self.config.pde_preset in ('expert_stokes','expert_cylinder','expert_cavity'):
                 side='top' if self.config.pde_preset=='expert_cavity' else 'left'
                 speed=QDoubleSpinBox();speed.setRange(0.,100000.);speed.setDecimals(5);speed.setValue(self.config.bc_values[side]);speed.valueChanged.connect(lambda value,s=side:self.change_bc(s,'value',value));self.form.addRow('Lid speed' if side=='top' else 'Maximum inlet speed',speed)
+            for name in self.config.constraint_names:self.boundary_coefficient_field(name)
             if self.config.pde_preset=='expert_cylinder':self.field('Inlet startup time','startup_time',minimum=.000001,maximum=100000)
         elif node.kind=='bc':
             if self.config.physics=='incompressible_2d':
@@ -1889,10 +1890,13 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
                         edit=QLineEdit(spec[key]);edit.setObjectName('flow_'+side+'_'+field+'_'+key)
                         edit.editingFinished.connect(lambda s=side,f=field,k=key,e=edit:self.change_flow_boundary(s,f,k,e.text().strip()))
                         self.form.addRow(field+label,edit)
+                for name in self.config.constraint_names:
+                    if name.startswith(side+':'):self.boundary_coefficient_field(name)
                 for index,label in enumerate(('Gauge x','Gauge y')):
                     spin=QDoubleSpinBox();spin.setDecimals(6);spin.setRange(-1000000,1000000);spin.setValue(self.config.pressure_point[index]);spin.setKeyboardTracking(False)
                     spin.valueChanged.connect(lambda value,i=index:self.change_pressure_point(i,value));self.form.addRow(label,spin)
                 self.field('Pressure gauge p','pressure_value');self.field('Gauge loss weight','pressure_weight',minimum=.000001,maximum=100000)
+                self.boundary_coefficient_field('pressure_gauge')
                 note=QLabel('Each velocity component needs a Dirichlet anchor. Pressure has one explicit point gauge. None leaves a component unconstrained on this set. Target expressions use coordinates; Custom operators can use u, v, p and dn(...).');note.setWordWrap(True);self.form.addRow(note)
             else:
                 for side in self.config.sides:
@@ -1904,6 +1908,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
                     combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
                     value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
                     layout.addWidget(combo);layout.addWidget(value);self.form.addRow(self.config.side_label(side).capitalize(),row)
+                    self.boundary_coefficient_field(self.config.constraint_name(side))
                     if mapped_values:self.form.addRow(self.config.side_label(side)+' target source',QLabel('Imported values: '+mapped_values))
                     target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
@@ -2065,6 +2070,21 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def change_pressure_point(self,index,value):
         point=list(self.config.pressure_point);point[index]=value;self.change('pressure_point',tuple(point))
+
+    def boundary_coefficient_field(self,name):
+        spin=QDoubleSpinBox();spin.setObjectName('boundary_coefficient_'+name)
+        spin.setProperty('help_key','boundary_coefficient')
+        spin.setRange(.000001,1000000.);spin.setDecimals(6);spin.setKeyboardTracking(False)
+        spin.setValue(self.config.bc_weights.get(name,1.))
+        token=object()
+        spin.valueChanged.connect(lambda value,n=name,t=token:self.change_boundary_coefficient(n,value,t))
+        self.form.addRow(name+' loss coefficient',spin)
+
+    def change_boundary_coefficient(self,name,value,edit_token=None):
+        coefficients=deepcopy(self.config.bc_weights)
+        if value==1.:coefficients.pop(name,None)
+        else:coefficients[name]=value
+        self.change('bc_weights',coefficients,edit_token)
 
     def change_bc_expression(self,side,attribute,text):
         values=deepcopy(getattr(self.config,attribute))

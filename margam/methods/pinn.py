@@ -55,8 +55,8 @@ class PINN:
         self._constraints = []
         names = {"pde"}
         for condition in self.problem.constraints:
-            if not condition.name or condition.name in names:
-                raise ValueError("Constraint names must be unique and cannot be 'pde'.")
+            if not condition.name or condition.name in names or condition.name.startswith('weighted:'):
+                raise ValueError("Constraint names must be unique; pde and the weighted: prefix are reserved.")
             names.add(condition.name)
             points = self._points(condition.points)
             self._constraints.append((condition, points, self._target(condition.target, points)))
@@ -135,6 +135,13 @@ class PINN:
             terms[name]=error.mean()*self.loss_scale(name)
         return terms
 
+    def record_contributions(self,record,terms,weights=None):
+        weights=self.weights if weights is None else weights
+        for condition,_,_ in self._constraints:
+            name=condition.name
+            record['weighted:'+name]=(terms[name].detach()*weights.get(name,1.)).item()
+        return record
+
     def train(self, iterations, display_every=1):
         """Run exactly iterations additional updates; return total-loss history.
 
@@ -158,6 +165,7 @@ class PINN:
             self.iter += 1
             record = {name: loss.detach().item() for name, loss in terms.items()}
             record["total"] = total.detach().item()
+            self.record_contributions(record,terms)
             self.loss_history.append(record)
             self.training_history.append(record["total"])
             self.PDE_loss = terms["pde"].detach()
@@ -201,7 +209,7 @@ class PINN:
         expected_loss=None if self.loss_formulation=='mean' else dict(mode=self.loss_formulation,measures=self.loss_measures)
         if state.get('loss_formulation')!=expected_loss:raise ValueError('Checkpoint loss formulation/measures differ from this recipe.')
         if ('sampling' in state)!=(self.sampling_controller is not None):raise ValueError('Checkpoint adaptive sampler differs from this recipe.')
-        if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets differ from the current files or sampling recipe.')
+        if state['data_fingerprint']!=self.data_fingerprint():raise ValueError('Checkpoint point data/targets or boundary coefficients differ from the current recipe.')
         expected_spec=getattr(self.network,'_margam_spec',None)
         if 'network_spec' in state:
             try:matches=json.dumps(state['network_spec'],sort_keys=True,allow_nan=False)==json.dumps(expected_spec,sort_keys=True,allow_nan=False)

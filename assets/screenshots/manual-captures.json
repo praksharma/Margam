@@ -1,6 +1,6 @@
 {
-  "recorded_utc": "2026-10-29T22:01:27.023841+00:00",
-  "application_parent": "b31fa6a0c4216a061aa7dff1aed7b41a3365521f",
+  "recorded_utc": "2026-10-31T19:51:35.900670+00:00",
+  "application_parent": "7134ba7378f71c099abf862c9794588d2546a8cd",
   "tracked_changes": true,
   "scope": "Actual Qt walkthrough captures and one default baseline run; not a numerical benchmark.",
   "qt_platform": "offscreen",
@@ -36,6 +36,7 @@
     "loss_formulation": "mean",
     "pde_weight": 1.0,
     "boundary_weight": 10.0,
+    "bc_weights": {},
     "bc_types": {
       "left": "Dirichlet",
       "right": "Dirichlet",
@@ -201,7 +202,7 @@
     },
     "boundary-condition": {
       "file": "manual-boundary-condition.png",
-      "sha256": "2b9ca9d08783291fce4ba6d7f22adfe6e7a2dcfa1c3d0723ae9a2a5e59d7a463"
+      "sha256": "044a04ac50c77c10ae848c34b4ec0a814c4a4ec703bf8827d45d80f36256bd9b"
     },
     "map-data": {
       "file": "manual-map-data.png",
@@ -225,19 +226,19 @@
     },
     "training-settings": {
       "file": "manual-training-settings.png",
-      "sha256": "f96fea804d5df7eed599da0dc48b15273fdca319d9b2e60578c547fd2b0dbafa"
+      "sha256": "de975cd7b9671e1761eff61eccb2cff0fdd25bd682901f055ca83ab2da53478b"
     },
     "expanded": {
       "file": "manual-expanded.png",
-      "sha256": "bb18112ed9692964e1db30e06e51b157cdedba46d1936d8e43528f34d0595ae5"
+      "sha256": "1f30c6ef42c0b8db7f743874f2cfafb72a4bf4c88c479ca75e421449563223ba"
     },
     "compact": {
       "file": "manual-compact.png",
-      "sha256": "e77b3e9ad8469750e05bc3380b9b163e964d803bd4516657e8f568c23b2a050f"
+      "sha256": "1f38006a4777a387bca48c0a7ef439b4cb2550e86463ffccb7cf263c79676758"
     },
     "monitor": {
       "file": "manual-monitor.png",
-      "sha256": "4a4edcd7664df250c13e81e243e1d49f354f75a6bc5b2eab453ab1a8bf726950"
+      "sha256": "10c80ac7fcbc67095778f8d0dad6d4e0c85f96c22be49ee5288b7cb908b2d464"
     },
     "comparison": {
       "file": "manual-comparison.png",

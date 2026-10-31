@@ -474,7 +474,7 @@ only when the user explicitly requests including it here.
 - [x] Export generated samples directly from the saved Jorvik document on editor close and Update; retain explicit application.
 
 - [x] Optional existing Jorvik project and NetCDF export browse buttons, using validated owned copies.
-- [ ] Per-named-boundary loss coefficients in Margam's BC/loss controls.
+- [x] Per-named-boundary loss coefficients in Margam's BC/loss controls.
 
 - [x] Prefilled dataset table with metadata-based roles, editable boundary names and explicit Ignore opt-out.
 
@@ -491,3 +491,6 @@ only when the user explicitly requests including it here.
   restore into a private workspace and preserve legacy archive readers.
 - [ ] Visually inspect the complete annulus VTU in ParaView when available;
   current end-to-end evidence checks XML and exact arrays, not viewer rendering.
+
+- [x] Select named raw/weighted loss curves in Training Monitor, including actual
+  adaptive objective contributions and explicit legacy-history gaps.

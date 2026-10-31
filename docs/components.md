@@ -103,7 +103,8 @@ and gauge handling. Adjacent Dirichlet targets must agree at rectangle corners.
 Mixed corner regularity is not guaranteed by this validation.
 
 The PDE mean loss has its own weight. Each boundary mean has boundary_weight /
-number_of_sides, so the boundary weight controls the average across named sides.
+number_of_sides, multiplied by that constraint’s bc_weights entry (default 1).
+The denominator is unchanged when coefficients differ; there is no renormalization.
 Tanh networks, Adam, fixed samples and full-batch updates use the baseline recipe.
 An analytical interval solution is available for supported BC combinations; a rectangular reference is available through an explicit truncated sine series
 for equal constant Dirichlet boundaries.

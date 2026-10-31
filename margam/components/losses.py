@@ -32,4 +32,30 @@ def apply_problem_measures(problem,config):
     for condition in problem.constraints:
         side=condition.name.split(':',1)[0]
         condition.measure=side_measures.get(side,1.) # Pressure gauge is a point penalty.
+    return apply_boundary_identity(problem,config)
+
+
+def validate_boundary_weights(weights):
+    import re
+    if not isinstance(weights,dict) or len(weights)>256 or any(
+        not isinstance(name,str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_:-]{0,127}',name)
+        or name in ('pde','total') or type(value) not in (int,float)
+        or not math.isfinite(value) or not 1e-6<=value<=1e6
+        for name,value in weights.items()):
+        raise ValueError('Boundary coefficients must be named finite numbers between 1e-6 and 1e6.')
+
+
+def apply_boundary_identity(problem,config):
+    """Keep unit defaults compatible; guard changed manual coefficients on resume."""
+    import json
+    coefficients={name:float(config.bc_weights[name]) for name in config.constraint_names
+                  if config.bc_weights.get(name,1.)!=1.}
+    if coefficients:
+        problem.data_identity=json.dumps(dict(source=problem.data_identity,boundary_coefficients=coefficients),sort_keys=True)
     return problem
+
+
+def loss_record_keys(record,names,constraints):
+    """Legacy raw-only records or complete per-constraint contribution records."""
+    keys=set(record) if isinstance(record,dict) else set()
+    return keys==set(names) or keys==set(names)|{'weighted:'+name for name in constraints}

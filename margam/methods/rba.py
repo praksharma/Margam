@@ -57,6 +57,7 @@ class ResidualAttentionPINN(PINN):
             if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in self.network.parameters()):raise FloatingPointError('Non-finite RBA gradient; no update was taken.')
             self.optimiser.step();self.attention=candidate;self.iter+=1
             record={name:value.detach().item() for name,value in raw.items()};record.update(pde_weighted=attention_loss.detach().item(),total=total.detach().item())
+            self.record_contributions(record,raw)
             self.loss_history.append(record);self.training_history.append(record['total'])
             self.PDE_loss=raw['pde'].detach();self.BC_loss=sum(value.detach() for name,value in raw.items() if name!='pde');self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f'Iteration: {self.iter} RBA loss: {record["total"]:.6g}')
@@ -71,13 +72,15 @@ class ResidualAttentionPINN(PINN):
     def load_training_state(self,state):
         if isinstance(state,dict) and isinstance(state.get('rba'),dict) and isinstance(state['rba'].get('settings'),dict) and isinstance(state['rba']['settings'].get('configuration'),dict):
             state=deepcopy(state)
+            if 'bc_weights' in self.configuration:state['rba']['settings']['configuration'].setdefault('bc_weights',{})
             if 'pde_points' in self.signature.get('configuration',{}):state['rba']['settings']['configuration'].setdefault('pde_points','interior')
         self._require_compiled();payload=state.get('rba') if isinstance(state,dict) else None
         if not isinstance(payload,dict) or set(payload)!={'settings','attention'} or payload['settings']!=self.signature:raise ValueError('RBA checkpoint configuration differs.')
         value=payload['attention'];steps=state.get('iter');cap=max(1. if self.settings['initialization']=='normalized' else 0.,self.settings['rate']/(1-self.settings['decay']))
         # Conservative floating-point envelope; recurrence weights are never clamped.
         if not isinstance(value,torch.Tensor) or value.shape!=self.attention.shape or value.dtype!=self.dtype or value.requires_grad or not torch.isfinite(value).all() or (value<0).any() or (value>cap*1.1+32*torch.finfo(self.dtype).eps).any() or steps==0 and (value!=0).any():raise ValueError('Invalid RBA attention tensor/count/bounds.')
+        from ..components.losses import loss_record_keys
         names={'pde','pde_weighted','total',*(c.name for c,_,_ in self._constraints)}
-        if not isinstance(state.get('loss_history'),list) or any(not isinstance(row,dict) or set(row)!=names or any(type(v) not in (int,float) or not math.isfinite(v) or v<0 for v in row.values()) for row in state['loss_history']):raise ValueError('Invalid RBA loss history.')
+        if not isinstance(state.get('loss_history'),list) or any(not isinstance(row,dict) or not loss_record_keys(row,names,[c.name for c,_,_ in self._constraints]) or any(type(v) not in (int,float) or not math.isfinite(v) or v<0 for v in row.values()) for row in state['loss_history']):raise ValueError('Invalid RBA loss history.')
         super().load_training_state({key:v for key,v in state.items() if key!='rba'})
         self.attention=value.to(self.device).detach().clone();return self

@@ -397,3 +397,30 @@ The complete CPU regression run after this change completed **224 tests: 214
 passed and 10 skipped**. CUDA was hidden for that suite; the complete CUDA
 workflow was run separately and passed. The final focused archive/workflow/output
 suite also passed all five cases. The manual build checked 61 rendered pages.
+
+
+## Named boundary loss coefficients
+
+`tests/test_boundary_weights.py` checks unit-default compatibility, the manual
+weighted objective and its exact parameter gradients, raw/weighted separation,
+non-unit coefficients and exact 2+2 continuation for baseline, SA, LRA, Expert,
+Scale, gPINN and RBA on CPU and CUDA. The CUDA case was run separately with CUDA
+visible. SA diagnostics are checked against the pre-update masks, rather than
+recomputed after their ascent update. Changing an active coefficient is rejected
+on checkpoint load. UI checks cover control editing, undo/redo, model 27 and
+version-26 migration, archive/resume and selected monitor data. Jorvik update tests
+also verify coefficient removal/restoration when an alias is renamed/undone.
+
+The reproducible [CPU](../assets/benchmarks/boundary-weights-cpu.json) and
+[CUDA](../assets/benchmarks/boundary-weights-cuda.json) records use imported triangle
+points, mixed BC operators, coefficients 2, 0.5 and 3, and four baseline updates.
+The sum of recorded weighted BC contributions plus the PDE contribution reconciles
+to the total within floating-point tolerance. These are implementation checks,
+not numerical-accuracy claims. See the
+[illustrated Jorvik controls](jorvik.md#weight-named-boundaries-and-inspect-their-contributions).
+
+The complete CPU regression run completed **228 tests: 217 passed and 11
+skipped**. The final focused coefficient/Jorvik/flow/archive suite completed
+11 tests with 10 passed and one CUDA skip. A separate CUDA test exercised all
+seven trainers and passed. The manual build checked 61 rendered pages; the
+capture helper refreshed 22 real UI walkthrough images plus the Jorvik captures.

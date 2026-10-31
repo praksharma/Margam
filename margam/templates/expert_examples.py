@@ -182,6 +182,8 @@ def build_case(c,*,initial_teacher=None,time_origin=None):
     def refresh(phase):
         points,sets=samples(c,phase)
         return collocation_rows(c,points,sets),make_constraints(c,network,sets,time_origin=time_origin)
+    from ..components.losses import apply_boundary_identity
+    apply_boundary_identity(problem,c)
     problem.refresh_samples=refresh
     if c.method=='expert':
         from ..methods.expert import ExpertPINN

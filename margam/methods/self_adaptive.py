@@ -32,9 +32,12 @@ class SelfAdaptivePINN(PINN):
     def point_errors(self):
         return {name:self.point_squared_errors(*sample) for name,sample in self.loss_samples().items()}
 
+    def objective_terms(self,errors):
+        return {name:((error*self.adaptive_weights[name].square()).mean() if name in self.adaptive_weights else error.mean())*self.loss_scale(name)
+                              for name,error in errors.items()}
+
     def objective(self,errors):
-        return weighted_loss({name:((error*self.adaptive_weights[name].square()).mean() if name in self.adaptive_weights else error.mean())*self.loss_scale(name)
-                              for name,error in errors.items()},self.weights)
+        return weighted_loss(self.objective_terms(errors),self.weights)
 
     def train(self,iterations,display_every=1):
         self._require_compiled()
@@ -43,7 +46,7 @@ class SelfAdaptivePINN(PINN):
         self.network.train()
         for _ in range(iterations):
             self.optimiser.zero_grad(set_to_none=True);self.adaptive_optimiser.zero_grad(set_to_none=True)
-            errors=self.point_errors();total=self.objective(errors)
+            errors=self.point_errors();objective_terms=self.objective_terms(errors);total=weighted_loss(objective_terms,self.weights)
             if not torch.isfinite(total).item():raise FloatingPointError('Non-finite SA-PINN loss; no update was taken.')
             total.backward()
             parameters=[*self.network.parameters(),*self.adaptive_weights.values()]
@@ -56,6 +59,7 @@ class SelfAdaptivePINN(PINN):
             self.iter+=1
             record={name:(error.detach().mean()*self.loss_scale(name)).item() for name,error in errors.items()}
             record['total']=total.detach().item()
+            self.record_contributions(record,objective_terms)
             self.loss_history.append(record);self.training_history.append(record['total'])
             self.PDE_loss=errors['pde'].detach().mean()*self.loss_scale('pde')
             self.BC_loss=sum(error.detach().mean()*self.loss_scale(name) for name,error in errors.items() if name!='pde')

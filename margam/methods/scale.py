@@ -99,6 +99,7 @@ class ScalePINN(PINN):
             # Store w^k BEFORE the optimizer produces w^(k+1), never an EMA or initial solution.
             self.previous.load_state_dict(self.network.state_dict());self.optimiser.step();self.iter+=1
             record={name:value.detach().item() for name,value in terms.items()};record['total']=total.detach().item()
+            self.record_contributions(record,terms)
             self.loss_history.append(record);self.training_history.append(record['total']);self.diagnostics.append(dict(step=self.iter,**self._latest))
             self.PDE_loss=terms['pde'].detach();self.BC_loss=sum(value.detach() for name,value in terms.items() if name!='pde');self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f'Scale update {self.iter}: {record["total"]:.6g}')
@@ -117,6 +118,7 @@ class ScalePINN(PINN):
             from ..components.rba_config import rba_defaults
             payload['settings']['configuration'].setdefault('rba_settings',rba_defaults())
             payload['settings']['configuration'].setdefault('pde_points','interior')
+            payload['settings']['configuration'].setdefault('bc_weights',{})
         if not isinstance(payload,dict) or set(payload)!={'settings','previous','diagnostics'} or payload['settings']!=self.signature:raise ValueError('Scale-PINN checkpoint configuration differs.')
         expected=self.previous.state_dict();previous=payload['previous'];records=payload['diagnostics'];steps=state.get('iter')
         if not isinstance(previous,dict) or set(previous)!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[name].shape or value.dtype!=expected[name].dtype or not torch.isfinite(value).all() for name,value in previous.items()):raise ValueError('Invalid Scale previous-iterate network.')

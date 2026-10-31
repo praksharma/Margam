@@ -55,6 +55,7 @@ class PoissonConfig:
     loss_formulation: str = 'mean'
     pde_weight: float = 1.0
     boundary_weight: float = 1.0
+    bc_weights: dict = field(default_factory=dict)
     bc_types: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 'Dirichlet'))
     bc_values: dict = field(default_factory=lambda: dict.fromkeys(('left', 'right', 'bottom', 'top'), 0.0))
     boundary_sampling: dict = field(default_factory=dict)
@@ -123,11 +124,14 @@ class PoissonConfig:
 
     @property
     def loss_weights(self):
-        if self.pde_preset=='kdv_1d':return {'pde':self.pde_weight,'initial':self.boundary_weight/2,'periodic_x':self.boundary_weight/2}
-        if self.is_paper_case:return {'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
-        if self.physics=='scalar':return {'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
-        names=self.constraint_names
-        return {'pde':self.pde_weight,**{name:self.boundary_weight/(len(names)-1) for name in names if name!='pressure_gauge'},'pressure_gauge':self.pressure_weight}
+        if self.pde_preset=='kdv_1d':weights={'pde':self.pde_weight,'initial':self.boundary_weight/2,'periodic_x':self.boundary_weight/2}
+        elif self.is_paper_case:weights={'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
+        elif self.physics=='scalar':weights={'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
+        else:
+            names=self.constraint_names
+            weights={'pde':self.pde_weight,**{name:self.boundary_weight/(len(names)-1) for name in names if name!='pressure_gauge'},'pressure_gauge':self.pressure_weight}
+
+        return {name:value*self.bc_weights.get(name,1.) if name!='pde' else value for name,value in weights.items()}
 
     @property
     def sides(self):
@@ -150,6 +154,8 @@ class PoissonConfig:
             side, BoundarySampling(self.boundary_points, 'grid', 8 + sides.index(side)))
 
     def validate_sampling(self):
+        from ..components.losses import validate_boundary_weights
+        validate_boundary_weights(self.bc_weights)
         if self.pde_points not in ('interior','boundary','both'):raise ValueError('Choose interior, boundary or both PDE collocation sets.')
         if self.interior_data:
             validate_mapping(self.interior_data)

@@ -51,7 +51,7 @@ class PINNTests(unittest.TestCase):
         self.assertEqual(model.iter, 5)
         self.assertEqual(len(model.training_history), 5)
         self.assertEqual(len(output.getvalue().splitlines()), 2)
-        self.assertEqual(set(model.loss_history[0]), {"pde", "boundary", "total"})
+        self.assertEqual(set(model.loss_history[0]), {"pde", "boundary", "total", "weighted:boundary"})
         model.compile(device="cpu")
         self.assertEqual(model.iter, 0)
         self.assertEqual(model.training_history, [])

@@ -254,3 +254,17 @@ Each run leaves a fresh artifact folder below `build/jorvik-workflow`.
 See the [complete Jorvik walkthrough](jorvik.md#walk-through-a-complete-project).
 To refresh its screenshot, add
 `--screenshot assets/screenshots/manual-jorvik-workflow.png`.
+
+
+### Named boundary coefficient checks
+
+```sh
+.venv/bin/python -m examples.boundary_weights --device cpu --output build/boundary-weights-cpu.json
+.venv/bin/python -m examples.boundary_weights --device cuda --output build/boundary-weights-cuda.json
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_jorvik --overwrite
+```
+
+The first two commands record actual mixed-operator losses and verify exact
+same-device continuation. The capture command includes the named coefficient
+controls and selected-boundary monitor view. See
+[coefficient semantics](modeling/physics.md#set-individual-boundary-loss-coefficients).

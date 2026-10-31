@@ -74,6 +74,7 @@ class LearningRateAnnealingPINN(PINN):
             self.iter+=1;self.lra_weights=weights
             if event is not None:self.lra_history.append(event)
             record={name:loss.detach().item() for name,loss in terms.items()};record['total']=total.detach().item()
+            self.record_contributions(record,terms,effective)
             self.loss_history.append(record);self.training_history.append(record['total'])
             self.PDE_loss=terms['pde'].detach();self.BC_loss=sum(loss.detach() for name,loss in terms.items() if name!='pde');self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f"Iteration: {self.iter}\t LRA loss: {record['total']:.6g}")

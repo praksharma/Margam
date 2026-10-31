@@ -12,7 +12,7 @@ PARAMETERS = {
     'boundary':('boundary_points','boundary_sampling','boundary_data'),
     'predefined_pde':('pde_preset','pde_forcing','source','viscosity','fourth_order'),
     'pde':('source','pde_expression','physics','viscosity','flow_residuals'),
-    'bc':('bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight','startup_time'),
+    'bc':('bc_weights','bc_types','bc_values','bc_targets','bc_operators','flow_boundary','pressure_point','pressure_value','pressure_weight','startup_time'),
     'network':baseline.NETWORK_FIELDS,
     'method':baseline.TRAINING_FIELDS,
     'recipe':baseline.PARAMETERS,

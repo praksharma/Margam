@@ -76,8 +76,8 @@ and defaults to `domain.nc` beside it.
 
 Both selections are undoable, survive Save/Save As and recovery, and move with the
 project companion folder. Cancelling a picker leaves the block unchanged. The
-named BC sets remain separate for physics assignment; per-boundary loss weight
-controls are separate future work.
+named BC sets remain separate for physics assignment and individual loss coefficients
+in the Boundary condition inspector.
 
 ## Generated samples and separate boundaries
 
@@ -183,7 +183,9 @@ directions; the short training run is not an accuracy benchmark.
 3. Set source to zero. In Boundary condition, set inner Dirichlet value 0 and
    outer Neumann value 1. Neumann means outward derivative, not a conductivity-scaled
    flux. Set the trainer's overall boundary weight to 3 if following this check.
-   **Independent per-boundary coefficients remain on the TODO list.**
+   Each boundary also has its own **loss coefficient**, default 1. For example,
+   inner 2 and outer 0.5 give effective fixed weights 3 and 0.75 with overall BC
+   weight 3 and two constraints; other terms are not renormalized.
 4. Add **Evaluation points** and map an explicit CSV with columns `id,x,y`.
    For example, use `probe-C,0.75,0`, `probe-A,0,0.6`, `probe-B,-0.8,0`.
    Connect Evaluation points and PINN method to **ParaView Export**. Evaluation
@@ -238,3 +240,29 @@ exportable without those external inputs; fresh evaluation or resume needs the
 relevant source files. Versions 1–3 remain readable, but cannot recover owned
 files that were never embedded. Archives have a 256 MiB limit and at most 4096
 owned files. Unsafe relative paths, symlinks and conflicting file paths are rejected.
+
+
+## Weight named boundaries and inspect their contributions
+
+Select **Boundary condition**. Each boundary has a **loss coefficient**, alongside
+its operator and target settings. Use **i** for the meaning and limits. Coefficients
+are positive (1e-6 to 1e6), default to 1, and multiply rather than redistribute the
+existing global BC weighting. They do not change sampling counts or raw errors.
+
+![Separate boundary coefficients and a selected-boundary loss view](../assets/screenshots/manual-jorvik-weights.png)
+
+*Actual annulus training: inner coefficient 2, outer coefficient 0.5 and overall
+BC weight 3. The monitor's Loss view selects inner and compares its raw loss with
+its weighted contribution. This short run demonstrates controls, not accuracy.*
+
+Open a connected **Training Monitor** and choose a named constraint in **Loss view**.
+**Summary (all losses)** restores the existing overview. The selected view plots
+raw loss and its contribution to the actual training objective, including adaptive
+mask/EMA weights where applicable. Both are measured before the optimizer update.
+Old archives have raw curves but cannot reconstruct missing historical weighted
+contributions; those gaps are labelled rather than guessed.
+
+Coefficients belong to the BC block and survive undo/redo, save/load and run
+archives. A coefficient change invalidates cached training state. Updating Jorvik
+clears coefficients for removed/renamed BC aliases along with their old operator
+settings; undo restores them. The original imported points are unchanged.

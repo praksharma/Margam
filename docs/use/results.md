@@ -27,6 +27,14 @@ figure on screen. Closing a view is different from deleting its block.
 
 ## Read the losses in context
 
+The monitor's **Loss view** selector keeps the existing summary and lets you
+select any named boundary, initial, periodic or gauge constraint. The selected
+view shows **Raw** loss and **Weighted contribution** to the actual objective,
+including the overall coefficient, per-constraint coefficient and any adaptive
+trainer weighting. Values are measured before each update, including before SA
+mask updates. Older records without weighted diagnostics show a labelled gap;
+the monitor does not reconstruct them from today's settings.
+
 Per-term PDE/constraint curves describe physical errors at training locations.
 The total includes the configured method's weights; SA and LRA change their
 objectives during training. A smaller total across two different methods need

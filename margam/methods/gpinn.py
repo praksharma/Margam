@@ -62,6 +62,7 @@ class GradientEnhancedPINN(PINN):
             if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in self.network.parameters()):raise FloatingPointError('Non-finite gPINN gradient; no optimizer update was taken.')
             self.optimiser.step();self.iter+=1
             record={name:loss.detach().item() for name,loss in terms.items()};record['total']=total.detach().item()
+            self.record_contributions(record,terms)
             self.loss_history.append(record);self.training_history.append(record['total'])
             self.PDE_loss=terms['pde'].detach();self.BC_loss=sum(terms[c.name].detach() for c,_,_ in self._constraints);self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f'Iteration: {self.iter} gPINN loss: {record["total"]:.6g}')
@@ -74,10 +75,12 @@ class GradientEnhancedPINN(PINN):
         if isinstance(state,dict) and isinstance(state.get('gpinn'),dict) and isinstance(state['gpinn'].get('configuration'),dict):
             from ..components.rba_config import rba_defaults
             state=deepcopy(state)
+            if 'bc_weights' in self.configuration:state['gpinn']['configuration'].setdefault('bc_weights',{})
             if 'pde_points' in self.configuration:state['gpinn']['configuration'].setdefault('pde_points','interior')
             if 'rba_settings' in self.configuration:state['gpinn']['configuration'].setdefault('rba_settings',rba_defaults())
         if not isinstance(state,dict) or state.get('gpinn')!=self.signature:raise ValueError('gPINN checkpoint gradient weights, coordinates or configuration differ.')
+        from ..components.losses import loss_record_keys
         names={'pde','total',*('pde_grad_'+name for name in self.directions),*(c.name for c,_,_ in self._constraints)}
         history=state.get('loss_history')
-        if not isinstance(history,list) or any(not isinstance(row,dict) or set(row)!=names or any(type(v) not in (int,float) or not math.isfinite(v) or v<0 for v in row.values()) for row in history):raise ValueError('Invalid gPINN loss history.')
+        if not isinstance(history,list) or any(not isinstance(row,dict) or not loss_record_keys(row,names,[c.name for c,_,_ in self._constraints]) or any(type(v) not in (int,float) or not math.isfinite(v) or v<0 for v in row.values()) for row in history):raise ValueError('Invalid gPINN loss history.')
         super().load_training_state({key:value for key,value in state.items() if key!='gpinn'});return self

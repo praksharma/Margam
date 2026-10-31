@@ -1,7 +1,7 @@
 """Views belong to output-block identities; hiding a dock does not remove its block."""
 from PySide6.QtCore import Qt
 from .plots import CurvePlot, SolutionView
-from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem
+from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem,QComboBox,QHBoxLayout
 
 OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export', 'paraview'}
 
@@ -33,6 +33,41 @@ class VectorResultView(QWidget):
         self.caption.setText(caption)
 
 
+class TrainingMonitorView(QWidget):
+    def __init__(self):
+        super().__init__();layout=QVBoxLayout(self)
+        controls=QHBoxLayout();controls.addWidget(QLabel('Loss view'))
+        self.constraint=QComboBox();self.constraint.setObjectName('monitor_constraint')
+        controls.addWidget(self.constraint);controls.addStretch();layout.addLayout(controls)
+        self.detail=CurvePlot(logarithmic=True);layout.addWidget(self.detail)
+        self.records=[];self.summary_series=[];self.summary_caption=''
+        self.constraint.currentIndexChanged.connect(self.refresh_detail)
+
+    @property
+    def series(self):return self.detail.series
+
+    def set_series(self,series,caption):
+        self.summary_series=series;self.summary_caption=caption;self.refresh_detail()
+
+    def show_constraints(self,records,names):
+        selected=self.constraint.currentData();self.records=records
+        self.constraint.blockSignals(True);self.constraint.clear();self.constraint.addItem('Summary (all losses)',None)
+        for name in names:self.constraint.addItem(name,name)
+        index=self.constraint.findData(selected)
+        self.constraint.setCurrentIndex(max(0,index));self.constraint.blockSignals(False);self.refresh_detail()
+
+    def refresh_detail(self):
+        name=self.constraint.currentData()
+        if name is None:
+            self.detail.set_series(self.summary_series,self.summary_caption);return
+        raw=[(step,row[name]) for step,row in self.records if name in row]
+        weighted=[(step,row['weighted:'+name]) for step,row in self.records if 'weighted:'+name in row]
+        series=[('Raw',raw,'#7089d5'),('Weighted contribution',weighted,'#d58b35')] if raw else []
+        note=name+' · loss before update · log scale' if raw else 'Train to inspect a named boundary/initial constraint.'
+        if raw and len(weighted)<len(raw):note+=' · older records have no weighted contribution'
+        self.detail.set_series(series,note)
+
+
 class OutputViews:
     def __init__(self, window):
         self.window = window
@@ -42,7 +77,7 @@ class OutputViews:
         if node.kind not in OUTPUT_KINDS or node.kind in ('export','paraview'):
             return
         if node.identifier not in self.entries:
-            view = CurvePlot(logarithmic=True) if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()
+            view = TrainingMonitorView() if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()
             dock = self.window.dock(node.title, view, Qt.DockWidgetArea.BottomDockWidgetArea)
             dock.setObjectName('output-' + node.identifier)
             for other,_ in self.entries.values():
@@ -79,6 +114,7 @@ class OutputViews:
                 from ..components.gpinn_config import gpinn_terms
                 for term in gpinn_terms(self.window.config):series.append((term+' (raw)',[(step,row[term]) for step,row in records],{'x':'#ad75ce','y':'#cc7840','t':'#417ec1'}[term[-1]]))
             if records and 'pressure_gauge' in self.window.config.constraint_names:series.append(('Pressure gauge (raw)',[(step,row['pressure_gauge']) for step,row in records],'#ad75ce'))
+            view.show_constraints(records,self.window.config.constraint_names)
             view.set_series(series, 'Requested training losses · log scale · retained updates only' if records else 'Connect this monitor and train to record losses.')
         else:
             data = (self.window.result or {}).get('outputs', {}).get(node.identifier)
@@ -95,8 +131,9 @@ class OutputViews:
 
     def clear_data(self):
         for _,view in self.entries.values():
-            if isinstance(view, CurvePlot):
+            if isinstance(view, (CurvePlot,TrainingMonitorView)):
                 view.set_series([], 'Model changed. Run training again.')
+                if isinstance(view,TrainingMonitorView):view.show_constraints([],self.window.config.constraint_names)
             else:
                 view.clear()
 

@@ -117,3 +117,36 @@ RBA and Expert training. These are correctness checks, not accuracy benchmarks.
 CUDA_VISIBLE_DEVICES='' .venv/bin/python -m examples.pde_collocation --device cpu --output build/pde-collocation-cpu.json
 .venv/bin/python -m examples.pde_collocation --device cuda --output build/pde-collocation-cuda.json
 ```
+
+
+## Set individual boundary loss coefficients
+
+Each named constraint in **Boundary condition** has a **loss coefficient**, default
+1. For ordinary scalar problems the objective is
+
+`PDE_weight × PDE_loss + BC_weight / number_of_constraints × Σ(coefficient_i × BC_loss_i)`.
+
+For two boundaries, overall BC weight 3, and coefficients 2 and 0.5, their fixed
+multipliers are 3 and 0.75. Increasing one does not renormalize the others. The raw
+errors and point counts are unchanged. Use a positive coefficient between 1e-6
+and 1e6; zero is not a way to remove a required anchor.
+
+Transient initial and periodic constraints, and coupled flow component constraints,
+also have individual coefficients under their actual constraint names. Pressure
+gauges retain their existing separate gauge weight, multiplied by their own
+coefficient. Paper presets retain their previous normalization. SA, LRA and Expert
+can apply additional adaptive weights; a manual coefficient does not freeze or
+replace their balancing algorithms. In integral mode the unweighted term already
+includes its physical measure.
+
+The [Training Monitor](../use/results.md#read-the-losses-in-context) can show raw
+and actual weighted loss for a selected constraint. The
+[Jorvik example](../jorvik.md#weight-named-boundaries-and-inspect-their-contributions)
+shows the controls with independently named curved boundaries.
+
+The Python setting is `PoissonConfig(bc_weights={'inner': 2.0, 'outer': 0.5})`.
+Keys are constraint names (`initial` for a time-zero set, `left:u` for a coupled
+velocity component). Inactive entries do not contribute to the current objective.
+Model format 27 stores the mapping; older models default to unit coefficients.
+Changing an active coefficient is rejected when loading a checkpoint from a
+previously different objective.

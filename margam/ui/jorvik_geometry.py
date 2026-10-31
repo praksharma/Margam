@@ -215,7 +215,7 @@ class JorvikGeometryActions:
             for physics_node in physics_nodes:
                 parameters=new[physics_node.identifier]['parameters']
                 for name in removed:
-                    for key in ('bc_types','bc_values','bc_targets','bc_operators'):
+                    for key in ('bc_weights','bc_types','bc_values','bc_targets','bc_operators'):
                         parameters[key].pop(name,None)
                     if name in ('left','right','bottom','top'):
                         parameters['bc_types'][name]='Dirichlet';parameters['bc_values'][name]=0.

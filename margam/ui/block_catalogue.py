@@ -59,7 +59,7 @@ CAPABILITIES = {
     'boundary': ('Named side, method, count, seed', 'Independent rectangle-side recipes; interval endpoints are fixed. Space–time has left/right traces and an initial set, with no final-time constraint. BC assignment is separate.'),
     'predefined_pde': ('PDE family, coefficient, forcing/diffusivity', 'Tested equations. Collocation arrows choose interior, boundary or both point sets; BC operators and reference data remain separate.'),
     'pde': ('Physics, residual expressions, viscosity/coefficient', 'Residual evaluated at the connected collocation points. Optional boundary arrow adds boundary/initial samples. BC operators remain separate. Scalar spatial/space–time or steady 2D u/v/p.'),
-    'bc': ('Type, constant/expression target, custom operator', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
+    'bc': ('Type, constant/expression target, custom operator, per-constraint coefficient', 'Dirichlet, outward derivative or Custom (e.g. Robin). A Dirichlet anchor is required.'),
     'network': ('Architecture, hidden layers, seed and per-architecture options', 'Pointwise fully connected, Fourier MLP/features, highway/modified/multiscale Fourier, DGM, SIREN and multiplicative Fourier/Gabor networks. Shared by baseline and SA. No neural operators.'),
     'method': ('Variant, loss formulation, updates, learning rate and loss weights', 'Baseline or equal-constant hard Dirichlet PINN; mean MSE or domain/boundary integral loss; full-batch Adam. Optional residual sampling blocks; no LBFGS.'),
     'solution': ('Name, evaluation points per axis', 'Explicit scalar prediction or u/v/p table request; no reference assumed.'),

@@ -31,6 +31,6 @@ class PINNProblem:
     collocation_points: TensorSource
     constraints: Sequence[PointConstraint] = field(default_factory=tuple)
     residual_target: Union[torch.Tensor, float, Callable] = 0.0
-    data_identity: str = ""  # Optional immutable identity for imported operator data.
+    data_identity: str = ""  # Immutable identity for imported operators and configured boundary coefficients.
 
     measure: float = 1.0  # Domain volume for integral-of-squared-residual loss.

@@ -53,7 +53,8 @@ def validate_run(data):
     monitors=data['monitors'];require(isinstance(monitors,dict),'Invalid monitor histories.')
     from ..components.gpinn_config import gpinn_terms
     names={'pde','total',*config.constraint_names,*(gpinn_terms(config) if config.method=='gpinn' else ()),*(['pde_weighted'] if config.method=='rba' else [])}
-    def check_record(record):return isinstance(record,dict) and set(record)==names and all(number(v) for v in record.values())
+    from ..components.losses import loss_record_keys
+    def check_record(record):return isinstance(record,dict) and loss_record_keys(record,names,config.constraint_names) and all(number(v) for v in record.values())
     for identifier,records in monitors.items():
         require(kinds.get(identifier)=='monitor' and isinstance(records,list) and len(records)<=100000,'Invalid monitor records.')
         previous=0

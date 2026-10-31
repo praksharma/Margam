@@ -199,3 +199,11 @@
   file map. Restore into a new private workspace before replacing the graph;
   preserve older archives and external-input semantics. Never extract traversal,
   absolute, ambiguous or conflicting paths, or follow symlinks when capturing.
+
+- BC blocks own positive per-constraint `bc_weights`, default 1, multiplying the
+  existing normalization/global weight without renormalization. Keep raw losses
+  separate from `weighted:<name>` objective contributions. Record adaptive
+  contributions using the weights actually used before the optimizer/mask update;
+  never reconstruct older missing history from current coefficients. Model 27
+  migrates old BC blocks to defaults. Reject changed objectives on continuation
+  and clear removed Jorvik aliases' coefficients alongside their physics settings.

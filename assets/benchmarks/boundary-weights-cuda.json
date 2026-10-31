@@ -1,0 +1,36 @@
+{
+  "case": "Prepared triangle / baseline / mixed boundary operators",
+  "device": "cuda",
+  "torch": "2.14.1+cu130",
+  "updates": 4,
+  "coefficients": {
+    "base": 2.0,
+    "upright": 0.5,
+    "slope": 3.0
+  },
+  "effective_weights": {
+    "pde": 1.0,
+    "base": 2.0,
+    "upright": 0.5,
+    "slope": 3.0
+  },
+  "pde_points": 91,
+  "boundary_counts": {
+    "base": 12,
+    "upright": 12,
+    "slope": 12
+  },
+  "final_losses": {
+    "pde": 17.034475326538086,
+    "base": 0.05406005308032036,
+    "upright": 0.2206048220396042,
+    "slope": 1.0413880348205566,
+    "total": 20.37706184387207,
+    "weighted:base": 0.10812010616064072,
+    "weighted:upright": 0.1103024110198021,
+    "weighted:slope": 3.12416410446167
+  },
+  "exact_same_device_resume": true,
+  "objective_reconciled": true,
+  "scope": "Loss composition and continuation correctness, not solution accuracy."
+}

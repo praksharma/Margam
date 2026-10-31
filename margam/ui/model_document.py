@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -53,7 +53,10 @@ def decode_document(data):
         from ..components.rba_config import rba_defaults
         c=dict(c,rba_settings=c.get('rba_settings',rba_defaults()))
     if isinstance(c,dict) and data['version']<26:c=dict(c,pde_points=c.get('pde_points','interior'))
+    if isinstance(c,dict) and data['version']<27:c=dict(c,bc_weights=c.get('bc_weights',{}))
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
+    from ..components.losses import validate_boundary_weights
+    validate_boundary_weights(c['bc_weights'])
     require(c['pde_points'] in ('interior','boundary','both'),'Invalid PDE collocation selection.')
     require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
     for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
@@ -183,6 +186,8 @@ def decode_document(data):
             if data['version']<18 and isinstance(parameters,dict) and isinstance(parameters.get('expert_settings'),dict):
                 from ..components.expert_config import expert_defaults
                 parameters=dict(parameters,expert_settings={**expert_defaults(),**parameters['expert_settings']});node['settings']=settings=dict(settings,parameters=parameters)
+            if data['version']<27 and node['kind']=='bc' and isinstance(parameters,dict):
+                parameters=dict(parameters,bc_weights=parameters.get('bc_weights',{}));node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='method':require(parameters['method'] in ('baseline','hard_dirichlet'),'Use the self-adaptive trainer for SA-PINN settings.')
             if node['kind'] in ('rar','importance'):
@@ -191,7 +196,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':26,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':27,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -209,7 +214,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':26, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':27, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

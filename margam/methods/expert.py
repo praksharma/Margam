@@ -173,6 +173,8 @@ class ExpertPINN(PINN):
             self.optimiser.step();self.iter+=1;self.coefficients=weights
             if event is not None:self.balance_history.append(event)
             record={name:value.detach().item() for name,value in terms.items()};record['total']=total.detach().item()
+            effective={name:self.weights.get(name,1.)*weights['initial' if name=='initial' else 'boundary'] for name in self.sample_config.constraint_names}
+            self.record_contributions(record,terms,effective)
             self.loss_history.append(record);self.training_history.append(record['total'])
             self.PDE_loss=terms['pde'].detach();self.BC_loss=sum(value.detach() for name,value in terms.items() if name!='pde');self.total_loss=total.detach()
             if display_every and self.iter%display_every==0:print(f"Iteration: {self.iter} Expert loss: {record['total']:.6g}")
@@ -196,7 +198,7 @@ class ExpertPINN(PINN):
             if isinstance(configuration,dict):
                 from ..templates.poisson import PoissonConfig
                 defaults=asdict(PoissonConfig())
-                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights','rba_settings','pde_points'):configuration.setdefault(key,defaults[key])
+                for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights','rba_settings','pde_points','bc_weights'):configuration.setdefault(key,defaults[key])
             saved=configuration.get('expert_settings')
             if isinstance(saved,dict):payload['settings']['configuration']['expert_settings']={**expert_defaults(),**saved}
         if not isinstance(payload,dict) or set(payload)!={'settings','coefficients','history'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')
