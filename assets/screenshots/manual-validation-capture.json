@@ -1,0 +1,37 @@
+{
+  "generator": "examples.capture_validation",
+  "scope": "Actual validation report; no training or automatic repair.",
+  "model_and_history_preserved": true,
+  "issues": [
+    {
+      "severity": "Error",
+      "category": "Connections",
+      "message": "Connect PDE residual to this block.",
+      "boundary": null
+    },
+    {
+      "severity": "Error",
+      "category": "Network",
+      "message": "Use 1\u20136 hidden layers, with 1\u2013256 neurons each.",
+      "boundary": null
+    },
+    {
+      "severity": "Error",
+      "category": "Boundary condition",
+      "message": "Custom operator: Unsupported function or argument count: bad_operator",
+      "boundary": "left"
+    },
+    {
+      "severity": "Error",
+      "category": "Physics",
+      "message": "Unsupported function or argument count: unsupported",
+      "boundary": null
+    }
+  ],
+  "files": {
+    "manual-validation.png": {
+      "bytes": 52741,
+      "sha256": "c25c3ed1334a47c3fabb59f7d48879fd5395149083ad4eefc5d3dc73ca29c6a5"
+    }
+  }
+}

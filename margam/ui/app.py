@@ -277,7 +277,7 @@ class Canvas(QGraphicsScene):
         cache={};sources={}
         def resolve_source(source):
             workspace=getattr(self,'project_workspace',None)
-            return workspace().resolve_source(source) if workspace is not None else deepcopy(source)
+            return workspace().resolve_source(source,create=False) if workspace is not None else deepcopy(source)
         def snapshot(node,reference=False):
             if node.identifier not in sources:sources[node.identifier]=read_point_data(resolve_source(node.settings.get('source_data',{})),config,reference=reference)
             return sources[node.identifier]
@@ -317,7 +317,12 @@ class Canvas(QGraphicsScene):
                     else:reference=make_poisson_reference(config)
             if node.kind=='monitor':
                 if not 25<=node.settings['history_limit']<=100000:raise ValueError('Monitor history limit must be between 25 and 100000.')
+            elif point_data is None and config.shape=='Prepared2D':raise ValueError('Connect Evaluation points to '+node.title+'; a bounding-box grid is not this prepared domain.')
             elif point_data is None and node.settings['resolution']**len(config.bounds[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
+            if node.kind=='comparison' and incoming['reference'].kind=='reference' and incoming['reference'].settings.get('reference_data'):
+                coordinates=point_data.points if point_data is not None else evaluation_points(config,node.settings['resolution'])
+                try:reference.evaluate(coordinates)
+                except ValueError as error:raise ValueError(node.title+': '+str(error)) from error
             if reference_data is not None:
                 coordinates=point_data.points if point_data is not None else evaluation_points(config,node.settings['resolution'])
                 align_reference(reference_data,coordinates,point_data.point_ids if point_data is not None else None,config)
@@ -396,7 +401,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.delete_action.triggered.connect(self.delete_selected)
         toolbar.addSeparator()
         self.validate_button=QPushButton('Validate')
-        self.validate_button.clicked.connect(self.validate_model)
+        self.validate_button.clicked.connect(self.show_validation_report)
         self.train_button=QPushButton('Train PINN')
         self.train_button.clicked.connect(lambda:self.start_training())
         self.cancel_button=QPushButton('Stop')
@@ -1518,6 +1523,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.update_run_actions()
 
     def graph_changed(self):
+        if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.mark_stale()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.mark_stale()
         self.preserve_evaluation_weights()
         self.clear_run_data()
@@ -1568,12 +1574,15 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         candidates=selected or [n for n in self.scene.nodes() if (role(n.kind)==kind or n.kind in COMPACT_RECIPES) and attribute in PARAMETERS.get(n.kind,())]
         return candidates[0] if candidates else None
 
-    def config_for_node(self,node):
+    def config_for_node(self,node,*,create=False):
         try:base=assemble(self.scene.nodes(),self.scene.wires,require_all=False)
-        except ValueError:base=self.config
+        except (ValueError,OSError):base=self.config
         result=overlay(base,node.kind,node.settings['parameters']) if node.kind in PARAMETERS else deepcopy(base)
         result.device=self.execution_device()
-        return self.project_workspace.resolve_config(result)
+        try:return self.project_workspace.resolve_config(result,create=create)
+        except FileNotFoundError:
+            if create:raise
+            return result # Metadata inspection must still work without owned files.
 
     def change(self,attribute,value,edit_token=None):
         if attribute=='device':return self.set_application_device(value)
@@ -1593,6 +1602,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
     def settings_changed(self):
+        if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.mark_stale()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.mark_stale()
         self.preserve_evaluation_weights()
         self.clear_run_data()
@@ -2233,20 +2243,33 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.statusBar().showMessage(message)
         self.log.appendPlainText('Connection: '+message)
 
+    def show_validation_report(self):
+        from .validation_report import ValidationReportDialog
+        dialog=getattr(self,'validation_report_dialog',None)
+        if dialog is None:
+            dialog=ValidationReportDialog(self);self.validation_report_dialog=dialog
+        self.validate_model();dialog.show();dialog.raise_();return dialog
+
     def validate_model(self):
+        from .validation_report import check_execution,collect_issues
+        error=None
         try:
-            self.config=self.scene.compile_config()
-            self.config.validate()
-            if self.config.shape=='Prepared2D':
-                from ..components.training_data import read_training_sets
-                read_training_sets(self.config)
-            requests=self.scene.output_requests(self.config)
-        except (ValueError,OSError,ImportError) as error:
-            message=str(error);self.validation.setText(message)
-            self.log.appendPlainText('Validation: '+message)
-            self.statusBar().showMessage('Model needs attention · see Properties or Messages')
+            config,count=check_execution(self)
+        except Exception as failure:error=failure
+        issues=collect_issues(self,error)
+        self.last_validation_issues=issues
+        if error is None and any(issue.severity=='Error' for issue in issues):
+            error=ValueError(next(issue.message for issue in issues if issue.severity=='Error'))
+        dialog=getattr(self,'validation_report_dialog',None)
+        if dialog is not None:dialog.set_report(issues,error is None)
+        if error is not None:
+            messages=[issue.message for issue in issues if issue.severity=='Error'] or [str(error)]
+            self.validation.setText(f'{len(messages)} issue(s): '+str(error))
+            for message in messages:self.log.appendPlainText('Validation: '+message)
+            self.statusBar().showMessage('Model needs attention · Validate opens the issue report')
             return False
-        self.validation.setText(f'Valid PINN graph ({", ".join(self.config.field_names)}). {len(requests)} connected output request(s).')
+        self.config=config
+        self.validation.setText(f'Valid PINN graph ({", ".join(self.config.field_names)}). {count} connected output request(s).')
         self.statusBar().showMessage('Valid · PINN graph fields: '+', '.join(self.config.field_names))
         return True
 
@@ -2363,6 +2386,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()
         self.project_workspace.close()
         if self.desktop_state is not None:self.desktop_state.close()

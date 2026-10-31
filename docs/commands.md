@@ -292,3 +292,13 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_project_data --ov
 Captures the real View → Project data overview window with copied, missing and
 changed inputs. The helper verifies that inspecting/refreshing does not change
 the model or undo history and checks public screenshot text for private paths.
+
+
+### Validation report capture
+
+```sh
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_validation --overwrite
+```
+
+Captures the real multi-issue report with connection, network and boundary/PDE
+expression errors, verifying that inspection preserves the model and undo history.

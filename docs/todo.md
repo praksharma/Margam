@@ -513,3 +513,12 @@ only when the user explicitly requests including it here.
 - [x] Read-only checks preserve model/results/history and do not recreate missing owned folders.
 - [ ] Consider persistent import-time checksums for external sources across project sessions;
   the ordinary overview baseline is currently session-only and labelled accordingly.
+
+
+## Actionable model validation
+
+- [x] Collect independent connection, network, PDE/BC, compatibility and input-data issues.
+- [x] Click issues to select their owning block and boundary set; recheck after edits.
+- [x] Distinguish blocking execution errors from unused optional declaration warnings.
+- [x] Retain the authoritative numerical gate and avoid automatic repairs or training.
+- [x] Cover missing normals, coupled-flow expressions, multiple missing files and stale/deleted owners.

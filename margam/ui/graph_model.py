@@ -128,7 +128,7 @@ def assemble(nodes,wires,*,require_all=True):
         if workspace is None:raise ValueError('Open the owning Margam project before training Jorvik data.')
         from ..components.prepared_data import LIMIT
         sources=([config.interior_data] if config.interior_data else [])+list(config.boundary_data.values())
-        for name in {workspace().resolve(source_data['path']) for source_data in sources}:
+        for name in {workspace().resolve(source_data['path'],create=False) for source_data in sources}:
             path=Path(name)
             if not path.is_file() or path.stat().st_size>LIMIT:
                 raise ValueError('Jorvik snapshot changed or is missing. Update from Jorvik again.')
@@ -136,7 +136,7 @@ def assemble(nodes,wires,*,require_all=True):
             if digest!=domain.settings['jorvik']['sha256']:
                 raise ValueError('Jorvik snapshot changed or is missing. Update from Jorvik again.')
     workspace=getattr(domain.scene(),'project_workspace',None)
-    if workspace is not None:config=workspace().resolve_config(config)
+    if workspace is not None:config=workspace().resolve_config(config,create=False)
     execution_device=getattr(domain.scene(),'execution_device',None)
     if execution_device is not None:config.device=execution_device()
     return config

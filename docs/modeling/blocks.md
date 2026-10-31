@@ -48,3 +48,8 @@ output changes the presentation rather than the trained problem. See
 
 **Next:** [Geometry and sampling](sampling.md), or [network choices](networks.md).
 The [recipe reference](../pinn-recipes.md) lists exact ownership and limitations.
+
+
+**Validate** opens a list of actionable issues. Click a row to select its block
+and open the inspector; named boundary issues select their set. Recheck after
+edits. See [model validation](../use/results.md#fix-problems-before-training).

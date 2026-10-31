@@ -475,3 +475,34 @@ skipped**. The final focused overview/storage/workspace checks completed 11 test
 with ten passed and one CUDA skip; the final overview-only checks passed all
 three cases, including reference mappings and clean teardown. The illustrated
 manual build checked 61 rendered pages. No dependencies or environments changed.
+
+
+## Clickable multi-issue validation
+
+`tests/test_validation_report.py` checks simultaneous connection, hidden-layer,
+PDE and multiple BC-expression errors; multiple missing source files; prepared
+boundary normal requirements; early missing/mismatched legacy reference rejection;
+explicit prepared output points; non-creating missing-folder checks; coupled-flow component expressions; nonblocking
+unused-source warnings; correct block/boundary navigation; stale/deleted owners;
+model/history/results preservation; programmatic no-popup behaviour; clean Qt
+teardown; and the existing hard-Dirichlet, integral-quadrature and corner checks.
+`examples.capture_validation` captures an actual invalid model and verifies no
+training or model/history edits occur.
+
+The same pre-existing sequence (compile graph, validate numerical configuration,
+read prepared training sets, build explicit output requests) remains authoritative.
+Output preparation now also checks legacy mapped reference coordinates and
+requires explicit Evaluation points for prepared-domain outputs before training.
+Independent active-data errors block early, while unused optional declarations
+remain warnings. Owned input paths are resolved without creating missing folders.
+Independent diagnostics reuse the existing expression parser, network validator,
+prepared-data readers and method compatibility checks. They are additional UI
+explanations rather than a parallel numerical executor. Checks blocked by missing
+connections may appear only after those connections are fixed. Unused optional
+declarations are advisory when the existing executor accepts the graph.
+
+The complete CPU regression run completed **239 tests: 227 passed and 12
+skipped**. Final focused validation/data-overview/storage/Jorvik checks completed
+15 tests with 14 passed and one CUDA skip. Earlier focused input/output checks
+also passed. The manual build checked 61 rendered pages. These are desktop and
+preflight checks; no new GPU-performance or solution-accuracy claim is made.

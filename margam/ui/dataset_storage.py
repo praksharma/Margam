@@ -44,7 +44,7 @@ class DatasetStorage(QWidget):
                           if self.choice.currentData()=='copy' else
                           'Uses the external file at its original location. Keep it available when moving this project. Changed training data cannot resume an older checkpoint.')
 
-    def resolve(self,source):return self.workspace.resolve_source(source) if self.workspace is not None else source
+    def resolve(self,source):return self.workspace.resolve_source(source,create=False) if self.workspace is not None else source
 
     def validate_choice(self,source):
         if self.choice.currentData()=='link' and self.workspace is not None and self.workspace.portable(source['path']).startswith('margam-owned:'):

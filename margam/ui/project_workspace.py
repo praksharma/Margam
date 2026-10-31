@@ -128,11 +128,11 @@ class ProjectWorkspace:
             if created:shutil.rmtree(folder,ignore_errors=True)
             raise
 
-    def resolve_config(self, config):
+    def resolve_config(self, config, *, create=True):
         from copy import deepcopy
         config = deepcopy(config)
-        if config.interior_data:config.interior_data['path']=self.resolve(config.interior_data['path'])
-        for source in config.boundary_data.values():source['path']=self.resolve(source['path'])
+        if config.interior_data:config.interior_data['path']=self.resolve(config.interior_data['path'],create=create)
+        for source in config.boundary_data.values():source['path']=self.resolve(source['path'],create=create)
         return config
 
     def snapshot_to(self, path, writer):

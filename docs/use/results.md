@@ -4,6 +4,46 @@ Click **Validate** before **Train PINN** (F5). Validation checks the supported
 problem graph and settings. It does not establish that the trained solution will
 reach a particular accuracy.
 
+## Fix problems before training
+
+Click **Validate** (or **Run → Validate model**, Ctrl+D) to open the **Model
+validation** report. It collects independent missing connections, invalid
+network/physics settings, boundary expressions, method compatibility and input
+file issues instead of showing only the first failure.
+
+![Clickable multi-issue model validation](../../assets/screenshots/manual-validation.png)
+
+*An actual graph with a missing PDE connection, invalid hidden layers and two
+invalid physics expressions. No training, prediction or automatic repair was
+performed while producing this report.*
+
+Click an issue to select and centre its block and open the inspector. Boundary
+issues select their named set where applicable; coupled-flow issues identify the
+component and its target/operator. **Select block** provides the same action.
+Project-wide issues may involve several components and have no single owner.
+A removed block is reported safely rather than selected through a stale reference.
+
+Fix the settings/connections, then click **Check again**. A model-change notice
+marks older results as stale. Some cross-component checks need valid connections
+first, so further issues may appear after those are fixed. The report deliberately
+does not claim to enumerate every possible issue in an incomplete graph.
+
+**Errors** prevent execution. **Warnings** identify additional declarations such
+as unconnected optional output/data blocks, which the executor does not use.
+The supported numerical execution checks remain required for Train and Evaluate;
+no new trainer combinations are inferred from a passing report. Active data
+issues also block execution early: missing or mismatched imported references and
+prepared-domain plots without Evaluation points no longer wait until prediction
+to fail. Successful validation does not establish numerical
+accuracy or guarantee that checkpoint data identity still matches on resume.
+
+The report does not change graph settings, files or undo history, clear existing
+results, train a model, evaluate a network or open a numerical output pane.
+[Project data overview](saving.md#inspect-the-projects-input-data) provides the
+separate file inventory and session change warnings. Programmatic desktop checks
+still return a boolean and do not open the report automatically; the explicit
+Validate action opens it.
+
 During training, progress and operational messages remain available. Stop requests
 are checked between batches of 25 updates. A stopped partial run can retain
 results and a checkpoint; changing the numerical model then invalidates them.

@@ -224,3 +224,15 @@
   use Jorvik's applied fingerprint where present. Mapping edits are explicit,
   guarded while busy/stale, and use the existing owning block's dialogs. Disconnect
   observers on window shutdown; do not retain stale Qt node references.
+
+- Explicit desktop Validate opens a clickable multi-issue report; programmatic
+  validation remains boolean and non-modal. Keep the supported numerical execution checks
+  required; active data guards may reject cases older lazy reference callbacks
+  deferred until prediction. Require explicit evaluation points on prepared-domain
+  outputs, validate mapped legacy reference alignment before training, and resolve
+  inputs without creating missing owned folders. Reuse actual expression/data/network/method validators; avoid a
+  second numerical executor or promises of exhaustive diagnostics on incomplete
+  graphs. Unused optional sources/outputs are advisory. Preserve model/history,
+  files and results while inspecting; selecting an issue only opens its owner.
+  Use IDs instead of retaining Qt nodes, guard stale boundary contexts, and
+  disconnect report observers on window shutdown.

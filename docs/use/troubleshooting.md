@@ -60,3 +60,13 @@ Include the command/action, the exact message or traceback, the relevant model a
 input mappings, and whether the problem repeats after reopening. Separate software
 failures from a run that simply needs different scientific settings. The project
 prioritises correct equations/data/state handling; solution tuning is your choice.
+
+
+## Several problems in one model
+
+Use **Validate** to open the clickable Model validation report. Fix independent
+issues together, select the associated blocks, then use **Check again**. A missing
+connection can prevent later checks, so additional issues may appear once the
+graph is connected. Unused optional outputs/sources are warnings, while the
+existing numerical execution gate remains authoritative. See the
+[validation walkthrough](results.md#fix-problems-before-training).
