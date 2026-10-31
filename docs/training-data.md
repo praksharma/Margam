@@ -168,3 +168,8 @@ Copies travel with the model's companion folder, recovery and run archives;
 links remain dependent on their original location. New sources default to Copy,
 while existing linked sources keep Link. No rows, IDs or field mappings are
 changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-linked-input-data).
+
+
+Use **View → Project data overview…** to inspect row counts and storage for all
+imported sets, including disconnected blocks. It flags missing/invalid files and
+changes since its first session check. See [the overview guide](use/saving.md#inspect-the-projects-input-data).

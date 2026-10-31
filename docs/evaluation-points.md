@@ -155,3 +155,8 @@ Copies travel with the model's companion folder, recovery and run archives;
 links remain dependent on their original location. New sources default to Copy,
 while existing linked sources keep Link. No rows, IDs or field mappings are
 changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-linked-input-data).
+
+
+**View → Project data overview…** also lists evaluation and reference sources,
+their row counts, field/ID mappings and missing/changed-file warnings. It does not
+replace the normal reference alignment checks. See [input diagnostics](use/saving.md#inspect-the-projects-input-data).

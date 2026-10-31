@@ -450,3 +450,28 @@ passed and one CUDA skip. The complete CUDA portability example was also run
 separately and passed. The illustrated manual build checks 61 rendered pages;
 its capture helper refreshed the existing 22 UI images and three new data-storage
 captures. The existing root environment and dependencies were unchanged.
+
+
+## Project data overview
+
+`tests/test_project_data.py` checks per-block mapping inventory (including
+unconnected sources), copied/linked CSV and NPZ counts, both reference block
+forms, field/ID details, invalid mappings, unchanged model/history/results during
+inspection, persistent session change warnings, missing owned files without
+creating folders, Save As baselines, named-boundary navigation, stale/locked
+editing guards and clean Qt teardown. A real Jorvik NetCDF fixture checks its
+stored snapshot fingerprint independently of a session baseline and routes
+review to the owning geometry block.
+
+`examples.capture_project_data` captures an actual triangle file inventory with
+one copied dataset, one missing linked file and another changed linked file.
+The helper verifies model/history preservation. Refresh is intentionally manual;
+ordinary first-check hashes are not saved and are not evidence of an older
+import-time file version. No numerical training or GPU claim is made by these
+file/UI checks.
+
+The complete CPU regression run completed **236 tests: 224 passed and 12
+skipped**. The final focused overview/storage/workspace checks completed 11 tests
+with ten passed and one CUDA skip; the final overview-only checks passed all
+three cases, including reference mappings and clean teardown. The illustrated
+manual build checked 61 rendered pages. No dependencies or environments changed.

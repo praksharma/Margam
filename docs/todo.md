@@ -503,3 +503,13 @@ only when the user explicitly requests including it here.
 - [x] Save As and undo references remain portable; retain trained weights across relocation.
 - [x] Recovery, moved models and independent run archives exercised on CPU and CUDA.
 - [ ] Prune unused owned dataset snapshots when their undo/history references are no longer needed.
+
+
+## Project data overview
+
+- [x] View-menu inventory of imported interior, boundary, evaluation and reference data.
+- [x] Ownership, row counts, mapping details and missing/invalid/changed warnings.
+- [x] Select owning block/boundary and use existing mapping or Jorvik review actions.
+- [x] Read-only checks preserve model/results/history and do not recreate missing owned folders.
+- [ ] Consider persistent import-time checksums for external sources across project sessions;
+  the ordinary overview baseline is currently session-only and labelled accordingly.

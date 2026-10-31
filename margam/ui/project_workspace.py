@@ -56,11 +56,15 @@ class ProjectWorkspace:
             self._temporary.cleanup()
             self._temporary = None
 
-    def resolve(self, value):
+    def resolve(self, value, *, create=True):
         if not value.startswith('margam-owned:'):
             return value
         relative = value.removeprefix('margam-owned:')
-        root = self.directory.resolve()
+        if create:directory=self.directory
+        elif self.model_path:directory=self.companion(self.model_path)
+        elif self._temporary is not None:directory=Path(self._temporary.name)
+        else:raise FileNotFoundError('Project-owned working files are missing.')
+        root = directory.resolve()
         candidate = (root / relative).resolve()
         if not relative or not candidate.is_relative_to(root) or candidate == root:
             raise ValueError('Invalid project-owned file reference.')
@@ -83,10 +87,10 @@ class ProjectWorkspace:
         if isinstance(value,list):return [self.portable_document(item) for item in value]
         return value
 
-    def resolve_source(self, source):
+    def resolve_source(self, source, *, create=True):
         from copy import deepcopy
         result=deepcopy(source)
-        if result:result['path']=self.resolve(result['path'])
+        if result:result['path']=self.resolve(result['path'],create=create)
         return result
 
     def store_dataset(self, source, *, copy, validator):

@@ -468,7 +468,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             'actual_size_action':'actual','delete_action':'delete','undo_action':'undo',
             'redo_action':'redo','copy_action':'copy','cut_action':'cut','paste_action':'paste',
             'check_action':'check','run_action':'play','stop_action':'stop',
-            'open_output_action':'solution',
+            'open_output_action':'solution','project_data_action':'reference_data',
         }
         for attribute,glyph in actions.items():
             action=getattr(self,attribute);action.setIcon(icon(glyph));action.setIconVisibleInMenu(True)
@@ -560,6 +560,8 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         for dock in [self.library_dock,self.properties_dock,self.messages_dock]:
             self.view_menu.addAction(dock.toggleViewAction())
         self.view_menu.addSeparator()
+        self.project_data_action=self.view_menu.addAction('Project data overview…')
+        self.project_data_action.triggered.connect(self.show_project_data)
         for action,shortcuts in [(self.zoom_in_action,['Ctrl++','Ctrl+=']),(self.zoom_out_action,['Ctrl+-']),(self.actual_size_action,['Ctrl+0'])]:
             action.setShortcuts(shortcuts)
             action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
@@ -1516,6 +1518,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.update_run_actions()
 
     def graph_changed(self):
+        if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.mark_stale()
         self.preserve_evaluation_weights()
         self.clear_run_data()
         self.output_views.sync(self.scene.nodes())
@@ -1590,6 +1593,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
     def settings_changed(self):
+        if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.mark_stale()
         self.preserve_evaluation_weights()
         self.clear_run_data()
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
@@ -1601,6 +1605,15 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
+
+    def show_project_data(self):
+        from .project_data import ProjectDataDialog
+        dialog=getattr(self,'project_data_dialog',None)
+        if dialog is None:
+            dialog=ProjectDataDialog(self);self.project_data_dialog=dialog
+        else:dialog.refresh()
+        dialog.show();dialog.raise_();dialog.activateWindow()
+        return dialog
 
     def dataset_label(self,source):
         if not source:return 'No source mapped.'
@@ -2256,6 +2269,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.evaluate_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions()
+        if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
 
     def start_training(self,*,checkpoint=None):
         if self.is_running() or not self.validate_model():return False
@@ -2349,6 +2363,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()
         self.project_workspace.close()
         if self.desktop_state is not None:self.desktop_state.close()
         if not getattr(self,'_selection_disconnected',False):

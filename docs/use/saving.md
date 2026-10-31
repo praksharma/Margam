@@ -129,3 +129,55 @@ on the same device. It also checks reference alignment, original point IDs/order
 and CSV/VTU export. See the [CPU record](../../assets/benchmarks/portable-data-cpu.json)
 and [CUDA record](../../assets/benchmarks/portable-data-cuda.json). This is a
 portability check, not a solution-accuracy benchmark.
+
+
+## Inspect the project's input data
+
+Open **View → Project data overview…** before training or sharing a model.
+The window lists file mappings held by the blocks, including disconnected source
+blocks and individual named boundary sets. Generated built-in samples, analytical
+reference expressions and geometry documents are not imported datasets.
+
+![Read-only overview of copied, linked, missing and changed point data](../../assets/screenshots/manual-project-data.png)
+
+*Actual triangle example: one copied interior source, three boundary mappings and
+an evaluation source. One linked boundary file was removed and another changed
+since the first check. The overview leaves the model and datasets unchanged.*
+
+| Display | Meaning |
+| --- | --- |
+| Block / Role or set | The owning block and its interior, named boundary, evaluation or reference role |
+| Storage | Project copy or linked external file |
+| Rows | Current mapped row count, when the file and mapping can be read |
+| Available | The current file can be read using this mapping; not a claim of solution accuracy or complete graph validity |
+| Missing / Unreadable | The referenced file is absent or cannot be opened |
+| Invalid / unavailable | The reader rejected the file, mapping or current coordinate/field contract |
+| Changed since first check | File bytes differ from the first check of this mapping in the current project session |
+| Changed from applied Jorvik snapshot | File bytes differ from the fingerprint saved when that geometry's samples were applied |
+| Not mapped | An explicit data-source block has no file mapping yet |
+
+Select a row to inspect its location and coordinate, normal, value and ID mappings.
+Reference mappings also show the model's field order. A shared file can appear
+more than once because each set or block may map different arrays/columns.
+
+- **Refresh** checks the current files. It does not watch the disk continuously,
+  replace data, accept changed bytes, rewrite mappings or clear trained results.
+  The ordinary baseline stays fixed on subsequent refreshes, including after Save As.
+- **Select block** selects and centres the owner in the graph and opens its inspector.
+  Named boundary rows select that boundary set too. Double-clicking a row does this.
+- **Map data…** opens the existing mapping dialog. For Jorvik NetCDF inputs,
+  **Review Jorvik datasets…** uses the geometry block's normal explicit update flow.
+  These editing actions are disabled during training/external editing, and until
+  Refresh when graph/settings changes make the table stale.
+
+The ordinary first-check baseline is **session-only**, not a saved import-time
+checksum. Reopening the project starts a fresh baseline, and remapping a source
+starts a check for that new mapping. A file changed before the first check cannot
+be identified as changed from an earlier unsaved version. Jorvik's stored applied
+snapshot fingerprint is available even on the first check. Missing copied files
+are reported without recreating an empty working folder.
+
+Use **Validate** for graph compatibility, boundary operators and reference
+alignment. Resume retains its separate strict checkpoint/data identity checks.
+The overview is a file and mapping diagnostic; it does not train, evaluate a
+network, open a result view or automatically repair dependencies.

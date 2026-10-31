@@ -1,0 +1,48 @@
+{
+  "generator": "examples.capture_project_data",
+  "scope": "Actual read-only inventory; file checks are separate from numerical validation.",
+  "rows": [
+    {
+      "block": "Boundary data",
+      "role": "Boundary \u00b7 base",
+      "storage": "Linked file",
+      "rows": null,
+      "status": "Missing"
+    },
+    {
+      "block": "Boundary data",
+      "role": "Boundary \u00b7 upright",
+      "storage": "Linked file",
+      "rows": 12,
+      "status": "Changed since first check"
+    },
+    {
+      "block": "Boundary data",
+      "role": "Boundary \u00b7 slope",
+      "storage": "Linked file",
+      "rows": 12,
+      "status": "Available"
+    },
+    {
+      "block": "Evaluation points",
+      "role": "Evaluation",
+      "storage": "Linked file",
+      "rows": 58,
+      "status": "Available"
+    },
+    {
+      "block": "Interior data",
+      "role": "Interior",
+      "storage": "Project copy",
+      "rows": 55,
+      "status": "Available"
+    }
+  ],
+  "read_only_verified": true,
+  "files": {
+    "manual-project-data.png": {
+      "bytes": 79833,
+      "sha256": "c0be4d0e6cd56dc5318daddf63fab756877eaa7c5ee2857f1d6eaf172e5d48a1"
+    }
+  }
+}

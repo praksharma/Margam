@@ -216,3 +216,11 @@
   all training/evaluation/reference mappings at use; rebase cached trained configs
   across Save As without treating file relocation as changed physics. Never turn
   an owned URI into an absolute external link or silently bundle external files.
+
+- Project data overview is a read-only inventory of block-held file mappings,
+  including disconnected/unmapped source blocks. Inspection must not mutate model,
+  undo/results or filesystem; Refresh must not replace established baselines. Use non-creating owned-path
+  resolution for missing-file checks. Label ordinary byte baselines as session-only;
+  use Jorvik's applied fingerprint where present. Mapping edits are explicit,
+  guarded while busy/stale, and use the existing owning block's dialogs. Disconnect
+  observers on window shutdown; do not retain stale Qt node references.

@@ -281,3 +281,14 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.portable_data --device cp
 Each invocation creates a fresh `run-*` folder below `build/portable-data`.
 The optional capture flag refreshes the three copy/link/project screenshots.
 See [data portability](use/saving.md#choose-copied-or-linked-input-data).
+
+
+### Project data overview capture
+
+```sh
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_project_data --overwrite
+```
+
+Captures the real View → Project data overview window with copied, missing and
+changed inputs. The helper verifies that inspecting/refreshing does not change
+the model or undo history and checks public screenshot text for private paths.
