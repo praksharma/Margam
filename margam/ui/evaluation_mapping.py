@@ -1,7 +1,8 @@
 """Explicit mapping/preview for evaluation points and independent reference data."""
-from pathlib import Path
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QLineEdit,QLabel,QPushButton,QPlainTextEdit,QDialogButtonBox,QFileDialog
 from ..components.evaluation_data import read_point_data
+
+from .dataset_storage import DatasetStorage,show_source_path,source_from_fields
 
 
 class EvaluationMappingDialog(QDialog):
@@ -13,6 +14,8 @@ class EvaluationMappingDialog(QDialog):
         for key,label in [('path','CSV / NPZ file'),('coordinates','Coordinate columns / array'),('values','Reference columns / array'),('ids','Point ID column / array (optional)')]:
             edit=QLineEdit(source.get(key,defaults[key]));edit.setObjectName('evaluation_'+key);self.fields[key]=edit;form.addRow(label,edit)
         if not reference:self.fields['values'].clear();self.fields['values'].setEnabled(False)
+        show_source_path(self.fields['path'],source.get('path',''),getattr(parent,'project_workspace',None))
+        self.storage=DatasetStorage(source,parent);form.addRow('File handling',self.storage)
         browse=QPushButton('Choose CSV / NPZ…');browse.clicked.connect(self.browse);form.addRow(browse)
         note=QLabel('Coordinates ordered '+', '.join(config.coordinate_names)+'. '+('Fields ordered '+', '.join(config.field_names)+'. ' if reference else '')+'CSV mappings name columns; NPZ mappings name arrays. IDs may be integers or text and must be unique per physical time. Original rows are retained. No interpolation or training-data changes.');note.setWordWrap(True);layout.addWidget(note)
         self.preview=QPlainTextEdit();self.preview.setReadOnly(True);layout.addWidget(self.preview)
@@ -20,19 +23,22 @@ class EvaluationMappingDialog(QDialog):
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(self.accept_checked);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
 
     def source(self):
-        data={key:edit.text().strip() for key,edit in self.fields.items()}
-        if data['path']:data['path']=str(Path(data['path']).expanduser().absolute())
-        return data
+        return source_from_fields(self.fields)
 
     def browse(self):
         path,_=QFileDialog.getOpenFileName(self,'Choose prepared evaluation data','','Point data (*.csv *.npz)')
         if path:
-            self.fields['path'].setText(path)
+            self.fields['path'].setText(path);self.fields['path'].setToolTip('')
             if path.lower().endswith('.npz'):self.fields['coordinates'].setText('points');self.fields['values'].setText('values' if self.reference else '')
+
+    def read_source(self,source):return read_point_data(source,self.config,reference=self.reference)
+
+    def store_source(self):return self.storage.store(self.source(),self.read_source)
 
     def check(self):
         try:
-            data=read_point_data(self.source(),self.config,reference=self.reference)
+            self.storage.validate_choice(self.source())
+            data=self.read_source(self.storage.resolve(self.source()))
             lines=[f'{len(data.points)} supplied rows · point order preserved']
             for i,point in enumerate(data.points[:8]):lines.append((str(data.point_ids[i])+' · ' if data.point_ids is not None else '')+str(point)+(' → '+str(data.values[i]) if data.values is not None else ''))
             self.preview.setPlainText('\n'.join(lines));return True

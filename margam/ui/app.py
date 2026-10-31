@@ -275,8 +275,11 @@ class Canvas(QGraphicsScene):
         from ..components.evaluation_data import read_point_data,align_reference
         from ..components.outputs import evaluation_points
         cache={};sources={}
+        def resolve_source(source):
+            workspace=getattr(self,'project_workspace',None)
+            return workspace().resolve_source(source) if workspace is not None else deepcopy(source)
         def snapshot(node,reference=False):
-            if node.identifier not in sources:sources[node.identifier]=read_point_data(node.settings.get('source_data',{}),config,reference=reference)
+            if node.identifier not in sources:sources[node.identifier]=read_point_data(resolve_source(node.settings.get('source_data',{})),config,reference=reference)
             return sources[node.identifier]
         def request(node):
             if node.identifier in cache:return cache[node.identifier]
@@ -310,7 +313,7 @@ class Canvas(QGraphicsScene):
                         reference=ReferenceSource('User reference expression',evaluate)
                     elif data:
                         from functools import partial
-                        reference=ReferenceSource('Imported reference fields',partial(reference_values,deepcopy(data),components=len(config.field_names)))
+                        reference=ReferenceSource('Imported reference fields',partial(reference_values,resolve_source(data),components=len(config.field_names)))
                     else:reference=make_poisson_reference(config)
             if node.kind=='monitor':
                 if not 25<=node.settings['history_limit']<=100000:raise ValueError('Monitor history limit must be between 25 and 100000.')
@@ -745,12 +748,21 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         path=path or self.model_path
         if not path:return self.save_model_as()
         document=capture_model(self)
+        trained={}
+        for name in ('_trained_config','_evaluation_config'):
+            config=getattr(self,name,None)
+            if config is not None:
+                portable=self.project_workspace.portable_document(asdict(config))
+                trained[name]=replace(config,interior_data=portable['interior_data'],boundary_data=portable['boundary_data'])
         try:self.project_workspace.save(path, lambda target: write_model(target,document))
         except (OSError,ValueError,TypeError) as error:
             QMessageBox.warning(self,'Model could not be saved',str(error));return False
+        records={record['id']:record for record in document['nodes']}
+        for node in self.scene.nodes():node.settings=deepcopy(records[node.identifier]['settings'])
         self.config.interior_data=deepcopy(document['config']['interior_data'])
         self.config.boundary_data=deepcopy(document['config']['boundary_data'])
         self.config=self.project_workspace.resolve_config(self.config)
+        for name,config in trained.items():setattr(self,name,self.project_workspace.resolve_config(config))
         self.model_path=str(Path(path).absolute())
         self.undo_stack.setClean();self._history_epoch+=1;self.update_document_title()
         self.remember_model_directory(path)
@@ -1122,6 +1134,8 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def change_output(self,node,key,value,edit_token=None):
         existed=key in node.settings;old=deepcopy(node.settings.get(key))
+        if key in ('source_data','reference_data'):
+            old=self.project_workspace.portable_document(old);value=self.project_workspace.portable_document(value)
         if existed and old==value:return
         value=deepcopy(value)
         def apply(number,present=True):
@@ -1562,11 +1576,14 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         if attribute=='device':return self.set_application_device(value)
         node=self.parameter_owner(attribute)
         old=deepcopy(getattr(self.config_for_node(node),attribute)) if node else deepcopy(getattr(self.config,attribute))
+        if attribute in ('interior_data','boundary_data'):
+            old=self.project_workspace.portable_document(old);value=self.project_workspace.portable_document(value)
         if old==value:return
         value=deepcopy(value)
         def apply(current):
             if node is not None:node.settings['parameters'][attribute]=encode_parameter(attribute,current)
             setattr(self.config,attribute,deepcopy(current))
+            if attribute in ('interior_data','boundary_data'):self.config=self.project_workspace.resolve_config(self.config)
             self.settings_changed()
             if edit_token is None or attribute in ('shape','physics'):self.selection_changed()
         merge=(node.identifier if node else None,attribute,edit_token) if edit_token is not None else None
@@ -1585,13 +1602,22 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
 
+    def dataset_label(self,source):
+        if not source:return 'No source mapped.'
+        path=self.project_workspace.portable(source['path'])
+        if path.startswith('margam-owned:'):return 'Project copy · '+Path(path).name
+        return 'Linked file · '+path
+
     def edit_evaluation_data(self,node):
         if self.is_running() or self.scene.locked:return
         from .evaluation_mapping import EvaluationMappingDialog
         try:config=self.scene.compile_config()
         except ValueError:config=deepcopy(self.config)
         dialog=EvaluationMappingDialog(config,node.settings.get('source_data',{}),self,reference=node.kind=='reference_data')
-        if dialog.exec()==dialog.DialogCode.Accepted:self.change_output(node,'source_data',dialog.source());self.selection_changed()
+        if dialog.exec()!=dialog.DialogCode.Accepted:return
+        try:source=dialog.store_source()
+        except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
+        self.change_output(node,'source_data',source);self.selection_changed()
 
     def add_boundary_data_set(self):
         if self.is_running():return
@@ -1616,10 +1642,12 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             return
         dialog=DataMappingDialog(len(self.config.bounds[0]),source,self,coordinate_only=reference is None and side is None,components=len(self.config.field_names) if reference is not None else 1,allow_values=reference is not None or self.config.physics=='scalar',require_values=reference is not None)
         if dialog.exec()!=DataMappingDialog.DialogCode.Accepted:return
-        if reference is not None:self.change_output(reference,'reference_data',dialog.source())
+        try:mapped=dialog.store_source()
+        except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
+        if reference is not None:self.change_output(reference,'reference_data',mapped)
         elif side:
-            values=deepcopy(self.config.boundary_data);values[side]=dialog.source();self.change('boundary_data',values)
-        else:self.change('interior_data',dialog.source())
+            values=deepcopy(self.config.boundary_data);values[side]=mapped;self.change('boundary_data',values)
+        else:self.change('interior_data',mapped)
         self.selection_changed()
 
     def clear_point_data(self,side=None,reference=None):
@@ -1745,11 +1773,11 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             note=QLabel('Coordinate bounds for scaling and validation only. Prepared 2D uses supplied training and evaluation points; no rectangle is filled.' if self.config.shape=='Prepared2D' else 'Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='interior_data':
             source=self.config.interior_data
-            note=QLabel(Path(source['path']).name if source else 'No collocation source mapped.');note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel(self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Map / preview interior coordinates…');button.clicked.connect(lambda:self.edit_point_data());self.form.addRow(button)
             if source:
                 clear=QPushButton('Clear interior source');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
-            self.form.addRow(QLabel('Fixed supplied coordinates; sampler counts and seeds do not resample these rows.'))
+            note=QLabel('Fixed supplied coordinates; sampler counts and seeds do not resample these rows.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='boundary_data':
             choice=QComboBox();choice.setObjectName('imported_boundary_set')
             for name in self.config.boundary_data:choice.addItem(name)
@@ -1759,7 +1787,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             choice.currentTextChanged.connect(self.select_boundary_side);self.form.addRow('Named set',choice)
             add=QPushButton('Add named point set…');add.clicked.connect(self.add_boundary_data_set);self.form.addRow(add)
             if side:
-                label=QLabel(Path(self.config.boundary_data[side]['path']).name);label.setWordWrap(True);self.form.addRow('Source',label)
+                label=QLabel(self.dataset_label(self.config.boundary_data[side]));label.setWordWrap(True);self.form.addRow('Source',label)
                 button=QPushButton('Map / preview this set…');button.clicked.connect(lambda checked=False,name=side:self.edit_point_data(name));self.form.addRow(button)
                 remove=QPushButton('Remove this set');remove.clicked.connect(lambda checked=False,name=side:self.clear_point_data(name));self.form.addRow(remove)
             note=QLabel('Each set maps coordinates, optional outward unit normals and optional scalar targets. Assign Dirichlet, Neumann or Custom in Boundary condition. Prepared 2D allows user-named sets; built-in domains retain their existing side names.');note.setWordWrap(True);self.form.addRow(note)
@@ -1767,7 +1795,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             if node.kind=='interior':
                 imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
             if self.config.interior_data:
-                label=QLabel(self.config.interior_data['path']);label.setWordWrap(True);self.form.addRow('Imported source',label)
+                label=QLabel(self.dataset_label(self.config.interior_data));label.setWordWrap(True);self.form.addRow('Imported source',label)
                 clear=QPushButton('Use built-in sampler');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
             self.field('Sampler','sampling','choice',choices=list(SAMPLERS))
             self.field('Point budget','points','int',minimum=1,maximum=100000)
@@ -1802,7 +1830,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
                 self.form.addRow('Named point set',side_choice)
                 imported=QPushButton('Map / preview this set from CSV or NPZ…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
                 if self.config.boundary_data.get(side):
-                    label=QLabel(self.config.boundary_data[side]['path']);label.setWordWrap(True);self.form.addRow('Imported source',label)
+                    label=QLabel(self.dataset_label(self.config.boundary_data[side]));label.setWordWrap(True);self.form.addRow('Imported source',label)
                     clear=QPushButton('Use built-in side sampler');clear.clicked.connect(lambda checked=False,s=side:self.clear_point_data(s));self.form.addRow(clear)
                 recipe=self.config.boundary_recipe(side)
                 method=QComboBox();method.addItems(list(SAMPLERS));method.setCurrentText(recipe.method)
@@ -2028,7 +2056,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
         elif node.kind in ('evaluation_points','reference_data'):
-            source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+(Path(source['path']).name if source else 'No source mapped.'));note.setWordWrap(True);self.form.addRow(note)
+            source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)
             if source:
                 clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.change_output(n,'source_data',{}));self.form.addRow(clear)
@@ -2039,6 +2067,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             self.form.addRow('Reference expression',expression)
             imported=QPushButton('Map / preview imported reference values…');imported.clicked.connect(lambda checked=False,n=node:self.edit_point_data(reference=n));self.form.addRow(imported)
             if node.settings.get('reference_data'):
+                source_label=QLabel(self.dataset_label(node.settings['reference_data']));source_label.setWordWrap(True);self.form.addRow(source_label)
                 clear=QPushButton('Clear imported reference');clear.clicked.connect(lambda checked=False,n=node:self.clear_point_data(reference=n));self.form.addRow(clear)
             note=QLabel('Explicit Poisson reference: analytical for intervals; 40 odd sine modes per axis for rectangles with equal constant Dirichlet edges. The rectangle reference is truncated, not an exact closed-form value. Connect it to Comparison; ordinary plots never evaluate it.');note.setWordWrap(True);self.form.addRow(note)
         old=self.property_scroll.takeWidget()

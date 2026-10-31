@@ -207,3 +207,12 @@
   never reconstruct older missing history from current coefficients. Model 27
   migrates old BC blocks to defaults. Reject changed objectives on continuation
   and clear removed Jorvik aliases' coefficients alongside their physics settings.
+
+- CSV/NPZ mapping dialogs offer explicit Copy into project / Link existing file.
+  Default new sources to Copy, preserve existing links, and copy only after an
+  accepted validated mapping. Validate copied bytes before installing references;
+  retain fixed snapshots for undo and include them in existing recovery/run payloads.
+  Canonicalize owned mapping paths in editor parameters and undo values. Resolve
+  all training/evaluation/reference mappings at use; rebase cached trained configs
+  across Save As without treating file relocation as changed physics. Never turn
+  an owned URI into an absolute external link or silently bundle external files.

@@ -494,3 +494,12 @@ only when the user explicitly requests including it here.
 
 - [x] Select named raw/weighted loss curves in Training Monitor, including actual
   adaptive objective contributions and explicit legacy-history gaps.
+
+
+## Portable imported datasets
+
+- [x] Copy/link choice for CSV/NPZ training, evaluation and reference inputs.
+- [x] Bounded validated snapshots with relative owned references; preserve existing links.
+- [x] Save As and undo references remain portable; retain trained weights across relocation.
+- [x] Recovery, moved models and independent run archives exercised on CPU and CUDA.
+- [ ] Prune unused owned dataset snapshots when their undo/history references are no longer needed.

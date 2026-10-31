@@ -424,3 +424,29 @@ skipped**. The final focused coefficient/Jorvik/flow/archive suite completed
 11 tests with 10 passed and one CUDA skip. A separate CUDA test exercised all
 seven trainers and passed. The manual build checked 61 rendered pages; the
 capture helper refreshed 22 real UI walkthrough images plus the Jorvik captures.
+
+
+## Portable CSV/NPZ datasets
+
+`tests/test_dataset_storage.py` covers fixed copies versus live external links,
+failed-copy cleanup, cancellation without allocating an owned folder, 64 MiB
+bounds, busy-editor guards, owned-source previews, undo/redo after Save,
+legacy Reference data and the complete portable-data workflow. Existing external
+link fingerprint checks remain explicit in `tests/test_data_ui.py`.
+
+`examples.portable_data` uses real mapping dialogs for six training, boundary,
+evaluation and reference sources (CSV and NPZ), removes their original files,
+validates recovery, preserves weights through first Save and Save As, trains a
+relocated model, and resumes a run archive after deleting the model data folder.
+Same-device 2+2 continuation matches four uninterrupted updates exactly; supplied
+IDs/order and a separately ordered reference are preserved and predictions export
+through the existing CSV/VTU blocks. Both [CPU](../assets/benchmarks/portable-data-cpu.json)
+and [CUDA](../assets/benchmarks/portable-data-cuda.json) records passed. These checks
+exercise portability and correctness, not solution accuracy.
+
+The complete CPU regression run completed **233 tests: 221 passed and 12
+skipped**. Final focused storage/project-save checks completed 11 tests with ten
+passed and one CUDA skip. The complete CUDA portability example was also run
+separately and passed. The illustrated manual build checks 61 rendered pages;
+its capture helper refreshed the existing 22 UI images and three new data-storage
+captures. The existing root environment and dependencies were unchanged.

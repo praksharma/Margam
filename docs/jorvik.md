@@ -144,7 +144,8 @@ sample schema version 2 and NetCDF3 export, with a 64 MiB file limit, at most
 source geometry; no unit conversion is performed. Prepared-domain method limits
 still apply: no automatic RAR/importance candidate generation, integral quadrature,
 or Expert/Scale fresh sampling on unknown domains. Copy/paste of owned geometry
-and owned data blocks is currently disabled. External CSV/NPZ inputs are unchanged.
+and owned data blocks is currently disabled. Existing linked CSV/NPZ inputs are unchanged; new imports can optionally be
+copied into the project using File handling in their mapping dialogs.
 
 This integration does not import arbitrary 3D volumes, rotated planes, mesh cells,
 PDE definitions, BC targets or evaluation datasets automatically.
@@ -235,7 +236,8 @@ document and applied immutable NetCDF snapshots. Opening one restores these into
 a private temporary workspace; Save model transfers them to a new companion
 folder. This makes continued training independent of the original companion
 folder. The archive still validates training-data fingerprints on resume.
-External CSV/NPZ files remain external. Recorded predictions remain viewable and
+Linked CSV/NPZ files remain external; explicitly copied datasets are included
+in new run archives alongside geometry. Recorded predictions remain viewable and
 exportable without those external inputs; fresh evaluation or resume needs the
 relevant source files. Versions 1–3 remain readable, but cannot recover owned
 files that were never embedded. Archives have a 256 MiB limit and at most 4096

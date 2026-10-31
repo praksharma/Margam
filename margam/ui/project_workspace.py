@@ -71,8 +71,10 @@ class ProjectWorkspace:
             return value
         root = self.companion(self.model_path) if self.model_path else Path(self._temporary.name) if self._temporary else None
         if root is not None and Path(value).is_absolute():
-            try: return 'margam-owned:' + Path(value).relative_to(root).as_posix()
-            except ValueError: pass
+            try:return 'margam-owned:'+Path(value).relative_to(root).as_posix()
+            except ValueError:pass
+            try:return 'margam-owned:'+Path(value).resolve().relative_to(root.resolve()).as_posix()
+            except (ValueError,OSError,RuntimeError):pass
         return value
 
     def portable_document(self, value):
@@ -80,6 +82,47 @@ class ProjectWorkspace:
             return {key:self.portable(item) if key=='path' else self.portable_document(item) for key,item in value.items()}
         if isinstance(value,list):return [self.portable_document(item) for item in value]
         return value
+
+    def resolve_source(self, source):
+        from copy import deepcopy
+        result=deepcopy(source)
+        if result:result['path']=self.resolve(result['path'])
+        return result
+
+    def store_dataset(self, source, *, copy, validator):
+        """Validate a link or make a bounded, independently validated owned snapshot."""
+        from uuid import uuid4
+        import re
+        from ..components.prepared_data import LIMIT
+        if self.busy:raise ValueError('Close the external editor before importing data.')
+        resolved=self.resolve_source(source)
+        portable=self.portable(resolved['path'])
+        owned=portable.startswith('margam-owned:')
+        if not copy:
+            if owned:raise ValueError('Choose an external file to create a link, or keep Copy into project.')
+            resolved['path']=str(Path(resolved['path']).expanduser().absolute())
+            validator(resolved)
+            return resolved
+        if owned:
+            validator(resolved)
+            return dict(resolved,path=portable)
+        path=Path(resolved['path'])
+        if path.suffix.lower() not in ('.csv','.npz'):raise ValueError('Copy point data from CSV or NPZ files.')
+        if not path.is_file() or path.stat().st_size>LIMIT:raise ValueError('Choose a data file no larger than 64 MiB.')
+        with path.open('rb') as stream:content=stream.read(LIMIT+1)
+        if len(content)>LIMIT:raise ValueError('Data exceeds 64 MiB.')
+        folder=self.directory/'datasets'/uuid4().hex
+        name=re.sub(r'[^A-Za-z0-9_.-]','_',path.stem)[:100] or 'data'
+        created=False
+        try:
+            folder.mkdir(parents=True);created=True
+            destination=folder/(name+path.suffix.lower());destination.write_bytes(content)
+            copied=dict(resolved,path=str(destination))
+            validator(copied)
+            return dict(copied,path=self.portable(str(destination)))
+        except Exception:
+            if created:shutil.rmtree(folder,ignore_errors=True)
+            raise
 
     def resolve_config(self, config):
         from copy import deepcopy

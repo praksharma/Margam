@@ -1,0 +1,17 @@
+{
+  "generator": "examples.portable_data --capture",
+  "files": {
+    "manual-data-copy.png": {
+      "bytes": 55510,
+      "sha256": "570bcc8c1cb0556264c8c49c46dc3c803d84d38e328ea840dab28414eb88cc9b"
+    },
+    "manual-data-link.png": {
+      "bytes": 56070,
+      "sha256": "8da8e865b587f84d9224c4f0b76025ab5c83ed59f4c90c6ef703c0511c4615c1"
+    },
+    "manual-data-project.png": {
+      "bytes": 185084,
+      "sha256": "4ee589ab2784bf66e2d340a2c9b9d039dd36c20fab8eea5d67299630e5028ed7"
+    }
+  }
+}

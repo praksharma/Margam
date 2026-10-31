@@ -1,6 +1,6 @@
 {
-  "recorded_utc": "2026-10-31T19:51:35.900670+00:00",
-  "application_parent": "7134ba7378f71c099abf862c9794588d2546a8cd",
+  "recorded_utc": "2026-10-31T20:06:18.551876+00:00",
+  "application_parent": "a979fac199510d61c9aec683f1c857591073ffcf",
   "tracked_changes": true,
   "scope": "Actual Qt walkthrough captures and one default baseline run; not a numerical benchmark.",
   "qt_platform": "offscreen",
@@ -206,7 +206,7 @@
     },
     "map-data": {
       "file": "manual-map-data.png",
-      "sha256": "4b588de188b9f19bcb216bddb26b21e866c64dd316815a6850373c06e5fc2e07"
+      "sha256": "facfaf8b7007fdc25517693adb44a8c26f63805b2ecdc1438bed5bb270751065"
     },
     "helmholtz-pde": {
       "file": "manual-helmholtz-pde.png",

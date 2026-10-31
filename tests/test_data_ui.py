@@ -22,6 +22,7 @@ with TemporaryDirectory() as directory:
     path=Path(directory)/'pde.csv';path.write_text('position\n0.2\n0.5\n0.8\n')
     def map_dialog():
         dialog=app.activeModalWidget()
+        dialog.storage.choice.setCurrentIndex(1) # Explicitly test external-link invalidation.
         dialog.fields['path'].setText(str(path));dialog.fields['coordinates'].setText('position')
         assert dialog.check() and '3 points' in dialog.preview.toPlainText()
         dialog.accept()

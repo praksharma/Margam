@@ -268,3 +268,16 @@ The first two commands record actual mixed-operator losses and verify exact
 same-device continuation. The capture command includes the named coefficient
 controls and selected-boundary monitor view. See
 [coefficient semantics](modeling/physics.md#set-individual-boundary-loss-coefficients).
+
+
+### Portable input data
+
+```sh
+.venv/bin/python -m examples.portable_data --device cpu
+.venv/bin/python -m examples.portable_data --device cuda
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.portable_data --device cpu --capture
+```
+
+Each invocation creates a fresh `run-*` folder below `build/portable-data`.
+The optional capture flag refreshes the three copy/link/project screenshots.
+See [data portability](use/saving.md#choose-copied-or-linked-input-data).

@@ -146,3 +146,12 @@ The [capture manifest](../assets/screenshots/manual-evaluation-captures.json)
 records the illustrated UI evidence. Tests cover shuffled references, large
 integer/text IDs, invalid mappings, offline archives, evaluation reuse and
 variable-point physical-time VTU/PVD exports.
+
+
+## Keep data with the project
+
+Choose **Copy into project** or **Link existing file** in the mapping dialog.
+Copies travel with the model's companion folder, recovery and run archives;
+links remain dependent on their original location. New sources default to Copy,
+while existing linked sources keep Link. No rows, IDs or field mappings are
+changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-linked-input-data).

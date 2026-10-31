@@ -159,3 +159,12 @@ the manufactured solution directly into the PDE and mapped boundary operators.
 The [capture manifest](../assets/screenshots/manual-training-data-captures.json)
 identifies the actual UI screenshots. ParaView GUI playback was not part of this
 steady-data check; the file contains vertices, not triangular cells.
+
+
+## Keep data with the project
+
+Choose **Copy into project** or **Link existing file** in the mapping dialog.
+Copies travel with the model's companion folder, recovery and run archives;
+links remain dependent on their original location. New sources default to Copy,
+while existing linked sources keep Link. No rows, IDs or field mappings are
+changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-linked-input-data).

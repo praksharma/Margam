@@ -1,0 +1,20 @@
+{
+  "case": "Prepared triangle / copied training, evaluation and reference data",
+  "device": "cuda",
+  "owned_sources": 6,
+  "csv_and_npz": true,
+  "originals_removed": true,
+  "recovery_validated": true,
+  "save_as_preserved_weights": true,
+  "relocated_model_trained": true,
+  "archive_resumed_without_model_files": true,
+  "exact_same_device_resume": true,
+  "evaluation_order_and_ids_preserved": true,
+  "reference_alignment_verified": true,
+  "updates": 4,
+  "exports": [
+    "CSV",
+    "VTU"
+  ],
+  "scope": "Portability and lifecycle correctness; not solution accuracy."
+}
