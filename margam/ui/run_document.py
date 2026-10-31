@@ -1,4 +1,4 @@
-"""Explicit results plus baseline checkpoint; restricted torch loading, CPU mapped."""
+"""Explicit results, checkpoints and bounded owned files; restricted CPU loading."""
 from pathlib import Path
 import os
 import tempfile
@@ -10,8 +10,11 @@ LIMIT=256*1024*1024
 
 
 def validate_run(data):
-    require(isinstance(data,dict) and set(data)=={'format','version','model','result','monitors','checkpoint'},'Invalid run archive.')
-    require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2,3),'Unsupported run version.')
+    require(isinstance(data,dict),'Invalid run archive.')
+    keys={'format','version','model','result','monitors','checkpoint'}
+    require(set(data)==(keys|{'owned_files'} if data.get('version')==4 else keys),'Invalid run archive.')
+    require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2,3,4),'Unsupported run version.')
+    validate_owned_files(data.get('owned_files',{}))
     config,nodes,_=decode_document(data['model']);kinds={n['id']:n['kind'] for n in nodes}
     result=data['result']
     require(isinstance(result,dict) and set(result)=={'outputs','steps','cancelled','device'},'Invalid run result.')
@@ -86,12 +89,53 @@ def validate_run(data):
     return config
 
 
+def validate_owned_files(files):
+    from pathlib import PurePosixPath,PureWindowsPath
+    require(isinstance(files,dict) and len(files)<=4096,'Invalid owned-file payload.')
+    total=0
+    for name,content in files.items():
+        require(isinstance(name,str) and 0<len(name)<=4096 and '\\' not in name and '\x00' not in name,'Invalid owned-file name.')
+        path=PurePosixPath(name)
+        require(bool(path.parts) and not PureWindowsPath(name).drive and not path.is_absolute() and path.as_posix()==name and all(part not in ('.','..') for part in path.parts),'Invalid owned-file path.')
+        require(isinstance(content,bytes),'Invalid owned-file content.')
+        total+=len(content)
+        require(total<=LIMIT,'Owned files exceed 256 MiB.')
+    names=set(files)
+    require(not any(parent.as_posix() in names for name in names for parent in PurePosixPath(name).parents),'Conflicting owned-file paths.')
+
+
+def archive_workspace(data):
+    """Extract only validated relative files into a new private workspace."""
+    from .project_workspace import ProjectWorkspace
+    files=data.get('owned_files',{});validate_owned_files(files)
+    workspace=ProjectWorkspace()
+    try:
+        for name,content in files.items():
+            path=Path(workspace.resolve('margam-owned:'+name))
+            path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(content)
+    except Exception:
+        workspace.close();raise
+    return workspace
+
+
 def capture_run(window):
     result={key:value for key,value in window.result.items() if key!='config'}
     result['outputs']={identifier:{key:value for key,value in output.items() if key!='config'} for identifier,output in result['outputs'].items()}
     checkpoint=window.last_run.model.training_state() if window.last_run is not None and window.last_run.model is not None else window.loaded_checkpoint
-    return {'format':'margam-run','version':3,'model':capture_model(window),'result':result,
-            'monitors':window.monitor_records,'checkpoint':checkpoint}
+    workspace=window.project_workspace
+    root=workspace.companion(workspace.model_path) if workspace.model_path else Path(workspace._temporary.name) if workspace._temporary else None
+    files={}
+    if root is not None and root.exists():
+        require(not root.is_symlink(),'Run archives cannot follow a symbolic project folder.')
+        total=0
+        for path in root.rglob('*'):
+            require(not path.is_symlink(),'Run archives cannot contain symbolic links.')
+            if not path.is_file():continue
+            total+=path.stat().st_size
+            require(total<=LIMIT and len(files)<4096,'Owned files exceed run archive limits.')
+            files[path.relative_to(root).as_posix()]=path.read_bytes()
+    return {'format':'margam-run','version':4,'model':capture_model(window),'result':result,
+            'monitors':window.monitor_records,'checkpoint':checkpoint,'owned_files':files}
 
 
 def save_run(path,data):

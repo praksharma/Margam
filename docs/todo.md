@@ -483,3 +483,11 @@ only when the user explicitly requests including it here.
 
 - [x] Persistent application-wide Automatic/CPU/GPU selection for training, continuation and inference.
 - [x] Expanded information buttons for inspector settings, dropdown choices, checkboxes and block descriptions.
+
+
+- [x] Exercise Jorvik → mixed BCs → stop/archive/resume → supplied-point VTU
+  as one desktop workflow on CPU and CUDA, with an illustrated reproducible example.
+- [x] Embed project-owned geometry and immutable sample snapshots in run archives;
+  restore into a private workspace and preserve legacy archive readers.
+- [ ] Visually inspect the complete annulus VTU in ParaView when available;
+  current end-to-end evidence checks XML and exact arrays, not viewer rendering.

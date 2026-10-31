@@ -813,7 +813,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.resume_action.setEnabled(not locked and (self.loaded_checkpoint is not None or self.last_run is not None and self.last_run.model is not None))
 
     def save_current_run(self,path=None):
-        if self.is_running() or self.result is None:return False
+        if self.is_running() or self.scene.locked or self.result is None:return False
         if path is None:
             path,_=QFileDialog.getSaveFileName(self,'Save run and checkpoint','run.margam-run.pt','Margam run (*.margam-run.pt)')
             if path and not path.lower().endswith('.pt'):
@@ -832,8 +832,16 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         try:data=load_run(path)
         except Exception as error:QMessageBox.warning(self,'Run could not be opened',str(error));return False
         if not self.confirm_discard():return False
-        try:self.replace_model(data['model'])
-        except Exception as error:QMessageBox.warning(self,'Run could not be opened',str(error));return False
+        from .run_document import archive_workspace
+        workspace=None
+        try:
+            workspace=archive_workspace(data)
+            resolved=workspace.resolve_config(decode_document(data['model'])[0])
+            self.replace_model(data['model'],workspace=workspace)
+            self.config=resolved
+        except Exception as error:
+            if workspace is not None:workspace.close()
+            QMessageBox.warning(self,'Run could not be opened',str(error));return False
         self.result=deepcopy(data['result']);self.result['config']=self.config
         self._trained_config=deepcopy(self.config)
         for output in self.result['outputs'].values():output['config']=self.config

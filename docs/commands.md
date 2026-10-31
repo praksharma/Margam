@@ -241,3 +241,16 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_device_help --ove
 ```
 
 See [application device and expanded descriptions](use/results.md#choose-the-application-device).
+
+
+### Jorvik project-to-export workflow
+
+```sh
+.venv/bin/python -m examples.jorvik_workflow --device cpu
+.venv/bin/python -m examples.jorvik_workflow --device cuda
+```
+
+Each run leaves a fresh artifact folder below `build/jorvik-workflow`.
+See the [complete Jorvik walkthrough](jorvik.md#walk-through-a-complete-project).
+To refresh its screenshot, add
+`--screenshot assets/screenshots/manual-jorvik-workflow.png`.

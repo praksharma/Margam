@@ -163,3 +163,78 @@ baseline updates from the NetCDF data and compares uninterrupted training with
 solution accuracy. Additional automated UI checks cover document creation, editor
 launch arguments, locking, update/undo, failed update preservation, first Save,
 Save As, relocation and changed-snapshot rejection.
+
+
+## Walk through a complete project
+
+This example checks the complete desktop workflow with a curved annulus rather
+than a rectangle. It uses 97 interior, 17 inner-edge and 29 outer-edge samples.
+The equation is Laplace, with **inner Dirichlet u = 0** and **outer Neumann
+∂u/∂n = 1**. The known field `u = log(2r)` checks the imported operators and normal
+directions; the short training run is not an accuracy benchmark.
+
+![Mixed boundary conditions and explicit supplied-point export](../assets/screenshots/manual-jorvik-workflow.png)
+
+1. Create/sample the annulus in Jorvik, save and apply its datasets as described
+   above. Keep the `inner` and `outer` names.
+2. Connect **Interior data → PDE residual**, **Boundary data → PDE residual**
+   (optional boundary input), and **Boundary data → Boundary condition**.
+   This graph uses all **143 PDE rows** while retaining independent BC losses.
+3. Set source to zero. In Boundary condition, set inner Dirichlet value 0 and
+   outer Neumann value 1. Neumann means outward derivative, not a conductivity-scaled
+   flux. Set the trainer's overall boundary weight to 3 if following this check.
+   **Independent per-boundary coefficients remain on the TODO list.**
+4. Add **Evaluation points** and map an explicit CSV with columns `id,x,y`.
+   For example, use `probe-C,0.75,0`, `probe-A,0,0.6`, `probe-B,-0.8,0`.
+   Connect Evaluation points and PINN method to **ParaView Export**. Evaluation
+   points are independent of training samples; no bounding-box grid is generated.
+5. Save the model, close and reopen it. Choose **Device → CPU** or **GPU**,
+   train, then press **Stop**. Stopping is checked between batches of up to 25
+   updates, so the final step can be later than the first displayed progress event.
+6. Choose **File → Save run and checkpoint**, reopen that archive and use
+   **Run → Resume checkpoint**. **Evaluate outputs** reuses the trained weights
+   without optimizer updates.
+7. Right-click ParaView Export → **Export ParaView…**, selecting `.vtu`.
+   In ParaView, open the file and press Apply. Use a point representation and
+   colour by `u`. This is a vertex cloud, not a surface mesh: no cells connecting
+   the samples or interpolation are invented.
+
+### Run the automated version
+
+```sh
+.venv/bin/python -m examples.jorvik_workflow --device cpu
+.venv/bin/python -m examples.jorvik_workflow --device cuda
+```
+
+Each invocation creates a fresh `run-*` folder under `build/jorvik-workflow` and
+prints its location. It leaves the source Jorvik document, NetCDF export, saved
+models with companion folders, a run archive, `evaluation.csv`, `prediction.vtu`
+and a machine-readable `report.json` for inspection. Open `resumed.margam.json`
+from that folder to inspect the final saved graph. The CSV is an external input:
+keep it at its recorded location or browse/map it again when moving the example.
+The automated test relocates owned geometry, not arbitrary external inputs.
+
+The check closes/reopens the desktop project, verifies the physical BC operators,
+stops a running job, saves an archive, hides the original project companion folder,
+and resumes from the archived owned files. Continuation matches uninterrupted
+training exactly on the same device, including loss history and network weights.
+It also verifies inference leaves
+network weights unchanged and exported VTU coordinates, predictions and IDs match
+exactly. The [CPU record](../assets/benchmarks/jorvik-workflow-cpu.json) and
+[CUDA record](../assets/benchmarks/jorvik-workflow-cuda.json) both passed.
+The number of updates before Stop is scheduling-dependent. Neither ParaView nor
+its optional VTK Python reader was installed during these recorded checks; XML
+structure and exact array contents were checked, not visual rendering in ParaView.
+
+### What a run archive carries
+
+New **version 4** run archives include project-owned files, including the Jorvik
+document and applied immutable NetCDF snapshots. Opening one restores these into
+a private temporary workspace; Save model transfers them to a new companion
+folder. This makes continued training independent of the original companion
+folder. The archive still validates training-data fingerprints on resume.
+External CSV/NPZ files remain external. Recorded predictions remain viewable and
+exportable without those external inputs; fresh evaluation or resume needs the
+relevant source files. Versions 1–3 remain readable, but cannot recover owned
+files that were never embedded. Archives have a 256 MiB limit and at most 4096
+owned files. Unsafe relative paths, symlinks and conflicting file paths are rejected.

@@ -1,0 +1,28 @@
+{
+  "case": "Jorvik annulus desktop workflow",
+  "device": "cpu",
+  "counts": {
+    "interior": 97,
+    "inner": 17,
+    "outer": 29,
+    "pde": 143
+  },
+  "boundary_types": {
+    "inner": "Dirichlet",
+    "outer": "Neumann"
+  },
+  "boundary_weight": 3.0,
+  "updates": 52,
+  "stopped_after_updates": 50,
+  "stop_verified": true,
+  "mixed_operators_verified": true,
+  "project_reopened": true,
+  "owned_geometry_relocated": true,
+  "archive_resumed": true,
+  "exact_same_device_resume": true,
+  "inference_preserved_weights": true,
+  "export_points": 3,
+  "export_ids_preserved": true,
+  "vtk_reader_checked": false,
+  "scope": "Correctness check; no accuracy claim. Evaluation CSV remains an external input."
+}

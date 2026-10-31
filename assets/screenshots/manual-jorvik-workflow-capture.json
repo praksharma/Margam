@@ -1,0 +1,10 @@
+{
+  "generator": "examples.jorvik_workflow --device cpu --screenshot assets/screenshots/manual-jorvik-workflow.png",
+  "case": "Saved Jorvik annulus with mixed boundary operators and supplied-point ParaView output",
+  "files": {
+    "manual-jorvik-workflow.png": {
+      "bytes": 199272,
+      "sha256": "9b31a4d89e1f5e34321d0f1866bd3ecb70a82c3f141bb8c7246903e03b737e2e"
+    }
+  }
+}

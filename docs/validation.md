@@ -375,3 +375,25 @@ The illustrated manual build checked 61 rendered pages.
 CUDA_VISIBLE_DEVICES='' QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest tests.test_help_ui tests.test_application_device tests.test_block_insertion tests.test_model_files_ui tests.test_evaluation_ui tests.test_desktop_state -v
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest tests.test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection -v
 ```
+
+
+## Complete Jorvik desktop workflow
+
+`examples.jorvik_workflow` exercises the real desktop worker and saved Jorvik
+annulus, mixed Dirichlet/Neumann operators checked with `u=log(2r)`, explicit 143-row
+PDE collocation, stop/archive/reopen/resume with the original companion folder
+hidden, exact same-device continuation versus uninterrupted training, unchanged
+weights during inference, and exact supplied-point VTU fields
+and IDs. CPU and CUDA records live in
+[CPU](../assets/benchmarks/jorvik-workflow-cpu.json) and
+[CUDA](../assets/benchmarks/jorvik-workflow-cuda.json).
+This exposed and fixed missing owned files in pre-version-4 run archives.
+`tests/test_jorvik_workflow.py` retains CPU lifecycle and unsafe extraction-path
+regressions. Stop timing and final update count are scheduling-dependent.
+No solution-accuracy claim is made. ParaView/VTK reader verification remains
+unperformed here because neither is installed.
+
+The complete CPU regression run after this change completed **224 tests: 214
+passed and 10 skipped**. CUDA was hidden for that suite; the complete CUDA
+workflow was run separately and passed. The final focused archive/workflow/output
+suite also passed all five cases. The manual build checked 61 rendered pages.

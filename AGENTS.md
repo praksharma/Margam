@@ -194,3 +194,8 @@
   explain its meaning and interactions. Available choices and limits are read
   from the live widget, including disabled choices. Keep fallback descriptions
   limited to actual widget values and block capabilities.
+
+- Run archive version 4 embeds project-owned files in a bounded, validated relative
+  file map. Restore into a new private workspace before replacing the graph;
+  preserve older archives and external-input semantics. Never extract traversal,
+  absolute, ambiguous or conflicting paths, or follow symlinks when capturing.
