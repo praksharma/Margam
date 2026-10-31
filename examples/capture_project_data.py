@@ -33,13 +33,18 @@ def main():
             mappings=deepcopy(window.config.boundary_data)
             for name in ('base','upright'):mappings[name]['path']=str(directory/(name+'.csv'))
             window.change('boundary_data',mappings)
-            before=capture_model(window);index=window.undo_stack.index()
-            dialog=window.show_project_data()
+            window.record_dataset_import(window.parameter_owner('interior_data'),'interior_data',copied,lambda:None)
+            for name in ('base','upright'):
+                window.record_dataset_import(window.parameter_owner('boundary_data'),'boundary:'+name,mappings[name],lambda:None)
+            model=directory/'fingerprinted.margam.json'
+            assert window.save_model(model) and window.load_model(model)
             (directory/'base.csv').unlink()
             path=directory/'upright.csv';path.write_bytes(path.read_bytes()+b'\n')
-            dialog.refresh()
+            before=capture_model(window);index=window.undo_stack.index()
+            dialog=window.show_project_data()
             assert len(dialog.records)==5 and sum(result['changed'] for result in dialog.results)==1
             assert sum(result['status']=='Missing' for result in dialog.results)==1
+            assert any(result['status']=='Changed since import' for result in dialog.results)
             selected=next(i for i,record in enumerate(dialog.records) if record['boundary']=='upright');dialog.table.selectRow(selected)
             assert capture_model(window)==before and window.undo_stack.index()==index
             for _ in range(5):app.processEvents()
@@ -48,7 +53,7 @@ def main():
                     if child.isVisible():validate_public_text(child.toPlainText() if hasattr(child,'toPlainText') else child.text(),'project data capture')
             assert dialog.grab().save(str(image))
             data=dict(generator='examples.capture_project_data',scope='Actual read-only inventory; file checks are separate from numerical validation.',
-                      rows=[dict(block=record['block'],role=record['role'],storage=result['storage'],rows=result['rows'],status=result['status']) for record,result in zip(dialog.records,dialog.results)],
+                      rows=[dict(block=record['block'],role=record['role'],storage=result['storage'],rows=result['rows'],status=result['status'],baseline=record['baseline_kind']) for record,result in zip(dialog.records,dialog.results)],
                       read_only_verified=True,files={image.name:dict(bytes=image.stat().st_size,sha256=hashlib.sha256(image.read_bytes()).hexdigest())})
             manifest.write_text(json.dumps(data,indent=2)+'\n');print('Captured project data overview and verified read-only behaviour.')
     finally:

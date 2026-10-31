@@ -220,8 +220,8 @@
 - Project data overview is a read-only inventory of block-held file mappings,
   including disconnected/unmapped source blocks. Inspection must not mutate model,
   undo/results or filesystem; Refresh must not replace established baselines. Use non-creating owned-path
-  resolution for missing-file checks. Label ordinary byte baselines as session-only;
-  use Jorvik's applied fingerprint where present. Mapping edits are explicit,
+  resolution for missing-file checks. Use saved accepted-import fingerprints when available, and label only older
+  unrecorded mappings as session-only; use Jorvik's applied fingerprint where present. Mapping edits are explicit,
   guarded while busy/stale, and use the existing owning block's dialogs. Disconnect
   observers on window shutdown; do not retain stale Qt node references.
 
@@ -236,3 +236,12 @@
   files and results while inspecting; selecting an issue only opens its owner.
   Use IDs instead of retaining Qt nodes, guard stale boundary contexts, and
   disconnect report observers on window shutdown.
+
+- Model 28 persists `data_fingerprints` separately from numerical mappings.
+  Record them only on an explicitly accepted dataset mapping, bound to that exact
+  mapping; never fabricate historical checksums or rebase them during inspection,
+  validation, save or archive reopening. Keep mapping/fingerprint edits undoable
+  together, and clear cached training weights when reaccepting training data.
+  Valid changed imports are warnings for fresh training, while checkpoint data
+  identity and Jorvik snapshot checks remain strict. Keep hashing bounded and
+  metadata decoding independent of Qt.

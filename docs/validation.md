@@ -466,8 +466,8 @@ review to the owning geometry block.
 `examples.capture_project_data` captures an actual triangle file inventory with
 one copied dataset, one missing linked file and another changed linked file.
 The helper verifies model/history preservation. Refresh is intentionally manual;
-ordinary first-check hashes are not saved and are not evidence of an older
-import-time file version. No numerical training or GPU claim is made by these
+older mappings without an accepted import fingerprint use session-only hashes,
+which are not evidence of an older import-time file version. No numerical training or GPU claim is made by these
 file/UI checks.
 
 The complete CPU regression run completed **236 tests: 224 passed and 12
@@ -506,3 +506,29 @@ skipped**. Final focused validation/data-overview/storage/Jorvik checks complete
 15 tests with 14 passed and one CUDA skip. Earlier focused input/output checks
 also passed. The manual build checked 61 rendered pages. These are desktop and
 preflight checks; no new GPU-performance or solution-accuracy claim is made.
+
+
+## Persisted input fingerprints
+
+Model format **28** stores accepted source mappings and bounded SHA-256 file
+fingerprints separately from numerical parameters. Versions 1–27 remain readable;
+older missing fingerprints are never fabricated. Fingerprint metadata validation
+imports no Qt. All source formats retain their original numerical checkpoint
+identity rules.
+
+`tests/test_source_fingerprints.py` verifies strict source-slot/hash validation,
+legacy loading, external file changes before reopening, fixed baselines on
+Refresh/Save, warning-only valid changed inputs, explicit reacceptance as one
+undo/redo operation, rejection of stale mapping bindings, copied inputs through
+Save As and run archives, and unchanged detection after another save/reload.
+Existing portable-data tests exercise fingerprints on all six training/evaluation/
+reference import paths. The refreshed project-data screenshot records accepted
+fingerprints, saves/reopens the project, then detects a missing file and changed
+linked bytes without altering model/history during inspection.
+
+The existing 239-test CPU regression run passed (227 passed, 12 skipped). The
+three new fingerprint persistence cases passed separately. Final focused
+fingerprint/storage/overview/Jorvik checks completed 15 tests with 14 passed and
+one CUDA skip. Metadata decoding was also checked without importing Qt. The
+manual build checked 61 rendered pages; no numerical-accuracy or GPU-performance
+claim is made by these metadata checks.

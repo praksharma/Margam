@@ -212,6 +212,7 @@ class JorvikGeometryActions:
             if 'jorvik_files' in new[node.identifier]:new[node.identifier]['jorvik_files']['needs_update']=False
             interior=new[sources['interior_data'].identifier]['parameters'];interior.update(interior_data=mapping(report['interior']),adaptive_sampling={})
             boundary=new[sources['boundary_data'].identifier]['parameters'];boundary['boundary_data']={name:mapping(record['mapping']) for name,record in report['boundaries'].items()}
+            for kind in ('interior_data','boundary_data'):new[sources[kind].identifier].pop('data_fingerprints',None)
             for physics_node in physics_nodes:
                 parameters=new[physics_node.identifier]['parameters']
                 for name in removed:

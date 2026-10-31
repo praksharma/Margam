@@ -89,3 +89,20 @@ def reference_values(source,points,components=1):
     if len(np.unique(coordinates,axis=0))!=len(coordinates) or not np.all(np.abs(coordinates[source_order]-requested[target_order])<=tolerance):raise ValueError('Reference coordinates do not match the evaluation points. Supply matching points or resample explicitly.')
     output=np.empty((len(requested),components));output[target_order]=values[source_order]
     return output[:,0].tolist() if components==1 else output.tolist()
+
+
+def file_fingerprint(path):
+    path=Path(path)
+    before=path.stat()
+    if not path.is_file():raise ValueError('The source is not a regular file.')
+    if before.st_size>LIMIT:raise ValueError('File exceeds the 64 MiB input limit.')
+    digest=hashlib.sha256();total=0
+    with path.open('rb') as stream:
+        for chunk in iter(lambda:stream.read(1024*1024),b''):
+            total+=len(chunk)
+            if total>LIMIT:raise ValueError('File exceeds the 64 MiB input limit.')
+            digest.update(chunk)
+    signature=(before.st_size,before.st_mtime_ns)
+    after=path.stat()
+    if signature!=(after.st_size,after.st_mtime_ns):raise ValueError('File changed during the check; refresh to retry.')
+    return digest.hexdigest(),signature

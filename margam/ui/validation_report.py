@@ -147,7 +147,7 @@ def collect_issues(window,execution_error=None):
         outcome=inspect_source(record,window.project_workspace,{},cache)
         node=next((node for node in nodes if node.identifier==record['node_id']),None)
         if outcome['error'] or outcome['changed'] or not record['source']:
-            add('Input data',record['role']+': '+(outcome['error'] or outcome['status']),node,record['boundary'],severity='Error' if record['node_id'] in active else 'Warning')
+            add('Input data',record['role']+': '+(outcome['error'] or outcome['status']),node,record['boundary'],severity='Warning' if outcome['changed'] and not outcome['error'] and record.get('baseline_kind')=='Import' else 'Error' if record['node_id'] in active else 'Warning')
         elif record['source'] and record['role']!='Reference' and record['reader']=='points':
             try:
                 config=window.config_for_node(node,create=False)

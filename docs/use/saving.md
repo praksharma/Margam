@@ -142,7 +142,7 @@ reference expressions and geometry documents are not imported datasets.
 
 *Actual triangle example: one copied interior source, three boundary mappings and
 an evaluation source. One linked boundary file was removed and another changed
-since the first check. The overview leaves the model and datasets unchanged.*
+since its accepted import, detected after reopening the saved project. The overview leaves the model and datasets unchanged.*
 
 | Display | Meaning |
 | --- | --- |
@@ -152,7 +152,8 @@ since the first check. The overview leaves the model and datasets unchanged.*
 | Available | The current file can be read using this mapping; not a claim of solution accuracy or complete graph validity |
 | Missing / Unreadable | The referenced file is absent or cannot be opened |
 | Invalid / unavailable | The reader rejected the file, mapping or current coordinate/field contract |
-| Changed since first check | File bytes differ from the first check of this mapping in the current project session |
+| Changed since import | File bytes differ from the fingerprint recorded when this mapping was explicitly accepted |
+| Changed since first check | An older mapping has no saved fingerprint; its bytes differ from the first check in this session |
 | Changed from applied Jorvik snapshot | File bytes differ from the fingerprint saved when that geometry's samples were applied |
 | Not mapped | An explicit data-source block has no file mapping yet |
 
@@ -170,12 +171,31 @@ more than once because each set or block may map different arrays/columns.
   These editing actions are disabled during training/external editing, and until
   Refresh when graph/settings changes make the table stale.
 
-The ordinary first-check baseline is **session-only**, not a saved import-time
-checksum. Reopening the project starts a fresh baseline, and remapping a source
-starts a check for that new mapping. A file changed before the first check cannot
-be identified as changed from an earlier unsaved version. Jorvik's stored applied
-snapshot fingerprint is available even on the first check. Missing copied files
-are reported without recreating an empty working folder.
+Newly accepted CSV/NPZ mappings record an **import fingerprint**, saved with the
+project and run archive. A changed linked file can therefore be identified after
+closing and reopening Margam, including on the first check. This applies to
+training, each boundary, evaluation and reference mappings, for both copies and links.
+
+Existing models without a recorded fingerprint retain the **session-only** fallback.
+Their selected-row details explicitly say there is no saved import fingerprint;
+Margam does not invent a baseline for bytes it never observed. To establish one,
+open the mapping dialog, preview the file and click OK. The fingerprint describes
+that accepted version, not an unverifiable earlier import.
+
+To accept newer bytes deliberately, reopen the existing mapping dialog, preview
+and apply it again. Mapping and fingerprint are one undoable edit. Refresh,
+Validate, Save and reopening an archive do not accept changed bytes. Save As and
+moving owned project files preserve the baseline. A fingerprint is bound to the
+exact mapping; changing its file/columns through other APIs does not reuse an old
+fingerprint for a different declaration.
+
+A byte-change warning may reflect formatting-only changes; it does not establish
+that coordinates or fields changed numerically. Valid changed files produce a
+warning and can be used for a fresh training run. Strict checkpoint continuation
+still compares actual numerical data independently. Reaccepting a training input
+clears cached training/prediction state, even when its external pathname stays the
+same. Jorvik retains its stricter applied-snapshot fingerprint checks.
+Missing copied files are reported without recreating an empty working folder.
 
 Use **Validate** for graph compatibility, boundary operators and reference
 alignment. Resume retains its separate strict checkpoint/data identity checks.

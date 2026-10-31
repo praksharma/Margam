@@ -511,8 +511,8 @@ only when the user explicitly requests including it here.
 - [x] Ownership, row counts, mapping details and missing/invalid/changed warnings.
 - [x] Select owning block/boundary and use existing mapping or Jorvik review actions.
 - [x] Read-only checks preserve model/results/history and do not recreate missing owned folders.
-- [ ] Consider persistent import-time checksums for external sources across project sessions;
-  the ordinary overview baseline is currently session-only and labelled accordingly.
+- [x] Persist fingerprints when mappings are explicitly accepted; detect changed
+  files across project sessions. Keep older unrecorded inputs labelled session-only.
 
 
 ## Actionable model validation

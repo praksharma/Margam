@@ -7,42 +7,47 @@
       "role": "Boundary \u00b7 base",
       "storage": "Linked file",
       "rows": null,
-      "status": "Missing"
+      "status": "Missing",
+      "baseline": "Import"
     },
     {
       "block": "Boundary data",
       "role": "Boundary \u00b7 upright",
       "storage": "Linked file",
       "rows": 12,
-      "status": "Changed since first check"
+      "status": "Changed since import",
+      "baseline": "Import"
     },
     {
       "block": "Boundary data",
       "role": "Boundary \u00b7 slope",
       "storage": "Linked file",
       "rows": 12,
-      "status": "Available"
+      "status": "Available",
+      "baseline": "Session"
     },
     {
       "block": "Evaluation points",
       "role": "Evaluation",
       "storage": "Linked file",
       "rows": 58,
-      "status": "Available"
+      "status": "Available",
+      "baseline": "Session"
     },
     {
       "block": "Interior data",
       "role": "Interior",
       "storage": "Project copy",
       "rows": 55,
-      "status": "Available"
+      "status": "Available",
+      "baseline": "Import"
     }
   ],
   "read_only_verified": true,
   "files": {
     "manual-project-data.png": {
-      "bytes": 79833,
-      "sha256": "c0be4d0e6cd56dc5318daddf63fab756877eaa7c5ee2857f1d6eaf172e5d48a1"
+      "bytes": 83396,
+      "sha256": "22c5dd4d0e8ae74b8f7c5cbb9f925cdec504e491d9ffc2629e8df5291ea58cb8"
     }
   }
 }

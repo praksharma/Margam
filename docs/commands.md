@@ -290,7 +290,7 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_project_data --ov
 ```
 
 Captures the real View → Project data overview window with copied, missing and
-changed inputs. The helper verifies that inspecting/refreshing does not change
+changed inputs, including saved-import fingerprints checked after reopening. The helper verifies that inspecting/refreshing does not change
 the model or undo history and checks public screenshot text for private paths.
 
 

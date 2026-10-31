@@ -92,7 +92,7 @@ try:
  control.setValue(2.5);assert w.scene.compile_config().bc_weights=={'slope':2.5}
  w.undo_edit();assert w.scene.compile_config().bc_weights=={}
  w.redo_edit();assert w.scene.compile_config().bc_weights=={'slope':2.5}
- doc=capture_model(w);assert doc['version']==27;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==28;decode_document(doc)
  old=deepcopy(doc);old['version']=26;old['config'].pop('bc_weights')
  for n in old['nodes']:n['settings'].get('parameters',{}).pop('bc_weights',None)
  migrated,records,_=decode_document(old);assert migrated.bc_weights=={}

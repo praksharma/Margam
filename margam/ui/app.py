@@ -1631,6 +1631,25 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         if path.startswith('margam-owned:'):return 'Project copy · '+Path(path).name
         return 'Linked file · '+path
 
+    def record_dataset_import(self,node,slot,source,apply):
+        if self.is_running() or self.scene.locked:return
+        from .source_fingerprints import accepted_fingerprint,current_source
+        fingerprint=accepted_fingerprint(self.project_workspace,source)
+        old=deepcopy(node.settings.get('data_fingerprints',{}))
+        updated={key:value for key,value in old.items() if self.project_workspace.portable_document(current_source(node.settings,key))==value['source']}
+        updated[slot]=fingerprint
+        if old==updated and self.project_workspace.portable_document(current_source(node.settings,slot))==fingerprint['source']:return
+        self.undo_stack.beginMacro('Map dataset and record fingerprint')
+        try:
+            apply()
+            self.change_output(node,'data_fingerprints',updated)
+        finally:self.undo_stack.endMacro()
+        if slot=='interior_data' or slot.startswith('boundary:'):
+            # Re-accepting changed training bytes must not retain old prediction
+            # weights merely because an external pathname stayed the same.
+            self._evaluation_model=None;self._evaluation_checkpoint=None;self._evaluation_config=None
+            self.clear_run_data()
+
     def edit_evaluation_data(self,node):
         if self.is_running() or self.scene.locked:return
         from .evaluation_mapping import EvaluationMappingDialog
@@ -1640,7 +1659,9 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         if dialog.exec()!=dialog.DialogCode.Accepted:return
         try:source=dialog.store_source()
         except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
-        self.change_output(node,'source_data',source);self.selection_changed()
+        try:self.record_dataset_import(node,'source_data',source,lambda:self.change_output(node,'source_data',source))
+        except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
+        self.selection_changed()
 
     def add_boundary_data_set(self):
         if self.is_running():return
@@ -1667,17 +1688,36 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         if dialog.exec()!=DataMappingDialog.DialogCode.Accepted:return
         try:mapped=dialog.store_source()
         except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
-        if reference is not None:self.change_output(reference,'reference_data',mapped)
+        if reference is not None:
+            node=reference;slot='reference_data';apply=lambda:self.change_output(reference,'reference_data',mapped)
         elif side:
-            values=deepcopy(self.config.boundary_data);values[side]=mapped;self.change('boundary_data',values)
-        else:self.change('interior_data',mapped)
+            node=self.parameter_owner('boundary_data');slot='boundary:'+side
+            values=deepcopy(self.config.boundary_data);values[side]=mapped;apply=lambda:self.change('boundary_data',values)
+        else:
+            node=self.parameter_owner('interior_data');slot='interior_data';apply=lambda:self.change('interior_data',mapped)
+        try:self.record_dataset_import(node,slot,mapped,apply)
+        except Exception as error:QMessageBox.warning(self,'Data could not be imported',str(error));return
         self.selection_changed()
 
+    def forget_dataset_source(self,node,slot,apply):
+        if self.is_running() or self.scene.locked:return
+        records=deepcopy(node.settings.get('data_fingerprints',{})) if node is not None else {}
+        if slot not in records:apply();return
+        records.pop(slot)
+        self.undo_stack.beginMacro('Clear dataset and fingerprint')
+        try:
+            apply();self.change_output(node,'data_fingerprints',records)
+        finally:self.undo_stack.endMacro()
+
     def clear_point_data(self,side=None,reference=None):
-        if reference is not None:self.change_output(reference,'reference_data',{})
+        if reference is not None:
+            node=reference;slot='reference_data';apply=lambda:self.change_output(reference,'reference_data',{})
         elif side:
-            values=deepcopy(self.config.boundary_data);values.pop(side,None);self.change('boundary_data',values)
-        else:self.change('interior_data',{})
+            node=self.parameter_owner('boundary_data');slot='boundary:'+side
+            values=deepcopy(self.config.boundary_data);values.pop(side,None);apply=lambda:self.change('boundary_data',values)
+        else:
+            node=self.parameter_owner('interior_data');slot='interior_data';apply=lambda:self.change('interior_data',{})
+        self.forget_dataset_source(node,slot,apply)
         self.selection_changed()
 
     def scale_settings_fields(self):
@@ -2082,7 +2122,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)
             if source:
-                clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.change_output(n,'source_data',{}));self.form.addRow(clear)
+                clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.forget_dataset_source(n,'source_data',lambda:self.change_output(n,'source_data',{})));self.form.addRow(clear)
         elif node.kind=='reference':
             expression=QLineEdit(node.settings.get('reference_expression',''))
             expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')

@@ -1,6 +1,5 @@
 """Read-only inventory of the concrete file mappings held by desktop blocks."""
 from copy import deepcopy
-import hashlib
 import json
 from pathlib import Path
 from PySide6.QtCore import Qt
@@ -9,6 +8,7 @@ from shiboken6 import isValid
 from PySide6.QtWidgets import (QApplication,QDialog,QVBoxLayout,QHBoxLayout,QLabel,
     QTableWidget,QTableWidgetItem,QHeaderView,QPushButton,QTextBrowser)
 from .graph_model import overlay,role
+from .source_fingerprints import source_slot
 from ..components.prepared_data import LIMIT,read_points
 from ..components.evaluation_data import read_point_data
 
@@ -35,8 +35,13 @@ def collect_sources(window):
         expected=geometry.settings.get('jorvik',{}).get('sha256') if geometry is not None and geometry.kind=='jorvik_geometry' else None
         def add(role,source,reader='points',boundary=None):
             logical=window.project_workspace.portable_document(deepcopy(source))
+            # Only an exact mapping binding can supply a persisted import baseline.
+            slot=source_slot(node.kind,boundary)
+            stored=node.settings.get('data_fingerprints',{}).get(slot,{})
+            imported=stored.get('sha256') if window.project_workspace.portable_document(stored.get('source',{}))==logical else None
+            baseline_kind='Jorvik' if expected else 'Import' if imported else 'Session'
             rows.append(dict(node_id=node.identifier,block=node.title,role=role,boundary=boundary,
-                             source=logical,reader=reader,config=deepcopy(config),expected=expected,
+                             source=logical,reader=reader,config=deepcopy(config),expected=expected or imported,baseline_kind=baseline_kind,
                              geometry_id=geometry.identifier if geometry is not None and geometry.kind=='jorvik_geometry' else None,
                              key=(node.identifier,role,json.dumps(logical,sort_keys=True))))
         if node.kind in ('interior','interior_data','rar','importance'):
@@ -54,21 +59,9 @@ def collect_sources(window):
 
 
 def file_digest(path,cache):
+    from ..components.prepared_data import file_fingerprint
     key=str(path.absolute())
-    if key in cache:return cache[key]
-    before=path.stat()
-    if not path.is_file():raise ValueError('The source is not a regular file.')
-    if before.st_size>LIMIT:raise ValueError('File exceeds the 64 MiB input limit.')
-    digest=hashlib.sha256();total=0
-    with path.open('rb') as stream:
-        for chunk in iter(lambda:stream.read(1024*1024),b''):
-            total+=len(chunk)
-            if total>LIMIT:raise ValueError('File exceeds the 64 MiB input limit.')
-            digest.update(chunk)
-    signature=(before.st_size,before.st_mtime_ns)
-    after=path.stat()
-    if signature!=(after.st_size,after.st_mtime_ns):raise ValueError('File changed during the check; refresh to retry.')
-    cache[key]=(digest.hexdigest(),signature)
+    if key not in cache:cache[key]=file_fingerprint(path)
     return cache[key]
 
 
@@ -83,7 +76,7 @@ def inspect_source(record,workspace,baselines,cache):
         digest,signature=file_digest(path,cache)
         first=baselines.setdefault(record['key'],digest)
         result['changed']=digest!=(record['expected'] or first)
-        result['status']='Changed from applied Jorvik snapshot' if record['expected'] and result['changed'] else 'Changed since first check' if result['changed'] else 'Available'
+        result['status']=('Changed from applied Jorvik snapshot' if record.get('baseline_kind')=='Jorvik' else 'Changed since import' if record.get('baseline_kind')=='Import' else 'Changed since first check') if result['changed'] else 'Available'
         if record['reader'] in ('evaluation_points','reference_data'):
             data=read_point_data(resolved,config,reference=record['reader']=='reference_data');result['rows']=len(data.points)
         else:
@@ -104,7 +97,7 @@ class ProjectDataDialog(QDialog):
         self.baselines={};self.records=[];self.results=[];self.stale=False
         self.setWindowTitle('Project data overview');self.setObjectName('project_data_overview');self.resize(1120,670)
         layout=QVBoxLayout(self)
-        note=QLabel('Read-only file and mapping checks, not full model validation. Refresh to recheck. Changed means changed since the first check in this project session; this baseline is not saved. Jorvik uses its applied snapshot fingerprint when available.')
+        note=QLabel('Read-only file and mapping checks, not full model validation. Refresh to recheck. New imports use a saved fingerprint. Older mappings without one use a session-only first check. Jorvik uses its applied snapshot fingerprint.')
         note.setWordWrap(True);layout.addWidget(note)
         self.summary=QLabel();self.summary.setWordWrap(True);layout.addWidget(self.summary)
         self.table=QTableWidget(0,6);self.table.setObjectName('project_data_table')
@@ -186,6 +179,7 @@ class ProjectDataDialog(QDialog):
         for key,label in [('coordinates','Coordinates'),('normals','Normals'),('values','Values'),('ids','Point IDs')]:
             if key in source:lines.append(label+': '+(source[key] or 'Not mapped'))
         if source.get('values'):lines.append('Fields: '+', '.join(record['config'].field_names))
+        lines.append('Baseline: '+{'Import':'accepted import (saved with project)','Jorvik':'applied Jorvik snapshot (saved with project)','Session':'first check in this session; no saved import fingerprint'}.get(record.get('baseline_kind'),'first check in this session'))
         if result['changed']:lines.append('File bytes differ. No data, mapping, checkpoint or baseline was replaced by this check.')
         if result['error']:lines.append(result['error'])
         lines.append('Use Validate for graph compatibility, BC operators and reference alignment.')
