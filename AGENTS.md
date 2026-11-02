@@ -245,3 +245,12 @@
   Valid changed imports are warnings for fresh training, while checkpoint data
   identity and Jorvik snapshot checks remain strict. Keep hashing bounded and
   metadata decoding independent of Qt.
+
+
+- Format layout commands change positions only, as one undo entry; preserve graph,
+  cached numerical results and selection. Auto arrangement includes disconnected
+  blocks and terminates on cycles without claiming they are executable. Equal-gap
+  distribution must not introduce overlap. Keep shortcuts scoped to the canvas.
+- Model search stores block IDs rather than graphics objects and resolves them
+  again before navigation. Refresh after edits; stale/deleted results must remain
+  safe. Do not treat search as insertion or a numerical mutation.

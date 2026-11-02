@@ -302,3 +302,13 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_validation --over
 
 Captures the real multi-issue report with connection, network and boundary/PDE
 expression errors, verifying that inspection preserves the model and undo history.
+
+
+Capture diagram editing tools (state-isolated, no training):
+
+```bash
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_diagram_tools --overwrite
+```
+
+Replaces `assets/screenshots/manual-model-search.png`, `manual-format.png` and
+its capture manifest. Images show model search and Format controls.

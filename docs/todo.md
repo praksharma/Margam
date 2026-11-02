@@ -522,3 +522,46 @@ only when the user explicitly requests including it here.
 - [x] Distinguish blocking execution errors from unused optional declaration warnings.
 - [x] Retain the authoritative numerical gate and avoid automatic repairs or training.
 - [x] Cover missing normals, coupled-flow expressions, multiple missing files and stale/deleted owners.
+
+
+## Simulink-inspired editor review (2 November 2026)
+
+Completed in this pass:
+
+- [x] Format menu: six edge/centre alignment commands, equal-gap distribution,
+  deterministic left-to-right whole-model layout, one-step undo and busy guards.
+- [x] Find existing model instances by name/type/summary/ID, with safe navigation
+  after deletion and explicit refresh; keep insertion and model search separate.
+
+Next editor improvements, in priority order:
+
+- [ ] Add model annotations for equations, assumptions and provenance, with
+  persistence, clipboard, undo and no effect on numerical execution.
+- [ ] Add optional grid/snap aids, preserving group offsets during drag and normal
+  free placement when disabled; persist these as view preferences.
+- [ ] Highlight a selected block's upstream/downstream dependencies and show port
+  names on demand, without interpreting wires as temporal signals.
+- [ ] Add recent models with missing-file handling and local-only path preferences.
+- [ ] Add a genuinely blank model action, distinct from loading the Poisson example;
+  explain the required supported root and keep incomplete models saveable.
+- [x] Add View-menu Fit selection with a canvas-only shortcut; preserve model,
+  results and undo history, including while training.
+- [ ] Add canvas-level context actions for alignment/distribution and selected-block
+  fit. Preserve multi-selection when opening a group context menu.
+- [ ] Review dense diagrams for wire crossings and overlapping blocks. Add routing
+  improvements only with concrete diagrams and reproducible interaction tests.
+- [ ] Add independent block labels where useful, keeping type and ID visible and
+  separating names from boundary aliases and numerical settings.
+- [ ] Design arbitrary subsystems: explicit typed boundary ports, nested navigation,
+  breadcrumbs, collapse/expand, persistence/undo and unchanged numerical assembly.
+  Existing compact recipes do not satisfy this contract.
+- [ ] Define disabled-output semantics before adding an enable/disable toggle;
+  disabling a required physics component must fail validation, not silently alter
+  its loss or bypass it.
+- [ ] Compare two saved model definitions with block-level parameter/connection
+  changes before considering automatic merge or multi-run Data Inspector features.
+
+Do not port Simulink features solely for visual parity: physical-time simulation
+solvers, signal buses, code generation and MATLAB integration need their own
+concrete Margam use cases. Existing explicit outputs, application device selection,
+linked diagnostics, recovery and owned data remain the supported workflows.

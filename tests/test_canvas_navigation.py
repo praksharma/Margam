@@ -14,6 +14,7 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication
 from PySide6.QtTest import QTest
 from margam.ui.app import Window
+from margam.ui.model_document import capture_model
 app=QApplication([]);w=Window(state_directory=False);w.show()
 for _ in range(3):app.processEvents()
 view=w.view
@@ -46,7 +47,25 @@ for _ in range(30):view.zoom_by(2)
 assert abs(view.transform().m11()-4)<1e-10
 for _ in range(30):view.zoom_by(.5)
 assert abs(view.transform().m11()-.1)<1e-10
-w.fit_model();w.undo_stack.setClean();w.close();app.processEvents()
+w.fit_model()
+# Fit selection is camera-only, works while busy, and ignores selected wires.
+w.scene.clearSelection();assert not w.fit_selection_action.isEnabled()
+camera=view.transform();assert not w.fit_selection() and view.transform()==camera
+nodes=sorted(w.scene.nodes(),key=lambda n:n.pos().x())[:2]
+for node in nodes:node.setSelected(True)
+w.scene.wires[-1].setSelected(True)
+model=capture_model(w);history=w.undo_stack.index();sentinel={'retained':True};w.result=sentinel
+assert w.fit_selection_action.isEnabled()
+w.fit_selection_action.trigger();app.processEvents()
+for node in nodes:
+ assert view.viewport().rect().contains(view.mapFromScene(node.sceneBoundingRect()).boundingRect())
+assert capture_model(w)==model and w.undo_stack.index()==history and w.result is sentinel
+assert w.zoom_label.text()==f'{view.transform().m11()*100:.0f}%'
+w.set_busy(True);assert w.fit_selection_action.isEnabled() and w.fit_selection()
+w.set_busy(False)
+w.scene.clearSelection();w.scene.wires[0].setSelected(True)
+assert not w.fit_selection_action.isEnabled() and not w.fit_selection()
+w.undo_stack.setClean();w.close();app.clipboard().clear();app.processEvents()
 '''
         result=subprocess.run([sys.executable,'-c',code],cwd=Path(__file__).resolve().parents[1],
                               env=dict(os.environ,QT_QPA_PLATFORM='offscreen',PYTHONDONTWRITEBYTECODE='1'),

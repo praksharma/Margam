@@ -561,6 +561,12 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         select_all.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.view.addAction(select_all)
         select_all.triggered.connect(self.select_all_blocks)
+        self.find_blocks_action=edit.addAction('Find in model…')
+        self.find_blocks_action.setShortcut('Ctrl+F')
+        self.find_blocks_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.view.addAction(self.find_blocks_action)
+        self.find_blocks_action.triggered.connect(self.show_model_search)
+        self.setup_layout_menu()
         self.view_menu=self.menuBar().addMenu('View')
         for dock in [self.library_dock,self.properties_dock,self.messages_dock]:
             self.view_menu.addAction(dock.toggleViewAction())
@@ -573,6 +579,14 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
             self.view.addAction(action);self.view_menu.addAction(action)
         self.view_menu.addAction(self.pan_action)
         self.view_menu.addAction(self.fit_action)
+        self.fit_selection_action=self.view_menu.addAction('Fit selection')
+        self.fit_selection_action.setIcon(icon('fit'))
+        self.fit_selection_action.setToolTip('Fit the selected blocks in the canvas without moving them')
+        self.fit_selection_action.setShortcut('Ctrl+Shift+F')
+        self.fit_selection_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.view.addAction(self.fit_selection_action)
+        self.fit_selection_action.triggered.connect(self.fit_selection)
+        self.fit_selection_action.setEnabled(False)
         self.view_menu.addAction('Reset panel layout').triggered.connect(self.reset_panel_layout)
         self.open_output_action=self.view_menu.addAction('Open selected output')
         self.open_output_action.setEnabled(False)
@@ -880,6 +894,52 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.change('iterations',checkpoint['iter']+additional)
         return self.start_training(checkpoint=checkpoint)
 
+    def show_model_search(self):
+        from .model_search import ModelSearch
+        dialog=getattr(self,'model_search_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=ModelSearch(self);self.model_search_dialog=dialog
+        dialog.refresh();dialog.show();dialog.raise_();dialog.activateWindow()
+        dialog.search.setFocus();dialog.search.selectAll()
+        return dialog
+
+    def setup_layout_menu(self):
+        menu=self.menuBar().addMenu('Format')
+        self.layout_actions={}
+        for key,label in [('left','Align left'),('center','Align horizontal centres'),('right','Align right'),('top','Align top'),('middle','Align vertical centres'),('bottom','Align bottom'),('horizontal','Distribute horizontally'),('vertical','Distribute vertically'),('auto','Auto arrange model')]:
+            if key in ('horizontal','auto'):menu.addSeparator()
+            action=menu.addAction(label)
+            action.triggered.connect(lambda checked=False,k=key:self.arrange_blocks(k))
+            self.layout_actions[key]=action
+        action=self.layout_actions['auto'];action.setShortcut('Ctrl+Shift+A')
+        action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.view.addAction(action)
+        menu.aboutToShow.connect(self.update_layout_actions)
+        self.scene.selectionChanged.connect(self.update_layout_actions)
+        self.update_layout_actions()
+
+    def update_layout_actions(self):
+        if not hasattr(self,'layout_actions') or not isValid(self.scene):return
+        count=sum(isinstance(item,Node) for item in self.scene.selectedItems())
+        if hasattr(self,'fit_selection_action'):self.fit_selection_action.setEnabled(count>0)
+        locked=self.is_running() or self.scene.locked
+        for key,action in self.layout_actions.items():
+            minimum=3 if key in ('horizontal','vertical') else 2
+            action.setEnabled(not locked and (len(self.scene.nodes())>=2 if key=='auto' else count>=minimum))
+
+    def arrange_blocks(self,operation):
+        if self.is_running() or self.scene.locked:return False
+        from .diagram_layout import positions
+        nodes=self.scene.nodes() if operation=='auto' else [n for n in self.scene.selectedItems() if isinstance(n,Node)]
+        proposed=positions(nodes,self.scene.wires,operation)
+        moves=[(n,QPointF(n.pos()),QPointF(*xy)) for n,xy in proposed.items() if QPointF(*xy)!=n.pos()]
+        if not moves:return False
+        def place(new):
+            for node,old,target in moves:node.setPos(target if new else old)
+        self.push_edit('Arrange blocks',lambda:place(True),lambda:place(False))
+        self.statusBar().showMessage('Diagram arranged · Undo restores previous positions')
+        return True
+
     def push_edit(self,text,redo,undo,merge_key=None):
         if self.is_running() or self.scene.locked or self._history_replaying:return
         if self._resetting:redo();return
@@ -1164,6 +1224,9 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def fit_model(self):
         self.view.fit_model()
+
+    def fit_selection(self):
+        return self.view.fit_items([n for n in self.scene.selectedItems() if isinstance(n,Node)])
 
     def make_node(self,title,detail,x,y):
         node=Node(title,detail,x,y)
@@ -2331,7 +2394,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.evaluate_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
-        self.update_history_actions();self.update_clipboard_actions();self.update_run_actions()
+        self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
 
     def start_training(self,*,checkpoint=None):

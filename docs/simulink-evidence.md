@@ -176,3 +176,22 @@ creation. Placement follows the scene coordinate under the pointer; optional vie
 remain closed. Native Qt event tests cover placement, search, cancellation and
 training locks. Core blocks remain template-backed and require the existing exact
 core graph; this stage does not complete instance-based execution or typed ports.
+
+
+## Diagram organisation review (2 November 2026)
+
+The official [Configure Model Layout](https://www.mathworks.com/help/simulink/ug/configure-model-layout.html)
+reference documents block alignment, distribution and Auto Arrange; the
+[modelling shortcuts](https://www.mathworks.com/help/simulink/ug/summary-of-mouse-and-keyboard-actions.html)
+reference lists Ctrl+Shift+A for automatic arrangement. Margam now implements
+six alignment commands, equal horizontal/vertical gaps, and a deterministic
+left-to-right whole-model layout. These are undoable position edits. Margam's
+layered algorithm does not claim Simulink's line routing, resizing or layout quality.
+
+Find in model is a Margam search/navigation addition, distinct from library
+search and Quick Insert. It searches existing block names, displayed summaries,
+types and IDs. It does not implement Simulink's complete model-search language.
+
+Remaining interaction gaps are prioritised in todo.md. Recipe expansion is still
+not arbitrary subsystem hierarchy. Multi-problem execution, signal buses and
+continuous/discrete simulation semantics are not implied by this visual reference.

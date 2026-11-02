@@ -53,3 +53,37 @@ The [recipe reference](../pinn-recipes.md) lists exact ownership and limitations
 **Validate** opens a list of actionable issues. Click a row to select its block
 and open the inspector; named boundary issues select their set. Recheck after
 edits. See [model validation](../use/results.md#fix-problems-before-training).
+
+
+## Organise and find blocks
+
+Use **Format** to align two or more selected blocks by their edges or centres.
+Select three or more for **Distribute horizontally/vertically**: this preserves
+outer edges and makes equal gaps. When the span is too small to avoid overlap,
+distribution leaves it unchanged; spread the outer blocks first.
+
+**Format → Auto arrange model** (**Ctrl+Shift+A**, canvas focus) lays out the whole
+model from inputs to outputs. It includes disconnected blocks. Cyclic leftovers
+occupy a final column; arranging them does not make an invalid graph executable.
+It is a simple layered layout, not an obstacle-avoiding wire router. Each layout
+edit is one Undo action and preserves physics, wires and trained results. Layout
+editing is unavailable while training or the geometry editor locks the model.
+
+![Format menu with diagram alignment tools](../../assets/screenshots/manual-format.png)
+
+*Select blocks to enable alignment and spacing commands.*
+
+**Edit → Find in model…** (**Ctrl+F**, canvas focus) searches existing instances by
+name, type, displayed settings or full ID. Choose **Select block**, press Enter in
+the search field, or activate a result to centre it and show its properties.
+Refresh after edits. Search does not insert blocks; use the library to add one.
+
+![Find an existing instance in the model](../../assets/screenshots/manual-model-search.png)
+
+*Model search locates an existing block without changing its settings.*
+
+
+**View → Fit selection** (**Ctrl+Shift+F**, canvas focus) frames only the selected
+blocks. It works for a single block or a group, ignores selected wires, and leaves
+positions, settings, history and results unchanged. With no blocks selected the
+command is disabled. **Fit model** continues to frame the complete diagram.

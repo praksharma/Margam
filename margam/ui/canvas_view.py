@@ -95,6 +95,17 @@ class CanvasView(QGraphicsView):
         self.fitInView(bounds, Qt.AspectRatioMode.KeepAspectRatio)
         self.zoomChanged.emit(self.transform().m11())
 
+    def fit_items(self,items):
+        items=[item for item in items if item.scene() is self.scene()]
+        if not items:return False
+        bounds=items[0].sceneBoundingRect()
+        for item in items[1:]:bounds=bounds.united(item.sceneBoundingRect())
+        bounds=bounds.adjusted(-40,-40,40,40)
+        self.scene().setSceneRect(self.scene().sceneRect().united(bounds.adjusted(-1000,-1000,1000,1000)))
+        self.fitInView(bounds,Qt.AspectRatioMode.KeepAspectRatio)
+        self.zoomChanged.emit(self.transform().m11())
+        return True
+
     def wheelEvent(self, event):
         delta = event.angleDelta().y() or event.pixelDelta().y()
         if delta:self.zoom_by(1.2**(delta/120),event.position().toPoint())
