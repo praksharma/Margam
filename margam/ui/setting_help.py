@@ -1,9 +1,10 @@
 """Expandable setting descriptions; compact inspectors keep their existing controls."""
 import re
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QDialog,QDialogButtonBox,QVBoxLayout,QHBoxLayout,QWidget,QLabel,QToolButton,QTextBrowser,QFormLayout,QComboBox,QAbstractSpinBox,QLineEdit,QCheckBox)
+from PySide6.QtWidgets import (QDialog,QDialogButtonBox,QVBoxLayout,QHBoxLayout,QWidget,QLabel,QToolButton,QTextBrowser,QFormLayout,QComboBox,QAbstractSpinBox,QLineEdit,QCheckBox,QPlainTextEdit)
 
 HELP = {
+ 'annotation_text':'Plain-text model documentation, up to 4096 characters. Use it for equations, units, assumptions or provenance. Notes have no ports and do not affect physics, loss terms, weights or predictions. Editing a note is undoable; HTML and mathematical text are displayed literally.',
  'iterations':'Number of optimizer updates requested for this run. Full-batch trainers use their complete active collocation set per update. This is an update budget; an epoch over a minibatched dataset is a different quantity. Resume adds updates to the saved iteration count.',
  'lr':'Adam learning rate for network parameters. It controls the step size of gradient descent. Loss-balancing methods change relative loss coefficients independently; SA also has its own ascent rate for adaptive weights.',
  'points':'Requested interior sampling budget. Grid sampling uses complete layers and may return fewer rows. Imported coordinates determine their own count. Boundary rows contribute to the PDE only when their source is connected to its boundary input.',
@@ -122,6 +123,7 @@ def setting_text(label,widget,context=''):
         parts.extend(['Current selection: '+widget.currentText(),'Available choices:\n'+'\n'.join(options)])
     elif isinstance(widget,QAbstractSpinBox):parts.append(f'Current value: {widget.value()}\nAllowed range: {widget.minimum()} to {widget.maximum()}')
     elif isinstance(widget,QLineEdit):parts.append('Current value: '+widget.text())
+    elif isinstance(widget,QPlainTextEdit):parts.append('Current value: '+widget.toPlainText())
     elif isinstance(widget,QLabel):parts.append('Current value: '+widget.text())
     elif isinstance(widget,QCheckBox):parts.append('Current value: '+('enabled' if widget.isChecked() else 'disabled'))
     if context:parts.append('Block description\n'+context)

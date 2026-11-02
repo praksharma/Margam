@@ -112,3 +112,7 @@ def compatible(source_type,target_type):
 for _kind in ('pde','predefined_pde'):
     INPUTS[_kind]=(PortSpec('input','Collocation points','collocation_points'),
                    PortSpec('boundary_points','Additional boundary points (optional)','boundary_points'))
+
+# Plain-text annotations have no computational ports.
+INPUTS['annotation']=()
+OUTPUTS['annotation']=None

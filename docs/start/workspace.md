@@ -53,3 +53,24 @@ The current executor supports one active problem root: do not leave the old
 trainer connected and add a second complete trainer expecting a study to run.
 
 **Next:** [Blocks and connections](../modeling/blocks.md).
+
+
+## Start from a blank model
+
+Choose **File → New blank model** (**Ctrl+N**). Save / Discard / Cancel protects
+current unsaved work. This clears the graph and run data and starts a new unsaved
+project; it does not delete the previous project's files. It is unavailable while
+training or editing geometry. The Poisson reset remains under **File → Examples**
+and no longer uses Ctrl+N. Startup still opens the existing Poisson template.
+
+![A genuinely empty model with a short construction hint](../../assets/screenshots/manual-blank-model.png)
+
+Blank and notes-only drafts can be saved and reopened. To train, assemble one
+supported problem root: geometry, point sources, PDE, boundary conditions and a
+network/trainer (or compact recipe), with the required connections. Validation
+reports missing components; the run summary does not start an incomplete model.
+For a ready-made starting graph, choose **File → Examples**.
+
+[Canvas notes, dependency highlighting, snapping and group actions](../modeling/blocks.md#add-canvas-notes)
+help organise larger diagrams. Grid and highlighting preferences stay local;
+notes belong to the saved model.

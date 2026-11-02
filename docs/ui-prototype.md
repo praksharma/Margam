@@ -211,3 +211,13 @@ settings belong to the method; they do not decay Adam's base learning rate.
 PDE point inclusion follows [explicit collocation arrows](modeling/physics.md#arrows-choose-where-the-pde-is-enforced). New examples include the boundary arrow; old saved graphs are unchanged.
 
 The desktop [Device menu and information buttons](use/results.md#choose-the-application-device) apply across models and block types.
+
+
+## Presentation additions (2 November 2026)
+
+Model format 29 adds bounded plain-text Note instances with no computational ports;
+formats 1–28 remain readable. Note edits and note-only clipboard/deletion operations
+preserve numerical results. File → New blank model (Ctrl+N) creates an empty,
+saveable draft rather than resetting Poisson. The View menu controls local grid,
+group-preserving snap and dependency modes; highlights are not serialized. Group
+context actions preserve selection. See the task-based [canvas guide](modeling/blocks.md#add-canvas-notes).

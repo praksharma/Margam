@@ -34,6 +34,9 @@ class DesktopState:
         device=self.settings.value('execution_device','auto')
         if device not in ('auto','cpu','cuda') or device=='cuda' and not w._cuda_available:device='auto'
         w.set_application_device(device,remember=False)
+        w.show_grid_action.setChecked(self.settings.value('show_grid',False,type=bool))
+        w.snap_grid_action.setChecked(self.settings.value('snap_grid',False,type=bool))
+        w.set_dependency_mode(self.settings.value('dependency_mode','off'))
         collapsed=self.settings.value('collapsed',[]) or []
         if isinstance(collapsed,str):collapsed=[collapsed]
         tree=w.library.tree

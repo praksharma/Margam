@@ -1,0 +1,24 @@
+{
+  "generator": "examples.capture_canvas_tools",
+  "scope": "Actual notes, dependency navigation, grid, group menu and blank model. No training or inference.",
+  "model_version": 29,
+  "notes_are_plain_text": true,
+  "files": {
+    "manual-canvas-notes.png": {
+      "bytes": 217043,
+      "sha256": "ab51297b292eb2e935c8dcb9f7c6a1f4b192b29fad52fdeb5742a5fef4fcb91f"
+    },
+    "manual-dependencies.png": {
+      "bytes": 243400,
+      "sha256": "4045b4feb561d5097310f4d310df4280735ba082568f9fcb31ba116914cb39ec"
+    },
+    "manual-group-menu.png": {
+      "bytes": 14708,
+      "sha256": "19fe4df969f2aa26f4abe2dacdf98770cdd1fa014c4cf871f6ef258c333db45c"
+    },
+    "manual-blank-model.png": {
+      "bytes": 113149,
+      "sha256": "7cd36610df528d6936ca099148d2d99feb229f26b83f1521cd9550034669ebbc"
+    }
+  }
+}

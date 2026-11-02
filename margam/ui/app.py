@@ -29,6 +29,7 @@ from .setting_help import HelpFormLayout, show_information
 from .device_settings import DeviceSettings, same_physics
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
+from .canvas_tools import CanvasTools
 from .recent_models import RecentModels
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
@@ -64,7 +65,7 @@ class Port(QGraphicsEllipseItem):
         self.setZValue(2)
 
     def mousePressEvent(self, event):
-        if self.output and not self.scene().locked:
+        if event.button()==Qt.MouseButton.LeftButton and self.output and not self.scene().locked:
             self.scene().begin_wire(self)
             event.accept()
         else:
@@ -99,9 +100,9 @@ class Wire(QGraphicsPathItem):
 
     def paint(self,painter,option,widget=None):
         painter.save()
-        if self.isSelected():
+        if self.isSelected() or getattr(self,'dependency_highlight',False):
             pen=QPen(QColor(colors()['highlight']),4);painter.setPen(pen);painter.drawPath(self.path())
-            for port in (self.source,self.target):
+            for port in (self.source,self.target) if self.isSelected() else ():
                 if port is not None:
                     point=self.mapFromScene(port.scenePos());painter.drawEllipse(point,10,10)
         else:super().paint(painter,option,widget)
@@ -131,11 +132,17 @@ class Node(QGraphicsRectItem):
         self.input=next(iter(self.inputs.values()),None)
         spec=OUTPUTS[self.kind]
         self.output=Port(self,True,spec) if spec else None
+        if self.kind=='annotation':
+            self.settings['annotation_text']='Write a note…';self.setRect(0,0,280,150)
         self.setPos(x, y)
 
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
         painter.setPen(QColor(colors()['text']))
+        if getattr(self,'dependency_highlight',False):
+            painter.save();painter.setPen(QPen(QColor(colors()['highlight']),3,Qt.PenStyle.DashLine));painter.drawRect(self.rect().adjusted(3,3,-3,-3));painter.restore()
+        if self.kind=='annotation':
+            painter.drawText(self.rect().adjusted(12,10,-12,-10),Qt.TextFlag.TextWordWrap,self.settings.get('annotation_text',''));return
         metrics=painter.fontMetrics()
         painter.drawText(12,23,metrics.elidedText(self.title,Qt.TextElideMode.ElideRight,146))
         painter.setPen(QColor(colors()['muted']))
@@ -151,9 +158,13 @@ class Node(QGraphicsRectItem):
         else:
             for index,line in enumerate(lines):painter.drawText(12,44+20*index,metrics.elidedText(line,Qt.TextElideMode.ElideRight,146))
 
+    def mousePressEvent(self,event):
+        if event.button()==Qt.MouseButton.RightButton and self.isSelected():event.accept();return
+        super().mousePressEvent(event)
+
     def contextMenuEvent(self, event):
-        self.scene().clearSelection()
-        self.setSelected(True)
+        if not self.isSelected():
+            self.scene().clearSelection();self.setSelected(True)
         self.scene().blockContextRequested.emit(self, event.screenPos())
         event.accept()
 
@@ -172,6 +183,7 @@ class Node(QGraphicsRectItem):
 
 class Canvas(QGraphicsScene):
     graphChanged = Signal()
+    presentationChanged = Signal()
     blockOpened = Signal(object)
     blockContextRequested = Signal(object, object)
     connectionRejected = Signal(str)
@@ -180,10 +192,26 @@ class Canvas(QGraphicsScene):
         super().__init__()
         self.wires, self.pending = [], None
         self.locked = False
+        self.show_grid=False;self.snap_grid=False;self.grid_spacing=20
+        self._drag_anchor=None
         self.edit_handler = None
         self._move_start = {}
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setBackgroundBrush(QColor(colors()['canvas']))
+
+    def snap_point(self,point):
+        return QPointF(round(point.x()/self.grid_spacing)*self.grid_spacing,round(point.y()/self.grid_spacing)*self.grid_spacing) if self.snap_grid else QPointF(point)
+
+    def drawBackground(self,painter,rect):
+        super().drawBackground(painter,rect)
+        if not self.show_grid:return
+        import math
+        zoom=self.views()[0].transform().m11() if self.views() else 1.
+        step=self.grid_spacing*max(1,math.ceil(8/(self.grid_spacing*zoom)))
+        painter.save();painter.setPen(QPen(QColor(colors()['grid']),0))
+        for x in range(math.floor(rect.left()/step)*step,math.ceil(rect.right())+1,step):painter.drawLine(QPointF(x,rect.top()),QPointF(x,rect.bottom()))
+        for y in range(math.floor(rect.top()/step)*step,math.ceil(rect.bottom())+1,step):painter.drawLine(QPointF(rect.left(),y),QPointF(rect.right(),y))
+        painter.restore()
 
     def edit(self,text,redo,undo):
         if self.edit_handler is None:redo()
@@ -191,12 +219,20 @@ class Canvas(QGraphicsScene):
 
     def mousePressEvent(self,event):
         self._move_start={node:QPointF(node.pos()) for node in self.nodes()} if event.button()==Qt.MouseButton.LeftButton and not self.locked else {}
+        item=self.itemAt(event.scenePos(),self.views()[0].transform()) if self.views() else None
+        while item is not None and not isinstance(item,Node):item=item.parentItem()
+        self._drag_anchor=item
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self,event):
         super().mouseReleaseEvent(event)
         moves=[(node,old,QPointF(node.pos())) for node,old in self._move_start.items()
                if node.scene() is self and node.pos()!=old]
+        anchor=self._drag_anchor;self._drag_anchor=None
+        if moves and self.snap_grid and anchor is not None and any(node is anchor for node,_,_ in moves) and not self.locked:
+            delta=self.snap_point(anchor.pos())-anchor.pos()
+            for node,_,_ in moves:node.setPos(node.pos()+delta)
+            moves=[(node,old,QPointF(node.pos())) for node,old,_ in moves if node.pos()!=old]
         self._move_start={}
         if moves and not self.locked:
             def place(use_new):
@@ -362,23 +398,24 @@ class Canvas(QGraphicsScene):
         wires=[wire for wire in self.wires if wire in selected or
                wire.source.parentItem() in selected or wire.target.parentItem() in selected]
         if not nodes and not wires:return
+        changed=self.presentationChanged if nodes and all(n.kind=='annotation' for n in nodes) and not wires else self.graphChanged
         def remove():
             self.cancel_wire()
             for wire in wires:self.wires.remove(wire);self.removeItem(wire)
             for node in nodes:self.removeItem(node)
-            self.graphChanged.emit()
+            changed.emit()
         def restore():
             self.clearSelection()
             for node in nodes:self.addItem(node);node.setSelected(True)
             for wire in wires:
                 self.addItem(wire);self.wires.append(wire);wire.update_path()
                 wire.setSelected(wire in selected)
-            self.graphChanged.emit()
+            changed.emit()
         self.edit(text,remove,restore)
 
 
 
-class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
+class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -521,6 +558,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def setup_menus(self):
         file_menu=self.menuBar().addMenu('File')
+        self.new_model_action=file_menu.addAction('New blank model');self.new_model_action.setShortcut('Ctrl+N');self.new_model_action.triggered.connect(self.new_blank_model)
         self.open_model_action=file_menu.addAction('Open model…')
         self.open_model_action.setShortcut('Ctrl+O');self.open_model_action.triggered.connect(self.open_model)
         self.recent_models_menu=file_menu.addMenu('Recent models')
@@ -536,7 +574,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.save_run_action.triggered.connect(lambda:self.save_current_run())
         self.save_run_action.setEnabled(False)
         file_menu.addSeparator()
-        self.load_action.setShortcut('Ctrl+N')
+        self.load_action.setShortcut('')
         self.examples_menu=file_menu.addMenu('Examples')
         self.examples_menu.addAction(self.load_action)
         self.examples_menu.addAction(self.heat_action)
@@ -589,6 +627,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         select_all.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.view.addAction(select_all)
         select_all.triggered.connect(self.select_all_blocks)
+        self.add_note_action=edit.addAction('Add note');self.add_note_action.setIcon(icon('annotation'));self.add_note_action.triggered.connect(lambda:self.add_node('Note'))
         self.find_blocks_action=edit.addAction('Find in model…')
         self.find_blocks_action.setShortcut('Ctrl+F')
         self.find_blocks_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
@@ -618,6 +657,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.view.addAction(self.fit_selection_action)
         self.fit_selection_action.triggered.connect(self.fit_selection)
         self.fit_selection_action.setEnabled(False)
+        self.setup_canvas_tools()
         self.view_menu.addAction('Reset panel layout').triggered.connect(self.reset_panel_layout)
         self.open_output_action=self.view_menu.addAction('Open selected output')
         self.open_output_action.setEnabled(False)
@@ -688,7 +728,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         identifiers={node.identifier for node in self.scene.nodes() if node.isSelected()}
         if not identifiers:return False
         document=capture_model(self)
-        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or 'margam-owned:' in json.dumps(node['settings'])) for node in document['nodes']):
+        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or node['kind']!='annotation' and 'margam-owned:' in json.dumps(node['settings'])) for node in document['nodes']):
             self.statusBar().showMessage('Copying project-owned geometry/data blocks is not supported yet.');return False
         document['nodes']=[n for n in document['nodes'] if n['id'] in identifiers]
         document['wires']=[wire for wire in document['wires'] if wire['source'] in identifiers and wire['target'] in identifiers]
@@ -717,8 +757,8 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             self.statusBar().showMessage('Cannot paste blocks: '+str(error));return False
         self._paste_serial+=1
         center=self.view.mapToScene(self.view.viewport().rect().center())+QPointF(20,20)*(self._paste_serial-1)
-        origin=QPointF((min(n['position'][0] for n in records)+max(n['position'][0] for n in records)+170)/2,
-                       (min(n['position'][1] for n in records)+max(n['position'][1] for n in records)+80)/2)
+        origin=QPointF((min(n['position'][0] for n in records)+max(n['position'][0]+(280 if n['kind']=='annotation' else 170) for n in records))/2,
+                       (min(n['position'][1] for n in records)+max(n['position'][1]+(150 if n['kind']=='annotation' else 80) for n in records))/2)
         titles={kind:title for title,kind in KINDS.items()};nodes={};staged=Canvas()
         for record in records:
             point=QPointF(*record['position'])+center-origin
@@ -726,6 +766,9 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             node.title=record['title'];node.settings=deepcopy(record['settings'])
             if node.kind in PARAMETERS:node.settings.setdefault('parameters',parameters_for(node.kind,decode_document(data)[0]))
             staged.addItem(node);nodes[record['id']]=node
+        if self.scene.snap_grid:
+            anchor=next(iter(nodes.values()));delta=self.scene.snap_point(anchor.pos())-anchor.pos()
+            for node in nodes.values():node.setPos(node.pos()+delta)
         for wire in connections:staged.connect_nodes(nodes[wire['source']],nodes[wire['target']],wire['input'])
         wires=list(staged.wires);staged.wires.clear()
         for wire in wires:staged.removeItem(wire)
@@ -734,11 +777,11 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             self.scene.clearSelection()
             for node in nodes.values():self.scene.addItem(node);node.setSelected(True)
             for wire in wires:self.scene.addItem(wire);self.scene.wires.append(wire);wire.update_path()
-            self.graph_changed()
+            self.presentation_changed() if all(n.kind=='annotation' for n in nodes.values()) else self.graph_changed()
         def remove():
             for wire in wires:self.scene.wires.remove(wire);self.scene.removeItem(wire)
             for node in nodes.values():self.scene.removeItem(node)
-            self.graph_changed()
+            self.presentation_changed() if all(n.kind=='annotation' for n in nodes.values()) else self.graph_changed()
         self.push_edit('Paste blocks',add,remove)
         self.statusBar().showMessage('Pasted blocks · core blocks still use the current template settings')
         return True
@@ -976,12 +1019,12 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         locked=self.is_running() or self.scene.locked
         for key,action in self.layout_actions.items():
             minimum=3 if key in ('horizontal','vertical') else 2
-            action.setEnabled(not locked and (len(self.scene.nodes())>=2 if key=='auto' else count>=minimum))
+            action.setEnabled(not locked and (sum(n.kind!='annotation' for n in self.scene.nodes())>=2 if key=='auto' else count>=minimum))
 
     def arrange_blocks(self,operation):
         if self.is_running() or self.scene.locked:return False
         from .diagram_layout import positions
-        nodes=self.scene.nodes() if operation=='auto' else [n for n in self.scene.selectedItems() if isinstance(n,Node)]
+        nodes=[n for n in self.scene.nodes() if n.kind!='annotation'] if operation=='auto' else [n for n in self.scene.selectedItems() if isinstance(n,Node)]
         proposed=positions(nodes,self.scene.wires,operation)
         moves=[(n,QPointF(n.pos()),QPointF(*xy)) for n,xy in proposed.items() if QPointF(*xy)!=n.pos()]
         if not moves:return False
@@ -1193,7 +1236,8 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         QMessageBox.information(self,'LRA loss-weight summary',text)
 
     def show_block_menu(self, node, position):
-        menu=self.create_block_menu(node)
+        selected=[n for n in self.scene.nodes() if n.isSelected()]
+        menu=self.create_group_menu() if len(selected)>1 and node in selected else self.create_block_menu(node)
         menu.exec(position)
         menu.deleteLater()
 
@@ -1568,7 +1612,8 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def add_node(self,title,position=None):
         if self.is_running() or self.scene.locked or title not in KINDS:return
         center=position if position is not None else self.view.mapToScene(self.view.viewport().rect().center())
-        node=Node(title,'Not configured',center.x()-85,center.y()-40)
+        point=self.scene.snap_point(center-QPointF(140,75) if KINDS[title]=='annotation' else center-QPointF(85,40))
+        node=Node(title,'Not configured',point.x(),point.y())
         if node.kind=='jorvik_geometry':
             try:self.jorvik_document(node,create=True)
             except (OSError,ValueError,ImportError) as error:
@@ -1578,9 +1623,9 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
         def add():
             self.scene.addItem(node)
-            self.scene.clearSelection();node.setSelected(True);self.graph_changed()
+            self.scene.clearSelection();node.setSelected(True);self.presentation_changed() if node.kind=='annotation' else self.graph_changed()
         def remove():
-            self.scene.removeItem(node);self.graph_changed()
+            self.scene.removeItem(node);self.presentation_changed() if node.kind=='annotation' else self.graph_changed()
         self.push_edit('Add '+title,add,remove)
         return node
 
@@ -1657,6 +1702,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def refresh_descriptions(self):
         for node in self.scene.nodes():
+            if node.kind=='annotation':self.refresh_note(node);continue
             c=self.config_for_node(node)
             actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
             details={'domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
@@ -1694,7 +1740,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             if node.isSelected():
                 self.name.setText(node.title);self.detail.setText(node.detail)
         for wire in self.scene.wires:wire.update_path()
-        self.refresh_result_status()
+        self.refresh_result_status();self.refresh_dependencies()
 
     def parameter_owner(self,attribute):
         kind=OWNERS[attribute]
@@ -1740,7 +1786,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         owners={node.identifier:node for node in self.scene.nodes()}
         for (identifier,_),(_,preview) in self.rectangle_previews.items():
             preview.config=self.config_for_node(owners[identifier]);preview.update()
-        try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.')
+        try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.' if any(n.kind in PARAMETERS for n in self.scene.nodes()) else 'No executable PINN graph yet. Add components, then Validate.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
 
@@ -1933,7 +1979,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             return
         nodes=[i for i in self.scene.selectedItems() if isinstance(i,Node)]
         node=nodes[0] if len(nodes)==1 else None
-        if node is not None:self.config=self.config_for_node(node)
+        if node is not None and node.kind!='annotation':self.config=self.config_for_node(node)
         self.name.setText(node.title if node else ('Multiple blocks selected' if len(nodes)>1 else ''))
         self.update_clipboard_actions()
         self.open_output_action.setEnabled(node is not None and node.kind in OUTPUT_KINDS)
@@ -1956,7 +2002,18 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                     button=QPushButton(label)
                     button.clicked.connect(lambda checked=False,identifier=endpoint.identifier:self.locate_block(identifier))
                     self.form.addRow(button)
-            else:self.form.addRow(QLabel('Select a block to edit its settings.'))
+            else:
+                message=QLabel('Blank model: add geometry, samples, PDE, boundary conditions, a network and trainer from the library, or choose File → Examples.' if not self.scene.nodes() else 'Select a block to edit its settings.');message.setWordWrap(True);self.form.addRow(message)
+        elif node.kind=='annotation':
+            edit=QPlainTextEdit(node.settings.get('annotation_text',''));edit.setProperty('search_key','annotation_text');edit.setProperty('help_key','annotation_text');edit.setMinimumHeight(200)
+            token=object()
+            def update_note():
+                text=edit.toPlainText()
+                if len(text)>4096:
+                    position=edit.textCursor().position();edit.blockSignals(True);edit.setPlainText(text[:4096]);cursor=edit.textCursor();cursor.setPosition(min(position,4096));edit.setTextCursor(cursor);edit.blockSignals(False)
+                self.change_note(node,edit.toPlainText(),token)
+            edit.textChanged.connect(update_note);self.form.addRow('Note text',edit)
+            message=QLabel('Plain text · 4096 characters maximum · no numerical effect. Long notes are clipped on the canvas; the editor and tooltip show the full text.');message.setWordWrap(True);self.form.addRow(message)
         elif node.kind=='jorvik_geometry':self.jorvik_fields(node)
         elif node.kind=='domain':
             shape=QComboBox();shape.setProperty('search_key','shape')
@@ -2464,6 +2521,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             if self.quick_insert is not None:self.quick_insert.reject()
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
         self.cancel_button.setEnabled(busy)
+        self.new_model_action.setEnabled(not busy);self.add_note_action.setEnabled(not busy)
         self.load_action.setEnabled(not busy);self.heat_action.setEnabled(not busy);self.delete_action.setEnabled(not busy)
         self.flow_action.setEnabled(not busy)
         self.examples_menu.setEnabled(not busy)

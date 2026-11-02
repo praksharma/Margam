@@ -21,7 +21,8 @@ def entries(window):
     for node in sorted(window.scene.nodes(),key=lambda n:(n.title,n.identifier)):
         parameters=node.settings.get('parameters',{})
         keys=list(PARAMETERS.get(node.kind,()))
-        if node.kind=='monitor':keys+=['history_limit']
+        if node.kind=='annotation':keys+=['annotation_text']
+        elif node.kind=='monitor':keys+=['history_limit']
         elif node.kind in ('solution','comparison','export','paraview'):keys+=['resolution']
         elif node.kind=='reference':keys+=['reference_expression']
         elif node.kind in ('evaluation_points','reference_data'):keys+=['source_data']

@@ -12,6 +12,7 @@ BLOCK_CATEGORIES = {
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
 }
+BLOCK_CATEGORIES['Notes']=(('Note','annotation'),)
 KINDS = {title: kind for entries in BLOCK_CATEGORIES.values() for title, kind in entries}
 BLOCK_GROUPS = {group: tuple(title for title, _ in entries)
                 for group, entries in BLOCK_CATEGORIES.items()}
@@ -34,6 +35,7 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'annotation':('Plain-text canvas note, up to 4096 characters','Document equations, assumptions and units. No inputs, outputs, executable expressions or numerical effect. Notes support editing, movement, undo and clipboard.'),
     'jorvik_geometry':('Owned Jorvik document and explicit NetCDF update','Edit in the separate Jorvik application. One planar 2D interior dataset and named boundaries. Connect prepared data blocks; physics and evaluation points remain explicit.'),
     'rba_recipe':('RBA · residual-based attention · compact or expanded','Replaceable network and RBA trainer. Detached pointwise PDE attention; no transformer or second optimizer. Fixed samples only.'),
     'rba_method':('Residual-history decay, attention rate and initialization','Updates detached point weights from normalized absolute residuals, then minimizes squared weighted residuals. BC/IC losses stay unchanged. Fixed scalar samples; no resampling or combined attention methods.'),

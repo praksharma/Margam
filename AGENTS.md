@@ -276,3 +276,19 @@
   supported initial sample builders and explicit collocation selection, never build
   a neural network or guess bounding-box samples on prepared geometry. Label initial,
   adaptive and sequential-window counts accurately and revalidate before training.
+
+
+- Model 29 adds plain-text annotation nodes with no ports, bounded to 4096 characters.
+  Keep annotation text out of numerical assembly and URI/file-ownership inference.
+  Note-only add/edit/delete/clipboard operations must preserve weights, predictions
+  and freshness; mixed graph edits retain normal invalidation. Escape note text in
+  rich-capable tooltips and keep canvas/editor text literal. Preserve older models.
+- Blank models use File → New blank model / Ctrl+N with the usual discard and busy
+  guards. They are saveable drafts, not executable implicit Poisson problems.
+- Dependency highlights are ephemeral, ID/edge-based graph reachability; handle
+  branches/cycles without changing selection, settings or numerical state. Recompute
+  on selection/topology changes and guard callbacks during scene teardown.
+- Grid/snap and dependency mode are local preferences. Snap drag groups by one
+  common offset, record one undo step and preserve exact loaded/undo/layout positions.
+  Right-clicking a selected item must preserve multi-selection and expose group
+  commands with busy guards. Auto-arrange the computational graph without moving notes.

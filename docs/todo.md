@@ -535,18 +535,18 @@ Completed in this pass:
 
 Next editor improvements, in priority order:
 
-- [ ] Add model annotations for equations, assumptions and provenance, with
+- [x] Add model annotations for equations, assumptions and provenance, with
   persistence, clipboard, undo and no effect on numerical execution.
-- [ ] Add optional grid/snap aids, preserving group offsets during drag and normal
+- [x] Add optional grid/snap aids, preserving group offsets during drag and normal
   free placement when disabled; persist these as view preferences.
-- [ ] Highlight a selected block's upstream/downstream dependencies and show port
+- [x] Highlight a selected block's upstream/downstream dependencies and show port
   names on demand, without interpreting wires as temporal signals.
 - [x] Add recent models with missing-file handling and local-only path preferences.
-- [ ] Add a genuinely blank model action, distinct from loading the Poisson example;
+- [x] Add a genuinely blank model action, distinct from loading the Poisson example;
   explain the required supported root and keep incomplete models saveable.
 - [x] Add View-menu Fit selection with a canvas-only shortcut; preserve model,
   results and undo history, including while training.
-- [ ] Add canvas-level context actions for alignment/distribution and selected-block
+- [x] Add canvas-level context actions for alignment/distribution and selected-block
   fit. Preserve multi-selection when opening a group context menu.
 - [ ] Review dense diagrams for wire crossings and overlapping blocks. Add routing
   improvements only with concrete diagrams and reproducible interaction tests.

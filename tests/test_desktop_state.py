@@ -18,6 +18,7 @@ with TemporaryDirectory() as directory:
     w=Window(state_directory=directory);w.show();app.processEvents()
     w.library.tree.topLevelItem(0).setExpanded(False)
     w.properties_dock.hide();w.change('points',81)
+    note=w.add_node('Note');w.change_note(note,'Recovered assumptions and units')
     owned=w.project_workspace.directory
     (owned/'domain.jorvik').write_bytes(b'owned fixture')
     state=w.desktop_state
@@ -32,6 +33,7 @@ with TemporaryDirectory() as directory:
         assert other.desktop_state.offer_recovery()
     assert (other.project_workspace.directory/'domain.jorvik').read_bytes()==b'owned fixture'
     assert other.config.points==81 and other.isWindowModified()
+    assert [n.settings['annotation_text'] for n in other.scene.nodes() if n.kind=='annotation']==['Recovered assumptions and units']
     assert not other.output_views.entries and other.model_path is None
     other.undo_stack.setClean();other.desktop_state.clear()
     w.undo_stack.setClean();w.close();app.processEvents()

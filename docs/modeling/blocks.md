@@ -123,3 +123,56 @@ or hidden for the current options. A compact recipe retains settings that requir
 expansion; search explains when the control is not currently exposed rather than
 expanding or changing the graph automatically. Refresh after graph edits. Search
 results resolve IDs again before navigation, so deleted blocks are handled safely.
+
+
+## Add canvas notes
+
+Use **Edit → Add note**, or insert **Note** from the library's **Notes** category.
+Select it to edit its text in Properties. Text is saved as you edit; Undo/Redo,
+Copy/Cut/Paste, move and delete work as for other canvas items. A note-only edit
+preserves trained weights, results and output freshness. Mixed selections that
+also change numerical blocks or wires still invalidate results normally.
+
+Notes are plain text, up to 4096 characters. Write equations, units, assumptions
+or provenance; HTML is displayed literally. Long notes are clipped on the canvas;
+the Properties editor and tooltip contain the full text. Notes have no ports and
+never contribute to physics or losses. They survive model saving, run archives and
+recovery through the model document. New documents use model format 29; formats
+1–28 remain readable. Older Margam versions cannot read this new format.
+
+![A saved plain-text note with optional grid](../../assets/screenshots/manual-canvas-notes.png)
+
+## Follow dependencies
+
+Select one or more computational blocks, then choose **View → Highlight
+dependencies → Upstream**, **Downstream**, or **Both directions**. Related blocks
+and wires are highlighted without changing the selection or Properties context.
+Use **Off** to clear the highlighting. Clearing selection also clears the path.
+
+![Upstream dependencies of the selected PDE](../../assets/screenshots/manual-dependencies.png)
+
+Traversal follows the editor's arrows, handles branches/cycles and includes
+optional sources. It explains graph dependencies; it does not certify that an
+incomplete graph is executable. Notes are excluded. Highlighting is available
+while training because it changes only the view. The chosen mode is a local
+preference, not a model setting; the highlights themselves are recomputed from
+current selection.
+
+## Snap and arrange a group
+
+**View → Show grid** and **View → Snap to grid** are independent local preferences,
+off by default. Snapping uses a 20-unit canvas grid when a drag ends or an item is
+inserted/pasted. A dragged group snaps using the clicked item's origin and moves
+as one translation, preserving all relative offsets. Undo restores the entire
+move in one step. Toggling snapping does not relocate existing items; loaded
+positions, manual Format commands and Undo/Redo are not rounded. Zooming far out
+may hide intermediate grid lines to keep the grid readable.
+
+Right-click a selected block or note to open a **group context menu** without
+losing the selection. It offers Fit selection, alignment and distribution, plus
+existing clipboard, delete and undo actions. Right-clicking an unselected item
+selects that item and opens its normal context menu. Alignment needs at least two
+items; equal-gap distribution needs three. Automatic whole-model layout leaves
+notes at their chosen positions.
+
+![Context menu for a selected group](../../assets/screenshots/manual-group-menu.png)

@@ -1,4 +1,5 @@
 """Find existing instances without inserting blocks or changing model settings."""
+from html import escape
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QLineEdit,QListWidget,QListWidgetItem,QPushButton,QLabel
 
@@ -30,7 +31,7 @@ class ModelSearch(QDialog):
             if query and query not in text.casefold():continue
             item=QListWidgetItem(f'{node.title} · {node.detail} [{node.identifier[:8]}]')
             item.setData(Qt.ItemDataRole.UserRole,node.identifier)
-            item.setToolTip(text);self.results.addItem(item)
+            item.setToolTip("<qt>"+escape(text).replace("\n","<br>")+"</qt>");self.results.addItem(item)
         if self.results.count():self.results.setCurrentRow(0)
         self.status.setText(f'{self.results.count()} matching block(s)')
 

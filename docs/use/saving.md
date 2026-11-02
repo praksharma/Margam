@@ -5,7 +5,7 @@ use both if you want an editable setup and a recorded training snapshot.
 
 | File | Contains | Command |
 | --- | --- | --- |
-| `.margam.json` | Graph, block IDs, settings, connections and positions | File → Save model / Save model as |
+| `.margam.json` | Graph, block IDs, settings, connections, positions and plain-text notes | File → Save model / Save model as |
 | `.margam-run.pt` | Model, requested results, monitor records and training checkpoint | File → Save run and checkpoint |
 | `.csv` / `.vti` | Explicitly exported predictions | Connected export block's action |
 
@@ -217,3 +217,10 @@ Use **Validate** for graph compatibility, boundary operators and reference
 alignment. Resume retains its separate strict checkpoint/data identity checks.
 The overview is a file and mapping diagnostic; it does not train, evaluate a
 network, open a result view or automatically repair dependencies.
+
+
+Canvas notes are model-owned presentation data (model format 29). Blank and
+notes-only models are valid saveable drafts even though they cannot train.
+Grid/snapping and dependency-highlight mode are local desktop preferences and
+are not added to shared model/run configuration. Notes contain no numerical
+parameters and editing them preserves cached results.
