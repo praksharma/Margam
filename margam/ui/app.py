@@ -29,6 +29,7 @@ from .setting_help import HelpFormLayout, show_information
 from .device_settings import DeviceSettings, same_physics
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
+from .recent_models import RecentModels
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
 from .graph_model import role, PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
@@ -353,7 +354,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
+class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -498,6 +499,9 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         file_menu=self.menuBar().addMenu('File')
         self.open_model_action=file_menu.addAction('Open model…')
         self.open_model_action.setShortcut('Ctrl+O');self.open_model_action.triggered.connect(self.open_model)
+        self.recent_models_menu=file_menu.addMenu('Recent models')
+        self.recent_models_menu.setToolTipsVisible(True)
+        self.recent_models_menu.aboutToShow.connect(self.refresh_recent_models)
         self.save_model_action=file_menu.addAction('Save model')
         self.save_model_action.setShortcut('Ctrl+S');self.save_model_action.triggered.connect(lambda:self.save_model())
         self.save_as_action=file_menu.addAction('Save model as…')
@@ -787,6 +791,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.model_path=str(Path(path).absolute())
         self.undo_stack.setClean();self._history_epoch+=1;self.update_document_title()
         self.remember_model_directory(path)
+        self.remember_recent_model(path)
         self.statusBar().showMessage('Saved model · '+Path(path).name)
         return True
 
@@ -802,7 +807,10 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             QMessageBox.warning(self,'Model could not be opened',str(error));return False
         if not self.confirm_discard():return False
-        try:return self.replace_model(read_model(path),path)
+        try:
+            result=self.replace_model(read_model(path),path)
+            if result:self.remember_recent_model(path)
+            return result
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             QMessageBox.warning(self,'Model could not be opened',str(error));return False
 
@@ -2388,6 +2396,7 @@ class Window(DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.recipe_menu.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.device_menu.setEnabled(not busy)
+        self.recent_models_menu.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
             node.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable,not busy)

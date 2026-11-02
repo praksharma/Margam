@@ -310,5 +310,6 @@ Capture diagram editing tools (state-isolated, no training):
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_diagram_tools --overwrite
 ```
 
-Replaces `assets/screenshots/manual-model-search.png`, `manual-format.png` and
-its capture manifest. Images show model search and Format controls.
+Replaces `assets/screenshots/manual-model-search.png`, `manual-format.png`,
+`manual-recent-models.png` and the capture manifest. Images show model search,
+Format and recent-model controls.

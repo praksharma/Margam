@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 
@@ -14,7 +15,7 @@ def main():
     from margam.ui.app import Window
     from margam.ui.theme import configure_theme
     root=Path(__file__).resolve().parents[1];os.chdir(root)
-    paths=[Path('assets/screenshots')/name for name in ('manual-model-search.png','manual-format.png')]
+    paths=[Path('assets/screenshots')/name for name in ('manual-model-search.png','manual-format.png','manual-recent-models.png')]
     manifest=paths[0].with_name('manual-diagram-tools-capture.json')
     if not args.overwrite and any(p.exists() for p in paths+[manifest]):parser.error('Capture exists; use --overwrite.')
     app=QApplication([]);configure_theme(app,'light');w=Window(state_directory=False)
@@ -31,7 +32,14 @@ def main():
         menu.popup(w.menuBar().mapToGlobal(w.menuBar().actionGeometry(menu.menuAction()).bottomLeft()))
         for _ in range(3):app.processEvents()
         assert menu.grab().save(str(paths[1]));menu.close()
-        data=dict(generator='examples.capture_diagram_tools',scope='Actual model search and Format menu; no numerical accuracy claim.',files={p.name:dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in paths})
+        with TemporaryDirectory() as directory:
+            assert w.save_model(Path(directory)/'Poisson.margam.json')
+            assert w.save_model(Path(directory)/'Experiment.margam.json')
+            w.refresh_recent_models();menu=w.recent_models_menu
+            menu.popup(w.mapToGlobal(w.rect().center()))
+            for _ in range(3):app.processEvents()
+            assert menu.grab().save(str(paths[2]));menu.close()
+        data=dict(generator='examples.capture_diagram_tools',scope='Actual model search, Format and recent-model menus; no numerical accuracy claim.',files={p.name:dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in paths})
         manifest.write_text(json.dumps(data,indent=2)+'\n')
         print('Captured model search and Format menu.')
     finally:

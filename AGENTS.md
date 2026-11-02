@@ -254,3 +254,8 @@
 - Model search stores block IDs rather than graphics objects and resolves them
   again before navigation. Refresh after edits; stale/deleted results must remain
   safe. Do not treat search as insertion or a numerical mutation.
+
+- Recent model paths belong only to local desktop preferences (ten unique entries).
+  Record successful model opens/saves, never recovery drafts, failed operations or
+  run archives. Preserve discard prompts and busy locks; removing history must
+  never delete model files. State-disabled tests use ephemeral memory only.

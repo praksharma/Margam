@@ -556,3 +556,16 @@ Fit selection follow-up: the navigation, diagram-tools and startup/shutdown case
 all passed (3 tests). Coverage includes empty and wire-only selections, framing
 selected blocks, zoom-label updates, busy-state navigation, and preservation of
 model definitions, history and cached results. Ctrl+Shift+F is scoped to the canvas.
+
+
+## Recent model navigation (2 November 2026)
+
+File → Recent models keeps ten unique successful model opens/saves in local
+desktop preferences. The tests cover ordering, persistence, duplicate filenames,
+clear-list behaviour, missing-file keep/remove choices without file deletion,
+failed save/open exclusion, dirty-cancel preservation of graph/results/history,
+busy guards and state-disabled isolation. Recovery drafts and run archives do
+not enter this list. All six focused recent-model, recovery, model-file, startup
+and diagram-tool tests passed on CPU. The manual build checked 61 rendered pages;
+this feature adds no numerical or GPU-performance claim. The state-isolated
+diagram capture helper also records the recent-model menu using fixture filenames.

@@ -1,14 +1,18 @@
 {
   "generator": "examples.capture_diagram_tools",
-  "scope": "Actual model search and Format menu; no numerical accuracy claim.",
+  "scope": "Actual model search, Format and recent-model menus; no numerical accuracy claim.",
   "files": {
     "manual-model-search.png": {
-      "bytes": 16770,
-      "sha256": "046b516ef3314ed352d0729a2c10b73811878380620fedad8f066f1446c6b924"
+      "bytes": 17320,
+      "sha256": "5fdaa3c1c3c09523559c999a19cd6f379f5df0eea9f37769be923c04382dedbe"
     },
     "manual-format.png": {
       "bytes": 10304,
       "sha256": "9d43bfd53a9153ec7ec2e37bc9fda7bf48fd258dc3358062227ce32172358978"
+    },
+    "manual-recent-models.png": {
+      "bytes": 4588,
+      "sha256": "a6b87510a780ffc1f86d9f2f3b48ea166e6103dbb155ae048443114f502e9eb3"
     }
   }
 }

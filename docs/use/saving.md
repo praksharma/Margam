@@ -19,6 +19,22 @@ Choose **File → Open model…**. It restores the graph and settings. It does n
 load trained weights or recreate old predictions. Loading another setup uses the
 normal Save / Discard / Cancel check for your current unsaved work.
 
+## Recent models
+
+**File → Recent models** lists the ten most recently opened or saved model
+files. A successful open moves a model to the top. Hover an entry to see its full
+local path when names match. Normal Save / Discard / Cancel protection still applies.
+Failed or cancelled operations do not add entries. The menu is unavailable while
+training or editing geometry.
+
+If a file moved or is unavailable, Margam offers to remove its entry. Declining
+keeps it for later (for example, a disconnected drive). **Clear recent models**
+clears only the list. Neither action deletes a model or its companion data.
+The list is stored in local desktop preferences, separately from shared model
+files and run archives. Run archives use their existing separate Open command.
+
+![Recent model filenames in the File menu](../../assets/screenshots/manual-recent-models.png)
+
 ## Continue a trained run
 
 Choose **File → Open saved run…**. Result views stay closed until requested.

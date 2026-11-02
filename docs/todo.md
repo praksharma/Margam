@@ -541,7 +541,7 @@ Next editor improvements, in priority order:
   free placement when disabled; persist these as view preferences.
 - [ ] Highlight a selected block's upstream/downstream dependencies and show port
   names on demand, without interpreting wires as temporal signals.
-- [ ] Add recent models with missing-file handling and local-only path preferences.
+- [x] Add recent models with missing-file handling and local-only path preferences.
 - [ ] Add a genuinely blank model action, distinct from loading the Poisson example;
   explain the required supported root and keep incomplete models saveable.
 - [x] Add View-menu Fit selection with a canvas-only shortcut; preserve model,
