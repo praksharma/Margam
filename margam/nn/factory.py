@@ -44,4 +44,7 @@ def build_network(config):
         # Disabled options must preserve historical architecture checkpoint specs.
         options={key:value for key,value in options.items() if key not in ('weight_factorization','factor_mean','factor_std')}
     network._margam_spec=deepcopy(dict(type=kind,options=options,layers=list(layers),inputs=inputs,outputs=outputs,bounds=[list(row) for row in bounds],seed=seed))
+    if config.method=='inverse_burgers':
+        from ..methods.inverse_burgers import InverseBurgersNetwork
+        network=InverseBurgersNetwork(network,config.inverse_settings)
     return network

@@ -107,9 +107,9 @@ class OutputViews:
             series = [
                 ('Total', [(step, row['total']) for step,row in records], '#2b9d91'),
                 ('PDE (raw)', [(step, row['pde']) for step,row in records], '#d58b35'),
-                ('Mean BC (raw)', [(step,sum(row[s] for s in sides)/len(sides)) for step,row in records], '#7089d5'),
+                ('Observations (raw)' if self.window.config.method=='inverse_burgers' else 'Mean BC (raw)', [(step,sum(row[s] for s in sides)/len(sides)) for step,row in records], '#7089d5'),
             ] if records else []
-            if records and self.window.config.is_time_dependent:series.append(('Initial (raw)',[(step,row['initial']) for step,row in records],'#ad75ce'))
+            if records and 'initial' in self.window.config.constraint_names:series.append(('Initial (raw)',[(step,row['initial']) for step,row in records],'#ad75ce'))
             if records and self.window.config.method=='rba':series.append(('PDE attention-weighted (raw)',[(step,row['pde_weighted']) for step,row in records],'#cc7840'))
             if self.window.config.method=='gpinn':
                 from ..components.gpinn_config import gpinn_terms

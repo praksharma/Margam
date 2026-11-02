@@ -20,6 +20,8 @@ class CheckpointPredictor:
     def predict(self,points):
         with torch.no_grad():return self.network(torch.as_tensor(points,dtype=self.dtype,device=self.device))
 
+    def estimated_parameters(self):return self.network.estimated_parameters() if hasattr(self.network,'estimated_parameters') else {}
+
     def training_state(self):return deepcopy(self.checkpoint)
 
 

@@ -116,3 +116,13 @@ for _kind in ('pde','predefined_pde'):
 # Plain-text annotations have no computational ports.
 INPUTS['annotation']=()
 OUTPUTS['annotation']=None
+
+# Concrete observation-driven identification: measurements and residuals are distinct.
+INPUTS['observations']=(PortSpec('input','Space–time geometry','geometry'),)
+OUTPUTS['observations']=PortSpec('output','Observed (x,t,u) rows','observations')
+INPUTS['inverse_pde']=(PortSpec('input','Observation coordinates','observations'),)
+OUTPUTS['inverse_pde']=PortSpec('output','Inverse Burgers residual','inverse_residual')
+INPUTS['inverse_recipe']=(PortSpec('pde','Inverse Burgers residual','inverse_residual'),PortSpec('observations','Observed fields','observations'))
+INPUTS['inverse_method']=INPUTS['inverse_recipe']+(PortSpec('network','Neural network','network'),)
+OUTPUTS['inverse_recipe']=OUTPUTS['method']
+OUTPUTS['inverse_method']=OUTPUTS['method']

@@ -3,11 +3,11 @@
 # Category, then (display title, existing template kind).
 BLOCK_CATEGORIES = {
     'Geometry': (('Rectangle', 'domain'),('Jorvik geometry','jorvik_geometry')),
-    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
+    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Observation data','observations'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
-    'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Boundary condition', 'bc')),
-    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe')),
-    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method'),('RBA trainer','rba_method')),
+    'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Inverse Burgers PDE','inverse_pde'), ('Boundary condition', 'bc')),
+    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe'),('Inverse Burgers PINN','inverse_recipe')),
+    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method'),('RBA trainer','rba_method'),('Inverse trainer','inverse_method')),
     'Evaluation data': (('Evaluation points','evaluation_points'),('Reference data','reference_data')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
@@ -35,6 +35,10 @@ def dropped_block(mime):
 
 # Concrete capabilities for the current editor, shared by library, inspector and Help.
 CAPABILITIES = {
+    'observations':('Measured (x,t,u) CSV/NPZ rows','Explicit training observations, not reference/evaluation data. Fixed rows supply both the observation loss and inverse Burgers PDE collocation. Copy/link, mapping preview and saved fingerprints apply.'),
+    'inverse_pde':('Initial lambda_1 and log(lambda_2)','u_t + lambda_1*u*u_x - exp(log_lambda_2)*u_xx = 0. Both scalar coefficients train with the network. No extra prescribed boundary/initial loss.'),
+    'inverse_method':('Joint Adam updates, PDE and observation weights','Concrete continuous-time Burgers identification. Fixed observations, mean MSE and replaceable network. Coefficient estimates/history are available from this trainer; no advanced-trainer composition.'),
+    'inverse_recipe':('Compact inverse Burgers network and trainer','Expand to replace the neural network. Observation data and Inverse Burgers PDE remain explicit external blocks. Same numerical method as the expanded inverse trainer.'),
     'annotation':('Plain-text canvas note, up to 4096 characters','Document equations, assumptions and units. No inputs, outputs, executable expressions or numerical effect. Notes support editing, movement, undo and clipboard.'),
     'jorvik_geometry':('Owned Jorvik document and explicit NetCDF update','Edit in the separate Jorvik application. One planar 2D interior dataset and named boundaries. Connect prepared data blocks; physics and evaluation points remain explicit.'),
     'rba_recipe':('RBA · residual-based attention · compact or expanded','Replaceable network and RBA trainer. Detached pointwise PDE attention; no transformer or second optimizer. Fixed samples only.'),

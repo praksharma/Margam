@@ -137,8 +137,9 @@ Notes are plain text, up to 4096 characters. Write equations, units, assumptions
 or provenance; HTML is displayed literally. Long notes are clipped on the canvas;
 the Properties editor and tooltip contain the full text. Notes have no ports and
 never contribute to physics or losses. They survive model saving, run archives and
-recovery through the model document. New documents use model format 29; formats
-1–28 remain readable. Older Margam versions cannot read this new format.
+recovery through the model document. Notes were introduced in model format 29;
+current documents use format 30. Formats 1–29 remain readable by this release.
+Older Margam versions cannot read the new format.
 
 ![A saved plain-text note with optional grid](../../assets/screenshots/manual-canvas-notes.png)
 

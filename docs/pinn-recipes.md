@@ -94,3 +94,12 @@ with one definition in `margam/recipes/expert.py`. This is Margam’s name for t
 first runnable case is File → Examples → 1D examples → Burgers — Expert PINN.
 
 [Scale-PINN](scale-pinn.md) adds its own correction trainer and compact recipe. It stores the previous optimizer iterate and preserves replaceable networks; physical PDE diagnostics remain separate from the corrected training loss.
+
+
+## Inverse Burgers recipe
+
+`margam/recipes/inverse_burgers.py` defines the compact/expanded network and
+inverse trainer. Its explicit external inputs are the inverse residual and measured
+observation rows, rather than boundary-condition definitions. The PDE and data
+loss must use one shared observation instance. Physical coefficient guesses belong
+to the separate Inverse Burgers PDE block. See [the inverse guide](inverse-burgers.md).

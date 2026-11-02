@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/maziarraissi/PINNs",
+  "commit": "932f50a2d8ef4e80d1456bbae6887a73ff5166ef",
+  "path": "appendix/Data/burgers_shock.mat",
+  "upstream_sha256": "f4d11e6798b8d29b6829984952b04adcc470d9bf70dd7e56c7985cd8e316c4bf",
+  "observations_sha256": "abcbc82e659da25f03c49dbf776b5dc53e0c099b3fe2a276fe4fae73793cb0b3",
+  "selection": "NumPy RandomState(1234), 2000 unique rows from meshgrid(x,t), usol.T in C order",
+  "coefficients": {
+    "lambda_1": 1.0,
+    "lambda_2": 0.003183098861837907
+  },
+  "license": "MIT"
+}

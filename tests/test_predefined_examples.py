@@ -55,7 +55,7 @@ w=Window(state_directory=False)
 assert w.examples_menu.title()=='Examples'
 assert len(w.example_actions)==len(EXAMPLE_PROBLEMS)
 assert w.examples_1d_menu.title()=='1D examples'
-assert len(w.examples_1d_menu.actions())==7
+assert len(w.examples_1d_menu.actions())==8
 assert w.evaluation_example_action in w.examples_1d_menu.actions()
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
@@ -72,7 +72,7 @@ for key in EXAMPLE_PROBLEMS:
     assert not w.output_views.entries
     document=capture_model(w)
     decode_document(document)
-    assert document['version']==29
+    assert document['version']==30
     from tempfile import TemporaryDirectory
     from pathlib import Path
     with TemporaryDirectory() as directory:

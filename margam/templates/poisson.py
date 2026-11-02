@@ -65,6 +65,7 @@ class PoissonConfig:
     interior_data: dict = field(default_factory=dict)
     boundary_data: dict = field(default_factory=dict)
     network_seed: int | None = None
+    inverse_settings: dict = field(default_factory=lambda:dict(lambda_1=0.,log_lambda_2=-6.))
     method: str = 'baseline'
     expert_settings: dict = field(default_factory=expert_defaults)
     physics: str = 'scalar'
@@ -115,6 +116,7 @@ class PoissonConfig:
 
     @property
     def constraint_names(self):
+        if self.method=='inverse_burgers':return ('observations',)
         if self.pde_preset=='kdv_1d':return ('initial','periodic_x')
         if self.is_paper_case:
             from .expert_examples import CASES
@@ -124,6 +126,7 @@ class PoissonConfig:
 
     @property
     def loss_weights(self):
+        if self.method=='inverse_burgers':return dict(pde=self.pde_weight,observations=self.boundary_weight)
         if self.pde_preset=='kdv_1d':weights={'pde':self.pde_weight,'initial':self.boundary_weight/2,'periodic_x':self.boundary_weight/2}
         elif self.is_paper_case:weights={'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
         elif self.physics=='scalar':weights={'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
@@ -159,7 +162,7 @@ class PoissonConfig:
         if self.pde_points not in ('interior','boundary','both'):raise ValueError('Choose interior, boundary or both PDE collocation sets.')
         if self.interior_data:
             validate_mapping(self.interior_data)
-            if self.interior_data['normals'] or self.interior_data['values']:raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
+            if self.interior_data['normals'] or self.interior_data['values'] and self.method!='inverse_burgers':raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
         from ..components.training_data import valid_boundary_name
         if not isinstance(self.boundary_data,dict) or len(self.boundary_data)>64 or any(not valid_boundary_name(name) for name in self.boundary_data) or self.shape!='Prepared2D' and set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown or invalid imported boundary set.')
         if self.shape=='Prepared2D' and ((self.pde_points!='boundary' and not self.interior_data) or not self.boundary_data):raise ValueError('Prepared 2D requires interior data and at least one named boundary set.')
@@ -231,7 +234,7 @@ class PoissonConfig:
         if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)
         if self.method=='expert':validate_expert_problem(self)
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba'):raise ValueError('Unknown PINN method.')
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -248,6 +251,9 @@ class PoissonConfig:
             raise ValueError('PDE source must be finite.')
         if any(not math.isfinite(w) or w <= 0 for w in (self.pde_weight,self.boundary_weight)):
             raise ValueError('Loss weights must be finite and positive.')
+        if self.method=='inverse_burgers':
+            from ..components.inverse_config import validate_inverse
+            validate_inverse(self);return
         if self.pde_preset=='kdv_1d':return
         if self.is_paper_case:
             from .expert_examples import validate_case
@@ -312,6 +318,9 @@ def sample_problem(config):
 def build_pinn(config,*,initial_teacher=None,time_origin=None):
     from ..components.adaptive_sampling import configure_adaptive_sampling
     config.validate()
+    if config.method=='inverse_burgers':
+        from ..methods.inverse_burgers import build_inverse
+        return build_inverse(config)
     if config.method=='scale':
         from copy import deepcopy
         from ..methods.scale import ScalePINN

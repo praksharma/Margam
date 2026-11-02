@@ -267,3 +267,14 @@ The RBA trainer maintains detached scalar PDE-point masks on a fixed ordered set
 Its objective squares mask times residual, leaving BC/IC terms unchanged. Raw
 physical and attention-weighted PDE curves remain distinct. The separate recipe
 and [RBA guide](rba-pinn.md) define scope, controls and checkpoints.
+
+
+## Inverse observation workflow
+
+[Inverse Burgers](inverse-burgers.md) adds typed Observation data, Inverse Burgers
+PDE and Inverse trainer/recipe components. Observation data maps scalar `(x,t,u)`
+CSV/NPZ rows using the existing bounded copy/link adapter; it is distinct from
+Reference data. The PDE owns two coefficient guesses, the trainer jointly optimizes
+them with the replaceable network, and coefficient history is retained in run
+checkpoints. Only fixed-row, mean-MSE continuous-time Burgers identification is
+supported; no generic parameter registry or advanced-trainer composition is implied.

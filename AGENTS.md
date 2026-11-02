@@ -292,3 +292,20 @@
   common offset, record one undo step and preserve exact loaded/undo/layout positions.
   Right-clicking a selected item must preserve multi-selection and expose group
   commands with busy guards. Auto-arrange the computational graph without moving notes.
+
+
+- Inverse Burgers is the concrete continuous-time identification problem: two
+  jointly trained constants and fixed measured `(x,t,u)` rows. Both MSE terms use
+  the same observation instance; do not add hidden BC/IC losses or reference answers.
+  The dedicated PDE owns initial guesses; learned values never overwrite config.
+  Observation loss uses the trainer's existing boundary_weight slot with its own UI
+  label, not BC normalization. Log diffusion ensures a positive physical lambda_2.
+- Keep inverse code and recipe in their own inverse_burgers files. Reuse pointwise
+  networks, explicit data mapping/copy/link and output blocks; reject unsupported
+  trainer/sampler compositions. Model 30 adds inverse_settings, with old defaults
+  migrated in models and advanced checkpoint signatures. Persist physical parameters,
+  Adam state and after-update parameter history, and retain strict observation/data
+  identity and objective checks on resume. Inference restores learned parameters.
+- Credit the original mathematical formulation separately from the MIT observation
+  dataset. Retain its pinned source/hash/licence and never publish local paths in
+  captures/evidence. Short coefficient-update tests are not accuracy reproductions.

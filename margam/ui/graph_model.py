@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from ..templates.poisson import PoissonConfig,BoundarySampling
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, inverse_burgers, COMPACT_RECIPES, TRAINER_RECIPES
 
 PARAMETERS = {
     'domain':('shape','x_min','x_max','y_min','y_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius'),
@@ -29,17 +29,22 @@ PARAMETERS = {
     'expert_method':expert.TRAINING_FIELDS,
     'expert_recipe':expert.PARAMETERS,
 }
+PARAMETERS['observations']=('interior_data',)
+PARAMETERS['inverse_pde']=('inverse_settings',)
+PARAMETERS['inverse_method']=baseline.TRAINING_FIELDS
+PARAMETERS['inverse_recipe']=inverse_burgers.PARAMETERS
 PARAMETERS['jorvik_geometry']=PARAMETERS['domain']
 PARAMETERS['interior_data']=PARAMETERS['interior']
 PARAMETERS['boundary_data']=PARAMETERS['boundary']
 
-OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method','gpinn_method','rba_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS={attribute:kind for kind,attributes in PARAMETERS.items() if kind not in ('predefined_pde','sa_method','lra_method','expert_method','scale_method','gpinn_method','rba_method','inverse_method',*COMPACT_RECIPES) for attribute in attributes}
+OWNERS['inverse_settings']='pde'
 OWNERS.update({key:'domain' for key in PARAMETERS['domain']})
 OWNERS.update({key:'interior' for key in PARAMETERS['interior']})
 OWNERS.update({key:'boundary' for key in PARAMETERS['boundary']})
 OWNERS.update(fourth_order='pde',pde_preset='pde',pde_forcing='pde',**{key:'method' for key in (*self_adaptive.ADAPTIVE_FIELDS,*learning_rate_annealing.ADAPTIVE_FIELDS,*expert.ADAPTIVE_FIELDS,*scale.ADAPTIVE_FIELDS,*gradient_enhanced.ADAPTIVE_FIELDS,*residual_attention.ADAPTIVE_FIELDS)})
 
-def role(kind):return {'jorvik_geometry':'domain','rba_recipe':'method','rba_method':'method','gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
+def role(kind):return {'inverse_recipe':'method','inverse_method':'method','inverse_pde':'pde','observations':'interior','jorvik_geometry':'domain','rba_recipe':'method','rba_method':'method','gpinn_recipe':'method','gpinn_method':'method','interior_data':'interior','boundary_data':'boundary','scale_recipe':'method','scale_method':'method','expert_recipe':'method','expert_method':'method','rar':'interior','importance':'interior','predefined_pde':'pde','recipe':'method','sa_recipe':'method','sa_method':'method','lra_method':'method','lra_recipe':'method'}.get(kind,kind)
 
 
 def encode_parameter(attribute,value):
@@ -57,6 +62,7 @@ def parameters_for(kind,config=None):
         if result['adaptive_sampling'].get('method')!=kind:result['adaptive_sampling']=sampling_defaults(kind)
     if kind=='predefined_pde' and not result['pde_preset']:result['pde_preset']='poisson'
     if kind in COMPACT_RECIPES:return deepcopy(COMPACT_RECIPES[kind].DEFAULTS)
+    if kind=='inverse_method':result['method']='inverse_burgers'
     if kind=='sa_method':result['method']='self_adaptive'
     if kind=='rba_method':result['method']='rba'
     if kind=='gpinn_method':result['method']='gpinn'
@@ -88,6 +94,7 @@ def overlay(config,kind,parameters):
 def assemble(nodes,wires,*,require_all=True):
     """Follow one method's typed dependencies; no implicit hidden model inputs."""
     methods=[node for node in nodes if role(node.kind)=='method']
+    if len(methods)==1 and methods[0].kind in ('inverse_recipe','inverse_method'):return assemble_inverse(nodes,wires,require_all=require_all)
     if len(methods)!=1:raise ValueError('Select a graph with exactly one PINN method root for this executor.')
     incoming={(wire.target.parentItem().identifier,wire.target.name):wire.source.parentItem() for wire in wires}
     def source(node,port,kind):
@@ -139,4 +146,28 @@ def assemble(nodes,wires,*,require_all=True):
     if workspace is not None:config=workspace().resolve_config(config,create=False)
     execution_device=getattr(domain.scene(),'execution_device',None)
     if execution_device is not None:config.device=execution_device()
+    return config
+
+
+def assemble_inverse(nodes,wires,*,require_all=True):
+    methods=[n for n in nodes if role(n.kind)=='method']
+    if len(methods)!=1:raise ValueError('Use one inverse trainer/recipe.')
+    method=methods[0];incoming={(w.target.parentItem().identifier,w.target.name):w.source.parentItem() for w in wires}
+    def source(node,port,kind):
+        parent=incoming.get((node.identifier,port))
+        if parent is None or parent.kind!=kind:raise ValueError('Connect '+kind+' to '+node.title+' / '+port+'.')
+        return parent
+    pde=source(method,'pde','inverse_pde');observations=source(method,'observations','observations')
+    if source(pde,'input','observations') is not observations:raise ValueError('Inverse PDE and data loss must use the same observation instance.')
+    domain=source(observations,'input','domain')
+    network=source(method,'network','network') if method.kind=='inverse_method' else None
+    used=[domain,observations,pde]+([network] if network else [])+[method]
+    if require_all and any(n.kind in PARAMETERS and n not in used for n in nodes):raise ValueError('Inverse Burgers uses only geometry, observations, its PDE and network/trainer. Remove unused core blocks.')
+    config=PoissonConfig()
+    for node in used:config=overlay(config,node.kind,node.settings['parameters'])
+    config.pde_points='interior'
+    workspace=getattr(domain.scene(),'project_workspace',None)
+    if workspace is not None:config=workspace().resolve_config(config,create=False)
+    device=getattr(domain.scene(),'execution_device',None)
+    if device is not None:config.device=device()
     return config

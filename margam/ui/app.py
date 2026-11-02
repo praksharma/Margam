@@ -29,6 +29,7 @@ from .setting_help import HelpFormLayout, show_information
 from .device_settings import DeviceSettings, same_physics
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
+from .inverse_actions import InverseActions
 from .canvas_tools import CanvasTools
 from .recent_models import RecentModels
 from .desktop_state import DesktopState
@@ -303,6 +304,11 @@ class Canvas(QGraphicsScene):
 
     def validate_graph(self):
         nodes = self.nodes()
+        if any(n.kind in ('inverse_recipe','inverse_method') for n in nodes):
+            for wire in self.wires:
+                error=self.connection_error(wire.source,wire.target,ignore=wire)
+                if error:raise ValueError(error)
+            assemble(nodes,self.wires);return
         # The executable dependencies determine which point sources are required.
         destinations=set()
         for wire in self.wires:
@@ -415,7 +421,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
+class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -582,6 +588,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
         self.prepared_example_action=self.examples_menu.addAction('2D prepared triangle · imported data');self.prepared_example_action.triggered.connect(self.request_training_data_example)
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
+        self.inverse_example_action=self.examples_1d_menu.addAction('Inverse Burgers · 1D + time');self.inverse_example_action.setIcon(icon('inverse_recipe'));self.inverse_example_action.triggered.connect(lambda:self.load_inverse_example() if not self.is_running() and not self.scene.locked and self.confirm_discard() else False)
         self.evaluation_example_action=self.examples_1d_menu.addAction('Supplied evaluation points · 1D');self.evaluation_example_action.triggered.connect(self.request_evaluation_example)
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
@@ -1133,6 +1140,8 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        if node.kind in ('inverse_recipe','inverse_method','inverse_pde'):
+            menu.addAction('Learned coefficients…').triggered.connect(self.show_inverse_parameters)
         if node.kind=='jorvik_geometry':
             for label,callback in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:
                 action=menu.addAction(label);action.setEnabled(not self.is_running() and not self.scene.locked);action.triggered.connect(lambda checked=False,fn=callback:fn(node))
@@ -1705,7 +1714,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
             if node.kind=='annotation':self.refresh_note(node);continue
             c=self.config_for_node(node)
             actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
-            details={'domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+            details={'observations':'Measured u · fixed (x,t) rows','inverse_pde':'u_t + λ1 u u_x − λ2 u_xx = 0','inverse_method':f'Joint Adam · {c.iterations} updates','inverse_recipe':f'Inverse Burgers · {c.iterations} updates','domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
                      'importance':f'{actual} points · importance',
                      'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
@@ -1849,6 +1858,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
         self.edit_point_data(name)
 
     def edit_point_data(self,side=None,reference=None):
+        if reference is None and side is None and any(n.isSelected() and n.kind=='observations' for n in self.scene.nodes()):return self.edit_observations()
         if self.is_running() or self.scene.locked:return
         source=reference.settings.get('reference_data',{}) if reference is not None else self.config.boundary_data.get(side,{}) if side else self.config.interior_data
         if source and Path(source['path']).suffix.lower()=='.nc':
@@ -1939,7 +1949,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
-        if self.config.method in ('expert','scale','gpinn','rba'):choice.model().item(choice.findData('integral')).setEnabled(False)
+        if self.config.method in ('expert','scale','gpinn','rba','inverse_burgers'):choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
@@ -1969,7 +1979,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
         else:
             widget=QDoubleSpinBox();widget.setKeyboardTracking(False);widget.setDecimals(6);widget.setRange(minimum,maximum);widget.setValue(value)
             widget.valueChanged.connect(lambda number:self.change(attribute,number,token))
-        widget.setProperty('help_key',attribute)
+        widget.setProperty('help_key',attribute);widget.setProperty('search_key',attribute)
         self.form.addRow(label,widget)
         return widget
 
@@ -1987,7 +1997,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
         body=QWidget();self.form=HelpFormLayout(body,self,describe_block(node.kind) if node else '')
         self.form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         if node is not None and role(node.kind)=='pde':
-            label=QLabel('PDE collocation: '+{'interior':'interior only','boundary':'boundary only','both':'interior + boundary / initial points'}[self.config.pde_points]+'. Connect points to this block to choose where the residual is enforced.');label.setWordWrap(True);self.form.addRow(label)
+            label=QLabel('PDE collocation: observed (x,t) locations shared with the data loss. Connect the same observation source to the inverse trainer.' if node.kind=='inverse_pde' else 'PDE collocation: '+{'interior':'interior only','boundary':'boundary only','both':'interior + boundary / initial points'}[self.config.pde_points]+'. Connect points to this block to choose where the residual is enforced.');label.setWordWrap(True);self.form.addRow(label)
         if node is not None:
             heading=QWidget();row=QHBoxLayout(heading);row.setContentsMargins(0,0,0,0);row.addWidget(QLabel(node.title))
             info=QToolButton();info.setText('i');info.setAutoRaise(True);info.setObjectName('block_info');info.setAccessibleName('About '+node.title);info.clicked.connect(lambda:self.block_help(node));row.addWidget(info);row.addStretch();self.form.addRow(heading)
@@ -2028,6 +2038,12 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
             if self.config.has_obstacle:
                 self.field('Cylinder centre x','cylinder_x');self.field('Cylinder centre y','cylinder_y');self.field('Cylinder radius','cylinder_radius',minimum=.000001,maximum=100000)
             note=QLabel('Coordinate bounds for scaling and validation only. Prepared 2D uses supplied training and evaluation points; no rectangle is filled.' if self.config.shape=='Prepared2D' else 'Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
+        elif node.kind=='inverse_pde':self.inverse_settings_fields()
+        elif node.kind=='observations':
+            note=QLabel('Training observations: coordinates x,t and scalar measured u. The inverse PDE and data loss use these exact rows.\n'+self.dataset_label(self.config.interior_data));note.setWordWrap(True);self.form.addRow(note)
+            button=QPushButton('Map / preview observations…');button.setProperty('search_key','interior_data');button.clicked.connect(self.edit_observations);self.form.addRow(button)
+            if self.config.interior_data:
+                clear=QPushButton('Clear observations');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
         elif node.kind=='interior_data':
             source=self.config.interior_data
             note=QLabel(self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
@@ -2229,6 +2245,10 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
             note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
             self.property_section('PINN method')
             self.form.addRow(QLabel(recipe.NAME))
+            if node.kind=='inverse_recipe':
+                self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)
+                self.field('Observation weight','boundary_weight',minimum=.000001,maximum=100000).setProperty('help_key','inverse_observation_weight')
+                button=QPushButton('Learned coefficients…');button.clicked.connect(self.show_inverse_parameters);self.form.addRow(button)
             if node.kind=='scale_recipe':self.scale_settings_fields()
             if node.kind=='expert_recipe':self.expert_settings_fields()
             self.loss_formulation_field()
@@ -2251,6 +2271,7 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
             self.property_section('PINN method')
             variant=QComboBox()
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
+            if node.kind=='inverse_method':variant.addItem('Inverse Burgers PINN','inverse_burgers');variant.setEnabled(False)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
             if node.kind=='rba_method':variant.addItem('Residual-based attention PINN','rba');variant.setEnabled(False)
             if node.kind=='gpinn_method':variant.addItem('Gradient-enhanced PINN','gpinn');variant.setEnabled(False)
@@ -2282,7 +2303,10 @@ class Window(CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMain
                 note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show unmasked loss; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
             self.loss_formulation_field()
             self.field('PDE weight','pde_weight',minimum=.000001,maximum=100000)
-            self.field('Mean BC weight','boundary_weight',minimum=.000001,maximum=100000)
+            weight=self.field('Observation weight' if node.kind=='inverse_method' else 'Mean BC weight','boundary_weight',minimum=.000001,maximum=100000)
+            if node.kind=='inverse_method':weight.setProperty('help_key','inverse_observation_weight')
+            if node.kind=='inverse_method':
+                button=QPushButton('Learned coefficients…');button.clicked.connect(self.show_inverse_parameters);self.form.addRow(button)
             if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')

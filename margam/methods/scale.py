@@ -119,6 +119,7 @@ class ScalePINN(PINN):
             payload['settings']['configuration'].setdefault('rba_settings',rba_defaults())
             payload['settings']['configuration'].setdefault('pde_points','interior')
             payload['settings']['configuration'].setdefault('bc_weights',{})
+            payload['settings']['configuration'].setdefault('inverse_settings',dict(lambda_1=0.,log_lambda_2=-6.))
         if not isinstance(payload,dict) or set(payload)!={'settings','previous','diagnostics'} or payload['settings']!=self.signature:raise ValueError('Scale-PINN checkpoint configuration differs.')
         expected=self.previous.state_dict();previous=payload['previous'];records=payload['diagnostics'];steps=state.get('iter')
         if not isinstance(previous,dict) or set(previous)!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[name].shape or value.dtype!=expected[name].dtype or not torch.isfinite(value).all() for name,value in previous.items()):raise ValueError('Invalid Scale previous-iterate network.')

@@ -4,6 +4,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QDialogButtonBox,QVBoxLayout,QHBoxLayout,QWidget,QLabel,QToolButton,QTextBrowser,QFormLayout,QComboBox,QAbstractSpinBox,QLineEdit,QCheckBox,QPlainTextEdit)
 
 HELP = {
+ 'inverse_observation_weight':'Coefficient multiplying mean squared error between predicted u and measured observations. It is independent of the PDE coefficient. There is no BC loss or mean-across-boundaries normalization in this inverse method. Changing it changes the training objective and invalidates continuation against an older objective.',
+ 'inverse_lambda_1':'Initial guess for the trainable Burgers advection coefficient. It is optimized jointly with the neural-network parameters; this is not a reference answer.',
+ 'inverse_log_lambda_2':'Initial logarithm of positive Burgers diffusion. The PDE uses exp(log_lambda_2) and Adam trains the logarithm. This is separate from the fixed viscosity field used by forward examples.',
  'annotation_text':'Plain-text model documentation, up to 4096 characters. Use it for equations, units, assumptions or provenance. Notes have no ports and do not affect physics, loss terms, weights or predictions. Editing a note is undoable; HTML and mathematical text are displayed literally.',
  'iterations':'Number of optimizer updates requested for this run. Full-batch trainers use their complete active collocation set per update. This is an update budget; an epoch over a minibatched dataset is a different quantity. Resume adds updates to the saved iteration count.',
  'lr':'Adam learning rate for network parameters. It controls the step size of gradient descent. Loss-balancing methods change relative loss coefficients independently; SA also has its own ascent rate for adaptive weights.',

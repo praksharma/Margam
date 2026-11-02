@@ -581,3 +581,21 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   coefficients before fresh GUI training; preserve direct programmatic execution.
 - [x] Make KdV initial and refreshed PDE rows obey the same explicit collocation
   arrows as the other trainers, so its execution and run summary agree.
+
+
+## First inverse problem: continuous-time Burgers
+
+- [x] Explicit measured-field source and inverse PDE/trainer ports, distinct from
+  optional reference/evaluation data; no hidden separate BC loss.
+- [x] Joint Adam optimization of the reusable network and two scalar physical
+  coefficients; positive diffusion through a trained logarithm.
+- [x] One-file compact/expanded recipe, initial-guess controls, observed-loss
+  monitor and learned-coefficient/history report.
+- [x] Portable observation copies/links and fingerprints, model/run persistence,
+  strict data/objective continuation and prediction-only restoration.
+- [x] Original-author dataset provenance/licence, residual/gradient tests, same-device
+  CPU/CUDA continuation evidence, screenshots and a user guide.
+- [ ] General inverse expressions/fields, additional unknown coefficients and
+  inverse Navier–Stokes need their own concrete contracts.
+- [ ] Reproduce the paper's accuracy protocol separately; current short checks do
+  not establish recovered-coefficient accuracy.

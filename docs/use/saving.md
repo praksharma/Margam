@@ -219,8 +219,13 @@ The overview is a file and mapping diagnostic; it does not train, evaluate a
 network, open a result view or automatically repair dependencies.
 
 
-Canvas notes are model-owned presentation data (model format 29). Blank and
+Canvas notes are model-owned presentation data (introduced in model format 29). Blank and
 notes-only models are valid saveable drafts even though they cannot train.
 Grid/snapping and dependency-highlight mode are local desktop preferences and
 are not added to shared model/run configuration. Notes contain no numerical
 parameters and editing them preserves cached results.
+
+
+Model format 30 adds initial inverse Burgers coefficient settings. Model definitions
+store the guesses and observation mappings; run archives store learned values,
+parameter history and joint Adam state. See [inverse Burgers](../inverse-burgers.md).

@@ -335,3 +335,18 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_canvas_tools --ov
 Replaces `manual-canvas-notes.png`, `manual-dependencies.png`,
 `manual-group-menu.png`, `manual-blank-model.png` and their capture manifest under
 `assets/screenshots`. The helper disables personal desktop state.
+
+
+Inverse Burgers checks (joint coefficient updates and exact continuation):
+
+```bash
+.venv/bin/python -m examples.inverse_burgers --device cpu
+.venv/bin/python -m examples.inverse_burgers --device cuda
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_inverse_burgers --overwrite
+```
+
+The checks default to four updates and write local evidence under
+`build/inverse-burgers`. Use `--output` for an explicit evidence file. The capture
+helper replaces the inverse graph/coefficient/monitor images and manifest under
+`assets/screenshots`, with local desktop preferences disabled. These are lifecycle
+checks, not accuracy benchmarks.

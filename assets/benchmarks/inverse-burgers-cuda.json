@@ -1,0 +1,32 @@
+{
+  "method": "inverse_burgers",
+  "scope": "Short implementation/resume check; not paper accuracy reproduction.",
+  "device": "cuda",
+  "torch": "2.14.1+cu130",
+  "observations": 2000,
+  "source": "assets/training/inverse_burgers/source.json",
+  "network": "fcnn",
+  "layers": [
+    32,
+    32,
+    32
+  ],
+  "seed": 7,
+  "learning_rate": 0.001,
+  "updates": 4,
+  "initial_guesses": {
+    "lambda_1": 0.0,
+    "log_lambda_2": -6.0
+  },
+  "estimated_parameters": {
+    "lambda_1": 0.0036831453908234835,
+    "lambda_2": 0.002469416940584779
+  },
+  "final_pre_update_losses": {
+    "pde": 0.008153376169502735,
+    "observations": 0.34377893805503845,
+    "total": 0.3519323170185089,
+    "weighted:observations": 0.34377893805503845
+  },
+  "exact_same_device_resume": true
+}

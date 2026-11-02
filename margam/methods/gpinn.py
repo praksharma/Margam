@@ -76,6 +76,7 @@ class GradientEnhancedPINN(PINN):
             from ..components.rba_config import rba_defaults
             state=deepcopy(state)
             if 'bc_weights' in self.configuration:state['gpinn']['configuration'].setdefault('bc_weights',{})
+            if 'inverse_settings' in self.configuration:state['gpinn']['configuration'].setdefault('inverse_settings',dict(lambda_1=0.,log_lambda_2=-6.))
             if 'pde_points' in self.configuration:state['gpinn']['configuration'].setdefault('pde_points','interior')
             if 'rba_settings' in self.configuration:state['gpinn']['configuration'].setdefault('rba_settings',rba_defaults())
         if not isinstance(state,dict) or state.get('gpinn')!=self.signature:raise ValueError('gPINN checkpoint gradient weights, coordinates or configuration differ.')

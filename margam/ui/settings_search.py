@@ -12,7 +12,7 @@ LABELS={'lr':'Adam learning rate','iterations':'Training updates epochs','layers
  'bc_targets':'Boundary target expression','bc_operators':'Boundary custom operator','loss_formulation':'Loss formulation mean integral',
  'sa_boundary':'Adapt boundary constraint weights','pressure_point':'Pressure gauge coordinates','interior_data':'Map imported interior data','boundary_data':'Map imported boundary data','shape':'Domain geometry','method':'PINN method variant','sa_lr':'Mask Adam learning rate','pde_preset':'Predefined PDE',
  'boundary_sampling':'Boundary sampling method count seed','flow_boundary':'Flow boundary conditions','source_data':'Map source data','reference_expression':'Reference expression','resolution':'Evaluation points / axis','history_limit':'Retained updates'}
-PREFIXES={'network_options':'network_option','expert_settings':'expert','scale_settings':'scale','rba_settings':'rba','adaptive_sampling':'sampling','gpinn_weights':'gpinn_weight'}
+PREFIXES={'inverse_settings':'inverse','network_options':'network_option','expert_settings':'expert','scale_settings':'scale','rba_settings':'rba','adaptive_sampling':'sampling','gpinn_weights':'gpinn_weight'}
 ALIASES={'network_type':'network_architecture','pde_preset':'predefined_pde_choice','pde_forcing':'predefined_forcing'}
 
 
@@ -29,6 +29,8 @@ def entries(window):
         for key in keys:
             value=parameters.get(key,node.settings.get(key))
             label=LABELS.get(key,key.replace('_',' ').capitalize())
+            if key=='boundary_weight' and node.kind in ('inverse_method','inverse_recipe'):label='Observation data loss weight'
+            if key=='interior_data' and node.kind=='observations':label='Map observations (x,t,u)'
             if key=='pressure_point':
                 for axis in range(2):result.append((node.identifier,'pressure_point_'+str(axis),'Pressure gauge '+('x' if axis==0 else 'y'),node.title,key))
                 continue

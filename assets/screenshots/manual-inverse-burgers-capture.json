@@ -1,0 +1,24 @@
+{
+  "generator": "examples.capture_inverse_burgers",
+  "scope": "Actual four-update CPU lifecycle fixture, not a coefficient accuracy benchmark.",
+  "observations": 2000,
+  "estimates": {
+    "lambda_1": 0.003683145623654127,
+    "lambda_2": 0.002469416940584779
+  },
+  "history_updates": 4,
+  "files": {
+    "manual-inverse-burgers.png": {
+      "bytes": 195007,
+      "sha256": "f6b8905ac3225f4550eef68d74a4d461d3c432d8afb1bd7386a5914ec514eac4"
+    },
+    "manual-inverse-coefficients.png": {
+      "bytes": 36672,
+      "sha256": "67bad44be63eebde4a1301eca3226e3fa5db64088be3e1efbb7e103677c93dbe"
+    },
+    "manual-inverse-monitor.png": {
+      "bytes": 165382,
+      "sha256": "927f9acf0c63fae8988a69eac378be19dbf8cc38dffc34110405f8bdecc9380e"
+    }
+  }
+}

@@ -68,3 +68,12 @@ The dedicated **File → Examples → Expert PINN examples** submenu contains Al
 ## Scale-PINN starters
 
 **File → Examples → Scale-PINN examples** contains Allen–Cahn, KS and KdV (1D + time), plus five steady 2D cavities at Re=400, 3200, 7500, 10,000 and 20,000, using the existing physics with a replaceable Fourier network and Scale trainer. See [correction settings, diagnostics and differences from the paper](scale-pinn.md).
+
+
+## Inverse Burgers (1D + time)
+
+File → Examples → 1D examples → Inverse Burgers adds an observation-driven graph
+with two trainable coefficients and no separate imposed BC loss. Its default
+2,000 measured rows come from the authors' published dataset and are copied into
+the project. See [the inverse guide](inverse-burgers.md) for guesses, loss weights,
+coefficient reporting, exact-resume evidence and current scope.

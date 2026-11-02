@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -54,6 +54,9 @@ def decode_document(data):
         c=dict(c,rba_settings=c.get('rba_settings',rba_defaults()))
     if isinstance(c,dict) and data['version']<26:c=dict(c,pde_points=c.get('pde_points','interior'))
     if isinstance(c,dict) and data['version']<27:c=dict(c,bc_weights=c.get('bc_weights',{}))
+    if isinstance(c,dict) and data['version']<30:c=dict(c,inverse_settings=c.get('inverse_settings',dict(lambda_1=0.,log_lambda_2=-6.)))
+    from ..components.inverse_config import validate_inverse_settings
+    validate_inverse_settings(c.get('inverse_settings',{}) if isinstance(c,dict) else {})
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
     from ..components.losses import validate_boundary_weights
     validate_boundary_weights(c['bc_weights'])
@@ -84,7 +87,7 @@ def decode_document(data):
     validate_gpinn_weights(c['gpinn_weights'])
     from ..components.rba_config import validate_rba_settings
     validate_rba_settings(c['rba_settings'])
-    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba'),'Unknown PINN method.')
+    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers'),'Unknown PINN method.')
     require(all(number(c[key]) and c[key]>0 for key in ('sa_lr','sa_initial','sa_max')) and c['sa_initial']<=c['sa_max'] and type(c['sa_boundary']) is bool,'Invalid adaptive settings.')
     require(number(c['lra_alpha']) and 0<c['lra_alpha']<=1 and type(c['lra_interval']) is int and 1<=c['lra_interval']<=100000 and number(c['lra_epsilon']) and 0<c['lra_epsilon']<=1 and number(c['lra_max']) and 1<=c['lra_max']<=1e12,'Invalid LRA settings.')
     require(c['physics'] in ('scalar','incompressible_2d','paper_case') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
@@ -174,6 +177,7 @@ def decode_document(data):
             require('parameters' in settings,'Recipe blocks require component settings.')
             COMPACT_RECIPES[node['kind']].split(settings['parameters'])
             require(type(settings['parameters']['network_seed']) is int,'Recipe network requires an explicit seed.')
+        if node['kind']=='inverse_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='inverse_burgers','Invalid inverse trainer settings.')
         if node['kind']=='rba_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='rba','Invalid RBA trainer settings.')
         if node['kind']=='gpinn_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='gpinn','Invalid gPINN trainer settings.')
         if node['kind']=='scale_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='scale','Invalid Scale trainer settings.')
@@ -205,7 +209,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':29,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':30,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -223,7 +227,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':29, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':30, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

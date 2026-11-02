@@ -156,3 +156,18 @@ components are documented in docs/expert-pinn.md.
 ## Scale-PINN mathematical reference
 
 `margam/methods/scale.py` independently implements the equations and Algorithm 1 in Chiu, Wong, Ooi, Wei, Fan and Ong, *Scale-PINN: Learning Efficient Physics-Informed Neural Networks Through Sequential Correction*, [arXiv:2602.19475v1](https://arxiv.org/abs/2602.19475v1). The paper is not bundled. The [authors’ repository](https://github.com/chiuph/SCALE-PINN), reviewed at `5ff8219d2604de8a57a5b7a9c7db9b435c5c3257`, declares all rights reserved. No upstream code, notebooks, data or license-covered modifications are copied into Margam. Existing NVIDIA-derived networks retain their separate notices above. See docs/scale-pinn.md for implementation differences.
+
+
+## Inverse Burgers observations
+
+`assets/training/inverse_burgers/observations.csv` is a deterministic 2,000-row
+selection from `appendix/Data/burgers_shock.mat` in
+https://github.com/maziarraissi/PINNs at
+`932f50a2d8ef4e80d1456bbae6887a73ff5166ef`. Copyright (c) 2018 maziarraissi;
+MIT licence retained in `assets/training/inverse_burgers/UPSTREAM-LICENSE.txt`.
+The source hash, selected arrays/row order and output hash are recorded in
+`assets/training/inverse_burgers/source.json`. The original MAT file is not bundled.
+The inverse numerical method is independently implemented from Raissi, Perdikaris
+and Karniadakis, Part II §2.1, https://arxiv.org/abs/1711.10566. No upstream
+TensorFlow training code is copied. The independent implementation uses existing
+Margam networks whose own attribution remains as documented above.

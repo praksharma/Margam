@@ -6,6 +6,10 @@ from .theme import colors
 
 # 24-unit artwork; no icon font, desktop theme or network dependency.
 PATHS = {
+    'observations':'M4 4h16v16H4z M8 8h1 M14 10h1 M10 16h1 M16 15h1',
+    'inverse_pde':'M4 5h16 M7 5v14 M11 12h8 M15 8v8 M4 21h16',
+    'inverse_method':'M4 18l5-10 5 7 6-12 M4 4v16h17',
+    'inverse_recipe':'M3 3h18v18H3z M6 16l4-8 4 5 4-7',
     'annotation':'M4 3h16v18H4z M8 7h8 M8 11h8 M8 15h5',
     'jorvik_geometry':'M3 18l5-14h8l5 14H3z M8 4l4 14 4-14 M3 18l9-7 9 7',
     'evaluation_points':'M4 4h16v16H4z M8 8h1v1H8z M15 7h1v1h-1z M10 15h1v1h-1z M16 16h1v1h-1z',

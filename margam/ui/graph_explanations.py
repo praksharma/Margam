@@ -1,5 +1,7 @@
 """Explanations of the concrete payloads carried by Margam arrows."""
 PAYLOADS={
+ 'observations':'Measured scalar field u at explicit (x,t) locations. These are training data, distinct from an optional reference source.',
+ 'inverse_residual':'Burgers PDE residual with two jointly learned coefficients; evaluated at the connected observation coordinates.',
  'geometry':'Domain definition and sample provenance. This is not a mesh or a stream of tensor values.',
  'interior_points':'Coordinates supplied by an interior sampler or imported data. The destination chooses how they are used.',
  'boundary_points':'Named boundary/initial coordinate sets. Their labels do not assign boundary-condition physics.',
@@ -24,6 +26,8 @@ def wire_text(wire):
     text=f'{source.title} → {target.title}\n{wire.source.label} → {wire.target.label}\n\n'
     if wire.target.data_type=='collocation_points' or wire.target.name=='boundary_points':
         text+='These coordinates contribute to the PDE loss. Boundary/initial rows are included only because this arrow exists. This does not create a boundary-condition operator.'
+    elif target.kind=='inverse_pde':
+        text+='These observation coordinates are the PDE collocation locations. Feed the same observation block to the inverse trainer for its measured-field loss. No separate boundary/initial loss is added.'
     elif target.kind=='bc':
         text+='These named point sets supply boundary/initial conditions. The BC block assigns operators, targets and coefficients. This arrow alone does not include them in the PDE loss.'
     else:text+=PAYLOADS.get(wire.target.data_type,wire.target.data_type.replace('_',' '))

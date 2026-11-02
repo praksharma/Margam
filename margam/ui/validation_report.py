@@ -23,6 +23,9 @@ class ValidationIssue:
 def check_execution(window):
     """Run the supported execution gate without changing editor state."""
     config=window.scene.compile_config();config.validate()
+    if config.method=='inverse_burgers':
+        from ..components.inverse_config import read_observations
+        read_observations(config)
     if config.shape=='Prepared2D':
         from ..components.training_data import read_training_sets
         read_training_sets(config)
@@ -46,7 +49,9 @@ def collect_issues(window,execution_error=None):
         outgoing.setdefault(source.identifier,[]).append(target)
         error=window.scene.connection_error(wire.source,wire.target,ignore=wire)
         if error:add('Connections',error,target)
-    for kind,label in [('domain','geometry'),('boundary','boundary point source'),('pde','PDE'),('bc','boundary condition'),('method','PINN method')]:
+    inverse=any(n.kind in ('inverse_method','inverse_recipe') for n in nodes)
+    required=[('domain','geometry'),('interior','observation data'),('pde','inverse PDE'),('method','inverse trainer')] if inverse else [('domain','geometry'),('boundary','boundary point source'),('pde','PDE'),('bc','boundary condition'),('method','PINN method')]
+    for kind,label in required:
         found=[node for node in nodes if role(node.kind)==kind]
         if len(found)!=1:add('Graph',f'Use exactly one {label} block; found {len(found)}.',found[0] if found else None)
     methods=[node for node in nodes if role(node.kind)=='method']
@@ -99,6 +104,12 @@ def collect_issues(window,execution_error=None):
             if config.network_type=='affine_fourier':
                 from ..components.affine_inputs import affine_map
                 check('Network',node,lambda c=config:affine_map(c.network_options.get('input_transform',''),c.coordinate_names))
+        if node.kind=='inverse_pde':
+            from ..components.inverse_config import validate_inverse_settings
+            check('Inverse coefficients',node,lambda c=config:validate_inverse_settings(c.inverse_settings))
+        if node.kind=='observations' and config.interior_data:
+            from ..components.inverse_config import read_observations
+            check('Observations',node,lambda c=config:read_observations(c))
         if current=='pde':
             if config.physics=='scalar' and config.pde_expression:
                 check('Physics',node,lambda c=config:Expression(c.pde_expression,len(c.bounds[0]),coordinates=c.coordinate_names))

@@ -23,7 +23,7 @@ def validate_fingerprints(kind,records):
     for slot,record in records.items():
         valid=(slot=='source_data' and kind in ('evaluation_points','reference_data') or
                slot=='reference_data' and kind=='reference' or
-               slot=='interior_data' and kind in ('interior','interior_data','rar','importance') or
+               slot=='interior_data' and kind in ('interior','interior_data','rar','importance','observations') or
                isinstance(slot,str) and slot.startswith('boundary:') and kind in ('boundary','boundary_data') and valid_boundary_name(slot[9:]))
         if not valid or not isinstance(record,dict) or set(record)!={'source','sha256'}:raise ValueError('Invalid source fingerprint binding.')
         digest=record['sha256']

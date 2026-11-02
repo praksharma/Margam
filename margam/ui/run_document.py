@@ -63,10 +63,11 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba','inverse'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('marching' in checkpoint)==(config.method=='expert' and config.expert_settings['windows']>1),'Checkpoint time marching/config mismatch.')
+        require(('inverse' in checkpoint)==(config.method=='inverse_burgers'),'Checkpoint inverse method/state mismatch.')
         require(('rba' in checkpoint)==(config.method=='rba'),'Checkpoint RBA method/state mismatch.')
         if config.method=='rba':
             import torch
@@ -190,7 +191,10 @@ def load_run(path):
         problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
         from ..components.losses import apply_problem_measures
         apply_problem_measures(problem,config)
-        if config.method=='self_adaptive':
+        if config.method=='inverse_burgers':
+            from ..methods.inverse_burgers import InverseBurgersPINN
+            model=InverseBurgersPINN(problem,network,weights=config.loss_weights,initial=config.inverse_settings).compile(lr=config.lr,device='cpu')
+        elif config.method=='self_adaptive':
             from ..methods.self_adaptive import SelfAdaptivePINN
             model=SelfAdaptivePINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
         elif config.method=='rba':

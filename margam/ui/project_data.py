@@ -44,9 +44,9 @@ def collect_sources(window):
                              source=logical,reader=reader,config=deepcopy(config),expected=expected or imported,baseline_kind=baseline_kind,
                              geometry_id=geometry.identifier if geometry is not None and geometry.kind=='jorvik_geometry' else None,
                              key=(node.identifier,role,json.dumps(logical,sort_keys=True))))
-        if node.kind in ('interior','interior_data','rar','importance'):
+        if node.kind in ('interior','interior_data','rar','importance','observations'):
             source=parameters.get('interior_data',{})
-            if source or node.kind=='interior_data':add('Interior',source)
+            if source or node.kind in ('interior_data','observations'):add('Observations' if node.kind=='observations' else 'Interior',source)
         if node.kind in ('boundary','boundary_data'):
             mappings=parameters.get('boundary_data',{})
             for name,source in mappings.items():add('Boundary · '+name,source,boundary=name)
@@ -81,7 +81,7 @@ def inspect_source(record,workspace,baselines,cache):
             data=read_point_data(resolved,config,reference=record['reader']=='reference_data');result['rows']=len(data.points)
         else:
             points,normals,values=read_points(resolved,len(config.bounds[0]),len(config.field_names) if record['role']=='Reference' else 1)
-            if record['role']=='Reference' and values is None:raise ValueError('Reference values are not mapped.')
+            if record['role'] in ('Reference','Observations') and values is None:raise ValueError('Reference values are not mapped.')
             result['rows']=len(points)
         after=path.stat()
         if signature!=(after.st_size,after.st_mtime_ns):raise ValueError('File changed during the check; refresh to retry.')

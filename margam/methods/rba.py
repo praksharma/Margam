@@ -73,6 +73,7 @@ class ResidualAttentionPINN(PINN):
         if isinstance(state,dict) and isinstance(state.get('rba'),dict) and isinstance(state['rba'].get('settings'),dict) and isinstance(state['rba']['settings'].get('configuration'),dict):
             state=deepcopy(state)
             if 'bc_weights' in self.configuration:state['rba']['settings']['configuration'].setdefault('bc_weights',{})
+            if 'inverse_settings' in self.configuration:state['rba']['settings']['configuration'].setdefault('inverse_settings',dict(lambda_1=0.,log_lambda_2=-6.))
             if 'pde_points' in self.signature.get('configuration',{}):state['rba']['settings']['configuration'].setdefault('pde_points','interior')
         self._require_compiled();payload=state.get('rba') if isinstance(state,dict) else None
         if not isinstance(payload,dict) or set(payload)!={'settings','attention'} or payload['settings']!=self.signature:raise ValueError('RBA checkpoint configuration differs.')
