@@ -134,12 +134,12 @@ class HelpFormLayout(QFormLayout):
 
     def addRow(self,*args):
         if len(args)==1 and isinstance(args[0],QCheckBox):
-            widget=args[0];container=QWidget();row=QHBoxLayout(container);row.setContentsMargins(0,0,0,0);row.addWidget(widget)
+            widget=args[0];widget.setProperty('setting_label',widget.text());container=QWidget();row=QHBoxLayout(container);row.setContentsMargins(0,0,0,0);row.addWidget(widget)
             info=QToolButton();info.setObjectName('setting_info_'+re.sub(r'[^a-z0-9]+','_',widget.text().lower()).strip('_'));info.setText('i');info.setAutoRaise(True);info.setAccessibleName('About '+widget.text());info.setToolTip('Explain '+widget.text())
             info.clicked.connect(lambda checked=False:show_information(self.window,widget.text(),setting_text(widget.text(),widget,self.context)));row.addWidget(info);row.addStretch()
             return super().addRow(container)
         if len(args)==2 and isinstance(args[0],str) and isinstance(args[1],QWidget):
-            label,widget=args;container=QWidget();row=QHBoxLayout(container);row.setContentsMargins(0,0,0,0)
+            label,widget=args;widget.setProperty('setting_label',label);container=QWidget();row=QHBoxLayout(container);row.setContentsMargins(0,0,0,0)
             caption=QLabel(label);caption.setBuddy(widget);row.addWidget(caption)
             info=QToolButton();info.setText('i');info.setAutoRaise(True);info.setAccessibleName('About '+label);info.setToolTip('Explain '+label)
             info.setObjectName('setting_info_'+re.sub(r'[^a-z0-9]+','_',label.lower()).strip('_'))

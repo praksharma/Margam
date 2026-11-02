@@ -565,3 +565,19 @@ Do not port Simulink features solely for visual parity: physical-time simulation
 solvers, signal buses, code generation and MATLAB integration need their own
 concrete Margam use cases. Existing explicit outputs, application device selection,
 linked diagnostics, recovery and owned data remain the supported workflows.
+
+
+## Explainable graph and execution review
+
+- [x] Port hover descriptions explain actual payloads and connection rules.
+- [x] Selected wires highlight both endpoints and show dependency meaning in the
+  inspector, with source/destination navigation.
+- [x] Two-line summaries and full block tooltips preserve readable settings.
+- [x] Runtime output/view freshness covers training, inference, edits, partial
+  runs, failures and archive reopening without serializing UI badges.
+- [x] Search owned settings, navigate to controls and named sides, and explain
+  conditional/compact controls without automatic graph changes.
+- [x] Review initial execution counts, device, network, optimizer and active loss
+  coefficients before fresh GUI training; preserve direct programmatic execution.
+- [x] Make KdV initial and refreshed PDE rows obey the same explicit collocation
+  arrows as the other trainers, so its execution and run summary agree.

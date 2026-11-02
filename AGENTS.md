@@ -259,3 +259,20 @@
   Record successful model opens/saves, never recovery drafts, failed operations or
   run archives. Preserve discard prompts and busy locks; removing history must
   never delete model files. State-disabled tests use ephemeral memory only.
+
+
+- Port/wire explanations describe problem dependencies, not time signals or the
+  autograd graph. Wire inspection selects the wire, with optional ID-based endpoint
+  navigation; do not modify graph topology while inspecting it.
+- Output freshness is ephemeral availability of current in-memory data, not a
+  numerical accuracy claim or external-file watcher. Preserve running/evaluation,
+  failure and partial states; settings edits still clear obsolete data. Export
+  readiness does not imply a file was written. Keep badges out of model settings.
+- Settings search indexes block-owned parameters, uses existing inspector controls
+  and stable IDs, and never expands recipes or changes options automatically.
+  Hidden/disabled controls must be reported honestly. Side selection is UI context.
+- GUI Train/F5 reviews a run summary before starting; direct start_training and
+  checkpoint continuation keep their existing contracts. Summaries use actual
+  supported initial sample builders and explicit collocation selection, never build
+  a neural network or guess bounding-box samples on prepared geometry. Label initial,
+  adaptive and sequential-window counts accurately and revalidate before training.

@@ -91,6 +91,7 @@ class OutputViews:
         self.refresh(node)
         dock, _ = self.entries[node.identifier]
         dock.setWindowTitle(node.title)
+        self.window.refresh_result_status()
         dock.show()
         dock.raise_()
         return dock
@@ -128,6 +129,7 @@ class OutputViews:
                 if hasattr(view,'curve'):view.curve.caption='Connect this output, then train to calculate its data.'
             else:
                 view.show_result(data)
+        self.window.refresh_result_status()
 
     def clear_data(self):
         for _,view in self.entries.values():

@@ -1,0 +1,38 @@
+{
+  "generator": "examples.capture_graph_explanations",
+  "scope": "Actual graph explanations and stale-result clearing; two CPU optimizer updates are a lifecycle fixture, not an accuracy benchmark.",
+  "initial_plan": {
+    "interior": 64,
+    "boundary": 64,
+    "pde": 128,
+    "sets": {
+      "left": 16,
+      "right": 16,
+      "bottom": 16,
+      "top": 16
+    }
+  },
+  "result_statuses": {
+    "comparison": "Settings changed",
+    "solution": "Settings changed",
+    "monitor": "Settings changed"
+  },
+  "files": {
+    "manual-wire-inspection.png": {
+      "bytes": 158408,
+      "sha256": "479e73f7cccf64c7f6220bd0e76600d16c14b97045f0ceefcffb43affba7dc44"
+    },
+    "manual-settings-search.png": {
+      "bytes": 13383,
+      "sha256": "692f552fed84e9ad984935cf3ee648b0adcf05aa5613f6125f688e5e2c9fdd5d"
+    },
+    "manual-run-summary.png": {
+      "bytes": 83971,
+      "sha256": "2ece5bac751dda2dd6005cad13abdd65b109ab61476bc00f6a00b7328c632ebb"
+    },
+    "manual-result-freshness.png": {
+      "bytes": 152318,
+      "sha256": "3458aaf337af2efc24c2067a802456933934e87508090183358704640ec67321"
+    }
+  }
+}

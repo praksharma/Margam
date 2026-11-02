@@ -313,3 +313,14 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_diagram_tools --o
 Replaces `assets/screenshots/manual-model-search.png`, `manual-format.png`,
 `manual-recent-models.png` and the capture manifest. Images show model search,
 Format and recent-model controls.
+
+
+Capture graph explanations and output freshness (isolated, two CPU updates):
+
+```bash
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m examples.capture_graph_explanations --overwrite
+```
+
+Replaces `manual-wire-inspection.png`, `manual-settings-search.png`,
+`manual-run-summary.png`, `manual-result-freshness.png` and their capture manifest
+under `assets/screenshots`. This is lifecycle evidence, not an accuracy benchmark.

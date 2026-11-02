@@ -35,10 +35,11 @@ def build_kdv(c):
     from ..components.problem import PINNProblem
     from ..nn.factory import build_network
     from ..methods.pinn import PINN
+    from ..components.collocation import collocation_rows
     validate_kdv(c);network=build_network(c);points,sets=samples(c,0)
-    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(points),conditions(c,network,sets))
+    problem=PINNProblem(lambda x,u:residual(c,x,u),torch.tensor(collocation_rows(c,points,sets)),conditions(c,network,sets))
     def refresh(phase):
-        points,sets=samples(c,phase);return points,conditions(c,network,sets)
+        points,sets=samples(c,phase);return collocation_rows(c,points,sets),conditions(c,network,sets)
     from ..components.losses import apply_boundary_identity
     apply_boundary_identity(problem,c)
     problem.refresh_samples=refresh

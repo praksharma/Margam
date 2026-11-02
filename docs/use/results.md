@@ -48,6 +48,55 @@ During training, progress and operational messages remain available. Stop reques
 are checked between batches of 25 updates. A stopped partial run can retain
 results and a checkpoint; changing the numerical model then invalidates them.
 
+## Review the run
+
+**Train PINN** or **F5** opens **Run summary**. You can also open it through
+**Run → Run summary…**. Check the resolved application device, PINN method,
+network, update budget, loss coefficients, requested outputs and initial PDE-row
+counts. Choose **Train new run** to start. This starts fresh; the existing
+**Resume checkpoint…** action remains the separate continuation workflow.
+
+![Run summary assembled from the graph](../../assets/screenshots/manual-run-summary.png)
+
+The summary reads the graph and initial sampling functions, including mapped
+training files, without constructing or evaluating a network. It does not use
+whichever block happened to be selected in the inspector. Counts distinguish
+interior rows from connected boundary/initial PDE rows. Periodic partner rows are
+included and gauge/mean-velocity anchors are excluded. Duplicate coordinates are
+preserved; vector residual components do not multiply the displayed row count.
+
+Fresh/adaptive samplers can change the set during training. Sequential Expert
+counts describe the first physical-time window, and resume uses checkpoint sets.
+The listed coefficients precede learned/adaptive balancing. Refresh after edits;
+**Train new run** rechecks the current model before starting. Invalid/incomplete
+models show a reason and disable training in the summary; use Validate for the
+full issue report. Programmatic `start_training()` retains its direct, validated
+execution contract without opening a dialog.
+
+## Result freshness
+
+Every output block and opened result view shows its in-memory availability:
+
+| Badge | Meaning |
+| --- | --- |
+| Not run / Not connected | No results calculated for this output, or no source connected |
+| Running / Evaluating | Training or inference is in progress |
+| Current | Requested data belongs to the current in-memory model |
+| Stopped / partial | A stopped run produced retained data; it may be incomplete |
+| Settings changed | An edit invalidated and cleared the previous data |
+| Failed | The requested job failed; consult Messages |
+| Not available | The completed job produced no data for this request, such as an unfinished time-window schedule |
+
+![An edit clears old curves and marks output blocks and the view](../../assets/screenshots/manual-result-freshness.png)
+
+Moving blocks and renaming outputs preserve freshness. Numerical/graph changes
+clear results as before and show **Settings changed**. New model definitions
+start without results; run archives restore badges from the retained data.
+Badges are runtime UI state and are not serialized into model definitions.
+**Current** on an export block means prediction data is ready, not that a file
+has been written. It also does not certify accuracy or unchanged external files;
+use Project data overview for file checks and explicit export actions to write data.
+
 ## Ask for the views you need
 
 | Block | What it requests | How to open |

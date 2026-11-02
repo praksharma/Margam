@@ -59,7 +59,8 @@ class Port(QGraphicsEllipseItem):
         self.setPos(170 if output else 0, y)
         self.setBrush(QColor(colors()['highlight']))
         self.setPen(QPen(QColor(colors()['base']), 2))
-        self.setToolTip(('Output: ' if output else 'Input: ') + spec.label + '\n' + spec.data_type.replace('_',' ') + (' · drag to a compatible input' if output else ' · accepts one source'))
+        from .graph_explanations import port_text
+        self.setToolTip(port_text(self))
         self.setZValue(2)
 
     def mousePressEvent(self, event):
@@ -93,6 +94,18 @@ class Wire(QGraphicsPathItem):
         path = QPainterPath(a)
         path.cubicTo(a + QPointF(bend, 0), b - QPointF(bend, 0), b)
         self.setPath(path)
+        from .graph_explanations import wire_text
+        self.setToolTip(wire_text(self))
+
+    def paint(self,painter,option,widget=None):
+        painter.save()
+        if self.isSelected():
+            pen=QPen(QColor(colors()['highlight']),4);painter.setPen(pen);painter.drawPath(self.path())
+            for port in (self.source,self.target):
+                if port is not None:
+                    point=self.mapFromScene(port.scenePos());painter.drawEllipse(point,10,10)
+        else:super().paint(painter,option,widget)
+        painter.restore()
 
 
 CORE_KINDS = {"domain", "interior", "boundary", "pde", "bc", "network", "method"}
@@ -123,9 +136,20 @@ class Node(QGraphicsRectItem):
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
         painter.setPen(QColor(colors()['text']))
-        painter.drawText(14, 28, painter.fontMetrics().elidedText(self.title,Qt.TextElideMode.ElideRight,145))
+        metrics=painter.fontMetrics()
+        painter.drawText(12,23,metrics.elidedText(self.title,Qt.TextElideMode.ElideRight,146))
         painter.setPen(QColor(colors()['muted']))
-        painter.drawText(14, 55, painter.fontMetrics().elidedText(self.detail, Qt.TextElideMode.ElideRight, 145))
+        words=self.detail.split();lines=['']
+        for word in words:
+            candidate=(lines[-1]+' '+word).strip()
+            if metrics.horizontalAdvance(candidate)>146 and lines[-1] and len(lines)<2:lines.append(word)
+            else:lines[-1]=candidate
+        if self.kind in OUTPUT_KINDS:
+            painter.drawText(12,44,metrics.elidedText(self.detail,Qt.TextElideMode.ElideRight,146))
+            painter.setPen(QColor(colors()['highlight']))
+            painter.drawText(12,66,metrics.elidedText(getattr(self,'result_status','Not run'),Qt.TextElideMode.ElideRight,146))
+        else:
+            for index,line in enumerate(lines):painter.drawText(12,44+20*index,metrics.elidedText(line,Qt.TextElideMode.ElideRight,146))
 
     def contextMenuEvent(self, event):
         self.scene().clearSelection()
@@ -404,7 +428,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.validate_button=QPushButton('Validate')
         self.validate_button.clicked.connect(self.show_validation_report)
         self.train_button=QPushButton('Train PINN')
-        self.train_button.clicked.connect(lambda:self.start_training())
+        self.train_button.clicked.connect(self.show_run_summary)
         self.cancel_button=QPushButton('Stop')
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.cancel_training)
@@ -570,6 +594,9 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.find_blocks_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.view.addAction(self.find_blocks_action)
         self.find_blocks_action.triggered.connect(self.show_model_search)
+        self.find_setting_action=edit.addAction('Find setting…');self.find_setting_action.setShortcut('Ctrl+Shift+P')
+        self.find_setting_action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut);self.view.addAction(self.find_setting_action)
+        self.find_setting_action.triggered.connect(self.show_settings_search)
         self.setup_layout_menu()
         self.view_menu=self.menuBar().addMenu('View')
         for dock in [self.library_dock,self.properties_dock,self.messages_dock]:
@@ -607,6 +634,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.check_action=run.addAction('Validate model')
         self.check_action.setShortcut('Ctrl+D')
         self.check_action.triggered.connect(self.validate_button.click)
+        self.run_summary_action=run.addAction('Run summary…');self.run_summary_action.triggered.connect(self.show_run_summary)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
         self.evaluate_action=run.addAction('Evaluate outputs');self.evaluate_action.triggered.connect(self.evaluate_trained_outputs)
@@ -887,6 +915,8 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self._trained_config=deepcopy(self.config)
         for output in self.result['outputs'].values():output['config']=self.config
         self.monitor_records=deepcopy(data['monitors']);self.loaded_checkpoint=data['checkpoint']
+        self.active_output_ids=set(self.result['outputs'])|set(self.monitor_records)
+        self.refresh_result_status('complete')
         self.progress_bar.setValue(self.result['steps']);self.update_run_actions()
         self.statusBar().showMessage('Opened saved run · views stay closed until requested')
         return True
@@ -901,6 +931,19 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         if type(additional) is not int or not 1<=additional<=100000-checkpoint['iter']:return False
         self.change('iterations',checkpoint['iter']+additional)
         return self.start_training(checkpoint=checkpoint)
+
+    def show_settings_search(self):
+        from .settings_search import SettingsSearch
+        dialog=getattr(self,'settings_search_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=SettingsSearch(self);self.settings_search_dialog=dialog
+        dialog.refresh();dialog.show();dialog.raise_();dialog.search.setFocus();dialog.search.selectAll();return dialog
+
+    def locate_block(self,identifier):
+        node=next((n for n in self.scene.nodes() if n.identifier==identifier),None)
+        if node is None:return False
+        self.scene.clearSelection();node.setSelected(True);self.view.centerOn(node)
+        self.properties_dock.show();return True
 
     def show_model_search(self):
         from .model_search import ModelSearch
@@ -1205,6 +1248,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             if node.isSelected():self.name.setText(value)
             entry=self.output_views.entries.get(node.identifier)
             if entry:entry[0].setWindowTitle(value)
+            self.refresh_result_status()
         self.push_edit('Rename output',lambda:apply(name),lambda:apply(old))
 
     def change_output(self,node,key,value,edit_token=None):
@@ -1575,12 +1619,19 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor'}
         self.result=None;self.set_busy(True);self.progress_bar.setRange(0,0)
         if model is not None and str(model.device)!=self.execution_device():model=None
+        self.active_output_ids={r.identifier for r in requests}
+        self.refresh_result_status('Evaluating')
         self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self)
         self.worker.completed.connect(self.training_completed);self.worker.failed.connect(self.training_failed);self.worker.finished.connect(self.training_finished)
         self.log.appendPlainText('Evaluating requested outputs · trained weights retained · no optimizer updates')
         self.worker.start();return True
 
+    def refresh_result_status(self,phase=None):
+        from .result_freshness import refresh
+        refresh(self,phase)
+
     def clear_run_data(self):
+        self.refresh_result_status('changed')
         self._trained_config=None
         self.loaded_checkpoint=None
         self.result=None
@@ -1622,7 +1673,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                      'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks' if c.is_time_dependent else 'Steady · gradient balance',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
-                     'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps',
+                     'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps · lr {c.lr:g}',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
                      'solution':'Requested field table' if c.is_time_dependent or len(c.field_names)>1 else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
                      'evaluation_points':'Supplied coordinates / IDs','reference_data':'Supplied reference fields',
@@ -1635,9 +1686,15 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             details['jorvik_geometry']='Selected document · update samples' if node.settings.get('jorvik_files',{}).get('needs_update') else 'Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
+            extra=''
+            if role(node.kind)=='method':extra=f'\nMethod: {c.method} · Adam lr {c.lr:g} · {c.iterations} updates'
+            elif node.kind=='network':extra='\nCoordinates: '+', '.join(c.coordinate_names)+' → fields: '+', '.join(c.field_names)
+            node.setToolTip(node.title+'\n'+node.detail+extra+'\n\n'+describe_block(node.kind))
             node.update()
             if node.isSelected():
                 self.name.setText(node.title);self.detail.setText(node.detail)
+        for wire in self.scene.wires:wire.update_path()
+        self.refresh_result_status()
 
     def parameter_owner(self,attribute):
         kind=OWNERS[attribute]
@@ -1890,10 +1947,19 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             info=QToolButton();info.setText('i');info.setAutoRaise(True);info.setObjectName('block_info');info.setAccessibleName('About '+node.title);info.clicked.connect(lambda:self.block_help(node));row.addWidget(info);row.addStretch();self.form.addRow(heading)
             capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
         if node is None:
-            self.form.addRow(QLabel('Select a block to edit its settings.'))
+            wires=[item for item in self.scene.selectedItems() if isinstance(item,Wire)]
+            if len(wires)==1 and not nodes:
+                from .graph_explanations import wire_text
+                wire=wires[0];self.name.setText('Connection');self.detail.setText(wire.source.label+' → '+wire.target.label)
+                note=QLabel(wire_text(wire));note.setWordWrap(True);note.setTextFormat(Qt.TextFormat.PlainText);self.form.addRow(note)
+                for label,endpoint in [('Select source',wire.source.parentItem()),('Select destination',wire.target.parentItem())]:
+                    button=QPushButton(label)
+                    button.clicked.connect(lambda checked=False,identifier=endpoint.identifier:self.locate_block(identifier))
+                    self.form.addRow(button)
+            else:self.form.addRow(QLabel('Select a block to edit its settings.'))
         elif node.kind=='jorvik_geometry':self.jorvik_fields(node)
         elif node.kind=='domain':
-            shape=QComboBox()
+            shape=QComboBox();shape.setProperty('search_key','shape')
             for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('Prepared2D','Prepared 2D points'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
             shape.setCurrentIndex(shape.findData(self.config.shape));shape.currentIndexChanged.connect(lambda index,w=shape:self.change('shape',w.itemData(index)))
             self.form.addRow('Domain',shape)
@@ -1908,7 +1974,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         elif node.kind=='interior_data':
             source=self.config.interior_data
             note=QLabel(self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
-            button=QPushButton('Map / preview interior coordinates…');button.clicked.connect(lambda:self.edit_point_data());self.form.addRow(button)
+            button=QPushButton('Map / preview interior coordinates…');button.setProperty('search_key','interior_data');button.clicked.connect(lambda:self.edit_point_data());self.form.addRow(button)
             if source:
                 clear=QPushButton('Clear interior source');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
             note=QLabel('Fixed supplied coordinates; sampler counts and seeds do not resample these rows.');note.setWordWrap(True);self.form.addRow(note)
@@ -1922,12 +1988,12 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             add=QPushButton('Add named point set…');add.clicked.connect(self.add_boundary_data_set);self.form.addRow(add)
             if side:
                 label=QLabel(self.dataset_label(self.config.boundary_data[side]));label.setWordWrap(True);self.form.addRow('Source',label)
-                button=QPushButton('Map / preview this set…');button.clicked.connect(lambda checked=False,name=side:self.edit_point_data(name));self.form.addRow(button)
+                button=QPushButton('Map / preview this set…');button.setProperty('search_key','boundary_data');button.clicked.connect(lambda checked=False,name=side:self.edit_point_data(name));self.form.addRow(button)
                 remove=QPushButton('Remove this set');remove.clicked.connect(lambda checked=False,name=side:self.clear_point_data(name));self.form.addRow(remove)
             note=QLabel('Each set maps coordinates, optional outward unit normals and optional scalar targets. Assign Dirichlet, Neumann or Custom in Boundary condition. Prepared 2D allows user-named sets; built-in domains retain their existing side names.');note.setWordWrap(True);self.form.addRow(note)
         elif role(node.kind)=='interior':
             if node.kind=='interior':
-                imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
+                imported=QPushButton('Map / preview prepared CSV or NPZ…');imported.setProperty('search_key','interior_data');imported.clicked.connect(lambda:self.edit_point_data());self.form.addRow(imported)
             if self.config.interior_data:
                 label=QLabel(self.dataset_label(self.config.interior_data));label.setWordWrap(True);self.form.addRow('Imported source',label)
                 clear=QPushButton('Use built-in sampler');clear.clicked.connect(lambda:self.clear_point_data());self.form.addRow(clear)
@@ -1962,7 +2028,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                 side_choice.setCurrentIndex(side_choice.findData(side));side_choice.setObjectName('boundary_side')
                 side_choice.currentIndexChanged.connect(lambda index,w=side_choice:self.select_boundary_side(w.itemData(index)))
                 self.form.addRow('Named point set',side_choice)
-                imported=QPushButton('Map / preview this set from CSV or NPZ…');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
+                imported=QPushButton('Map / preview this set from CSV or NPZ…');imported.setProperty('search_key','boundary_data');imported.clicked.connect(lambda checked=False,s=side:self.edit_point_data(s));self.form.addRow(imported)
                 if self.config.boundary_data.get(side):
                     label=QLabel(self.dataset_label(self.config.boundary_data[side]));label.setWordWrap(True);self.form.addRow('Imported source',label)
                     clear=QPushButton('Use built-in side sampler');clear.clicked.connect(lambda checked=False,s=side:self.clear_point_data(s));self.form.addRow(clear)
@@ -2047,6 +2113,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                 for field in ('u','v','p'):
                     spec=self.config.flow_boundary[side].get(field,{'type':'None','target':'0','operator':''})
                     kind=QComboBox();kind.addItems(['None','Dirichlet','Neumann','Custom']);kind.setCurrentText(spec['type'])
+                    kind.setProperty('search_key','flow_'+side+'_'+field+'_type')
                     kind.currentTextChanged.connect(lambda value,s=side,f=field:self.change_flow_boundary(s,f,'type',value));self.form.addRow(field+' type',kind)
                     for key,label in [('target',' target expression'),('operator',' Custom operator')]:
                         edit=QLineEdit(spec[key]);edit.setObjectName('flow_'+side+'_'+field+'_'+key)
@@ -2055,7 +2122,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                 for name in self.config.constraint_names:
                     if name.startswith(side+':'):self.boundary_coefficient_field(name)
                 for index,label in enumerate(('Gauge x','Gauge y')):
-                    spin=QDoubleSpinBox();spin.setDecimals(6);spin.setRange(-1000000,1000000);spin.setValue(self.config.pressure_point[index]);spin.setKeyboardTracking(False)
+                    spin=QDoubleSpinBox();spin.setProperty('search_key','pressure_point_'+str(index));spin.setDecimals(6);spin.setRange(-1000000,1000000);spin.setValue(self.config.pressure_point[index]);spin.setKeyboardTracking(False)
                     spin.valueChanged.connect(lambda value,i=index:self.change_pressure_point(i,value));self.form.addRow(label,spin)
                 self.field('Pressure gauge p','pressure_value');self.field('Gauge loss weight','pressure_weight',minimum=.000001,maximum=100000)
                 self.boundary_coefficient_field('pressure_gauge')
@@ -2067,16 +2134,19 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                     value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
                     mapped_values=self.config.boundary_data.get(side,{}).get('values','')
                     value.setEnabled(not mapped_values)
+                    combo.setProperty('search_key','bc_types.'+side);value.setProperty('search_key','bc_values.'+side)
                     combo.currentTextChanged.connect(lambda text,s=side,t=object():self.change_bc(s,'type',text,t))
                     value.valueChanged.connect(lambda number,s=side,t=object():self.change_bc(s,'value',number,t))
                     layout.addWidget(combo);layout.addWidget(value);self.form.addRow(self.config.side_label(side).capitalize(),row)
                     self.boundary_coefficient_field(self.config.constraint_name(side))
                     if mapped_values:self.form.addRow(self.config.side_label(side)+' target source',QLabel('Imported values: '+mapped_values))
                     target=QLineEdit(self.config.bc_targets.get(side,''));target.setObjectName(side+'_target_expression')
+                    target.setProperty('search_key','bc_targets.'+side)
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
                     target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' target expression',target)
                     operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
+                    operator.setProperty('search_key','bc_operators.'+side)
                     operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
                     operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' custom operator',operator)
@@ -2093,6 +2163,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             edit.setPlaceholderText('16, 16')
             token=object()
             edit.textChanged.connect(lambda text:self.change_layers(text,token))
+            edit.setProperty('search_key','layers')
             self.form.addRow('Hidden layers',edit)
             if len(self.config.field_names)>1:self.form.addRow(QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+' · outputs: '+', '.join(self.config.field_names)))
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
@@ -2132,6 +2203,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             variant.setCurrentIndex(max(0,variant.findData(self.config.method)))
             if self.config.physics=='incompressible_2d':variant.model().item(1).setEnabled(False)
             variant.currentIndexChanged.connect(lambda index,v=variant:self.change('method',v.itemData(index)))
+            variant.setProperty('search_key','method')
             self.form.addRow('Method variant',variant)
             if node.kind=='scale_method':self.scale_settings_fields()
             if node.kind=='expert_method':self.expert_settings_fields()
@@ -2148,7 +2220,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                 self.form.addRow(QLabel('Self-adaptive PINN · squared per-point masks\nNetwork Adam descent / mask Adam ascent'))
                 self.field('Initial mask weight','sa_initial',minimum=.000001,maximum=1000000)
                 self.field('Maximum mask weight','sa_max',minimum=.000001,maximum=1000000)
-                adaptive=QCheckBox('Adapt boundary/constraint weights');adaptive.setChecked(self.config.sa_boundary)
+                adaptive=QCheckBox('Adapt boundary/constraint weights');adaptive.setChecked(self.config.sa_boundary);adaptive.setProperty('search_key','sa_boundary')
                 adaptive.toggled.connect(lambda value:self.change('sa_boundary',value));self.form.addRow(adaptive)
                 note=QLabel('PDE weights always adapt. Fixed points, squared mask; no L-BFGS/resampling. Individual terms show unmasked loss; total uses adaptive masks and may increase.');note.setWordWrap(True);self.form.addRow(note)
             self.loss_formulation_field()
@@ -2174,6 +2246,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             if node.kind=='monitor':
                 count=QSpinBox();count.setKeyboardTracking(False);count.setRange(25,100000);count.setValue(node.settings['history_limit'])
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'history_limit',value,t))
+                count.setProperty('search_key','history_limit')
                 self.form.addRow('Retained updates',count)
                 text='Connect PINN method → monitor to record losses. Closing the view does not stop recording. Removing the block removes the request.'
             else:
@@ -2181,6 +2254,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'resolution',value,t))
                 supplied=any(w.target.parentItem() is node and w.target.name in ('points','comparison') for w in self.scene.wires)
                 count.setEnabled(not supplied)
+                count.setProperty('search_key','resolution')
                 self.form.addRow('Evaluation points / axis',count)
                 if supplied:self.form.addRow(QLabel('Uses connected supplied/comparison rows; per-axis resolution is ignored.'))
                 text='Connect a trainer or recipe; optionally connect Evaluation points. No reference or error metric is assumed.' if node.kind=='solution' else 'Connect a trainer/recipe and an explicit Reference or Reference data source; optionally connect Evaluation points. The comparison can feed an export block.'
@@ -2191,11 +2265,11 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
             self.form.addRow(button)
         elif node.kind in ('evaluation_points','reference_data'):
             source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
-            button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)
+            button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.setProperty('search_key','source_data');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)
             if source:
                 clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.forget_dataset_source(n,'source_data',lambda:self.change_output(n,'source_data',{})));self.form.addRow(clear)
         elif node.kind=='reference':
-            expression=QLineEdit(node.settings.get('reference_expression',''))
+            expression=QLineEdit(node.settings.get('reference_expression',''));expression.setProperty('search_key','reference_expression')
             expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')
             expression.editingFinished.connect(lambda n=node,e=expression:self.change_output(n,'reference_expression',e.text().strip()))
             self.form.addRow('Reference expression',expression)
@@ -2406,16 +2480,25 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
 
+    def show_run_summary(self):
+        from .run_summary import RunSummary
+        dialog=getattr(self,'run_summary_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=RunSummary(self);self.run_summary_dialog=dialog
+        dialog.refresh();dialog.show();dialog.raise_();return dialog
+
     def start_training(self,*,checkpoint=None):
         if self.is_running() or not self.validate_model():return False
         self._history_epoch+=1
         self.clear_run_data()
         self._evaluation_model=None;self._evaluation_checkpoint=None;self._evaluation_config=None
         requests=self.scene.output_requests(self.config)
+        self.active_output_ids={r.identifier for r in requests}
         self.active_monitors={r.identifier for r in requests if r.kind=='monitor'}
         self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] if checkpoint is not None else [] for node in self.scene.nodes() if node.identifier in self.active_monitors}
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         self.set_busy(True)
+        self.refresh_result_status('Running')
         self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
         self.worker.progress.connect(self.training_progress)
         self.worker.scale_progress.connect(self.scale_training_progress)
@@ -2453,6 +2536,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def training_completed(self,result):
         self.result=result
         self._trained_config=deepcopy(result['config'])
+        self.refresh_result_status('complete')
         for node in self.scene.nodes():self.output_views.refresh(node)
         self.progress_bar.setRange(0,max(1,self.config.iterations));self.progress_bar.setValue(result['steps'])
         status='Evaluated outputs' if getattr(self.worker,'evaluation_only',False) else 'Stopped' if result['cancelled'] else 'Completed'
@@ -2461,6 +2545,7 @@ class Window(RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
 
     def training_failed(self,message):
         self.result=None
+        self.refresh_result_status('Failed')
         self.statusBar().showMessage(('Evaluation' if getattr(self.worker,'evaluation_only',False) else 'Training')+' failed · see Messages')
         self.log.appendPlainText(('Evaluation' if getattr(self.worker,'evaluation_only',False) else 'Training')+' failed: '+message)
         self.messages_dock.show();self.messages_dock.raise_()

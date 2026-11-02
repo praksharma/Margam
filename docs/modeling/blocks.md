@@ -87,3 +87,39 @@ Refresh after edits. Search does not insert blocks; use the library to add one.
 blocks. It works for a single block or a group, ignores selected wires, and leaves
 positions, settings, history and results unchanged. With no blocks selected the
 command is disabled. **Fit model** continues to frame the complete diagram.
+
+
+## Read the graph
+
+Hover a port for its name, payload meaning and connection rule. Arrows describe
+problem dependencies; they are not physical-time signals or PyTorch's internal
+differentiation graph.
+
+Click a wire to highlight it and both port endpoints. The Properties pane names
+the source and destination and explains the connection. **Select source** and
+**Select destination** jump to the corresponding block. A boundary → PDE arrow
+adds residual collocation rows; boundary → Boundary condition instead supplies
+points for operators and targets. Neither arrow silently creates the other.
+
+![Selected boundary-to-PDE connection and its explanation](../../assets/screenshots/manual-wire-inspection.png)
+
+Block summaries use two lines where available. Hover a block to read its full
+name, untruncated summary and supported capabilities. Network summaries show the
+architecture and hidden widths; baseline trainers show updates and learning rate.
+Output blocks reserve their second summary line for result freshness.
+
+## Find a setting
+
+**Edit → Find setting…** (**Ctrl+Shift+P**, canvas focus) searches settings owned by
+existing blocks. Try **learning rate**, **boundary coefficient left**, or
+**flow boundary top u target**. Results identify the owning instance. Activate one
+to select its block, reveal the Properties pane, scroll to the control and focus
+it. Sampling and flow entries select the named side where needed.
+
+![Search settings across existing blocks](../../assets/screenshots/manual-settings-search.png)
+
+Search and navigation do not edit the model. Conditional settings may be disabled
+or hidden for the current options. A compact recipe retains settings that require
+expansion; search explains when the control is not currently exposed rather than
+expanding or changing the graph automatically. Refresh after graph edits. Search
+results resolve IDs again before navigation, so deleted blocks are handled safely.

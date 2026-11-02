@@ -39,7 +39,8 @@ this tour.
 
 ## 4. Validate and train
 
-Click **Validate**, then **Train PINN** or press **F5**. The progress indicator
+Click **Validate**, then **Train PINN** or press **F5**. Review the run summary
+and choose **Train new run**. The progress indicator
 shows training progress. Editing is locked during the run; canvas navigation
 remains available. **Stop** retains a partial run and is checked between batches.
 
