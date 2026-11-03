@@ -309,3 +309,14 @@
 - Credit the original mathematical formulation separately from the MIT observation
   dataset. Retain its pinned source/hash/licence and never publish local paths in
   captures/evidence. Short coefficient-update tests are not accuracy reproductions.
+
+- MCP automation is optional, starts off, and reuses the official SDK with an
+  authenticated loopback-only listener. Keep server imports lazy. All graph/Qt
+  commands cross the bounded queued bridge; recheck permissions and listener
+  generation at dispatch. Do not execute GUI operations on the HTTP thread.
+  Require window session and exact model revision for edits/training; preserve
+  atomic validation/one Undo entry and existing data/output/device contracts.
+  Track asynchronous jobs separately; reject results from changed graphs or
+  replacement desktop jobs. Stop/revoke the listener on accepted window close.
+  No arbitrary code, file-management or implicit output tools. Credit the adapted
+  PyniteGUI framework and retain its licence. Use state-isolated real-client tests.

@@ -1,0 +1,7 @@
+{
+  "generator": "examples.capture_mcp",
+  "scope": "Actual native MCP panel, server stopped, no credentials, no training.",
+  "file": "manual-mcp.png",
+  "bytes": 66868,
+  "sha256": "180c8492beab3917bb967cb721fc87ef8a102edb7c83ff9d9e3b95c85b1cee44"
+}

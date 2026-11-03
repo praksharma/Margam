@@ -599,3 +599,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   inverse Navier–Stokes need their own concrete contracts.
 - [ ] Reproduce the paper's accuracy protocol separately; current short checks do
   not establish recovered-coefficient accuracy.
+
+### MCP automation
+
+- [x] Optional official-SDK localhost server, native permissions panel and bounded
+  Qt command bridge adapted from PyniteGUI; authentication and token rotation.
+- [x] Model/schema/validation reads, atomic numerical parameter batches with Undo,
+  background fresh training, status/cancellation and paginated explicit results.
+- [ ] Consider exclusive MCP editing mode, typed graph insertion/wiring, controlled
+  data import/export and checkpoint continuation when concrete workflows require them.

@@ -171,3 +171,19 @@ The inverse numerical method is independently implemented from Raissi, Perdikari
 and Karniadakis, Part II §2.1, https://arxiv.org/abs/1711.10566. No upstream
 TensorFlow training code is copied. The independent implementation uses existing
 Margam networks whose own attribution remains as documented above.
+
+## PyniteGUI MCP framework
+
+`margam/ui/automation_core.py` adapts the permission model and bounded Qt command
+bridge from PyniteGUI's `src/pynitegui/qt/automation_core.py`.
+`automation_server.py` adapts its listener lifecycle and native permissions panel;
+`automation_transport.py` adapts its official-SDK Streamable HTTP transport,
+permission-filtered discovery and localhost authentication wrapper.
+
+Source: [praksharma/PyniteGUI](https://github.com/praksharma/PyniteGUI), revision
+`27921a12ca58a96079f479fd0ff721035c87e5a5`, AGPL-3.0.
+The upstream GNU AGPL v3 text is retained in `assets/LICENSE-PYNITEGUI`.
+Margam replaces structural-analysis tools with PINN graph inspection, bounded
+parameter edits and training/result lifecycle commands. It requires bearer auth
+and keeps manual idle editing available with revision checks; the upstream
+exclusive-control mode and structural schemas are not copied.

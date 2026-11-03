@@ -350,3 +350,17 @@ The checks default to four updates and write local evidence under
 helper replaces the inverse graph/coefficient/monitor images and manifest under
 `assets/screenshots`, with local desktop preferences disabled. These are lifecycle
 checks, not accuracy benchmarks.
+
+## Optional desktop MCP server
+
+```sh
+uv pip install --python .venv/bin/python -e '.[mcp]'
+.venv/bin/python -m margam.ui
+```
+
+Open **Automation → MCP server…**. See [permissions and client setup](mcp.md).
+Dedicated tests (the wire test needs the optional extra):
+
+```sh
+QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_automation.py -v
+```

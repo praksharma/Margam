@@ -524,6 +524,14 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         self.update_document_title()
         self.statusBar().showMessage('Ready · rectangle Poisson template · select blocks to edit settings')
         QTimer.singleShot(0,self.fit_model)
+        from .automation_server import AutomationServer
+        self.automation_server=AutomationServer(self)
+        self.automation_panel=None
+        automation=self.menuBar().addMenu('Automation')
+        self.menuBar().removeAction(automation.menuAction())
+        self.menuBar().insertMenu(next(a for a in self.menuBar().actions() if a.text()=='Help'),automation)
+        self.automation_action=automation.addAction('MCP server…')
+        self.automation_action.triggered.connect(self.show_automation_server)
         self.desktop_state=None
         if state_directory is not False:
             try:
@@ -531,6 +539,13 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
                 self.desktop_state.restore()
                 QTimer.singleShot(0,self.desktop_state.offer_recovery)
             except OSError as error:self.statusBar().showMessage('Local preferences unavailable: '+str(error))
+
+    def show_automation_server(self):
+        from .automation_server import AutomationPanel
+        if self.automation_panel is None:
+            self.automation_panel=AutomationPanel(self,self.automation_server)
+        self.automation_panel.show();self.automation_panel.raise_()
+        return self.automation_panel
 
     def setup_icons(self):
         actions={
@@ -2665,6 +2680,7 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        self.automation_server.shutdown()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()
         self.project_workspace.close()

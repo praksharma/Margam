@@ -23,7 +23,7 @@ assert len(w.scene.wires) == 8
 assert not w.output_views.entries
 assert w.messages_dock.isHidden()
 assert not w.rectangle_previews
-assert [a.text() for a in w.menuBar().actions()] == ["File", "Edit", "Format", "View", "Run", "Device", "Help"]
+assert [a.text() for a in w.menuBar().actions()] == ["File", "Edit", "Format", "View", "Run", "Device", "Automation", "Help"]
 node = next(i for i in w.scene.items() if isinstance(i, Node))
 w.scene.clearSelection()
 node.setSelected(True)
