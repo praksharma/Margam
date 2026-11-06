@@ -10,6 +10,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 
 | Question | Read |
 | --- | --- |
+| Can I build new methods in my own research script? | [Research Python API](research.md) |
 | Can I follow a screenshot walkthrough? | [Your first PINN](start/first-pinn.md) |
 | How do I build, train, inspect and save a model? | [Desktop guide](ui-prototype.md) |
 | Which complete problems are available? | [Examples and predefined PDEs](problem-examples.md) |

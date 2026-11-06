@@ -320,3 +320,16 @@
   replacement desktop jobs. Stop/revoke the listener on accepted window close.
   No arbitrary code, file-management or implicit output tools. Credit the adapted
   PyniteGUI framework and retain its licence. Use state-isolated real-client tests.
+
+- `margam.research` is the script-facing API inside the existing package, separate
+  from UI registration. Reuse the shared PINN loop rather than duplicating it.
+  Keep plain PyTorch module/callable/factory replacement points and document fixed
+  sampling, shapes and differentiability. Default research updates reject
+  non-finite gradients; custom update callbacks own their optimizer work/state.
+  Research checkpoints are a distinct tensor/primitive format: require a versioned
+  caller identity and fixed data, validate actual weights/options/tensors/history,
+  retain Torch RNG for same-device continuation, and reject unsupported custom
+  update/stateful-loss/custom-optimizer state instead of claiming exact resume.
+  Never load research functions from a desktop model or require GUI registration
+  for ordinary Python experiments. Check an external-folder script and CPU/CUDA
+  continuation when changing these interfaces.

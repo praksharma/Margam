@@ -25,6 +25,9 @@ Launch Margam:
 
 See [installation help](docs/start/install.md) for setup details.
 
+For plain PyTorch experiments without the GUI, see the [research Python API](docs/research.md).
+Run its example with `.venv/bin/python -m examples.research_custom --device cpu`.
+
 ## Documentation
 
 - [Illustrated user manual](docs/index.md)

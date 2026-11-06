@@ -2,6 +2,10 @@
 
 [Documentation index](README.md) · [Capabilities](components.md) · [Repository rules](../AGENTS.md)
 
+For experiments outside Margam development, use the [research Python API](research.md).
+It accepts ordinary PyTorch code without adding a desktop block. The steps below
+apply when contributing a built-in method and its GUI integration.
+
 A new parameter value or PDE does not automatically mean a new method. First check
 whether existing components and a new physics example suffice. A method owns a
 substantive change in network, loss, sampling, constraints or training procedure.
@@ -31,7 +35,7 @@ and split/combine operations. Both insertion forms read this same definition.
 A collapse must preserve component parameters and external physics/output wires.
 A shared component cannot be hidden if doing so removes another block's input.
 
-There are currently explicit maps for the two supported compact/trainer types in
+There are currently explicit maps for the supported compact/trainer types in
 `margam/recipes/__init__.py`, plus concrete UI kinds/ports/parameter ownership in
 `margam/ui/`. Adding a file does **not** automatically register a new UI method.
 Extend those concrete contracts only as required by the next real method. Numeric

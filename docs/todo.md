@@ -608,3 +608,16 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   background fresh training, status/cancellation and paginated explicit results.
 - [ ] Consider exclusive MCP editing mode, typed graph insertion/wiring, controlled
   data import/export and checkpoint continuation when concrete workflows require them.
+
+### Research Python API
+
+- [x] Add `margam.research` within the existing package: importable problem,
+  constraints, sampling/differentiation helpers and a trainer sharing the core loop.
+- [x] Accept bare PyTorch networks, callable fixed samplers, custom losses,
+  optimizer factories and gradient-update callbacks without GUI registration.
+- [x] Add standalone external-style example, CPU/CUDA mathematical/lifecycle tests,
+  and guarded fixed-data Adam/AdamW/SGD checkpoints with Torch RNG continuation.
+- [ ] Add explicit lifecycle/state contracts for research resampling, extra
+  optimizers/schedules and further checkpointable algorithms as concrete uses arise.
+- [ ] Consider promoting mature research components into desktop blocks separately;
+  research scripting does not automatically register or execute code from models.

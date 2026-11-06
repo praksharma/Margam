@@ -9,7 +9,7 @@ def __getattr__(name):
     if name in _EXPORTS:
         module, attribute = _EXPORTS[name]
         value = getattr(import_module(module, __name__), attribute)
-    elif name in {"nn", "utils", "components", "methods", "benchmarking"}:
+    elif name in {"nn", "utils", "components", "methods", "benchmarking", "research"}:
         value = import_module("." + name, __name__)
     else:
         raise AttributeError(name)

@@ -364,3 +364,14 @@ Dedicated tests (the wire test needs the optional extra):
 ```sh
 QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_automation.py -v
 ```
+
+## Research scripts without GUI blocks
+
+```sh
+.venv/bin/python -m examples.research_custom --device cpu
+.venv/bin/python -m examples.research_custom --device cuda --output build/research-cuda
+.venv/bin/python -m examples.research_custom --custom-step --device cpu --output build/research-step
+.venv/bin/python -m unittest discover -s tests -p test_research.py -v
+```
+
+See the [research API](research.md) for using these components in your own project.

@@ -19,6 +19,7 @@ behind RAR, PINN importance sampling and integral loss.
 
 | Your task | Start here |
 | --- | --- |
+| Write custom PyTorch research code without GUI blocks | [Research Python API](research.md) |
 | Run an example and see where results appear | [Your first PINN](start/first-pinn.md) |
 | Find a pane, command or keyboard shortcut | [Workspace tour](start/workspace.md) |
 | Add blocks, connect them, or use a compact recipe | [Blocks and connections](modeling/blocks.md) |

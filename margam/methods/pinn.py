@@ -155,13 +155,7 @@ class PINN:
         self.network.train()
         for _ in range(iterations):
             self._before_training_step()
-            self.optimiser.zero_grad(set_to_none=True)
-            terms = self.compute_losses()
-            total = weighted_loss(terms, self.weights)
-            if not torch.isfinite(total).item():
-                raise FloatingPointError("Non-finite PINN loss; no optimiser step was taken.")
-            total.backward()
-            self.optimiser.step()
+            terms, total = self.training_step()
             self.iter += 1
             record = {name: loss.detach().item() for name, loss in terms.items()}
             record["total"] = total.detach().item()
@@ -174,6 +168,26 @@ class PINN:
             if display_every and self.iter % display_every == 0:
                 print(f"Iteration: {self.iter}\t Loss: {record['total']:.6g}")
         return self.training_history
+
+    def objective(self):
+        """Return fresh named loss tensors and their weighted scalar objective."""
+        terms = self.compute_losses()
+        total = weighted_loss(terms, self.weights)
+        if not torch.isfinite(total).item():
+            raise FloatingPointError("Non-finite PINN loss; no optimiser step was taken.")
+        return terms, total
+
+    def update(self, terms, total):
+        """Perform the gradient update; override for a different update algorithm."""
+        total.backward()
+        self.optimiser.step()
+
+    def training_step(self):
+        """One update; train() owns counters and pre-update loss recording."""
+        self.optimiser.zero_grad(set_to_none=True)
+        terms, total = self.objective()
+        self.update(terms, total)
+        return terms, total
 
     def _before_training_step(self):
         if self.sampling_controller is not None:self.sampling_controller.before_step(self)

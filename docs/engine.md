@@ -3,6 +3,9 @@
 [Documentation index](README.md) · [Method/recipe ownership](adding-a-pinn.md) ·
 [Measured results](results.md) · [Validation](validation.md)
 
+For custom networks, sampling, losses and optimisers in an external research
+script, start with the [research API](research.md).
+
 The method implementation is `margam/methods/pinn.py`. Shared problem definitions
 live in `margam/components/problem.py`, with named weighted losses alongside them.
 SA-PINN is a separate implementation in `margam/methods/self_adaptive.py`;

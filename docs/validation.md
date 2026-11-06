@@ -674,3 +674,18 @@ same explicit four-update CPU lifecycle, with local preferences disabled.
 The manual validates 63 rendered pages. The Community methods page's duplicated
 historical TODO material was replaced by a method/attribution index; detailed
 retained source notices remain linked through THIRD_PARTY.md and the method guides.
+
+## Research Python API
+
+`tests/test_research.py` checks a real script executed outside the repository,
+without GUI/MCP imports or block registration. It compares default updates
+exactly with the existing baseline engine and custom loss/SGD updates directly
+with PyTorch. It also covers custom PINN terms/update hooks, input ownership,
+loss/gradient failures before an update, atomic checkpoint rejection/rollback,
+and exact split continuation for Adam, AdamW, momentum SGD and Torch dropout RNG.
+The CUDA case checks AdamW continuation and moving custom loss-module buffers.
+
+`examples.research_custom` exercises a bare custom network, seeded Sobol sampler,
+PDE loss and AdamW. Eight-update CPU and CUDA runs both matched split checkpoint
+continuation exactly; a separate clipping-hook run completed. This is API and
+lifecycle evidence, not a numerical accuracy study. See [Research API](research.md).
