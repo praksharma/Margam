@@ -119,7 +119,7 @@ QTest.keyClick(w.view,Qt.Key.Key_Y,Qt.KeyboardModifier.ControlModifier)
 assert all(n.pos()==moved[n.identifier] for n in (network,pde))
 # Local text undo must not invoke model undo.
 w.show_block_properties(network)
-edit=w.property_scroll.widget().findChild(QLineEdit)
+edit=next(e for e in w.property_scroll.widget().findChildren(QLineEdit) if e.property('search_key')=='layers')
 edit.setFocus();edit.selectAll();QTest.keyClicks(edit,'24, 12')
 assert w.config.layers==(24,12)
 index=w.undo_stack.index()

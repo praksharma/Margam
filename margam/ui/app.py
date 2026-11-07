@@ -32,6 +32,7 @@ from .project_workspace import ProjectWorkspace
 from .inverse_actions import InverseActions
 from .canvas_tools import CanvasTools
 from .recent_models import RecentModels
+from .block_labels import BlockLabels, TYPE_NAMES, block_tooltip, literal_tooltip
 from .desktop_state import DesktopState
 from .data_mapping import DataMappingDialog
 from .graph_model import role, PARAMETERS, OWNERS, parameters_for, overlay, assemble, encode_parameter
@@ -62,7 +63,7 @@ class Port(QGraphicsEllipseItem):
         self.setBrush(QColor(colors()['highlight']))
         self.setPen(QPen(QColor(colors()['base']), 2))
         from .graph_explanations import port_text
-        self.setToolTip(port_text(self))
+        self.setToolTip(literal_tooltip(port_text(self)))
         self.setZValue(2)
 
     def mousePressEvent(self, event):
@@ -97,7 +98,7 @@ class Wire(QGraphicsPathItem):
         path.cubicTo(a + QPointF(bend, 0), b - QPointF(bend, 0), b)
         self.setPath(path)
         from .graph_explanations import wire_text
-        self.setToolTip(wire_text(self))
+        self.setToolTip(literal_tooltip(wire_text(self)))
 
     def paint(self,painter,option,widget=None):
         painter.save()
@@ -118,6 +119,7 @@ class Node(QGraphicsRectItem):
         super().__init__(0, 0, 170, 80)
         self.title, self.detail = title, detail
         self.kind = KINDS[title]
+        self.type_title=TYPE_NAMES[self.kind]
         self.identifier = uuid4().hex
         self.settings = {"resolution": 101, "history_limit": 10000}
         if self.kind in ('evaluation_points','reference_data'):self.settings['source_data']={}
@@ -143,7 +145,10 @@ class Node(QGraphicsRectItem):
         if getattr(self,'dependency_highlight',False):
             painter.save();painter.setPen(QPen(QColor(colors()['highlight']),3,Qt.PenStyle.DashLine));painter.drawRect(self.rect().adjusted(3,3,-3,-3));painter.restore()
         if self.kind=='annotation':
-            painter.drawText(self.rect().adjusted(12,10,-12,-10),Qt.TextFlag.TextWordWrap,self.settings.get('annotation_text',''));return
+            top=10
+            if self.settings.get('label'):
+                painter.drawText(12,23,painter.fontMetrics().elidedText(self.title,Qt.TextElideMode.ElideRight,256));top=30
+            painter.drawText(self.rect().adjusted(12,top,-12,-10),Qt.TextFlag.TextWordWrap,self.settings.get('annotation_text',''));return
         metrics=painter.fontMetrics()
         painter.drawText(12,23,metrics.elidedText(self.title,Qt.TextElideMode.ElideRight,146))
         painter.setPen(QColor(colors()['muted']))
@@ -153,9 +158,12 @@ class Node(QGraphicsRectItem):
             if metrics.horizontalAdvance(candidate)>146 and lines[-1] and len(lines)<2:lines.append(word)
             else:lines[-1]=candidate
         if self.kind in OUTPUT_KINDS:
-            painter.drawText(12,44,metrics.elidedText(self.detail,Qt.TextElideMode.ElideRight,146))
+            painter.drawText(12,44,metrics.elidedText(self.type_title if self.settings.get('label') else self.detail,Qt.TextElideMode.ElideRight,146))
             painter.setPen(QColor(colors()['highlight']))
             painter.drawText(12,66,metrics.elidedText(getattr(self,'result_status','Not run'),Qt.TextElideMode.ElideRight,146))
+        elif self.settings.get('label'):
+            painter.drawText(12,44,metrics.elidedText(self.type_title,Qt.TextElideMode.ElideRight,146))
+            painter.drawText(12,64,metrics.elidedText(self.detail,Qt.TextElideMode.ElideRight,146))
         else:
             for index,line in enumerate(lines):painter.drawText(12,44+20*index,metrics.elidedText(line,Qt.TextElideMode.ElideRight,146))
 
@@ -421,7 +429,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
+class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -752,7 +760,7 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         identifiers={node.identifier for node in self.scene.nodes() if node.isSelected()}
         if not identifiers:return False
         document=capture_model(self)
-        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or node['kind']!='annotation' and 'margam-owned:' in json.dumps(node['settings'])) for node in document['nodes']):
+        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or node['kind']!='annotation' and 'margam-owned:' in json.dumps({key:value for key,value in node['settings'].items() if key not in ('label','network_label')})) for node in document['nodes']):
             self.statusBar().showMessage('Copying project-owned geometry/data blocks is not supported yet.');return False
         document['nodes']=[n for n in document['nodes'] if n['id'] in identifiers]
         document['wires']=[wire for wire in document['wires'] if wire['source'] in identifiers and wire['target'] in identifiers]
@@ -1165,6 +1173,8 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         """Only existing block-specific actions; no universal plot capability."""
         menu=QMenu(self)
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
+        label_action=menu.addAction('Rename block…');label_action.setEnabled(not self.is_running() and not self.scene.locked)
+        label_action.triggered.connect(lambda:self.request_block_label(node))
         if node.kind in ('inverse_recipe','inverse_method','inverse_pde'):
             menu.addAction('Learned coefficients…').triggered.connect(self.show_inverse_parameters)
         if node.kind=='jorvik_geometry':
@@ -1318,16 +1328,7 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
 
 
     def rename_output(self,node,name):
-        name=name.strip()
-        if not name or name==node.title or node.scene() is not self.scene:return
-        old=node.title
-        def apply(value):
-            node.title=value;node.update()
-            if node.isSelected():self.name.setText(value)
-            entry=self.output_views.entries.get(node.identifier)
-            if entry:entry[0].setWindowTitle(value)
-            self.refresh_result_status()
-        self.push_edit('Rename output',lambda:apply(name),lambda:apply(old))
+        return self.rename_block(node,name)
 
     def change_output(self,node,key,value,edit_token=None):
         existed=key in node.settings;old=deepcopy(node.settings.get(key))
@@ -1353,6 +1354,7 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         return dock
 
     def fit_model(self):
+        if not isValid(self) or not isValid(self.view) or not isValid(self.scene):return
         self.view.fit_model()
 
     def fit_selection(self):
@@ -1609,6 +1611,8 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         recipe=COMPACT_RECIPES[node.kind]
         nodes,wires=self.recipe_components(node.settings['parameters'],node.pos(),recipe)
         root=nodes[recipe.ROOT];root.identifier=node.identifier
+        if node.settings.get('label'):root.settings['label']=node.settings['label']
+        if node.settings.get('network_label'):nodes['network'].settings['label']=node.settings['network_label']
         external=[w for w in self.scene.wires if w.source.parentItem() is node or w.target.parentItem() is node]
         for wire in external:
             source=root.output if wire.source.parentItem() is node else wire.source
@@ -1632,6 +1636,8 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         except ValueError as error:self.statusBar().showMessage(str(error));return False
         compact=Node(recipe.NAME,'',node.pos().x(),node.pos().y())
         compact.identifier=node.identifier;compact.settings['parameters']=parameters
+        if node.settings.get('label'):compact.settings['label']=node.settings['label']
+        if network.settings.get('label'):compact.settings['network_label']=network.settings['label']
         old=[w for w in self.scene.wires if w.source.parentItem() in (node,network) or w.target.parentItem() in (node,network)]
         wires=[]
         for wire in old:
@@ -1764,12 +1770,16 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
             if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
             details['jorvik_geometry']='Selected document · update samples' if node.settings.get('jorvik_files',{}).get('needs_update') else 'Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
+            node.type_title=node.title if node.kind in ('domain','boundary','bc','network') else TYPE_NAMES[node.kind]
+            if node.settings.get('label'):node.title=node.settings['label']
             node.detail=details[node.kind]
             if node.kind=='reference' and (node.settings.get('reference_expression') or node.settings.get('reference_data')):node.detail='Explicit user reference'
             extra=''
             if role(node.kind)=='method':extra=f'\nMethod: {c.method} · Adam lr {c.lr:g} · {c.iterations} updates'
             elif node.kind=='network':extra='\nCoordinates: '+', '.join(c.coordinate_names)+' → fields: '+', '.join(c.field_names)
-            node.setToolTip(node.title+'\n'+node.detail+extra+'\n\n'+describe_block(node.kind))
+            node.setToolTip(block_tooltip(node,node.title+'\n'+node.detail+extra+'\n\n'+describe_block(node.kind)))
+            from .graph_explanations import port_text
+            for port in list(node.inputs.values())+([node.output] if node.output else []):port.setToolTip(literal_tooltip(port_text(port)))
             node.update()
             if node.isSelected():
                 self.name.setText(node.title);self.detail.setText(node.detail)
@@ -2024,9 +2034,10 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         if node is not None and role(node.kind)=='pde':
             label=QLabel('PDE collocation: observed (x,t) locations shared with the data loss. Connect the same observation source to the inverse trainer.' if node.kind=='inverse_pde' else 'PDE collocation: '+{'interior':'interior only','boundary':'boundary only','both':'interior + boundary / initial points'}[self.config.pde_points]+'. Connect points to this block to choose where the residual is enforced.');label.setWordWrap(True);self.form.addRow(label)
         if node is not None:
-            heading=QWidget();row=QHBoxLayout(heading);row.setContentsMargins(0,0,0,0);row.addWidget(QLabel(node.title))
+            heading=QWidget();row=QHBoxLayout(heading);row.setContentsMargins(0,0,0,0);heading_label=QLabel(node.title);heading_label.setObjectName('block_heading');heading_label.setTextFormat(Qt.TextFormat.PlainText);row.addWidget(heading_label)
             info=QToolButton();info.setText('i');info.setAutoRaise(True);info.setObjectName('block_info');info.setAccessibleName('About '+node.title);info.clicked.connect(lambda:self.block_help(node));row.addWidget(info);row.addStretch();self.form.addRow(heading)
             capability=QLabel(describe_block(node.kind));capability.setWordWrap(True);self.form.addRow(capability)
+        if node is not None:self.label_fields(node)
         if node is None:
             wires=[item for item in self.scene.selectedItems() if isinstance(item,Wire)]
             if len(wires)==1 and not nodes:
@@ -2346,9 +2357,6 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
             self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))
         elif node.kind in OUTPUT_KINDS:
-            name=QLineEdit(node.title)
-            name.editingFinished.connect(lambda n=node,e=name:self.rename_output(n,e.text()))
-            self.form.addRow('Name',name)
             if node.kind=='monitor':
                 count=QSpinBox();count.setKeyboardTracking(False);count.setRange(25,100000);count.setValue(node.settings['history_limit'])
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'history_limit',value,t))
@@ -2690,6 +2698,7 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
             self._closing=True;self.cancel_training();event.ignore();return
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
+        self._labels_closing=True
         self.automation_server.shutdown()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()

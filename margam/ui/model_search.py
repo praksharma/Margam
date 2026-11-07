@@ -14,7 +14,7 @@ class ModelSearch(QDialog):
         self.search=QLineEdit();self.search.setPlaceholderText('Find a block…');self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
         self.results=QListWidget();layout.addWidget(self.results)
-        self.status=QLabel();layout.addWidget(self.status)
+        self.status=QLabel();self.status.setTextFormat(Qt.TextFormat.PlainText);layout.addWidget(self.status)
         row=QHBoxLayout();layout.addLayout(row)
         refresh=QPushButton('Refresh');refresh.clicked.connect(self.refresh);row.addWidget(refresh)
         locate=QPushButton('Select block');locate.clicked.connect(self.locate);row.addWidget(locate)

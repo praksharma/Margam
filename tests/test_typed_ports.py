@@ -114,11 +114,11 @@ network=next(n for n in w.scene.nodes() if n.kind=='network')
 w.properties_dock.close()
 double_click(network)
 assert not w.properties_dock.isHidden() and network.isSelected()
-edit=w.property_scroll.widget().findChild(QLineEdit)
+edit=next(e for e in w.property_scroll.widget().findChildren(QLineEdit) if e.property('search_key')=='layers')
 edit.setText('20, 12')
 assert w.config.layers==(20,12)
 w.show_block_properties(network)
-assert w.property_scroll.widget().findChild(QLineEdit).text()=='20, 12'
+assert next(e for e in w.property_scroll.widget().findChildren(QLineEdit) if e.property('search_key')=='layers').text()=='20, 12'
 reference=w.add_node('Reference');reference.setPos(150,-150)
 double_click(reference)
 assert reference.isSelected() and not w.output_views.entries

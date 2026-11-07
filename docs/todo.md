@@ -550,8 +550,9 @@ Next editor improvements, in priority order:
   fit. Preserve multi-selection when opening a group context menu.
 - [ ] Review dense diagrams for wire crossings and overlapping blocks. Add routing
   improvements only with concrete diagrams and reproducible interaction tests.
-- [ ] Add independent block labels where useful, keeping type and ID visible and
-  separating names from boundary aliases and numerical settings.
+- [x] Add independent block labels in Properties and the context menu, keeping
+  type and ID visible. Preserve numerical state, Undo, copy/paste, saved/recovered
+  models and compact/expanded root/network labels; format 31 reads older models.
 - [ ] Design arbitrary subsystems: explicit typed boundary ports, nested navigation,
   breadcrumbs, collapse/expand, persistence/undo and unchanged numerical assembly.
   Existing compact recipes do not satisfy this contract.

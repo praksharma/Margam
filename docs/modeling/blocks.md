@@ -138,7 +138,7 @@ or provenance; HTML is displayed literally. Long notes are clipped on the canvas
 the Properties editor and tooltip contain the full text. Notes have no ports and
 never contribute to physics or losses. They survive model saving, run archives and
 recovery through the model document. Notes were introduced in model format 29;
-current documents use format 30. Formats 1–29 remain readable by this release.
+current documents use format 31. Formats 1–30 remain readable by this release.
 Older Margam versions cannot read the new format.
 
 ![A saved plain-text note with optional grid](../../assets/screenshots/manual-canvas-notes.png)
@@ -177,3 +177,40 @@ items; equal-gap distribution needs three. Automatic whole-model layout leaves
 notes at their chosen positions.
 
 ![Context menu for a selected group](../../assets/screenshots/manual-group-menu.png)
+
+## Name blocks for your experiment
+
+Select any block and edit **Block label** in Properties, or right-click it and
+choose **Rename block…**. For example, label a network “Candidate NN” or a sampler
+“PDE samples”. Labels are presentation names, independent of block type,
+parameters, connections and boundary-set aliases.
+
+![Independent labels with visible types and retained loss history](../../assets/screenshots/manual-block-labels.png)
+
+*Labels changed after training; existing weights, monitor history and result
+freshness were retained. The two-update run is a lifecycle demonstration.*
+
+A labelled computational block displays its label above its actual type. Properties
+shows **Block type** and a selectable full **Block ID**; hover tooltips include both.
+Long labels are shortened on the canvas, with full text in Properties/tooltips.
+Output dock titles follow the block label; result freshness remains visible.
+Notes can have a label above their plain-text body.
+
+- Labels support a single line of up to 256 characters and are shown literally.
+- Leave the label empty to restore the automatic type name. This follows later
+  geometry or network changes again. An explicit label equal to the current type
+  name remains an independent label until cleared.
+- Labels are undoable and survive Save/Open, draft recovery, run archives and
+  ordinary copy/paste. Copies have new IDs. Duplicate labels are allowed; IDs
+  distinguish the blocks.
+- Renaming does not clear trained results, change a sampling method, rename a
+  boundary set, move a file or alter the numerical objective. Label edits use the
+  ordinary busy lock while a job or geometry editor is active.
+- Compact/expanded recipes retain their root label and the hidden network label.
+- **Find in model** searches labels; **Find setting** can locate **Block label**.
+  Refresh existing search results after renaming.
+
+Saved models use format **31** for optional label metadata. Older versions of
+Margam cannot read this new format; this release still reads formats 1–30.
+Model comparison treats labels as presentation changes, visible when
+**Include names, notes and positions** is checked.

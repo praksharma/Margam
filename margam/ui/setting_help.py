@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QDialogButtonBox,QVBoxLayout,QHBoxLayout,QWidget,QLabel,QToolButton,QTextBrowser,QFormLayout,QComboBox,QAbstractSpinBox,QLineEdit,QCheckBox,QPlainTextEdit)
 
 HELP = {
+ 'block_label':'Presentation name for this block only. Leave empty to restore its automatic type name. Labels are saved and undoable; they do not change physics, boundary aliases, file references or trained weights. Type and stable ID remain visible in Properties and tooltips.',
  'inverse_observation_weight':'Coefficient multiplying mean squared error between predicted u and measured observations. It is independent of the PDE coefficient. There is no BC loss or mean-across-boundaries normalization in this inverse method. Changing it changes the training objective and invalidates continuation against an older objective.',
  'inverse_lambda_1':'Initial guess for the trainable Burgers advection coefficient. It is optimized jointly with the neural-network parameters; this is not a reference answer.',
  'inverse_log_lambda_2':'Initial logarithm of positive Burgers diffusion. The PDE uses exp(log_lambda_2) and Adam trains the logarithm. This is separate from the fixed viscosity field used by forward examples.',

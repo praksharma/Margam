@@ -341,3 +341,12 @@
   folders. Preserve results/history; resolve navigation IDs at click time. Compare
   snapshots refresh explicitly, and selecting a saved comparison never replaces
   the current canvas. Render full values literally, without executable payloads.
+
+- Model format 31 stores optional presentation `label` and compact `network_label`
+  metadata; retain formats 1–30. Keep labels separate from kind, ID, boundary
+  aliases and numerical parameters. A label equal to an automatic type name is
+  still explicit until cleared. Show actual type/ID and render labels literally.
+  Renaming must preserve trained data/freshness and be undoable; retain root and
+  network labels across compact/expanded recipes and recovery/copy/run files.
+  Ignore labels when detecting owned-file references or default numerical model
+  differences. Never dispatch physics or identify entities by the display label.

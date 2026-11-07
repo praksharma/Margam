@@ -31,7 +31,7 @@ Inspection remains available while training or editing geometry.
 | Added / Removed block | That stable block ID occurs in only one model |
 | Block type | A retained ID has a different kind |
 | Data metadata | A recorded import fingerprint or Jorvik declaration changed |
-| Presentation | A title, position or note text changed, when explicitly included |
+| Presentation | A label, title, position or note text changed, when explicitly included |
 
 Select a row for full **Before** and **After** values. The table shortens long
 values for readability; the details pane shows complete JSON values as literal
@@ -40,6 +40,7 @@ paths; `~1` represents a slash in a dictionary key and `~0` a tilde.
 
 Use **Filter differences…** to search fields, values, names or full IDs.
 **Include names, notes and positions** reveals presentation changes, including
+independent block labels, retained compact-network labels and
 added/removed notes. Those differences are hidden by default so layout changes
 do not obscure numerical settings.
 

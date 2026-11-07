@@ -68,7 +68,10 @@ class CanvasTools:
             if node.kind=='annotation':self.refresh_note(node)
 
     def refresh_note(self,node):
-        node.detail=node.settings.get('annotation_text','');node.setToolTip('<qt><b>Note</b><p>'+escape(node.detail).replace('\n','<br>')+'</p></qt>');node.update()
+        from .block_labels import TYPE_NAMES,block_tooltip
+        node.type_title=TYPE_NAMES[node.kind]
+        if node.settings.get('label'):node.title=node.settings['label']
+        node.detail=node.settings.get('annotation_text','');node.setToolTip(block_tooltip(node,node.title+'\n'+node.detail));node.update()
         if node.isSelected():
             self.detail.setText('Canvas note · no numerical effect')
             body=self.property_scroll.widget()

@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 from .output_views import OUTPUT_KINDS
 from .block_catalogue import describe_block
+from .block_labels import block_tooltip
 
 
 def refresh(window,phase=None):
@@ -23,7 +24,7 @@ def refresh(window,phase=None):
         else:status=previous
         if not connected:status='Not connected'
         node.result_status=status;node.update()
-        node.setToolTip(node.title+'\n'+node.detail+'\nResult: '+status+'\n\n'+describe_block(node.kind)+'\n\nFreshness refers to the current in-memory model; use Project data overview to check changed external files.')
+        node.setToolTip(block_tooltip(node,node.title+'\n'+node.detail+'\nResult: '+status+'\n\n'+describe_block(node.kind)+'\n\nFreshness refers to the current in-memory model; use Project data overview to check changed external files.'))
         entry=window.output_views.entries.get(node.identifier)
         if entry:
             view=entry[1]

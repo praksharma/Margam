@@ -236,3 +236,8 @@ Use **View → Compare model definitions…** to compare two saved files or a sa
 baseline against the current graph. This read-only view lists block settings,
 connections and added/removed blocks, with optional names/notes/layout changes.
 See [Compare model definitions](compare-models.md) for stable-ID matching and scope.
+
+Model format 31 adds independent block labels and hidden network labels for
+compact recipes. It leaves numerical configuration unchanged. Current models,
+run archives and draft recovery retain these labels; formats 1–30 remain readable.
+See [Block labels](../modeling/blocks.md#name-blocks-for-your-experiment).

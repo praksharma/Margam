@@ -1,0 +1,16 @@
+{
+  "generator": "examples.capture_block_labels",
+  "scope": "Actual labels, unchanged types/IDs and retained monitor data after two CPU updates. Lifecycle fixture, not an accuracy benchmark.",
+  "model_version": 31,
+  "labels": {
+    "domain": "Plate domain",
+    "interior": "PDE samples",
+    "boundary": "Wall points",
+    "network": "Candidate NN",
+    "method": "Baseline run",
+    "monitor": "Loss history"
+  },
+  "file": "manual-block-labels.png",
+  "bytes": 206557,
+  "sha256": "6b0ac22c62a496ef4fc5a4d9bb78447de6c73e9afd880ea9ac52fc8f6e6aff03"
+}

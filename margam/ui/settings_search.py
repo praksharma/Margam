@@ -6,7 +6,7 @@ from .graph_model import PARAMETERS
 from .setting_help import HELP
 from ..components.network_config import OPTION_SCHEMAS
 
-LABELS={'lr':'Adam learning rate','iterations':'Training updates epochs','layers':'Hidden layers network widths','network_type':'Network architecture',
+LABELS={'block_label':'Block label name','lr':'Adam learning rate','iterations':'Training updates epochs','layers':'Hidden layers network widths','network_type':'Network architecture',
  'boundary_weight':'Mean BC boundary loss weight','pde_weight':'PDE loss weight','points':'Interior sampling points','boundary_points':'Boundary sampling points',
  'bc_weights':'Boundary coefficient weight','bc_types':'Boundary condition type','bc_values':'Boundary constant target value',
  'bc_targets':'Boundary target expression','bc_operators':'Boundary custom operator','loss_formulation':'Loss formulation mean integral',
@@ -20,7 +20,7 @@ def entries(window):
     result=[]
     for node in sorted(window.scene.nodes(),key=lambda n:(n.title,n.identifier)):
         parameters=node.settings.get('parameters',{})
-        keys=list(PARAMETERS.get(node.kind,()))
+        keys=['block_label']+list(PARAMETERS.get(node.kind,()))
         if node.kind=='annotation':keys+=['annotation_text']
         elif node.kind=='monitor':keys+=['history_limit']
         elif node.kind in ('solution','comparison','export','paraview'):keys+=['resolution']
@@ -74,7 +74,7 @@ class SettingsSearch(QDialog):
         super().__init__(window);self.owner=window;self.setWindowTitle('Find setting');self.resize(680,440)
         layout=QVBoxLayout(self);self.search=QLineEdit();self.search.setPlaceholderText('Learning rate, boundary weight, viscosity…');layout.addWidget(self.search)
         self.results=QListWidget();layout.addWidget(self.results)
-        self.status=QLabel('Search owned settings, then select a result to open its block.');self.status.setWordWrap(True);layout.addWidget(self.status)
+        self.status=QLabel('Search owned settings, then select a result to open its block.');self.status.setWordWrap(True);self.status.setTextFormat(Qt.TextFormat.PlainText);layout.addWidget(self.status)
         row=QHBoxLayout();layout.addLayout(row)
         refresh=QPushButton('Refresh');refresh.clicked.connect(self.refresh);row.addWidget(refresh)
         select=QPushButton('Go to setting');select.clicked.connect(self.locate);row.addWidget(select)

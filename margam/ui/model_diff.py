@@ -49,7 +49,7 @@ def compare_models(before,after,*,include_presentation=False):
             return
         if a is not ABSENT and b is not ABSENT and a==b and (type(a) is type(b) or type(a) in (int,float) and type(b) in (int,float)):return
         category='Data metadata' if path.startswith('/settings/data_fingerprints') or path.startswith('/settings/jorvik') else 'Setting'
-        if path in ('/title','/position','/settings/annotation_text'):category='Presentation'
+        if path in ('/title','/position','/settings/annotation_text','/settings/label','/settings/network_label'):category='Presentation'
         add(category,identifier,path,a,b)
     for identifier in sorted(set(left)|set(right)):
         a,b=left.get(identifier),right.get(identifier)
@@ -60,10 +60,11 @@ def compare_models(before,after,*,include_presentation=False):
         if a['kind']!=b['kind']:add('Block type',identifier,'/kind',a['kind'],b['kind'])
         a_settings=deepcopy(a['settings']);b_settings=deepcopy(b['settings'])
         if not include_presentation:
-            a_settings.pop('annotation_text',None);b_settings.pop('annotation_text',None)
+            for key in ('annotation_text','label','network_label'):a_settings.pop(key,None);b_settings.pop(key,None)
         walk(identifier,'/settings',a_settings,b_settings)
         if include_presentation:
-            walk(identifier,'/title',a['title'],b['title']);walk(identifier,'/position',a['position'],b['position'])
+            if 'label' not in a['settings'] and 'label' not in b['settings']:walk(identifier,'/title',a['title'],b['title'])
+            walk(identifier,'/position',a['position'],b['position'])
     for identifier,port in sorted(set(old_wires)|set(new_wires)):
         a,b=old_wires.get((identifier,port),ABSENT),new_wires.get((identifier,port),ABSENT)
         if a==b:continue

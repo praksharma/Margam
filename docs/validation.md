@@ -698,3 +698,13 @@ inputs. The native workflow compares two files and a current trained graph,
 checks that weights/results/Undo and file bytes are preserved, exercises missing
 and invalid files, and resolves deleted block IDs safely. Comparisons are model
 metadata inspection, not numerical accuracy or external dataset equivalence.
+
+## Independent block labels
+
+`tests/test_block_labels.py` checks that renaming keeps types, IDs, parameters,
+weights/results and freshness unchanged, with Undo/Redo and literal text. It
+exercises automatic-name reset, explicit labels equal to automatic names,
+recipe collapse/expand, copy/paste with distinct IDs, file/run round trips and
+schema rejection. Draft recovery tests include labelled networks and notes.
+Model format 31 preserves formats 1–30; labels are presentation data and model
+comparison hides them unless presentation differences are requested.

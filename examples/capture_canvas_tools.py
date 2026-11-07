@@ -36,11 +36,11 @@ def main():
         assert not note.dependency_highlight
         boundary=next(n for n in w.scene.nodes() if n.kind=='boundary');boundary.setSelected(True)
         menu=w.create_group_menu();menu.popup(w.mapToGlobal(w.rect().center()));settle();capture(menu,'group-menu');menu.close()
-        doc=capture_model(w);assert doc['version']==29
+        doc=capture_model(w);assert doc['version']==31
         w.undo_stack.setClean();assert w.new_blank_model();w.show_grid_action.setChecked(False);w.snap_grid_action.setChecked(False);settle();capture(w,'blank-model')
         assert not w.scene.nodes() and not w.scene.wires and w.result is None
         data=dict(generator='examples.capture_canvas_tools',scope='Actual notes, dependency navigation, grid, group menu and blank model. No training or inference.',
-                  model_version=29,notes_are_plain_text=True,files={p.name:dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in paths.values()})
+                  model_version=31,notes_are_plain_text=True,files={p.name:dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in paths.values()})
         manifest.write_text(json.dumps(data,indent=2)+'\n');print('Captured notes, dependencies, group actions and blank model.')
     finally:w.undo_stack.setClean();w.close();app.clipboard().clear();app.processEvents()
 

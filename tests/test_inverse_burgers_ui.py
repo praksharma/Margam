@@ -26,7 +26,7 @@ try:
  assert not any(n.kind in ('boundary','bc') for n in w.scene.nodes())
  assert not w.output_views.entries
  assert any(label.text().startswith('PDE collocation: observed') for label in w.property_scroll.widget().findChildren(QLabel))
- doc=capture_model(w);assert doc['version']==30;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==31;decode_document(doc)
  assert w.config.interior_data['path'].startswith('margam-owned:') or 'imports' in w.config.interior_data['path'] or 'datasets' in w.config.interior_data['path']
  c,counts,text=execution_plan(w);assert c.method=='inverse_burgers' and counts['pde']==2000 and counts['boundary']==0
  source=next(n for n in w.scene.nodes() if n.kind=='observations');assert 'data_fingerprints' in source.settings

@@ -384,3 +384,12 @@ QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest d
 ```
 
 Open the feature through **View → Compare model definitions…**.
+
+## Block label checks and screenshot
+
+```sh
+QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_block_labels.py -v
+.venv/bin/python -m examples.capture_block_labels --overwrite
+```
+
+Edit **Block label** in Properties, or use the block's **Rename block…** menu.
