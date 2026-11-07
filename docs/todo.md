@@ -558,8 +558,10 @@ Next editor improvements, in priority order:
 - [ ] Define disabled-output semantics before adding an enable/disable toggle;
   disabling a required physics component must fail validation, not silently alter
   its loss or bypass it.
-- [ ] Compare two saved model definitions with block-level parameter/connection
-  changes before considering automatic merge or multi-run Data Inspector features.
+- [x] Compare two saved model definitions or a baseline/current graph with
+  block-owned parameter, connection and added/removed block changes. Match stable
+  IDs, migrate old formats, optionally include names/notes/positions, and preserve
+  editor/results/history. Automatic merge and multi-run inspection remain deferred.
 
 Do not port Simulink features solely for visual parity: physical-time simulation
 solvers, signal buses, code generation and MATLAB integration need their own

@@ -665,6 +665,8 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         self.view_menu.addSeparator()
         self.project_data_action=self.view_menu.addAction('Project data overview…')
         self.project_data_action.triggered.connect(self.show_project_data)
+        self.compare_models_action=self.view_menu.addAction('Compare model definitions…')
+        self.compare_models_action.setIcon(icon('comparison'));self.compare_models_action.triggered.connect(self.show_model_comparison)
         for action,shortcuts in [(self.zoom_in_action,['Ctrl++','Ctrl+=']),(self.zoom_out_action,['Ctrl+-']),(self.actual_size_action,['Ctrl+0'])]:
             action.setShortcuts(shortcuts)
             action.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
@@ -1009,6 +1011,14 @@ class Window(InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeomet
         if node is None:return False
         self.scene.clearSelection();node.setSelected(True);self.view.centerOn(node)
         self.properties_dock.show();return True
+
+    def show_model_comparison(self):
+        from .model_comparison import ModelComparison
+        dialog=getattr(self,'model_comparison_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=ModelComparison(self);self.model_comparison_dialog=dialog
+        dialog.refresh();dialog.show();dialog.raise_()
+        return dialog
 
     def show_model_search(self):
         from .model_search import ModelSearch

@@ -33,6 +33,7 @@ Run its example with `.venv/bin/python -m examples.research_custom --device cpu`
 - [Illustrated user manual](docs/index.md)
 - [Your first PINN](docs/start/first-pinn.md)
 - [Geometry documents with Jorvik](docs/jorvik.md)
+- [Compare model definitions](docs/use/compare-models.md)
 - [Optional MCP server](docs/mcp.md)
 - [Technical reference](docs/README.md)
 - [Development and experiment commands](docs/commands.md)

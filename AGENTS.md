@@ -333,3 +333,11 @@
   Never load research functions from a desktop model or require GUI registration
   for ordinary Python experiments. Check an external-folder script and CPU/CUDA
   continuation when changing these interfaces.
+
+- Model comparison is read-only and matches stable block IDs after normal model
+  migrations. Compare block-owned settings/connections, not the inspector config
+  cache or inferred numerical equivalence. Keep names/notes/positions optional.
+  Read only bounded model JSON: do not resolve/import datasets or create owned
+  folders. Preserve results/history; resolve navigation IDs at click time. Compare
+  snapshots refresh explicitly, and selecting a saved comparison never replaces
+  the current canvas. Render full values literally, without executable payloads.

@@ -1,0 +1,8 @@
+{
+  "generator": "examples.capture_model_comparison",
+  "scope": "Actual read-only comparison of settings and an explicit boundary-PDE wire removal. No training or accuracy claims.",
+  "differences": 5,
+  "file": "manual-model-comparison.png",
+  "bytes": 83337,
+  "sha256": "104cd5593c91cbb1c6ca2ecfddbed2eb71bac3685b38bd4abd6411ba3dd070fd"
+}

@@ -375,3 +375,12 @@ QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest d
 ```
 
 See the [research API](research.md) for using these components in your own project.
+
+## Model comparison checks and screenshot
+
+```sh
+QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_model_comparison.py -v
+.venv/bin/python -m examples.capture_model_comparison --overwrite
+```
+
+Open the feature through **View → Compare model definitions…**.

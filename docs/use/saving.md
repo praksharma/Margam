@@ -229,3 +229,10 @@ parameters and editing them preserves cached results.
 Model format 30 adds initial inverse Burgers coefficient settings. Model definitions
 store the guesses and observation mappings; run archives store learned values,
 parameter history and joint Adam state. See [inverse Burgers](../inverse-burgers.md).
+
+## Review changes between models
+
+Use **View → Compare model definitions…** to compare two saved files or a saved
+baseline against the current graph. This read-only view lists block settings,
+connections and added/removed blocks, with optional names/notes/layout changes.
+See [Compare model definitions](compare-models.md) for stable-ID matching and scope.

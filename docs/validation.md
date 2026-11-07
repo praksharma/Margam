@@ -689,3 +689,12 @@ The CUDA case checks AdamW continuation and moving custom loss-module buffers.
 PDE loss and AdamW. Eight-update CPU and CUDA runs both matched split checkpoint
 continuation exactly; a separate clipping-hook run completed. This is API and
 lifecycle evidence, not a numerical accuracy study. See [Research API](research.md).
+
+## Saved model comparison
+
+`tests/test_model_comparison.py` covers stable IDs, nested settings/wires,
+added/removed blocks, optional presentation, old-format defaults and unchanged
+inputs. The native workflow compares two files and a current trained graph,
+checks that weights/results/Undo and file bytes are preserved, exercises missing
+and invalid files, and resolves deleted block IDs safely. Comparisons are model
+metadata inspection, not numerical accuracy or external dataset equivalence.
