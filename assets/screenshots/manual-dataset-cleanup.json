@@ -1,0 +1,9 @@
+{
+  "generator": "examples.capture_dataset_cleanup",
+  "scope": "Actual review of isolated current, undo-protected and unused import fixtures. No user files removed, no numerical training.",
+  "rows": 3,
+  "selected": 1,
+  "file": "manual-dataset-cleanup.png",
+  "bytes": 55238,
+  "sha256": "ce434b7281dc32f7da0f4a170538f48d9f8072dd66e79330c6eaab6ada2c8d7f"
+}

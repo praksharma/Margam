@@ -502,7 +502,9 @@ only when the user explicitly requests including it here.
 - [x] Bounded validated snapshots with relative owned references; preserve existing links.
 - [x] Save As and undo references remain portable; retain trained weights across relocation.
 - [x] Recovery, moved models and independent run archives exercised on CPU and CUDA.
-- [ ] Prune unused owned dataset snapshots when their undo/history references are no longer needed.
+- [x] Add explicit review/removal of unused managed CSV/NPZ snapshots. Protect
+  current/saved/cached mappings and Undo/Redo/macros/merged edits; release pins
+  with dropped history, skip unknown files/links and recheck before removal.
 
 
 ## Project data overview

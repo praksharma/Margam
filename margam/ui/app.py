@@ -673,6 +673,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.view_menu.addSeparator()
         self.project_data_action=self.view_menu.addAction('Project data overview…')
         self.project_data_action.triggered.connect(self.show_project_data)
+        self.cleanup_datasets_action=self.view_menu.addAction('Clean up unused imports…')
+        self.cleanup_datasets_action.setIcon(icon('delete'));self.cleanup_datasets_action.triggered.connect(self.show_dataset_cleanup)
         self.compare_models_action=self.view_menu.addAction('Compare model definitions…')
         self.compare_models_action.setIcon(icon('comparison'));self.compare_models_action.triggered.connect(self.show_model_comparison)
         for action,shortcuts in [(self.zoom_in_action,['Ctrl++','Ctrl+=']),(self.zoom_out_action,['Ctrl+-']),(self.actual_size_action,['Ctrl+0'])]:
@@ -1078,7 +1080,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if self.is_running() or self.scene.locked or self._history_replaying:return
         if self._resetting:redo();return
         key=(self._history_epoch,merge_key) if merge_key is not None else None
-        self.undo_stack.push(EditCommand(text,redo,undo,self.selection_changed,key))
+        from .dataset_cleanup import current_references
+        try:refs=current_references(self)
+        except (ValueError,OSError):refs=None
+        self.undo_stack.push(EditCommand(text,redo,undo,self.selection_changed,key,refs,lambda:current_references(self)))
 
     def update_history_actions(self,*args):
         locked=self.is_running() or self.scene.locked
@@ -1833,6 +1838,14 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         try:self.config.validate();self.validation.setText('Settings ready. Connections are checked before training.' if any(n.kind in PARAMETERS for n in self.scene.nodes()) else 'No executable PINN graph yet. Add components, then Validate.')
         except ValueError as error:self.validation.setText(str(error))
         self.statusBar().showMessage('Settings changed · previous results cleared')
+
+    def show_dataset_cleanup(self):
+        from .dataset_cleanup_dialog import DatasetCleanupDialog
+        dialog=getattr(self,'dataset_cleanup_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=DatasetCleanupDialog(self);self.dataset_cleanup_dialog=dialog
+        dialog.refresh();dialog.show();dialog.raise_()
+        return dialog
 
     def show_project_data(self):
         from .project_data import ProjectDataDialog
@@ -2594,6 +2607,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.stop_action.setEnabled(busy)
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
+        if getattr(self,'dataset_cleanup_dialog',None) is not None:self.dataset_cleanup_dialog.update_buttons()
 
     def show_run_summary(self):
         from .run_summary import RunSummary

@@ -241,3 +241,10 @@ Model format 31 adds independent block labels and hidden network labels for
 compact recipes. It leaves numerical configuration unchanged. Current models,
 run archives and draft recovery retain these labels; formats 1–30 remain readable.
 See [Block labels](../modeling/blocks.md#name-blocks-for-your-experiment).
+
+## Remove unused imported copies
+
+Use **View → Clean up unused imports…** to review copied CSV/NPZ snapshots that
+are no longer needed. Current and saved mappings, cached runs and Undo/Redo keep
+their dependencies. Removal is explicit and permanent; linked originals and
+geometry files remain outside cleanup. See [Cleanup imports](cleanup-imports.md).

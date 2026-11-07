@@ -350,3 +350,12 @@
   network labels across compact/expanded recipes and recovery/copy/run files.
   Ignore labels when detecting owned-file references or default numerical model
   differences. Never dispatch physics or identify entities by the display label.
+
+- Unused import cleanup is explicit, limited to recognised single-file CSV/NPZ
+  snapshots under datasets/<UUID>/. Record mapping references before/after edits,
+  retain pins across Undo/Redo/macros/merges, and collect only path fields, never
+  labels/expressions or obsolete fingerprint bindings. Recompute current, saved,
+  cached and history protection before removal; refuse unknown history or ambiguous
+  references. Never clear Undo automatically, prune linked originals/CAD/NC files,
+  follow links or create owned folders during inspection. Use descriptor-anchored
+  checks and preserve changed/unknown files. Cleanup must not alter model/results.

@@ -393,3 +393,13 @@ QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest d
 ```
 
 Edit **Block label** in Properties, or use the block's **Rename block…** menu.
+
+## Unused import cleanup checks and screenshot
+
+```sh
+QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_dataset_cleanup.py -v
+.venv/bin/python -m examples.capture_dataset_cleanup --overwrite
+```
+
+Use **View → Clean up unused imports…** for explicit review. The screenshot
+helper creates and disposes only its temporary fixtures; it does not clean user files.

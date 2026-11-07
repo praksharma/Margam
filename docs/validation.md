@@ -708,3 +708,12 @@ recipe collapse/expand, copy/paste with distinct IDs, file/run round trips and
 schema rejection. Draft recovery tests include labelled networks and notes.
 Model format 31 preserves formats 1–30; labels are presentation data and model
 comparison hides them unless presentation differences are requested.
+
+## Unused import cleanup
+
+`tests/test_dataset_cleanup.py` verifies current/saved/cached and Undo/Redo/macro
+reference protection, bounded-history eviction, Redo branch removal, stale reviews
+and changed files. It checks that linked originals, geometry, unknown layouts,
+symlinks and hard links remain untouched, and that inspection creates no owned
+folders. The native workflow preserves model/history/result state during explicit
+removal and refuses unknown Undo commands or stale project reviews.
