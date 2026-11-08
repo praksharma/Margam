@@ -279,3 +279,12 @@ Reference data. The PDE owns two coefficient guesses, the trainer jointly optimi
 them with the replaceable network, and coefficient history is retained in run
 checkpoints. Only fixed-row, mean-MSE continuous-time Burgers identification is
 supported; no generic parameter registry or advanced-trainer composition is implied.
+
+## Selected scalar/vector error diagnostics
+
+`margam/components/error_norms.py` computes unweighted pointwise scalar/vector
+norms on aligned stored values, with explicit zero-reference and float-range
+status. Comparison blocks expose the same function in a read-only report;
+`margam.research.error_norms` exposes it for scripts. Field/metric choices do not
+change training, existing pooled/component metrics, exports or archive schemas.
+See [definitions and limits](use/error-norms.md).

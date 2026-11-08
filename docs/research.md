@@ -226,3 +226,10 @@ actual experiment. These short runs establish API/lifecycle behaviour, not accur
 
 The dedicated tests also execute a script from a temporary folder outside the
 repository and verify that no GUI, MCP package or block registration is loaded.
+
+## Inspect selected errors
+
+`from margam.research import error_norms` provides the same scalar/vector diagnostic
+as the Comparison report. Supply already aligned prediction/reference arrays and
+explicit compatible fields. It returns finite/None values plus status metadata,
+without changing tensors or gradients. See [error norm definitions and examples](use/error-norms.md).

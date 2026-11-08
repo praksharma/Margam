@@ -26,6 +26,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | Where is the original time-dependent Burgers case? | [Burgers — 1D + time](burgers.md) |
 | What is the paper Helmholtz example? | [Fourier/LRA Helmholtz](helmholtz.md) |
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |
+| How do I inspect relative or vector errors? | [Scalar/vector error norms](use/error-norms.md) |
 | How do I export predictions to ParaView? | [Explicit export and playback](paraview-export.md) |
 | How do prepared GeoSampler points enter Margam? | [Planar data contract](geosampler-contract.md) |
 | What is implemented and what are the limits? | [Component capability index](components.md) |

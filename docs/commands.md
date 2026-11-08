@@ -403,3 +403,14 @@ QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest d
 
 Use **View → Clean up unused imports…** for explicit review. The screenshot
 helper creates and disposes only its temporary fixtures; it does not clean user files.
+
+## Selected error norms
+
+```sh
+QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest discover -s tests -p test_error_norms.py -v
+.venv/bin/python -m examples.capture_error_norms --overwrite
+```
+
+Open a Comparison block's **Error norms…** action after training/evaluation or
+reopening a run with compared arrays. The screenshot helper uses an isolated
+short CPU fixture, not an accuracy benchmark.

@@ -195,9 +195,10 @@ The first supplied-point milestone is implemented; see the
   add an explicit topology contract rather than guessing cells from a point cloud.
 - [ ] Add explicit units, boundary/region labels and GeoSampler prepared-data
   integration. Coordinates/values currently use the model's units without conversion.
-- [ ] Add user-selected relative/vector error norms and zero-denominator rules.
-  Current comparisons report scalar/component RMSE, maximum absolute error and
-  signed pointwise differences.
+- [x] Add a Comparison-owned selected-field scalar/vector error report: relative
+  L2/max, RMS/mean/max magnitude and discrete L2, explicit zero-reference policies
+  and float-range status. Reuse the diagnostic in research scripts; retain existing
+  pooled/component metrics and unweighted stored-row semantics.
 
 Existing in-app heatmaps are left as they are. Further field-plot development is
 paused; operational training monitors and basic rectangle previews remain useful.

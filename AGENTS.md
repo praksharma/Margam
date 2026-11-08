@@ -359,3 +359,12 @@
   references. Never clear Undo automatically, prune linked originals/CAD/NC files,
   follow links or create owned folders during inspection. Use descriptor-anchored
   checks and preserve changed/unknown files. Cleanup must not alter model/results.
+
+- Selected error norms are read-only diagnostics on stored aligned comparison
+  arrays. Do not invoke inference/importers or invent a reference. Default the GUI
+  to one field; vector selections combine compatible raw field values explicitly.
+  Use pointwise Euclidean magnitudes, unweighted rows/all stored physical times,
+  explicit zero-reference policy and finite/None range statuses. Keep legacy pooled
+  metrics/export/archive formats intact. Report choices are ephemeral, never loss
+  settings; clear stale reports on semantic/result changes and resolve owners by ID.
+  Reuse the same function in research scripts and retain detached tensor inputs.

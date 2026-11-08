@@ -185,3 +185,11 @@ Use the block-header **i**, the block library’s **i**, or right-click **Help**
 read the full block description without fitting it into the narrow properties pane.
 
 ![Block description in its own window](../../assets/screenshots/manual-block-info.png)
+
+## Inspect selected error norms
+
+Use a Comparison block's **Error norms…** action to select scalar fields or a
+compatible vector group and inspect six discrete absolute/relative norms. Zero
+reference norms have an explicit policy; field choices do not retrain the model
+or change stored results. See [Error norms](error-norms.md) for definitions and the
+reusable research-script function.

@@ -73,7 +73,7 @@ CAPABILITIES = {
     'reference': ('Preset, coordinate expression or mapped values', 'Explicit scalar source. Imported data requires matching coordinates; preset sources reject custom physics.'),
     'paraview': ('Name, regular-grid evaluation resolution', 'VTI predictions on regular line/rectangle grids: scalar fields or u/v/p plus a velocity vector. Export a snapshot on request. Evaluation resolution is independent of training samples.'),
     'export': ('Name, evaluation points per axis', 'Explicit scalar/u-v-p data request. Export CSV only after training and on user action; no plot window.'),
-    'comparison': ('Reference alignment and optional supplied points', 'Requires a PINN run and an explicit reference matching coordinates and scalar/u-v-p fields.'),
+    'comparison': ('Reference alignment, supplied points and error norm report', 'Requires a PINN run and an explicit reference matching coordinates and scalar/u-v-p fields. Error norms inspect selected compatible fields from stored comparison rows; no new inference or implicit reference.'),
 }
 
 

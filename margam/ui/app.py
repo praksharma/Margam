@@ -517,6 +517,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.messages_dock=self.dock('Messages',self.log,Qt.DockWidgetArea.BottomDockWidgetArea)
         self.messages_dock.hide()
         self.output_views=OutputViews(self)
+        self.error_norm_dialogs={}
         self.setup_menus()
         self.setup_icons()
         self.scene.blockOpened.connect(self.open_block)
@@ -1160,6 +1161,15 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'Predictions could not be exported',str(error));return False
         self.statusBar().showMessage('Exported '+label+' · '+Path(path).name);return True
 
+    def show_error_norms(self,node):
+        if not isValid(self) or not isValid(node) or node.scene() is not self.scene or node.kind!='comparison':return None
+        from .error_norms import ErrorNormsDialog
+        dialog=self.error_norm_dialogs.get(node.identifier)
+        if dialog is None or not isValid(dialog):
+            dialog=ErrorNormsDialog(self,node.identifier);self.error_norm_dialogs[node.identifier]=dialog
+        dialog.refresh();dialog.show();dialog.raise_()
+        return dialog
+
     def open_selected_output(self):
         nodes=[node for node in self.scene.nodes() if node.isSelected()]
         if len(nodes)==1:self.open_block(nodes[0])
@@ -1180,6 +1190,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
         label_action=menu.addAction('Rename block…');label_action.setEnabled(not self.is_running() and not self.scene.locked)
         label_action.triggered.connect(lambda:self.request_block_label(node))
+        if node.kind=='comparison':menu.addAction('Error norms…').triggered.connect(lambda:self.show_error_norms(node))
         if node.kind in ('inverse_recipe','inverse_method','inverse_pde'):
             menu.addAction('Learned coefficients…').triggered.connect(self.show_inverse_parameters)
         if node.kind=='jorvik_geometry':
@@ -1719,6 +1730,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def refresh_result_status(self,phase=None):
         from .result_freshness import refresh
         refresh(self,phase)
+        for identifier,dialog in list(getattr(self,'error_norm_dialogs',{}).items()):
+            if not isValid(dialog):self.error_norm_dialogs.pop(identifier,None)
+            elif dialog.owner() is None:
+                dialog.close();dialog.deleteLater();self.error_norm_dialogs.pop(identifier,None)
+            else:dialog.check_current(force=phase in ('changed','Running','Evaluating','Failed'))
 
     def clear_run_data(self):
         self.refresh_result_status('changed')
@@ -2390,6 +2406,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
             self.form.addRow(button)
+            if node.kind=='comparison':
+                metrics=QPushButton('Error norms…');metrics.clicked.connect(lambda checked=False,n=node:self.show_error_norms(n));self.form.addRow(metrics)
         elif node.kind in ('evaluation_points','reference_data'):
             source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.setProperty('search_key','source_data');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)

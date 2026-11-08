@@ -717,3 +717,13 @@ and changed files. It checks that linked originals, geometry, unknown layouts,
 symlinks and hard links remain untouched, and that inspection creates no owned
 folders. The native workflow preserves model/history/result state during explicit
 removal and refuses unknown Undo commands or stale project reviews.
+
+## Selected scalar/vector error norms
+
+`tests/test_error_norms.py` checks exact norm definitions, field selection,
+zero-reference policies, overflow/underflow handling, strict shapes and detached
+tensor inputs. Native tests verify read-only state, zero components, report
+invalidation, block deletion and recomputation after a real run/archive reopen.
+The affected outputs/reference/archive/freshness/benchmark/research checks pass;
+a separate CUDA tensor probe confirms diagnostics do not change gradients.
+These are diagnostic correctness/lifecycle checks, not paper accuracy results.

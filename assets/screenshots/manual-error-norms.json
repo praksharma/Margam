@@ -1,0 +1,52 @@
+{
+  "generator": "examples.capture_error_norms",
+  "scope": "Actual stored Couette comparison after two CPU updates; vector selection and a zero-reference component. Lifecycle fixture, not an accuracy benchmark.",
+  "reports": [
+    {
+      "norm": "relative_l2",
+      "value": 1.4386529034765434,
+      "status": "defined",
+      "fields": [
+        "u",
+        "v"
+      ],
+      "rows": 1681,
+      "components": 2,
+      "reduction": "pointwise_euclidean",
+      "relative": true,
+      "zero_reference_policy": "undefined",
+      "reference_zero": false
+    },
+    {
+      "norm": "relative_l2",
+      "value": 1.0610805520148863,
+      "status": "defined",
+      "fields": [
+        "u"
+      ],
+      "rows": 1681,
+      "components": 1,
+      "reduction": "pointwise_euclidean",
+      "relative": true,
+      "zero_reference_policy": "undefined",
+      "reference_zero": false
+    },
+    {
+      "norm": "relative_l2",
+      "value": null,
+      "status": "undefined_zero_reference",
+      "fields": [
+        "v"
+      ],
+      "rows": 1681,
+      "components": 1,
+      "reduction": "pointwise_euclidean",
+      "relative": true,
+      "zero_reference_policy": "undefined",
+      "reference_zero": true
+    }
+  ],
+  "file": "manual-error-norms.png",
+  "bytes": 47142,
+  "sha256": "e01c498b148f922245c4c137257b3fdab816a115f9094243f0dbf3483b32418f"
+}
