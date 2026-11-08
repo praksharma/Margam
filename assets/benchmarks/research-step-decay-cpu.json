@@ -1,0 +1,25 @@
+{
+  "scope": "Research API smoke example; not an accuracy benchmark.",
+  "steps": 8,
+  "device": "cpu",
+  "torch_version": "2.14.1+cu130",
+  "pde_rows": 66,
+  "custom_network": true,
+  "custom_sampler": true,
+  "custom_pde_loss": true,
+  "optimizer": "AdamW",
+  "custom_step": false,
+  "step_decay": true,
+  "exact_resume": true,
+  "next_learning_rates": [
+    0.0001875
+  ],
+  "last_preupdate_loss": {
+    "pde": 4.174417972564697,
+    "boundary": 0.0016656845109537244,
+    "total": 4.191074848175049,
+    "weighted:boundary": 0.016656845808029175,
+    "learning_rate:0": 0.000375
+  },
+  "postupdate_rmse": 0.16972073912620544
+}

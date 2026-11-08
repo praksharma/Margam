@@ -623,6 +623,8 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   optimizer factories and gradient-update callbacks without GUI registration.
 - [x] Add standalone external-style example, CPU/CUDA mathematical/lifecycle tests,
   and guarded fixed-data Adam/AdamW/SGD checkpoints with Torch RNG continuation.
+- [x] Add update-count StepDecay to the research API with per-group rate history,
+  strict scheduled checkpoints, exact same-device continuation and immutable restored snapshots.
 - [ ] Add explicit lifecycle/state contracts for research resampling, extra
   optimizers/schedules and further checkpointable algorithms as concrete uses arise.
 - [ ] Consider promoting mature research components into desktop blocks separately;

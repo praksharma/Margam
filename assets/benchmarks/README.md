@@ -62,3 +62,8 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 
 - Expert PINN [CPU](expert-cpu.json) / [CUDA](expert-cuda.json): short independent
   Expert’s Guide v1 pipeline checks, with balancing histories and exact continuation.
+
+- Research StepDecay [CPU](research-step-decay-cpu.json) /
+  [CUDA](research-step-decay-cuda.json): eight-update custom-network AdamW runs,
+  halving rates every two updates and checking exact split continuation. API
+  lifecycle evidence, not a numerical accuracy benchmark.

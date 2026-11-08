@@ -1,6 +1,7 @@
 """Plain PyTorch replacement points on Margam's shared baseline training loop."""
 from collections.abc import Mapping
 import torch
+from .schedules import StepDecay
 from ..methods.pinn import PINN
 
 
@@ -36,13 +37,19 @@ class Trainer(PINN):
         self._require_compiled()
         return self.optimiser
 
-    def compile(self, *, optimizer=torch.optim.Adam, lr=1e-3, device='auto'):
+    def compile(self, *, optimizer=torch.optim.Adam, lr=1e-3, device='auto', schedule=None):
         """optimizer is a factory(parameters, lr=...), not a prebuilt instance.
 
         Use functools.partial or a small function for extra optimizer options.
         Closure-based algorithms need a different procedure and are rejected.
+        schedule is an optional StepDecay owned by the default update procedure.
         """
         self._compiled=False
+        if schedule is not None and type(schedule) is not StepDecay:
+            raise TypeError('schedule must be StepDecay or None.')
+        if schedule is not None and (self.step is not None or type(self).update is not Trainer.update or type(self).training_step is not Trainer.training_step):
+            raise ValueError('StepDecay requires the default research update; custom steps own their schedules.')
+        self.schedule=schedule
         if not callable(optimizer):raise TypeError('optimizer must be a factory(parameters, lr=...).')
         if isinstance(self.loss,dict):
             unknown=set(self.loss)-{'pde',*(c.name for c in self.problem.constraints)}
@@ -60,7 +67,23 @@ class Trainer(PINN):
                 if self.step is None and any(p.requires_grad for p in module.parameters()):
                     self._compiled=False
                     raise ValueError('Trainable loss modules need an explicit custom step managing their parameters.')
+        self._base_lrs=tuple(group['lr'] for group in self.optimizer.param_groups)
+        if schedule is not None:
+            import math
+            if any(type(rate) not in (float,int) or not math.isfinite(rate) or rate <= 0 for rate in self._base_lrs):
+                self._compiled=False
+                raise ValueError('StepDecay requires positive finite numeric learning rates in every parameter group.')
         return self
+
+    def scheduled_rates(self, completed=None):
+        """Compute configured group rates after the given completed-update count."""
+        return self.schedule.rates(self._base_lrs,self.iter if completed is None else completed)
+
+    def check_schedule(self):
+        if self.schedule is not None:
+            expected=self.scheduled_rates()
+            if [group['lr'] for group in self.optimizer.param_groups] != expected:
+                raise ValueError('Scheduled optimizer rates changed outside Trainer; recompile to start a new schedule.')
 
     def compute_losses(self):
         if self.loss is None:return super().compute_losses()
@@ -82,8 +105,8 @@ class Trainer(PINN):
         if not isinstance(terms,dict) or not required<=set(terms):
             raise ValueError('Losses must include pde and every named constraint.')
         for name,value in terms.items():
-            if not isinstance(name,str) or not name or name=='total' or name.startswith('weighted:'):
-                raise ValueError('Loss names must be nonempty and cannot use total or weighted:.')
+            if not isinstance(name,str) or not name or name=='total' or name.startswith('weighted:') or (self.schedule is not None and name.startswith('learning_rate:')):
+                raise ValueError('Loss names must be nonempty and cannot use total, weighted: or scheduled learning_rate: logging keys.')
             if not isinstance(value,torch.Tensor) or value.ndim!=0 or value.device!=self.collocation_point_sample.device or not value.is_floating_point():
                 raise ValueError('Each loss must be a scalar floating tensor on the training device.')
             if not torch.isfinite(value).item():raise FloatingPointError('Non-finite research loss; no optimizer update was taken.')
@@ -93,18 +116,25 @@ class Trainer(PINN):
         return terms,total
 
     def record_contributions(self,record,terms,weights=None):
-        return super().record_contributions(record,terms,
+        super().record_contributions(record,terms,
             getattr(self,'_record_weights',self.weights) if weights is None else weights)
+        if self.schedule is not None:
+            for index,rate in enumerate(self._update_lrs):record[f'learning_rate:{index}']=rate
 
     def update(self,terms,total):
         self._record_weights=dict(self.weights)
         if self.step is not None:
             self.step(self,terms,total)
             return
+        self.check_schedule()
+        next_rates=self.scheduled_rates(self.iter+1) if self.schedule is not None else None
+        self._update_lrs=tuple(group['lr'] for group in self.optimizer.param_groups)
         total.backward()
         if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in self.network.parameters()):
             raise FloatingPointError('Non-finite research gradient; no optimizer update was taken.')
         self.optimizer.step()
+        if next_rates is not None:
+            for group,rate in zip(self.optimizer.param_groups,next_rates):group['lr']=rate
 
     def training_state(self):
         """Tensor/primitive state; Python callbacks and code are never pickled."""

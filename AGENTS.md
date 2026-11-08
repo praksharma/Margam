@@ -368,3 +368,9 @@
   metrics/export/archive formats intact. Report choices are ephemeral, never loss
   settings; clear stale reports on semantic/result changes and resolve owners by ID.
   Reuse the same function in research scripts and retain detached tensor inputs.
+
+- Research StepDecay uses completed updates and closed-form initial-group rates,
+  advances only after a successful default optimizer update, and logs actual rates.
+  Reject external rate edits, zero-rate underflow and custom-step composition.
+  Scheduled research checkpoints use format 2 with exact schedule/history checks;
+  preserve unscheduled format 1 and copy optimizer tensors when restoring snapshots.

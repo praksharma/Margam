@@ -25,6 +25,7 @@ def signature(trainer):
         raise NotImplementedError('Stateful loss modules require their own checkpoint implementation.')
     if any(not isinstance(value,torch.Tensor) for value in trainer.network.state_dict().values()):
         raise NotImplementedError('Research checkpoints require a tensor-only network state_dict.')
+    trainer.check_schedule()
     groups=[{k:v for k,v in group.items() if k!='params'} for group in trainer.optimizer.state_dict()['param_groups']]
     value=dict(checkpoint_id=trainer.checkpoint_id,
         trainer_class=type(trainer).__module__+'.'+type(trainer).__qualname__,
@@ -33,6 +34,9 @@ def signature(trainer):
         groups=groups,weights=trainer.weights,loss_formulation=trainer.loss_formulation,
         measures=trainer.loss_measures,data_fingerprint=trainer.data_fingerprint(),
         device=str(trainer.collocation_point_sample.device))
+    if trainer.schedule is not None:
+        value['schedule']=dict(kind='step_decay',every=trainer.schedule.every,gamma=trainer.schedule.gamma,base_lrs=list(trainer._base_lrs))
+        for group,rate in zip(groups,trainer._base_lrs):group['lr']=rate
     # Capture metadata as JSON primitives, never executable objects.
     return json.loads(canonical(value))
 
@@ -48,7 +52,7 @@ def set_rng(trainer,state):
 
 
 def capture(trainer):
-    return deepcopy(dict(format='margam-research-training',version=1,signature=signature(trainer),
+    return deepcopy(dict(format='margam-research-training',version=2 if trainer.schedule is not None else 1,signature=signature(trainer),
         network=trainer.network.state_dict(),optimizer=trainer.optimizer.state_dict(),
         iter=trainer.iter,loss_history=trainer.loss_history,training_history=trainer.training_history,
         rng=rng_state(trainer)))
@@ -60,7 +64,9 @@ def require(value,message):
 
 def validate_optimizer(trainer,state,steps):
     require(isinstance(state,dict) and set(state)=={'state','param_groups'},'Invalid optimizer state.')
-    current=trainer.optimizer.state_dict();groups=state['param_groups']
+    current=dict(param_groups=deepcopy(trainer.optimizer.state_dict()['param_groups']));groups=state['param_groups']
+    if trainer.schedule is not None:
+        for group,rate in zip(current['param_groups'],trainer.scheduled_rates(steps)):group['lr']=rate
     require(isinstance(groups,list) and len(groups)==len(current['param_groups']),'Optimizer parameter groups differ.')
     for a,b in zip(groups,current['param_groups']):
         require(isinstance(a,dict) and set(a)==set(b) and canonical(a)==canonical(b),'Optimizer settings or parameter identities differ.')
@@ -84,7 +90,7 @@ def validate_optimizer(trainer,state,steps):
 def restore(trainer,state):
     expected_signature=signature(trainer)
     keys={'format','version','signature','network','optimizer','iter','loss_history','training_history','rng'}
-    require(isinstance(state,dict) and set(state)==keys and state['format']=='margam-research-training' and type(state['version']) is int and state['version']==1,'Invalid research checkpoint.')
+    require(isinstance(state,dict) and set(state)==keys and state['format']=='margam-research-training' and type(state['version']) is int and state['version']==(2 if trainer.schedule is not None else 1),'Invalid research checkpoint.')
     require(canonical(state['signature'])==canonical(expected_signature),'Research checkpoint identity, data, objective, device or optimizer settings differ.')
     steps=state['iter'];history=state['loss_history'];totals=state['training_history']
     require(type(steps) is int and steps>=0 and isinstance(history,list) and isinstance(totals,list) and len(history)==len(totals)==steps,'Checkpoint history/step count mismatch.')
@@ -94,6 +100,10 @@ def restore(trainer,state):
     for record,total in zip(history,totals):
         require(isinstance(record,dict) and set(record)==names and all(isinstance(k,str) for k in record),'Inconsistent research loss history.')
         require(all(type(v) in (float,int) and math.isfinite(v) for v in (*record.values(),total)) and total==record['total'],'Invalid research loss history values.')
+    if trainer.schedule is not None:
+        for step,record in enumerate(history):
+            for index,rate in enumerate(trainer.scheduled_rates(step)):
+                require(type(record.get(f'learning_rate:{index}')) in (int,float) and record[f'learning_rate:{index}']==rate,'Scheduled learning-rate history differs.')
     network=state['network'];expected=trainer.network.state_dict()
     require(isinstance(network,dict) and set(network)==set(expected),'Network state fields differ.')
     for key,value in network.items():
@@ -107,7 +117,7 @@ def restore(trainer,state):
     # Roll back even if a native module/optimizer rejects an otherwise valid state.
     old_network=deepcopy(trainer.network.state_dict());old_optimizer=deepcopy(trainer.optimizer.state_dict())
     try:
-        trainer.network.load_state_dict(network);trainer.optimizer.load_state_dict(state['optimizer']);set_rng(trainer,rng)
+        trainer.network.load_state_dict(network);trainer.optimizer.load_state_dict(deepcopy(state['optimizer']));set_rng(trainer,rng)
     except Exception:
         trainer.network.load_state_dict(old_network);trainer.optimizer.load_state_dict(old_optimizer);set_rng(trainer,current_rng)
         raise

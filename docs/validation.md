@@ -727,3 +727,20 @@ invalidation, block deletion and recomputation after a real run/archive reopen.
 The affected outputs/reference/archive/freshness/benchmark/research checks pass;
 a separate CUDA tensor probe confirms diagnostics do not change gradients.
 These are diagnostic correctness/lifecycle checks, not paper accuracy results.
+
+## Research update-count schedules
+
+`tests/test_research_schedules.py` verifies update timing against manual PyTorch
+StepLR updates, segmented training, per-group rates, compile resets and zero-update
+calls. CPU and CUDA split runs retain exact network weights and loss/rate history
+for Adam, momentum SGD and two-group AdamW with dropout RNG. Changed schedules,
+corrupt rates/history, external rate edits, non-finite losses, zero-rate underflow
+and custom-step composition are rejected. Reusing scheduled and unscheduled
+in-memory checkpoints after further training leaves the supplied optimizer
+tensors intact. All 18 research regression tests pass with CUDA available.
+
+The runnable example's eight-update scheduled AdamW checks also pass on
+[CPU](../assets/benchmarks/research-step-decay-cpu.json) and
+[CUDA](../assets/benchmarks/research-step-decay-cuda.json). Both reproduce the split
+run exactly, log a final-update rate of `0.000375`, and retain `0.0001875` for the
+next update. These are lifecycle checks, not convergence or paper-accuracy claims.

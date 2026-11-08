@@ -62,6 +62,7 @@ use seeded samplers. The runnable example does both.
 | Boundary/initial/data points | `PointConstraint(name, points, target, operator)` |
 | Derivative BC or custom operator | `operator(points, prediction)` on a point constraint |
 | Optimiser | `compile(optimizer=factory)`; factory accepts `parameters, lr=...` |
+| Learning-rate schedule | `compile(schedule=StepDecay(every=..., gamma=...))` |
 | Loss reduction | `Trainer(..., loss=callable)` or a per-term mapping |
 | New named objective terms | Subclass `Trainer` and override `compute_losses()` |
 | Gradient update | `Trainer(..., step=function)` or subclass `update()` |
@@ -151,6 +152,55 @@ checks finite gradients before stepping; a custom step owns its own update check
 Closure-based optimisers such as LBFGS need a different procedure and are rejected
 by this initial interface.
 
+## Decay the learning rate by update count
+
+Use an explicit schedule for an ordinary fixed-data run:
+
+```python
+from margam.research import StepDecay
+
+trainer = Trainer(
+    problem, network, checkpoint_id="my-decayed-experiment-v1",
+).compile(lr=0.003, device="auto", schedule=StepDecay(every=1000, gamma=0.5))
+trainer.train(2500, display_every=100)
+print(trainer.loss_history[-1]["learning_rate:0"])
+print(trainer.optimizer.param_groups[0]["lr"])  # Rate for the next update
+```
+
+`every` counts completed optimizer updates, not epochs or calls to `train()`.
+Zero-based update `k` uses `initial_lr * gamma ** (k // every)`. For example,
+`every=2, gamma=0.5, lr=0.008` gives update rates
+`0.008, 0.008, 0.004, 0.004, 0.002, ...`. Rates are computed from the initial
+values, rather than repeatedly multiplying rounded values. Each parameter group
+keeps its own initial rate. `gamma` must be finite in `(0, 1]`; `every` must be a
+positive integer. Underflow to zero is rejected before an optimizer update.
+
+The trainer applies the next rate only after the optimizer step succeeds. Each
+history record contains the rate actually used as `learning_rate:0`,
+`learning_rate:1`, and so on. Separate `train()` calls continue the same count;
+`compile()` starts a new optimizer, schedule and history. Do not edit optimizer
+rates manually or call another scheduler alongside this one: external rate changes
+are rejected on the next update or checkpoint operation.
+
+The built-in schedule requires the default research update. Custom update hooks,
+metric-driven schedulers, warmup and arbitrary PyTorch scheduler objects still
+own their timing and persistence. This option does not add a desktop block or
+alter desktop trainers.
+
+Scheduled checkpoints use research format 2, storing schedule settings, initial
+rates, the completed count and actual per-update rate history with the optimizer.
+Recreate the same schedule and initial rates before loading. Resume restores the
+next rate without taking an extra scheduler step. Format 1 checkpoints remain
+supported for unscheduled runs; a scheduled checkpoint cannot be loaded into an
+unscheduled trainer. In-memory checkpoint optimizer tensors are copied on restore,
+so continuing a run does not mutate the supplied snapshot.
+
+Eight-update example runs on [CPU](../assets/benchmarks/research-step-decay-cpu.json)
+and [CUDA](../assets/benchmarks/research-step-decay-cuda.json) both reproduce split
+continuation exactly. With `lr=0.003, every=2, gamma=0.5`, their last update uses
+`0.000375` and the next update would use `0.0001875`. These short checks establish
+schedule and checkpoint behaviour, not solution accuracy.
+
 ## Shapes, sampling and device
 
 Points are nonempty `(N, D)` arrays/tensors. Scalar/vector residuals and constraint
@@ -204,7 +254,8 @@ The checkpoint cannot prove that two functions with the same ID behave identical
 Continuation retains Torch CPU and selected CUDA RNG state and currently requires
 the **same device**, compatible PyTorch runtime and reconstructed components.
 Loading replaces those global Torch RNG states. Python/NumPy RNG, external
-mutable closures, schedulers and arbitrary custom algorithm state are not captured.
+mutable closures, external schedulers and arbitrary custom algorithm state are not captured.
+The explicit `StepDecay` schedule above is included in standard continuation.
 A custom update hook, stateful loss or custom optimiser class must implement its
 own complete state contract; the standard save operation rejects these cases.
 Research checkpoints are separate from desktop saved models and run archives.
@@ -214,6 +265,7 @@ Research checkpoints are separate from desktop saved models and run archives.
 ```sh
 .venv/bin/python -m examples.research_custom --device cpu
 .venv/bin/python -m examples.research_custom --device cuda --output build/research-cuda
+.venv/bin/python -m examples.research_custom --step-decay --device cpu --output build/research-decay
 .venv/bin/python -m examples.research_custom --custom-step --device cpu --output build/research-step
 ```
 

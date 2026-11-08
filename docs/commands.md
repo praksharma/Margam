@@ -414,3 +414,10 @@ QT_QPA_PLATFORM=offscreen CUDA_VISIBLE_DEVICES='' .venv/bin/python -m unittest d
 Open a Comparison block's **Error norms…** action after training/evaluation or
 reopening a run with compared arrays. The screenshot helper uses an isolated
 short CPU fixture, not an accuracy benchmark.
+
+Research step-decay continuation example (no desktop changes):
+
+```sh
+.venv/bin/python -m examples.research_custom --step-decay --device cpu --output build/research-decay
+.venv/bin/python -m unittest discover -s tests -p 'test_research*.py' -v
+```
