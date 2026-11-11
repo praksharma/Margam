@@ -110,7 +110,7 @@ def run(directory,device='cpu',capture=False):
             assert window.resume_training(2);finish();assert window.result['steps']==4
             continuous=build_pinn(window.config);continuous.train(4,0)
             assert continuous.loss_history==window.last_run.model.loss_history
-            for key,value in continuous.network.state_dict().items():torch.testing.assert_close(value,window.last_run.model.network.state_dict()[key],rtol=0,atol=0)
+            for key,value in continuous.network.state_dict().items():torch.testing.assert_close(value.cpu(),window.last_run.model.network.state_dict()[key],rtol=0,atol=0)
             result=window.result['outputs'][node('comparison').identifier]
             assert result['points']==expected.points and result['point_ids']==expected.point_ids
             np.testing.assert_allclose(result['reference'],[x*x+y*y for x,y in expected.points],rtol=0,atol=1e-12)

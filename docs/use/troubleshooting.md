@@ -79,3 +79,11 @@ restore, a training update or output evaluation. Controls become available after
 the failed worker finishes; a smaller experiment is never substituted silently.
 See [resource review and recovery](resources.md) for the meaning and limits of
 the advisory figures. Saved run files remain unchanged.
+
+## A numerical job stalls or exits unexpectedly
+
+Try **Stop**, then **Run → Force stop numerical process (discard job)** if needed.
+Forced or abnormal termination discards that job; controls return after process
+cleanup and previously saved run files remain unchanged. See [isolated job
+recovery](isolated-jobs.md). An exit signal can indicate an OS memory kill or native
+failure; Messages does not assert the cause without evidence.

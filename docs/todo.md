@@ -51,7 +51,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
 - [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
 - [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
-  resolved. The 11 November CUDA audit passes 17 targeted checks without skips,
+  resolved. The 11 November CUDA audit passes 18 targeted checks without skips,
   including training, derivatives, continuation, global device selection and
   portable data. Retain the earlier environment audit as historical evidence;
   see [current CUDA validation](validation.md#cuda-regression-audit-11-november-2026).
@@ -652,8 +652,10 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [x] Recognize worker allocation failures by stage, retain backend diagnostics,
   release failed worker state and return controls without publishing a failed
   update as a result/checkpoint. Verify with injected failures, not real exhaustion.
-- [ ] Isolate numerical jobs from the GUI process, preserving device selection,
-  cancellation, progress, output ownership and strict checkpoint behavior.
+- [x] Isolate desktop training/prediction in headless child processes using data-only
+  bounded IPC and CPU retained-state handles. Preserve device selection, progress,
+  output ownership and strict continuation; add cooperative Stop, explicit force
+  stop/discard, parent-death cleanup and native-exit recovery.
 - [ ] Add an opt-in representative resource probe with isolated model/RNG/state,
   complete update and method-specific work; distinguish measured peaks from
   extrapolated adaptive growth and output costs.

@@ -44,6 +44,10 @@ separate file inventory and session change warnings. Programmatic desktop checks
 still return a boolean and do not open the report automatically; the explicit
 Validate action opens it.
 
+Desktop training and output evaluation run in [isolated numerical processes](isolated-jobs.md).
+The GUI retains CPU checkpoint data after each job; neural execution stays in the
+child using the selected device.
+
 During training, progress and operational messages remain available. Stop requests
 are checked between batches of 25 updates. A stopped partial run can retain
 results and a checkpoint; changing the numerical model then invalidates them.

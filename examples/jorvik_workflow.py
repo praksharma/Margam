@@ -72,11 +72,14 @@ def run(directory, device='cpu', screenshot=None):
             model=window.last_run.model
             assert str(model.device)==device
             # Independently check the imported physical operators against u=log(2r).
-            for condition,coordinates,target in model._constraints:
+            from margam.templates.poisson import build_pinn
+            operator_model=build_pinn(config)
+            for condition,coordinates,target in operator_model._constraints:
                 x=coordinates.detach().clone().requires_grad_(True)
                 u=.5*torch.log(x.square().sum(1,keepdim=True))+np.log(2.)
                 actual=u if condition.operator is None else condition.operator(x,u)
                 torch.testing.assert_close(actual,target.expand_as(actual),atol=2e-6,rtol=2e-6)
+            del operator_model
             assert len(window.last_run.model.collocation_point_sample)==143
             archive=directory/'annulus.margam-run.pt'
             assert window.save_current_run(archive)
@@ -93,7 +96,7 @@ def run(directory, device='cpu', screenshot=None):
             continuous=build_pinn(window.config);continuous.train(stopped+2,0)
             assert continuous.loss_history==window.last_run.model.loss_history
             for key,value in continuous.network.state_dict().items():
-                torch.testing.assert_close(value,window.last_run.model.network.state_dict()[key],rtol=0,atol=0)
+                torch.testing.assert_close(value.cpu(),window.last_run.model.network.state_dict()[key],rtol=0,atol=0)
             before={key:value.detach().cpu().clone() for key,value in window.last_run.model.network.state_dict().items()}
             assert window.evaluate_trained_outputs();finish()
             for key,value in before.items():torch.testing.assert_close(value,window.last_run.model.network.state_dict()[key].cpu(),rtol=0,atol=0)

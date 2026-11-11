@@ -6,96 +6,101 @@
   "torch": "2.14.1+cu130",
   "compiled_cuda": "13.0",
   "source": {
-    "base_commit": "de425ce81bc3b26e43bdc5eb9a8f46478bcd5e1f",
-    "runtime_and_test_sha256": "b2fd6e85b8c5301e8fb5dc4479c6ebb6bf1c029cc9a4287113e55847ca91f125",
-    "runner_sha256": "b7f65ec093d162835929fcd4e5aa4df610289044f0e0d69f28d32a28f7d4ee28"
+    "base_commit": "20c4dae50a93132563ca20a6a64a4918029ee12a",
+    "runtime_and_test_sha256": "e34c4a508f8fd28ecde96d8f66a96d9eba9f518e64cda8eb20cbeb3b65caeadb",
+    "runner_sha256": "a7ff084124ebe97fd0a7c94a8dadb970a753a5dddf6cbf055f90d53f56047253"
   },
   "status": "passed",
   "tests": [
     {
       "test": "test_pinn.CUDAPINNTests.test_cpu_gpu_losses_agree",
       "status": "passed",
-      "seconds": 1.3374236560002828
+      "seconds": 1.2165670880003745
     },
     {
       "test": "test_pinn.CUDAPINNTests.test_gpu_poisson_and_auto_device",
       "status": "passed",
-      "seconds": 4.831333314000403
+      "seconds": 3.749975632999849
     },
     {
       "test": "test_benchmarking.BenchmarkTests.test_real_gpu_recipe_artifacts",
       "status": "passed",
-      "seconds": 0.02754672399987612
+      "seconds": 0.023132123998948373
     },
     {
       "test": "test_boundary_weights.BoundaryWeightTests.test_all_trainers_cuda",
       "status": "passed",
-      "seconds": 1.0041047089998756
+      "seconds": 0.9365667640013271
     },
     {
       "test": "test_expert.ExpertTests.test_cuda_training_and_checkpoint",
       "status": "passed",
-      "seconds": 0.24406434400043509
+      "seconds": 0.20309601900044072
     },
     {
       "test": "test_expert_extensions.ExpertExtensionTests.test_cuda_ntk_time_marching_archive",
       "status": "passed",
-      "seconds": 0.7210504029999356
+      "seconds": 0.5081685379991541
     },
     {
       "test": "test_scale.ScaleTests.test_cuda_derivatives_checkpoint_and_cpu_archive_validation",
       "status": "passed",
-      "seconds": 0.22695646100055455
+      "seconds": 0.1424438869998994
     },
     {
       "test": "test_gpinn.GPINNTests.test_cuda_derivatives_and_checkpoint",
       "status": "passed",
-      "seconds": 0.17848112200044852
+      "seconds": 0.07673780500044813
     },
     {
       "test": "test_rba.RBATests.test_cuda_continuation_and_cpu_archive_identity",
       "status": "passed",
-      "seconds": 0.12694090200056962
+      "seconds": 0.06477142800031288
     },
     {
       "test": "test_inverse_burgers.InverseBurgersTests.test_cuda_joint_parameters_and_exact_resume",
       "status": "passed",
-      "seconds": 0.10870284799966612
+      "seconds": 0.07225120899965987
     },
     {
       "test": "test_research.ResearchCUDATests.test_cuda_custom_components_and_exact_resume",
       "status": "passed",
-      "seconds": 0.118288685999687
+      "seconds": 0.05985497400070017
     },
     {
       "test": "test_research_schedules.ScheduleCUDATests.test_cuda_scheduled_resume",
       "status": "passed",
-      "seconds": 0.18310198000017408
+      "seconds": 0.09611667200078955
     },
     {
       "test": "test_integral_constraints.IntegralConstraintTests.test_cuda_integral_gradient_and_exact_resume",
       "status": "passed",
-      "seconds": 0.059609877999719174
+      "seconds": 0.027121044000523398
     },
     {
       "test": "test_resources.ResourceTests.test_cuda_memory_snapshot_is_advisory_without_rng_or_tensor_allocation",
       "status": "passed",
-      "seconds": 0.000786685000093712
+      "seconds": 0.0005280050008877879
+    },
+    {
+      "test": "test_isolated_jobs.IsolatedJobTests.test_cuda_child_keeps_retained_state_on_cpu_and_resumes_exactly",
+      "status": "passed",
+      "seconds": 8.088965255999938
     },
     {
       "test": "test_sample_points.SamplePointsTests.test_cuda_snapshot_copies_only_a_detached_page",
       "status": "passed",
-      "seconds": 0.0006463949994213181
+      "seconds": 0.000584948000323493
     },
     {
       "test": "test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection",
       "status": "passed",
-      "seconds": 3.7457930699993085
+      "seconds": 11.087123162998978
     },
     {
       "test": "test_dataset_storage.DatasetStorageTests.test_portable_workflow_cuda",
       "status": "passed",
-      "seconds": 4.880295422999552
+      "seconds": 17.021397228998467
     }
   ],
   "device": {

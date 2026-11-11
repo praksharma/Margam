@@ -1,0 +1,9 @@
+{
+  "generator": "examples.capture_isolated_jobs",
+  "scope": "Actual Run menu during a small isolated CPU job, explicitly force-stopped/discarded after capture; no real memory exhaustion or accuracy claim.",
+  "separate_process": true,
+  "discarded_job": true,
+  "file": "manual-isolated-stop.png",
+  "bytes": 12973,
+  "sha256": "6af6a1f9e8d19a7e871543b7918d8ea17a116893cfa2647078ba22f90a60fca0"
+}

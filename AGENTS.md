@@ -420,5 +420,16 @@
   are advisory and do not silently resize experiments or bypass validation.
   Stage-specific OOM handling must preserve ordinary error diagnostics, release
   failed worker references and avoid presenting failed updates as checkpoints.
-  Test injected failures rather than exhausting real memory. Current QThreads
-  do not provide process isolation or protection from an OS-level memory kill.
+  Test injected failures rather than exhausting real memory. Supervisor QThreads
+  do not enforce hardware quotas or guarantee protection from an OS-level kill.
+
+- Native desktop jobs use isolated headless numerical processes; supervisor
+  threads only transfer bounded data and Qt signals. Keep callbacks/GUI objects
+  out of IPC: explicit configuration/reference declarations and CPU tensors only,
+  restricted loading and atomic snapshots. Preserve session/event ordering, child
+  identity/exit checks, 256 MiB transfer bounds and CPU retained handles. Never
+  adopt partial or force-discarded results, including late transfer races.
+  Keep cooperative Stop/checkpoint behavior, explicit force-stop consequences,
+  parent-pipe death cleanup and workspace locks until the child is reaped.
+  Retained GUI state is not a live PyTorch trainer; research APIs remain direct.
+  Process isolation is not a hardware memory quota or a malicious-code sandbox.

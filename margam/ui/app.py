@@ -19,7 +19,7 @@ from ..components.sampling import SAMPLERS
 from ..components.network_config import NETWORK_NAMES, OPTION_SCHEMAS, network_options
 from .plots import RectanglePreview
 from .output_views import OutputViews, OUTPUT_KINDS
-from .training import TrainingWorker,EvaluationWorker
+from .training import IsolatedTrainingWorker as TrainingWorker,IsolatedEvaluationWorker as EvaluationWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
 from .block_catalogue import KINDS, describe_block
@@ -408,11 +408,11 @@ class Canvas(QGraphicsScene):
                             import torch
                             values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
                             return values[:,0].tolist() if len(expressions)==1 else values.tolist()
-                        reference=ReferenceSource('User reference expression',evaluate)
+                        reference=ReferenceSource('User reference expression',evaluate,dict(kind='expression',texts=texts))
                     elif data:
                         from functools import partial
-                        reference=ReferenceSource('Imported reference fields',partial(reference_values,resolve_source(data),components=len(config.field_names)))
-                    else:reference=make_poisson_reference(config)
+                        reference=ReferenceSource('Imported reference fields',partial(reference_values,resolve_source(data),components=len(config.field_names)),dict(kind='mapping',source=resolve_source(data)))
+                    else:reference=replace(make_poisson_reference(config),spec=dict(kind='preset'))
             if node.kind=='monitor':
                 if not 25<=node.settings['history_limit']<=100000:raise ValueError('Monitor history limit must be between 25 and 100000.')
             elif point_data is None and config.shape=='Prepared2D':raise ValueError('Connect Evaluation points to '+node.title+'; a bounding-box grid is not this prepared domain.')
@@ -543,6 +543,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.error_norm_dialogs={}
         self.sample_point_dialogs={}
         self.setup_menus()
+        self.force_stop_action=self.run_menu.addAction('Force stop numerical process (discard job)');self.force_stop_action.setEnabled(False);self.force_stop_action.triggered.connect(self.force_stop_training)
         self.setup_icons()
         self.scene.blockOpened.connect(self.open_block)
         self.scene.connectionRejected.connect(self.connection_rejected)
@@ -729,7 +730,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             action.setCheckable(True);action.setChecked(name==theme_name())
             action.triggered.connect(lambda checked=False,n=name:configure_theme(QApplication.instance(),n))
             group.addAction(action);self.theme_actions[name]=action
-        run=self.menuBar().addMenu('Run')
+        run=self.menuBar().addMenu('Run');self.run_menu=run
         self.check_action=run.addAction('Validate model')
         self.check_action.setShortcut('Ctrl+D')
         self.check_action.triggered.connect(self.validate_button.click)
@@ -979,6 +980,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def update_run_actions(self):
         if not hasattr(self,'save_run_action'):return
         locked=self.is_running() or self.scene.locked
+        if hasattr(self,'force_stop_action'):self.force_stop_action.setEnabled(self.worker is not None and hasattr(self.worker,'force_stop'))
         self.open_run_action.setEnabled(not locked)
         self.save_run_action.setEnabled(not locked and self.result is not None)
         self.resume_action.setEnabled(not locked and (self.loaded_checkpoint is not None or self.last_run is not None and self.last_run.model is not None))
@@ -1750,7 +1752,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             self.statusBar().showMessage('Train or reopen a matching run before evaluating outputs.');return False
         requests=self.scene.output_requests(self.config)
         if model is not None:checkpoint=model.training_state()
-        self.loaded_checkpoint=deepcopy(checkpoint);self._trained_config=deepcopy(config)
+        self.loaded_checkpoint=checkpoint;self._trained_config=deepcopy(config)
         self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor'}
         self.result=None;self.set_busy(True);self.progress_bar.setRange(0,0)
         if model is not None and str(model.device)!=self.execution_device():model=None
@@ -1759,7 +1761,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self)
         self.worker.completed.connect(self.training_completed);self.worker.failed.connect(self.training_failed);self.worker.finished.connect(self.training_finished)
         self.log.appendPlainText('Evaluating requested outputs · trained weights retained · no optimizer updates')
-        self.worker.start();return True
+        self.worker.start();self.update_run_actions();return True
 
     def refresh_result_status(self,phase=None):
         from .result_freshness import refresh
@@ -2668,6 +2670,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.evaluate_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
+        self.force_stop_action.setEnabled(busy and self.worker is not None and hasattr(self.worker,'force_stop'))
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
         if getattr(self,'dataset_cleanup_dialog',None) is not None:self.dataset_cleanup_dialog.update_buttons()
@@ -2701,7 +2704,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.worker.finished.connect(self.training_finished)
         self.log.appendPlainText(f'Training {self.config.shape} · {self.config.iterations} updates · {self.config.device}')
         self.statusBar().showMessage('Preparing samples and network…')
-        self.worker.start()
+        self.worker.start();self.update_run_actions()
         return True
 
     def scale_training_progress(self,summary):
@@ -2726,6 +2729,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.statusBar().showMessage(f"Training {step}/{self.config.iterations} · loss {records[-1]['total']:.5g}")
 
     def training_completed(self,result):
+        if self.worker is not None and getattr(getattr(self.worker,'transport',None),'terminated',False):
+            self.worker.model=None;self.training_failed('Numerical process was force-stopped; the running job was discarded.');return
+        self.force_stop_action.setEnabled(False)
         self.result=result
         self._trained_config=deepcopy(result['config'])
         self.refresh_result_status('complete')
@@ -2756,7 +2762,12 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def cancel_training(self):
         if self.worker is not None:
             self.worker.cancel();self.cancel_button.setEnabled(False)
-            self.statusBar().showMessage('Stopping after the current update batch…')
+            self.statusBar().showMessage('Stopping after the current update batch… Use Run → Force stop numerical process to discard an unresponsive job.')
+
+    def force_stop_training(self):
+        if self.worker is not None and self.result is None and hasattr(self.worker,'force_stop'):
+            self.worker.force_stop();self.cancel_button.setEnabled(False)
+            self.statusBar().showMessage('Force-stopping numerical process · running job will be discarded')
 
     def apply_theme(self):
         if not hasattr(self,'scene'):return

@@ -805,14 +805,14 @@ lifecycle, not numerical accuracy.
 ## CUDA regression audit — 11 November 2026
 
 The retained [CUDA audit](../assets/benchmarks/cuda-validation-2026-11-11.json)
-passes **17 targeted checks with no skips**, using the existing root environment:
+passes **18 targeted checks with no skips**, using the existing root environment:
 Python **3.14.8**, Torch **2.14.1+cu130**, compiled CUDA runtime **13.0**, NVIDIA
 GeForce RTX 3060 Laptop GPU. No environment/dependency changes were made.
 
 Coverage includes CPU/GPU loss agreement, automatic device/data placement and
 Poisson training, GPU benchmark artifacts, per-boundary weighting across trainers,
 Expert training and NTK/time marching, Scale-PINN, gPINN with RAR, RBA, inverse
-Burgers coefficients, research components, schedules and scalar integral constraints, advisory CUDA memory queries, detached sampler-page
+Burgers coefficients, research components, schedules and scalar integral constraints, advisory CUDA memory queries, isolated CUDA checkpoint jobs, detached sampler-page
 inspection, application-level training/inference/resume device switching and
 portable copied-data workflows. These are the existing numerical and lifecycle
 regressions; this does not claim a full-suite run or paper-accuracy reproduction.
@@ -882,4 +882,35 @@ The CUDA query case reads real driver availability and verifies unchanged Torch
 CPU/CUDA RNG and allocated tensor bytes. The maintained screenshot explicitly
 labels simulated host availability and is a UI illustration, not a capacity or
 accuracy benchmark. [Resource guide](use/resources.md) documents the remaining
-process-isolation, quota and probe limitations.
+quota and probe limitations.
+
+## Isolated desktop numerical jobs
+
+`tests/test_isolated_jobs.py` verifies actual distinct child processes with no Qt
+imports, direct-engine equivalence, parent RNG preservation, CPU retained tensors,
+cooperative cancellation, forced discard, abnormal/native exits, malformed
+events, bounded atomic files, rejection of arbitrary reference callbacks and
+parent control-pipe closure. It checks late force-stop during result transfer and
+that GUI controls recover so a subsequent run can succeed. CPU/CUDA continuation
+uses fresh child processes and compares exact histories/weights after a split run.
+
+The desktop regression paths include baseline/SA/LRA, Expert and sequential
+windows, Scale, gPINN, RBA and inverse workflows, archives, supplied/owned data,
+references, inspectors, device switching and automation. Tests that injected
+GUI-local numerical mocks now inject at the supervisor boundary; comparisons with
+private retained network states explicitly compare CPU tensors. Ordinary research
+trainers and library numerical APIs remain direct PyTorch objects.
+
+Maintained [CPU](../assets/benchmarks/isolated-worker-cpu.json) and
+[CUDA](../assets/benchmarks/isolated-worker-cuda.json) records establish separate
+headless execution, re-evaluation with unchanged weights, CPU storage, archive
+reopening and exact three-plus-two-update continuation against an uninterrupted
+run. The force-stop screenshot is an actual menu from a deliberately discarded
+small job. No real memory exhaustion or numerical-accuracy reproduction is claimed.
+
+The full CPU/offscreen discovery ran **338 cases**: 318 passed, 19 CUDA-dependent
+cases skipped and one Jorvik workflow check failed because it expected a live
+operator on the new retained-state handle. That check was corrected to construct
+the physical operators from configuration; its two-case module then passed.
+The final isolated-job module passed seven cases, including actual CUDA
+continuation, and the refreshed CUDA audit passed 18 cases without skips.

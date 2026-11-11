@@ -143,7 +143,7 @@ assert w.monitor_records[monitor.identifier][-1][1]['total']<.1
 assert not w.grab().isNull()
 
 # Worker errors reach the UI and release controls; they do not kill the app.
-with patch('margam.templates.poisson.build_pinn',side_effect=ValueError('Deliberate test failure')):
+with patch('margam.execution.transport.JobTransport.run',side_effect=ValueError('Deliberate test failure')):
     assert w.start_training()
     until_finished()
 assert w.result is None

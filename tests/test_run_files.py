@@ -43,7 +43,7 @@ with TemporaryDirectory() as directory:
     assert w.result['steps']==50 and len(w.monitor_records[monitor_id])==50
     continuous=build_pinn(w.config);continuous.train(50,display_every=0)
     points=torch.linspace(0,1,21)[:,None]
-    torch.testing.assert_close(w.last_run.model.predict(points),continuous.predict(points),rtol=0,atol=0)
+    torch.testing.assert_close(w.last_run.model.predict(points),continuous.predict(points).cpu(),rtol=0,atol=0)
     saved=w.result
     bad=Path(directory)/'bad.pt';torch.save({'bad':'data'},bad)
     with patch.object(QMessageBox,'warning'):assert not w.open_saved_run(bad)

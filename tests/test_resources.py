@@ -154,10 +154,10 @@ assert failures and 'output evaluation' in failures[0] and worker.model is None
 w=Window(state_directory=False)
 try:
  w.set_application_device('cpu');w.change('iterations',2);w.change('layers',(4,))
- with patch('margam.templates.poisson.build_pinn',side_effect=MemoryError('simulated allocation')):
+ with patch('margam.execution.transport.JobTransport.run',side_effect=MemoryError('simulated allocation')):
   assert w.start_training()
   while w.worker is not None:app.processEvents()
- assert w.result is None and 'Memory allocation failed during model construction' in w.log.toPlainText() and w.train_button.isEnabled()
+ assert w.result is None and 'Memory allocation failed during isolated numerical job' in w.log.toPlainText() and w.train_button.isEnabled()
  assert w.start_training()
  while w.worker is not None:app.processEvents()
  assert w.result is not None and w.last_run.model.iter==2

@@ -140,8 +140,8 @@ reports λ rather than λ² and also works for loaded run archives.
 
 ## Train, stop and diagnose
 
-Validate checks graph structure and physics/data settings. Train runs in a worker
-thread, reporting batches of up to 25 full-batch updates. Settings and graph edits
+Validate checks graph structure and physics/data settings. Train runs in an
+isolated numerical process, reporting batches of up to 25 full-batch updates. Settings and graph edits
 are locked; selection and explicit output views remain available. Stop requests
 cancellation between batches and retains the partial run. Closing waits for the
 worker before the unsaved-model decision. Failures release controls and show

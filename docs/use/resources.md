@@ -83,10 +83,11 @@ Ordinary non-memory errors keep their original diagnostic rather than being
 mislabelled as resource failures. The program does not automatically retry a
 smaller experiment or change its physics.
 
-This first milestone handles exceptions Python receives. Workers still share
-the GUI process: an OS-level memory kill, driver failure or uninterruptible
-operation can still terminate or stall the application. Isolated worker processes,
-OS/resource budgets and representative capacity probes remain planned work.
+Desktop numerical jobs now use [isolated child processes](isolated-jobs.md), with
+cooperative Stop and an explicit force-stop/discard action. CPU checkpoint/result
+transfer and preparation still need GUI RAM, and system-wide memory pressure or
+driver failure can affect the application. OS/resource budgets and representative
+capacity probes remain planned work; process separation is not a fit guarantee.
 
 ## Background references
 

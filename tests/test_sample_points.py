@@ -53,7 +53,7 @@ try:
   while w.worker is not None:app.processEvents()
   model=w.last_run.model;state=deepcopy(model.training_state());result=w.result;before=capture_model(w);index=w.undo_stack.index()
   assert any(a.text()=='Inspect retained PDE points…' for a in w.create_block_menu(node).actions())
-  with patch.object(model.problem,'residual',side_effect=AssertionError('No residual scoring')),patch.object(model,'predict',side_effect=AssertionError('No inference')),patch('margam.components.adaptive_sampling.sample_box',side_effect=AssertionError('No sampling')):
+  with patch('margam.components.adaptive_sampling.AdaptiveSampler.scores',side_effect=AssertionError('No residual scoring')),patch.object(model,'predict',side_effect=AssertionError('No inference')),patch('margam.components.adaptive_sampling.sample_box',side_effect=AssertionError('No sampling')):
    dialog=w.show_sample_points(node);dialog.page.setValue(2);data=deepcopy(dialog.snapshot)
    assert data['boundary_count']==2 and data['count']==(214 if kind=='rar' else 208)
    assert data['rows'][6]['kind']=='Boundary/initial PDE anchor'

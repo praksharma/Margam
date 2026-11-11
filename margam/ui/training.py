@@ -79,3 +79,57 @@ class EvaluationWorker(QThread):
             from ..components.resources import worker_failure
             self.model=None;self.checkpoint=None
             self.failed.emit(worker_failure(error,stage,self.config.device))
+
+
+class IsolatedJob:
+    """A supervisor thread emits Qt signals; all numerical work is a child job."""
+    isolated=True
+    def _setup_transport(self):
+        from ..execution.transport import JobTransport
+        self.transport=JobTransport();self.child_pid=None
+    def cancel(self):
+        self.cancel_event.set();self.transport.cancel()
+    def force_stop(self):self.transport.terminate()
+    def _run_job(self,operation):
+        stage='job preparation'
+        try:
+            import torch
+            from ..execution.codec import encode_config,encode_request
+            from ..execution.retained import RetainedModel
+            previous=self.model
+            checkpoint=self.checkpoint if self.checkpoint is not None else previous.training_state() if previous is not None else None
+            metadata=previous.metadata if isinstance(previous,RetainedModel) else {}
+            dtype=next(iter(checkpoint['network'].values())).dtype if checkpoint is not None else torch.get_default_dtype()
+            payload=dict(operation=operation,config=encode_config(self.config),requests=[encode_request(r) for r in self.requests],
+                checkpoint=checkpoint,metadata=metadata,dtype=str(dtype).removeprefix('torch.'))
+            def event(value):
+                kind=value['kind']
+                if kind=='ready':self.child_pid=value['pid']
+                elif kind=='progress':self.progress.emit(value['step'],value['records'])
+                elif kind=='expert':self.expert_progress.emit(value['summary'])
+                elif kind=='scale':self.scale_progress.emit(value['summary'])
+                elif kind=='sampling':self.sampling_updated.emit(value['event'])
+            stage='isolated numerical job'
+            packet=self.transport.run(payload,event)
+            result=packet['result'];checkpoint=packet['checkpoint']
+            if result['steps']!=checkpoint['iter']:raise ValueError('Numerical result/checkpoint phase mismatch.')
+            self.child_pid=packet['pid'];self.headless=packet['headless']
+            self.model=previous if isinstance(previous,RetainedModel) and str(previous.device)==result['device'] else RetainedModel(self.config,checkpoint,packet['metadata'],result['device'])
+            result['config']=self.config
+            for output in result['outputs'].values():output['config']=self.config
+            self.checkpoint=None;self.completed.emit(result)
+        except Exception as error:
+            from ..components.resources import worker_failure
+            self.model=None;self.checkpoint=None
+            from ..execution.transport import JobFailed
+            self.failed.emit(str(error) if isinstance(error,JobFailed) else worker_failure(error,stage,self.config.device))
+
+
+class IsolatedTrainingWorker(IsolatedJob,TrainingWorker):
+    def __init__(self,*args,**kwargs):super().__init__(*args,**kwargs);self._setup_transport()
+    def run(self):self._run_job('train')
+
+
+class IsolatedEvaluationWorker(IsolatedJob,EvaluationWorker):
+    def __init__(self,*args,**kwargs):super().__init__(*args,**kwargs);self._setup_transport()
+    def run(self):self._run_job('evaluate')

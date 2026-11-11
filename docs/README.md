@@ -32,6 +32,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | What is implemented and what are the limits? | [Component capability index](components.md) |
 
 Review a large workload or a memory error: [Memory and workload](use/resources.md).
+Stop or recover a worker: [Isolated numerical jobs](use/isolated-jobs.md).
 
 ## Results and verification
 

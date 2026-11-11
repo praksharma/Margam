@@ -1,0 +1,13 @@
+{
+  "scope": "Actual isolated desktop lifecycle; not an accuracy or memory-capacity benchmark.",
+  "device": "cuda",
+  "torch_version": "2.14.1+cu130",
+  "separate_process": true,
+  "headless_child": true,
+  "retained_tensor_device": "cpu",
+  "initial_steps": 3,
+  "resumed_steps": 5,
+  "exact_resume": true,
+  "evaluation_preserved_handle": true,
+  "previous_saved_file_unchanged": true
+}

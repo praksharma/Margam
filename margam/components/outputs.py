@@ -8,6 +8,7 @@ import math
 class ReferenceSource:
     name: str
     evaluate: Callable
+    spec: object = None  # Optional data-only declaration for isolated desktop jobs.
 
 
 @dataclass(frozen=True)

@@ -497,3 +497,16 @@ Resource review and memory-failure checks:
 The screenshot helper uses explicitly simulated availability to illustrate an
 advisory warning, and writes `assets/screenshots/manual-resources.png`. It does
 not allocate a large model, train or test real memory exhaustion.
+
+Isolated desktop jobs and lifecycle evidence:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_isolated_jobs.py -v
+.venv/bin/python -m examples.isolated_workflow --device cpu
+.venv/bin/python -m examples.isolated_workflow --device cuda
+.venv/bin/python -m examples.capture_isolated_jobs --overwrite
+```
+
+The workflow prints JSON by default; `--output build/isolated-workflow.json`
+retains a report explicitly. The capture starts a small job and deliberately
+force-stops it after capturing the menu. Neither tool exhausts real memory.
