@@ -381,3 +381,10 @@
   Undo history when toggling. Recompute on moves/insertion/deletion and Undo/Redo.
   Shared lanes/crossings are not graph junctions. Keep pending-wire drawing and
   the default curved mode intact; test painted strokes, not implicit path fills.
+
+- Transient table time selection filters exact stored t values only, with sorted
+  frame choices and original within-frame row order/IDs. Use a lazy list model
+  and retain the 200-row preview bound. This is ephemeral view state, never an
+  inference call, export filter or model/archive setting. Label existing metrics
+  as full-data metrics; Error norms retain their complete stored-row scope. Reset
+  on new results and release data on invalidation; preserve steady-table behavior.

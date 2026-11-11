@@ -1,35 +1,88 @@
 """Views belong to output-block identities; hiding a dock does not remove its block."""
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt,QAbstractListModel,QModelIndex
 from .plots import CurvePlot, SolutionView
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem,QComboBox,QHBoxLayout
 
 OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export', 'paraview'}
 
 
+class StoredTimesModel(QAbstractListModel):
+    """Lazy combo rows: no widget/item per supplied physical-time value."""
+    def __init__(self,parent=None):
+        super().__init__(parent);self.times=[]
+
+    def replace(self,times):
+        self.beginResetModel();self.times=times;self.endResetModel()
+
+    def rowCount(self,parent=QModelIndex()):
+        return 0 if parent.isValid() else len(self.times)+1
+
+    def data(self,index,role=Qt.ItemDataRole.DisplayRole):
+        if not index.isValid() or not 0<=index.row()<=len(self.times):return None
+        time=self.times[index.row()-1] if index.row() else None
+        if role==Qt.ItemDataRole.UserRole:return time
+        if role==Qt.ItemDataRole.DisplayRole:
+            return 'All stored rows' if time is None else f'Frame {index.row()} · t = {time!r}'
+        if role==Qt.ItemDataRole.ToolTipRole:
+            return 'Filter exact stored physical times only; no interpolation or inference. Training updates are not physical time.'
+
+
 class VectorResultView(QWidget):
     def __init__(self):
         super().__init__();layout=QVBoxLayout(self)
+        self.time_controls=QWidget();controls=QHBoxLayout(self.time_controls);controls.setContentsMargins(0,0,0,0)
+        controls.addWidget(QLabel('Physical time'))
+        self.time=QComboBox();self.time.setObjectName('result_physical_time')
+        self.times_model=StoredTimesModel(self.time);self.time.setModel(self.times_model)
+        self.time.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.time.setMinimumContentsLength(24)
+        self.time.setToolTip('Show all rows or one exact stored physical-time frame. Display filter only; exports and error norms still use the full stored data.')
+        controls.addWidget(self.time);controls.addStretch();layout.addWidget(self.time_controls);self.time_controls.hide()
         self.caption=QLabel('Connect and train to calculate fields.');self.caption.setWordWrap(True);layout.addWidget(self.caption)
         self.table=QTableWidget();self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);layout.addWidget(self.table)
+        self._result_data=None;self._time_column=None
+        self.time.currentIndexChanged.connect(self.refresh_rows)
 
     def clear(self):
-        self.table.clear();self.table.setRowCount(0);self.caption.setText('Model changed. Train again or open a saved run.')
+        self._result_data=None;self._time_column=None
+        blocked=self.time.blockSignals(True);self.times_model.replace([]);self.time.setCurrentIndex(0);self.time.blockSignals(blocked)
+        self.time_controls.hide();self.time.setEnabled(False)
+        self.table.clear();self.table.setRowCount(0);self.table.setColumnCount(0)
+        self.caption.setText('Model changed. Train again or open a saved run.')
 
     def show_result(self,data):
+        names=list(data['config'].coordinate_names)
+        column=names.index('t') if data['config'].is_time_dependent and 't' in names else None
+        if self._result_data is not data:
+            self._result_data=data;self._time_column=column
+            times=sorted({float(point[column]) for point in data['points']}) if column is not None else []
+            blocked=self.time.blockSignals(True);self.times_model.replace(times);self.time.setCurrentIndex(0);self.time.blockSignals(blocked)
+        self.time_controls.setVisible(column is not None);self.time.setEnabled(column is not None)
+        self.refresh_rows()
+
+    def refresh_rows(self):
+        data=self._result_data
+        if data is None:return
         fields=data.get('fields',list(data['config'].field_names));points=data['points'];reference=data.get('reference')
-        ids=data.get('point_ids')
+        ids=data.get('point_ids');time=self.time.currentData() if self._time_column is not None else None
+        rows=range(len(points)) if time is None else [i for i,p in enumerate(points) if p[self._time_column]==time]
         headers=(['point_id'] if ids is not None else [])+[*data['config'].coordinate_names,*fields]+(['ref '+f for f in fields]+['error '+f for f in fields] if reference is not None else [])
-        count=min(200,len(points));self.table.setColumnCount(len(headers));self.table.setHorizontalHeaderLabels(headers);self.table.setRowCount(count)
-        for index in range(count):
+        count=min(200,len(rows));self.table.setColumnCount(len(headers));self.table.setHorizontalHeaderLabels(headers);self.table.setRowCount(count)
+        self.table.setVerticalHeaderLabels([str(index+1) for index in rows[:count]])
+        for row_index,index in enumerate(rows[:count]):
             values=data['values'][index];values=values if isinstance(values,list) else [values]
             row=([ids[index]] if ids is not None else [])+[*points[index],*values]
             if reference is not None:
                 refs=reference[index];refs=refs if isinstance(refs,list) else [refs]
                 row.extend(refs);row.extend(a-b for a,b in zip(values,refs))
-            for column,value in enumerate(row):self.table.setItem(index,column,QTableWidgetItem(str(value) if ids is not None and column==0 else f'{value:.7g}'))
+            for column,value in enumerate(row):self.table.setItem(row_index,column,QTableWidgetItem(str(value) if ids is not None and column==0 else f'{value:.7g}'))
         self.table.resizeColumnsToContents()
-        caption=f"Fields {', '.join(fields)} · first {count} of {len(points)} rows · {data['steps']} updates"
-        if data.get('rmse_by_field'):caption+=' · RMSE '+', '.join(name+'='+f'{value:.4g}' for name,value in data['rmse_by_field'].items())
+        caption=f"Fields {', '.join(fields)} · first {count} of {len(rows)} rows"
+        if self._time_column is not None:
+            caption+=' · all stored times' if time is None else f' · t = {time!r} · {len(points)} rows across all times'
+        caption+=f" · {data['steps']} updates"
+        if data.get('rmse_by_field'):
+            caption+=(' · RMSE (all stored rows) ' if self._time_column is not None else ' · RMSE ')+', '.join(name+'='+f'{value:.4g}' for name,value in data['rmse_by_field'].items())
         self.caption.setText(caption)
 
 

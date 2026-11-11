@@ -1,0 +1,11 @@
+{
+  "generator": "examples.capture_result_times",
+  "scope": "Actual stored Burgers predictions after two CPU updates; display filtering only, not an accuracy benchmark.",
+  "selected_time": 0.75,
+  "stored_frames": 9,
+  "displayed_rows": 9,
+  "stored_rows": 81,
+  "file": "manual-result-times.png",
+  "bytes": 33609,
+  "sha256": "324bf750bbc63587b29e71454647ee6f0092554e4e4511686c52b667cfb61137"
+}

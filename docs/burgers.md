@@ -76,6 +76,9 @@ Training Monitor, Solution Plot, CSV Export and ParaView Export blocks are wired
 in this example; their views remain closed until requested. Training creates no
 export files. The solution block opens an **`x,t,u` table**, reusing the current
 table widget; this change adds no field heatmap or automatic figure pane.
+Use its **Physical time** selector to preview one exact stored time rather than
+only the first rows across the entire dataset. This display filter does not
+change exports or run additional inference; see [time-frame selection](use/results.md#inspect-one-physical-time-frame).
 
 ![The optional Burgers solution view shows coordinates and predicted values](../assets/screenshots/manual-burgers-results.png)
 

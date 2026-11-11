@@ -431,3 +431,13 @@ Crowded-diagram wire-routing evidence:
 
 The capture helper reproduces the same heat graph and note with the routing
 preference off/on. It saves before/after screenshots under `assets/screenshots`.
+
+Stored physical-time selection evidence:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_result_times.py -v
+.venv/bin/python -m examples.capture_result_times --overwrite
+```
+
+The capture uses a two-update CPU Burgers run and writes
+`assets/screenshots/manual-result-times.png` with its evidence manifest.

@@ -766,3 +766,20 @@ The affected canvas/navigation, dependency explanations, edit history, block-lab
 and saved-model checks are run alongside the routing tests. Default curved wires,
 physics validation and model formats are preserved. Crossings/shared lanes remain
 possible; neither implies a new connection. No CUDA numerical code changes.
+
+## Stored physical-time result selection
+
+`tests/test_result_times.py` checks unsorted coupled transient rows, duplicate IDs
+and times, close-but-distinct float times, scalar predictions, reference/error
+columns, original one-based row headers and honest full-data RMSE labels. It
+checks a lazy 100,000-time model and the 200-row bound within a selected frame.
+Steady tables hide the control; same-result refresh retains selection, new results
+reset it, and invalidation releases stored arrays.
+
+A real two-update CPU Burgers workflow filters an existing prediction while a
+guard rejects any inference call. Model serialization, Undo index, result identity
+and optimizer phase stay unchanged. CSV bytes match before/after selection; PVD
+still contains all nine physical times. An archive reopens with complete data and
+All stored rows selected, then supports filtering offline. The screenshot capture
+uses this same short-run setup and records its hash; it is a lifecycle example,
+not an accuracy benchmark. No numerical CUDA implementation changes.

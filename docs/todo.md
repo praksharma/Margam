@@ -172,7 +172,10 @@ supported catalogue descriptions are shared by the library, inspector and Help.
 - [x] Write uniform-grid VTI scalar/u-v-p data and a derived velocity vector.
 - [x] Support physical-time PVD collections and per-snapshot TimeValue metadata
   in the writer API, with a known-value playback dataset and real VTK reader checks.
-- [ ] Deferred: actual transient PINN solver/UI integration and physical-time selection.
+- [x] Integrate transient solver/UI workflows (Burgers and Expert cases) and add
+  exact stored physical-time selection to Solution/Comparison tables. Preserve
+  data order/IDs, full-data metrics and complete CSV/PVD exports; no interpolation
+  or inference from the display filter. Retain physical-time playback in ParaView.
 - [ ] Deferred: embedding/launching ParaView and direct viewer integration.
 
 ## Future evaluation and export at supplied points

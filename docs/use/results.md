@@ -145,6 +145,44 @@ the documented contracts. An imported reference must match evaluation coordinate
 it is not silently interpolated from an arbitrary FEM mesh. The heat rectangle
 reference is a labelled truncated series, not a universal exact solution.
 
+## Inspect one physical-time frame
+
+For transient Solution Plot and Comparison tables, use **Physical time** to select
+**All stored rows** or a particular stored frame. For example, open the
+**Burgers — 1D + time** example, train it, open its Solution Plot block, then choose
+`t = 0.75` when that time is present in the evaluation data.
+
+![The Burgers table filtered to a stored physical-time frame](../../assets/screenshots/manual-result-times.png)
+
+*Actual predictions after two CPU updates, filtered to nine stored rows at
+`t = 0.75`. This demonstrates the display controls, not numerical accuracy.*
+
+The selector lists distinct stored `t` values in ascending order. Frame numbers
+are positions in that list, **not training updates**. Values must match exactly;
+close times remain separate, without rounding, interpolation or a nearest-time
+substitution. For imported datasets the table preserves the original order within
+a frame, duplicate rows and point IDs. Row headers show the original one-based
+stored row numbers. As before, coordinate/value cells use a compact numeric
+format; the selector/caption identifies the exact stored time.
+
+Only the first **200 rows of the selected frame** are previewed. The caption gives
+the selected row count and total stored count. Choose All stored rows to return
+to the original preview. A lazy list model avoids creating a separate widget/item
+for every time in datasets with many distinct values. A steady result has no
+physical-time selector.
+
+This is a display filter on existing arrays: it does not evaluate the network,
+train, edit the model, change result freshness, or alter CSV/ParaView exports.
+Those exports still contain their complete requested data/time series. Comparison
+RMSE labels explicitly refer to **all stored rows**, and the separate Error norms
+report also keeps its full-data scope; neither is recomputed for the selected
+frame. Change Evaluation points when you want a different prediction dataset.
+
+The selection survives refreshes of the same in-memory result. New/evaluated
+results and reopened run archives start at All stored rows; the filter is not
+saved in model definitions or run files. A model edit that invalidates results
+clears the preview and its stored-data reference.
+
 **Next:** [Save or resume](saving.md), or [export predictions](export.md).
 
 
