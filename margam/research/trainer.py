@@ -2,6 +2,7 @@
 from collections.abc import Mapping
 import torch
 from .schedules import StepDecay
+from ..components.integral_constraint import IntegralConstraint
 from ..methods.pinn import PINN
 
 
@@ -13,6 +14,8 @@ class Trainer(PINN):
     checkpoint_id: explicit versioned identity for your physics/loss/network code.
     Samplers live in PINNProblem/PointConstraint and are sampled once per compile.
     """
+    _research_integrals=True
+
     def __init__(self, problem, network, *, weights=None, loss=None, step=None,
                  loss_formulation='mean', checkpoint_id=None):
         if not isinstance(network, torch.nn.Module):
@@ -50,6 +53,14 @@ class Trainer(PINN):
         if schedule is not None and (self.step is not None or type(self).update is not Trainer.update or type(self).training_step is not Trainer.training_step):
             raise ValueError('StepDecay requires the default research update; custom steps own their schedules.')
         self.schedule=schedule
+        self._integral_weights={}
+        for condition in self.problem.constraints:
+            if isinstance(condition,IntegralConstraint):
+                if condition.measure!=1 or callable(condition.target):
+                    raise ValueError('Integral constraints require measure=1 and one fixed scalar target.')
+                target=torch.as_tensor(condition.target)
+                if target.is_complex() or target.dtype==torch.bool:
+                    raise ValueError('Integral targets must be real numeric totals.')
         if not callable(optimizer):raise TypeError('optimizer must be a factory(parameters, lr=...).')
         if isinstance(self.loss,dict):
             unknown=set(self.loss)-{'pde',*(c.name for c in self.problem.constraints)}
@@ -67,6 +78,26 @@ class Trainer(PINN):
                 if self.step is None and any(p.requires_grad for p in module.parameters()):
                     self._compiled=False
                     raise ValueError('Trainable loss modules need an explicit custom step managing their parameters.')
+        try:
+            for condition,points,target in self._constraints:
+                if not isinstance(condition,IntegralConstraint):continue
+                if target.numel()!=1 or target.ndim>2 or not torch.isfinite(target).all():
+                    raise ValueError('An integral constraint target must be one finite scalar total.')
+                try:weights=torch.as_tensor(condition.quadrature_weights)
+                except (ValueError,TypeError,RuntimeError) as error:
+                    raise ValueError('Supply explicit real quadrature weights for every integral point.') from error
+                if weights.is_complex() or weights.dtype==torch.bool:
+                    raise ValueError('Integral quadrature weights must be real numeric values.')
+                # Convert the original source directly: a Python float list must
+                # not be rounded through the default float32 dtype first.
+                weights=torch.as_tensor(condition.quadrature_weights,device=self.device,dtype=self.dtype)
+                if weights.ndim==1:weights=weights[:,None]
+                if weights.shape!=(len(points),1) or not torch.isfinite(weights).all() or not torch.isfinite(weights.sum()) or (weights<0).any() or not (weights>0).any():
+                    raise ValueError('Integral quadrature weights must be finite, nonnegative, have positive mass and match every point row.')
+                self._integral_weights[condition.name]=weights.detach().clone()
+        except Exception:
+            self._compiled=False
+            raise
         self._base_lrs=tuple(group['lr'] for group in self.optimizer.param_groups)
         if schedule is not None:
             import math
@@ -84,6 +115,29 @@ class Trainer(PINN):
             expected=self.scheduled_rates()
             if [group['lr'] for group in self.optimizer.param_groups] != expected:
                 raise ValueError('Scheduled optimizer rates changed outside Trainer; recompile to start a new schedule.')
+
+    def loss_samples(self):
+        samples=super().loss_samples()
+        for name,weights in self._integral_weights.items():
+            values,target,rows=samples[name]
+            if not isinstance(values,torch.Tensor) or not values.is_floating_point() or values.device!=weights.device:
+                raise ValueError('Integral operators must return a real floating tensor on the training device.')
+            if values.ndim==1:values=values[:,None]
+            if values.shape!=(rows,1):
+                raise ValueError('Integral operators must return one scalar per quadrature row; select a field or scalar flux explicitly.')
+            samples[name]=((weights*values).sum().reshape(1,1),target.reshape(1,1),1)
+        return samples
+
+    def data_fingerprint(self):
+        original=super().data_fingerprint()
+        if not self._integral_weights:return original
+        import hashlib
+        digest=hashlib.sha256(('research-integral-constraints-v1:'+original).encode())
+        for name,weights in sorted(self._integral_weights.items()):
+            data=weights.detach().cpu().contiguous()
+            digest.update(repr((name,tuple(data.shape),str(data.dtype))).encode())
+            digest.update(data.numpy().tobytes())
+        return digest.hexdigest()
 
     def compute_losses(self):
         if self.loss is None:return super().compute_losses()

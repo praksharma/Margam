@@ -403,3 +403,12 @@
   failures and empty suites are incomplete. Public audit JSON includes source/runtime
   metadata and outcomes, never local tracebacks, usernames or absolute paths.
   Do not weaken numerical validators to accommodate stale small test presets.
+
+- Research IntegralConstraint compares a scalar weighted field/flux total with a
+  fixed scalar target, reducing quadrature before squaring. This differs from
+  integral-of-squared-error mode. Require explicit finite nonnegative weights
+  with positive finite mass, keep measure=1, detach/clone compiled quadrature and
+  preserve scalar operator parameter gradients. Fingerprint actual weights/points/
+  targets on continuation; keep point-only research checkpoint identity intact.
+  Ordinary PINN/desktop methods must reject this research-only constraint. Never
+  infer normals, units, mesh weights or a full-flow benchmark from the API example.

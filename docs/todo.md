@@ -51,7 +51,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
 - [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
 - [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
-  resolved. The 11 November CUDA audit passes 15 targeted checks without skips,
+  resolved. The 11 November CUDA audit passes 16 targeted checks without skips,
   including training, derivatives, continuation, global device selection and
   portable data. Retain the earlier environment audit as historical evidence;
   see [current CUDA validation](validation.md#cuda-regression-audit-11-november-2026).
@@ -375,7 +375,10 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Trainer/compact controls, version migration, measure-aware checkpoint verification and UI tests.
 - [x] Document NVIDIA pointwise-integral distinction, screenshot and non-unit-domain CPU evidence.
 - [ ] Imported quadrature weights and physical measures for GeoSampler point sets.
-- [ ] Integral constraints on quantities such as total flow/flux, separate from squared-error integration.
+- [x] Add scalar total-flow/flux IntegralConstraint to the research API, separate
+  from integrating squared errors. Require fixed explicit physical quadrature,
+  preserve operator/parameter gradients and strict continuation identity. Desktop
+  blocks and imported mesh quadrature remain deferred until their data contract exists.
 
 ## Burgers initial-value problem (28 October 2026)
 

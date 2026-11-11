@@ -59,6 +59,7 @@ use seeded samplers. The runnable example does both.
 | Neural network | Any pointwise `torch.nn.Module` returning `(N, C)` values |
 | Physics | `PINNProblem.residual(points, prediction)` |
 | Collocation sampling | Tensor/array rows or a zero-argument function in `collocation_points` |
+| Total scalar flow/flux | `IntegralConstraint` with explicit fixed quadrature weights |
 | Boundary/initial/data points | `PointConstraint(name, points, target, operator)` |
 | Derivative BC or custom operator | `operator(points, prediction)` on a point constraint |
 | Optimiser | `compile(optimizer=factory)`; factory accepts `parameters, lr=...` |
@@ -123,6 +124,81 @@ class RegularisedPINN(Trainer):
 Extra terms default to weight one; apply their coefficient in the returned
 expression, as above. Keep `pde` and each named constraint present. `total` and
 the `weighted:` prefix are reserved for logging.
+
+## Constrain total flow or another scalar integral
+
+Use `IntegralConstraint` when the **total** of a field/flux must match a target:
+
+```python
+from margam.research import IntegralConstraint
+
+# Cross-section x=1, y in [0,2], for a scalar axial-velocity network u(x,y).
+# Simpson weights include the physical cross-section measure (sum = 2).
+flow = IntegralConstraint(
+    "flow_rate",
+    torch.tensor([[1., 0.], [1., 1.], [1., 2.]], dtype=torch.float64),
+    target=4/3,
+    quadrature_weights=[1/3, 4/3, 1/3],
+)
+# Add flow to PINNProblem.constraints alongside your PointConstraint instances,
+# then compile/train with margam.research.Trainer as usual.
+```
+
+With default MSE, this adds one scalar term:
+
+```text
+Q_prediction = sum_i quadrature_weights[i] * q_theta(points[i])
+L_flow_rate   = (Q_prediction - target)^2
+```
+
+The sum is formed **before** squaring. Opposing signed field values can cancel;
+this is distinct from [integrating squared pointwise errors](integral-loss.md),
+where they cannot. Weights are not normalized: their sum carries physical measure.
+The constraint's inherited `measure` must stay **1**, including in integral loss
+mode, so the physical measure is not applied twice. Set its objective coefficient
+with `Trainer(..., weights={"flow_rate": coefficient})`; existing raw and
+`weighted:flow_rate` histories retain their usual meaning.
+
+For a vector network or a derivative flux, supply an explicit scalar pointwise
+`operator(points, prediction)`. For example, `operator=lambda x, uvp: uvp[:, 0:1]`
+selects axial velocity. Use the existing derivative helpers for derivative-based
+fluxes; gradients through the operator and network remain attached. Normals,
+orientation, units and the physical integrand are your explicit research code;
+Margam does not infer them from geometry or boundary names.
+
+Provide one finite, nonnegative quadrature weight per point, with positive finite
+total measure, and one finite fixed scalar target. Zero-weight rows are allowed;
+negative/signed quadrature rules, complex/bool weights, callable targets and vector
+integrands are rejected. Weights may be `(N,)` or `(N,1)`. The operator must return
+`(N,)` or `(N,1)` before reduction. A custom per-term loss receives the integrated
+`(1,1)` prediction and scalar target, rather than the individual quadrature rows.
+
+Points/samplers follow the usual compile-once rule. Compiled weights are detached
+copies on the network's dtype/device; changing the source array does not silently
+change a running experiment. Standard research continuation fingerprints actual
+quadrature weights, coordinates and targets. Reconstruct them before loading;
+changed quadrature is rejected. Unscheduled/scheduled research formats remain
+1/2, and ordinary point-only checkpoints retain their existing identity. Functions
+or constants captured by an operator are not automatically hashed: version
+`checkpoint_id` or `problem.data_identity` when their semantics/data change.
+
+This first implementation is a **research API** capability. Desktop trainers and
+ordinary `PINN` reject the new constraint rather than interpreting it as a pointwise
+BC; there is no new GUI block or imported-mesh/quadrature contract yet.
+
+Run the complete example:
+
+```sh
+.venv/bin/python -m examples.research_integral_flow --device cpu
+.venv/bin/python -m examples.research_integral_flow --device cuda
+```
+
+[The script](../examples/research_integral_flow.py) uses a scalar parabolic
+axial-velocity ansatz, continuity, wall values and an explicit cross-section flow
+constraint. Its ten-update [CPU](../assets/benchmarks/integral-constraint-cpu.json)
+and [CUDA](../assets/benchmarks/integral-constraint-cuda.json) runs reproduce split
+continuation exactly, including step decay. They are API/gradient checks, not a
+full Navier–Stokes model or a solution-accuracy benchmark.
 
 ## Change the update without rebuilding the trainer
 

@@ -805,14 +805,14 @@ lifecycle, not numerical accuracy.
 ## CUDA regression audit — 11 November 2026
 
 The retained [CUDA audit](../assets/benchmarks/cuda-validation-2026-11-11.json)
-passes **15 targeted checks with no skips**, using the existing root environment:
+passes **16 targeted checks with no skips**, using the existing root environment:
 Python **3.14.8**, Torch **2.14.1+cu130**, compiled CUDA runtime **13.0**, NVIDIA
 GeForce RTX 3060 Laptop GPU. No environment/dependency changes were made.
 
 Coverage includes CPU/GPU loss agreement, automatic device/data placement and
 Poisson training, GPU benchmark artifacts, per-boundary weighting across trainers,
 Expert training and NTK/time marching, Scale-PINN, gPINN with RAR, RBA, inverse
-Burgers coefficients, research components and schedules, detached sampler-page
+Burgers coefficients, research components, schedules and scalar integral constraints, detached sampler-page
 inspection, application-level training/inference/resume device switching and
 portable copied-data workflows. These are the existing numerical and lifecycle
 regressions; this does not claim a full-suite run or paper-accuracy reproduction.
@@ -838,3 +838,25 @@ no-CUDA CLI path. A missing GPU returns a non-successful unavailable report rath
 than a green skipped suite; existing report files are preserved without
 `--overwrite`. The old 27 October CPU-only prerequisite in TODO is now closed;
 the older dated validation records remain historical.
+
+## Research scalar integral constraints
+
+`tests/test_integral_constraints.py` checks physical non-unit quadrature against
+manual losses and gradients, cancellation before squaring, a scalar derivative
+operator with nonzero parameter gradient, raw/weighted history and custom loss
+inputs. Integral squared-error mode does not apply cross-section measure twice.
+Invalid weights/targets and unsupported desktop/base trainers are rejected; a
+vector integrand requires explicit field/flux selection. Compile snapshots preserve
+source isolation and Python-list precision in the network dtype.
+
+Fixed quadrature coordinates, weights and targets participate in continuation
+identity, including changed same-total-measure weights. CPU and CUDA split runs
+match uninterrupted weights/history exactly with step decay and restricted tensor
+checkpoint loading. Existing point-only research and standard PINN behavior are
+covered by the affected loss/training/sampling regression checks.
+
+The ten-update scalar axial-flow example has [CPU](../assets/benchmarks/integral-constraint-cpu.json)
+and [CUDA](../assets/benchmarks/integral-constraint-cuda.json) records: both retain
+exact continuation, and report the actual post-update flow separately from
+pre-update losses. The example is deliberately a parabolic ansatz/continuity
+workflow, not a full flow solver or accuracy reproduction.

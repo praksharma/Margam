@@ -474,3 +474,15 @@ Skipped and expected-failure cases cannot certify GPU validation. Reports contai
 relative test names, outcomes/timings, Python/Torch/CUDA/device metadata and source
 fingerprints; local tracebacks and absolute filesystem paths are excluded.
 This is a targeted regression audit, not the full suite or a paper-accuracy study.
+
+Research scalar total-flow constraint:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_integral_constraints.py -v
+.venv/bin/python -m examples.research_integral_flow --device cpu
+.venv/bin/python -m examples.research_integral_flow --device cuda
+```
+
+The example writes nothing by default; use `--output build/integral-flow.json`
+for an explicit JSON record. It validates fixed quadrature and exact continuation,
+not a paper-accuracy benchmark.

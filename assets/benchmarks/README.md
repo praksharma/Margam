@@ -69,6 +69,11 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   lifecycle evidence, not a numerical accuracy benchmark.
 
 - [CUDA regression audit — 11 November 2026](cuda-validation-2026-11-11.json):
-  15 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
+  16 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
   runtime and source fingerprints; a targeted audit, not a full-suite or
   paper-accuracy reproduction. Run `examples.validate_cuda` to reproduce.
+
+- Research integral constraint [CPU](integral-constraint-cpu.json) /
+  [CUDA](integral-constraint-cuda.json): explicit Simpson cross-section quadrature
+  with a scalar parabolic axial-velocity ansatz and exact scheduled continuation.
+  Numerical/API lifecycle evidence, not full-flow or accuracy reproduction.

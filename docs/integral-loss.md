@@ -38,7 +38,9 @@ implementation is independent and does not require NVIDIA's package.
 It is **not** the square of the integrated residual: opposite-sign residuals must
 not cancel before squaring. NVIDIA's separate `IntegralLossNorm` applies to a
 target on an integrated quantity, for example a total flux. Such integral
-constraints are not added by this change. The PDE remains strong-form; this is
+constraints are not enabled by this desktop loss option. They are now available
+separately through [research IntegralConstraint](research.md#constrain-total-flow-or-another-scalar-integral),
+with explicit fixed quadrature and a scalar total target. The PDE remains strong-form; this is
 not a weak-form/variational PINN.
 
 ## Measures and vector fields

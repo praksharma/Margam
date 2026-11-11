@@ -1,0 +1,21 @@
+{
+  "scope": "Scalar parabolic axial-velocity ansatz; fixed Simpson quadrature and continuation check, not a full flow or accuracy benchmark.",
+  "device": "cuda",
+  "torch_version": "2.14.1+cu130",
+  "steps": 10,
+  "quadrature_points": 3,
+  "quadrature_measure": 2.0,
+  "target_flow": 1.3333333333333333,
+  "predicted_flow": 0.7558104567865387,
+  "amplitude": 0.566857842589904,
+  "exact_resume": true,
+  "last_preupdate_loss": {
+    "pde": 0.0,
+    "walls": 0.0,
+    "flow_rate": 0.3703290377060348,
+    "total": 0.3703290377060348,
+    "weighted:walls": 0.0,
+    "weighted:flow_rate": 0.3703290377060348,
+    "learning_rate:0": 0.025
+  }
+}

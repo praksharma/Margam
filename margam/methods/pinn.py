@@ -34,6 +34,9 @@ class PINN:
         """
         self._compiled = False
         self.sampling_controller = None
+        from ..components.integral_constraint import IntegralConstraint
+        if any(isinstance(c,IntegralConstraint) for c in self.problem.constraints) and not getattr(self,'_research_integrals',False):
+            raise ValueError('IntegralConstraint currently requires margam.research.Trainer.')
         if not isinstance(getattr(self.problem,'data_identity',''),str):raise ValueError("Problem data identity must be text.")
         from ..components.losses import LOSS_FORMULATIONS
         if not isinstance(self.loss_formulation,str) or self.loss_formulation not in LOSS_FORMULATIONS:raise ValueError('Unknown loss formulation.')
