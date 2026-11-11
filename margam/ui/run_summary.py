@@ -52,7 +52,13 @@ def execution_plan(window):
     text +=['','Counts describe initial sample rows, not residual components. Duplicate coordinates are preserved. Gauge/mean-velocity anchors are excluded from boundary PDE rows.',
              'Fresh/adaptive sampling can change the active set. Resume restores checkpoint sets. This summary builds no network and performs no training or inference.',
              'Output blocks remain optional. Training does not open their views.']
-    return config,dict(interior=interior_count,boundary=boundary_count,pde=rows,sets={key:len(value) for key,value in sets.items()}),'\n'.join(text)
+    from ..components.resources import memory_snapshot,resource_report,report_text
+    counts=dict(interior=interior_count,boundary=boundary_count,pde=rows,sets={key:len(value) for key,value in sets.items()})
+    resources=resource_report(config,counts,requests,memory=memory_snapshot(config.device),
+        monitor_limits=[nodes[r.identifier].settings['history_limit'] for r in requests if r.kind=='monitor'],
+        output_names={identifier:node.title for identifier,node in nodes.items()})
+    text.append(report_text(config,resources))
+    return config,counts,'\n'.join(text)
 
 
 class RunSummary(QDialog):

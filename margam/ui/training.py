@@ -23,6 +23,7 @@ class TrainingWorker(QThread):
         self.cancel_event.set()
 
     def run(self):
+        stage='model construction'
         try:
             import torch
             from ..templates.poisson import build_pinn
@@ -32,7 +33,9 @@ class TrainingWorker(QThread):
             torch.set_num_threads(1)
             config = self.config
             model = self.model = build_pinn(config)
-            if self.checkpoint is not None:model.load_training_state(self.checkpoint)
+            if self.checkpoint is not None:
+                stage='checkpoint restore';model.load_training_state(self.checkpoint)
+            stage='training update'
             while model.iter < config.iterations and not self.cancel_event.is_set():
                 previous = model.iter
                 events=len(model.sampling_controller.history) if model.sampling_controller is not None else 0
@@ -42,12 +45,15 @@ class TrainingWorker(QThread):
                 if hasattr(model,'expert_summary'):self.expert_progress.emit(model.expert_summary())
                 if model.sampling_controller is not None:
                     for event in model.sampling_controller.history[events:]:self.sampling_updated.emit(dict(event))
+            stage='output evaluation'
             outputs = evaluate_outputs(model, config, self.requests) if getattr(model,'outputs_ready',True) else {}
             self.completed.emit({'outputs': outputs, 'steps': model.iter,
                                  'cancelled': self.cancel_event.is_set(),
                                  'device': str(model.device), 'config': config})
         except Exception as error:
-            self.failed.emit(f'{type(error).__name__}: {error}')
+            from ..components.resources import worker_failure
+            self.model=None;self.checkpoint=None
+            self.failed.emit(worker_failure(error,stage,self.config.device))
 
 
 class EvaluationWorker(QThread):
@@ -61,10 +67,15 @@ class EvaluationWorker(QThread):
     def cancel(self):self.cancel_event.set()
 
     def run(self):
+        stage='checkpoint restore'
         try:
             from ..components.prediction import prediction_model
             from ..components.outputs import evaluate_outputs
             if self.model is None:self.model=prediction_model(self.config,self.checkpoint)
+            stage='output evaluation'
             outputs=evaluate_outputs(self.model,self.config,self.requests)
             self.completed.emit(dict(outputs=outputs,steps=self.model.iter,cancelled=self.cancel_event.is_set(),device=str(self.model.device),config=self.config))
-        except Exception as error:self.failed.emit(f'{type(error).__name__}: {error}')
+        except Exception as error:
+            from ..components.resources import worker_failure
+            self.model=None;self.checkpoint=None
+            self.failed.emit(worker_failure(error,stage,self.config.device))

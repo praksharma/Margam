@@ -486,3 +486,14 @@ Research scalar total-flow constraint:
 The example writes nothing by default; use `--output build/integral-flow.json`
 for an explicit JSON record. It validates fixed quadrature and exact continuation,
 not a paper-accuracy benchmark.
+
+Resource review and memory-failure checks:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_resources.py -v
+.venv/bin/python -m examples.capture_resources --overwrite
+```
+
+The screenshot helper uses explicitly simulated availability to illustrate an
+advisory warning, and writes `assets/screenshots/manual-resources.png`. It does
+not allocate a large model, train or test real memory exhaustion.

@@ -412,3 +412,13 @@
   targets on continuation; keep point-only research checkpoint identity intact.
   Ordinary PINN/desktop methods must reject this research-only constraint. Never
   infer normals, units, mesh weights or a full-flow benchmark from the API example.
+
+- Resource reviews use allocation-free architecture arithmetic and clearly label
+  weight/Adam/hidden/encoded-input references, never a guaranteed peak/fit estimate.
+  Available host/driver memory is a snapshot, not a reservation; quotas/caches
+  matter. Preserve RNG, model/results, history and numerical settings. Warnings
+  are advisory and do not silently resize experiments or bypass validation.
+  Stage-specific OOM handling must preserve ordinary error diagnostics, release
+  failed worker references and avoid presenting failed updates as checkpoints.
+  Test injected failures rather than exhausting real memory. Current QThreads
+  do not provide process isolation or protection from an OS-level memory kill.

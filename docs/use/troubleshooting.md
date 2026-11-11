@@ -70,3 +70,12 @@ connection can prevent later checks, so additional issues may appear once the
 graph is connected. Unused optional outputs/sources are warnings, while the
 existing numerical execution gate remains authoritative. See the
 [validation walkthrough](results.md#fix-problems-before-training).
+
+## A job runs out of memory
+
+Open **Run → Run summary…** and review **Memory and workload** before retrying.
+Messages identifies whether allocation failed during construction, checkpoint
+restore, a training update or output evaluation. Controls become available after
+the failed worker finishes; a smaller experiment is never substituted silently.
+See [resource review and recovery](resources.md) for the meaning and limits of
+the advisory figures. Saved run files remain unchanged.

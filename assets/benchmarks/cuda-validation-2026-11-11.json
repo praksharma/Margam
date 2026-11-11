@@ -6,91 +6,96 @@
   "torch": "2.14.1+cu130",
   "compiled_cuda": "13.0",
   "source": {
-    "base_commit": "3bff8a6c52480c2ca7a07caf72f1ceb9e8b67300",
-    "runtime_and_test_sha256": "643011d23d198b6253d0dd79535ea7e75329cc13cdf4a8c8aaaeba01fcacf18e",
-    "runner_sha256": "8f88e54329725db3ce4cc462c3d786f8234995b7f74cf59f58b62453d10da491"
+    "base_commit": "de425ce81bc3b26e43bdc5eb9a8f46478bcd5e1f",
+    "runtime_and_test_sha256": "b2fd6e85b8c5301e8fb5dc4479c6ebb6bf1c029cc9a4287113e55847ca91f125",
+    "runner_sha256": "b7f65ec093d162835929fcd4e5aa4df610289044f0e0d69f28d32a28f7d4ee28"
   },
   "status": "passed",
   "tests": [
     {
       "test": "test_pinn.CUDAPINNTests.test_cpu_gpu_losses_agree",
       "status": "passed",
-      "seconds": 1.3401876249999987
+      "seconds": 1.3374236560002828
     },
     {
       "test": "test_pinn.CUDAPINNTests.test_gpu_poisson_and_auto_device",
       "status": "passed",
-      "seconds": 5.735823789999813
+      "seconds": 4.831333314000403
     },
     {
       "test": "test_benchmarking.BenchmarkTests.test_real_gpu_recipe_artifacts",
       "status": "passed",
-      "seconds": 0.025794167999265483
+      "seconds": 0.02754672399987612
     },
     {
       "test": "test_boundary_weights.BoundaryWeightTests.test_all_trainers_cuda",
       "status": "passed",
-      "seconds": 0.884244691999811
+      "seconds": 1.0041047089998756
     },
     {
       "test": "test_expert.ExpertTests.test_cuda_training_and_checkpoint",
       "status": "passed",
-      "seconds": 0.23270169499937765
+      "seconds": 0.24406434400043509
     },
     {
       "test": "test_expert_extensions.ExpertExtensionTests.test_cuda_ntk_time_marching_archive",
       "status": "passed",
-      "seconds": 0.6668989130002956
+      "seconds": 0.7210504029999356
     },
     {
       "test": "test_scale.ScaleTests.test_cuda_derivatives_checkpoint_and_cpu_archive_validation",
       "status": "passed",
-      "seconds": 0.20026916000006167
+      "seconds": 0.22695646100055455
     },
     {
       "test": "test_gpinn.GPINNTests.test_cuda_derivatives_and_checkpoint",
       "status": "passed",
-      "seconds": 0.15687275500022224
+      "seconds": 0.17848112200044852
     },
     {
       "test": "test_rba.RBATests.test_cuda_continuation_and_cpu_archive_identity",
       "status": "passed",
-      "seconds": 0.11186366899983113
+      "seconds": 0.12694090200056962
     },
     {
       "test": "test_inverse_burgers.InverseBurgersTests.test_cuda_joint_parameters_and_exact_resume",
       "status": "passed",
-      "seconds": 0.08347598399996059
+      "seconds": 0.10870284799966612
     },
     {
       "test": "test_research.ResearchCUDATests.test_cuda_custom_components_and_exact_resume",
       "status": "passed",
-      "seconds": 0.07507180399989011
+      "seconds": 0.118288685999687
     },
     {
       "test": "test_research_schedules.ScheduleCUDATests.test_cuda_scheduled_resume",
       "status": "passed",
-      "seconds": 0.10364474699963466
+      "seconds": 0.18310198000017408
     },
     {
       "test": "test_integral_constraints.IntegralConstraintTests.test_cuda_integral_gradient_and_exact_resume",
       "status": "passed",
-      "seconds": 0.03664561100049468
+      "seconds": 0.059609877999719174
+    },
+    {
+      "test": "test_resources.ResourceTests.test_cuda_memory_snapshot_is_advisory_without_rng_or_tensor_allocation",
+      "status": "passed",
+      "seconds": 0.000786685000093712
     },
     {
       "test": "test_sample_points.SamplePointsTests.test_cuda_snapshot_copies_only_a_detached_page",
       "status": "passed",
-      "seconds": 0.0002940049998869654
+      "seconds": 0.0006463949994213181
     },
     {
       "test": "test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection",
       "status": "passed",
-      "seconds": 3.708882965999692
+      "seconds": 3.7457930699993085
     },
     {
       "test": "test_dataset_storage.DatasetStorageTests.test_portable_workflow_cuda",
       "status": "passed",
-      "seconds": 4.845067010000093
+      "seconds": 4.880295422999552
     }
   ],
   "device": {

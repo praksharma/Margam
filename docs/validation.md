@@ -805,14 +805,14 @@ lifecycle, not numerical accuracy.
 ## CUDA regression audit — 11 November 2026
 
 The retained [CUDA audit](../assets/benchmarks/cuda-validation-2026-11-11.json)
-passes **16 targeted checks with no skips**, using the existing root environment:
+passes **17 targeted checks with no skips**, using the existing root environment:
 Python **3.14.8**, Torch **2.14.1+cu130**, compiled CUDA runtime **13.0**, NVIDIA
 GeForce RTX 3060 Laptop GPU. No environment/dependency changes were made.
 
 Coverage includes CPU/GPU loss agreement, automatic device/data placement and
 Poisson training, GPU benchmark artifacts, per-boundary weighting across trainers,
 Expert training and NTK/time marching, Scale-PINN, gPINN with RAR, RBA, inverse
-Burgers coefficients, research components, schedules and scalar integral constraints, detached sampler-page
+Burgers coefficients, research components, schedules and scalar integral constraints, advisory CUDA memory queries, detached sampler-page
 inspection, application-level training/inference/resume device switching and
 portable copied-data workflows. These are the existing numerical and lifecycle
 regressions; this does not claim a full-suite run or paper-accuracy reproduction.
@@ -860,3 +860,26 @@ and [CUDA](../assets/benchmarks/integral-constraint-cuda.json) records: both ret
 exact continuation, and report the actual post-update flow separately from
 pre-update losses. The example is deliberately a parabolic ansatz/continuity
 workflow, not a full flow solver or accuracy reproduction.
+
+## Resource review and memory-allocation failures
+
+`tests/test_resources.py` compares arithmetic parameter/buffer counts with actual
+small instances of all supported networks over 1D/2D/space-time dimensions, plus
+RWF, full/diagonal/Gaussian Fourier, affine expansion and inverse coefficients.
+It flags a large full-Fourier point/feature combination without allocating its
+feature array. It covers aggregate output/candidate/RAR/monitor counts, unknown
+or zero free memory, and honest reference-scale captions.
+
+An actual trained GUI retains its graph, Undo index, result, model and RNG while
+a low-memory fixture produces an advisory warning with Train still enabled.
+Injected host/Torch allocator failures exercise construction, checkpoint restore,
+training and output stages, clear failed worker references and permit a subsequent
+real successful run. Non-memory errors retain their original diagnostic. No real
+RAM/VRAM exhaustion is attempted. Existing run/device/evaluation/automation
+checks are run alongside this workflow.
+
+The CUDA query case reads real driver availability and verifies unchanged Torch
+CPU/CUDA RNG and allocated tensor bytes. The maintained screenshot explicitly
+labels simulated host availability and is a UI illustration, not a capacity or
+accuracy benchmark. [Resource guide](use/resources.md) documents the remaining
+process-isolation, quota and probe limitations.

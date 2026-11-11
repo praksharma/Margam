@@ -58,6 +58,11 @@ counts. Choose **Train new run** to start. This starts fresh; the existing
 
 ![Run summary assembled from the graph](../../assets/screenshots/manual-run-summary.png)
 
+The **Memory and workload** section adds network parameter/buffer counts, advisory
+weight/Adam/activation scales, adaptive and output budgets, and current RAM/VRAM
+availability. It does not predict peak training memory or reserve capacity.
+See [resource review and memory failures](resources.md).
+
 The summary reads the graph and initial sampling functions, including mapped
 training files, without constructing or evaluating a network. It does not use
 whichever block happened to be selected in the inspector. Counts distinguish

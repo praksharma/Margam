@@ -51,7 +51,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
 - [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
 - [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
-  resolved. The 11 November CUDA audit passes 16 targeted checks without skips,
+  resolved. The 11 November CUDA audit passes 17 targeted checks without skips,
   including training, derivatives, continuation, global device selection and
   portable data. Retain the earlier environment audit as historical evidence;
   see [current CUDA validation](validation.md#cuda-regression-audit-11-november-2026).
@@ -642,3 +642,23 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   optimizers/schedules and further checkpointable algorithms as concrete uses arise.
 - [ ] Consider promoting mature research components into desktop blocks separately;
   research scripting does not automatically register or execute code from models.
+
+## Resource guardrails
+
+- [x] Extend Run summary with allocation-free parameter/buffer counts, clearly
+  labelled weight/Adam/hidden/encoded-input reference scales, RAR/candidate/BC/output
+  budgets and available host/device memory. Add advisory warnings without silently
+  altering valid experiments or claiming a fit prediction.
+- [x] Recognize worker allocation failures by stage, retain backend diagnostics,
+  release failed worker state and return controls without publishing a failed
+  update as a result/checkpoint. Verify with injected failures, not real exhaustion.
+- [ ] Isolate numerical jobs from the GUI process, preserving device selection,
+  cancellation, progress, output ownership and strict checkpoint behavior.
+- [ ] Add an opt-in representative resource probe with isolated model/RNG/state,
+  complete update and method-specific work; distinguish measured peaks from
+  extrapolated adaptive growth and output costs.
+- [ ] Add explicit configurable resource policies/OS budgets for isolated jobs;
+  memory availability and exceptions alone cannot prevent an OS-level kill.
+- [ ] Evaluate method-specific microbatching/gradient aggregation and inference
+  chunking with mathematical and continuation tests; do not auto-reduce samples
+  or change causal/NTK/mask/integral semantics after an OOM.

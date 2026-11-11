@@ -31,6 +31,8 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | How do prepared GeoSampler points enter Margam? | [Planar data contract](geosampler-contract.md) |
 | What is implemented and what are the limits? | [Component capability index](components.md) |
 
+Review a large workload or a memory error: [Memory and workload](use/resources.md).
+
 ## Results and verification
 
 | Question | Read |

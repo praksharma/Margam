@@ -69,7 +69,7 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   lifecycle evidence, not a numerical accuracy benchmark.
 
 - [CUDA regression audit — 11 November 2026](cuda-validation-2026-11-11.json):
-  16 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
+  17 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
   runtime and source fingerprints; a targeted audit, not a full-suite or
   paper-accuracy reproduction. Run `examples.validate_cuda` to reproduce.
 

@@ -1,0 +1,15 @@
+{
+  "generator": "examples.capture_resources",
+  "scope": "Read-only resource summary with simulated host availability to demonstrate advisory warnings. No training or capacity benchmark.",
+  "simulated_memory": {
+    "host_available": 33554432,
+    "host_total": 4294967296,
+    "gpu_available": null,
+    "gpu_total": null,
+    "dtype": "torch.float32",
+    "scalar_bytes": 4
+  },
+  "file": "manual-resources.png",
+  "bytes": 195408,
+  "sha256": "21ae419077a424adac5c1b4134c7a4e3741fca22fa52109d9e9e446e39cad8ab"
+}
