@@ -107,7 +107,9 @@ class GPINNTests(unittest.TestCase):
 
     @unittest.skipUnless(torch.cuda.is_available(),'CUDA required')
     def test_cuda_derivatives_and_checkpoint(self):
-        c=example_config('gpinn_burgers_rar');c.device='cuda';c.points=8;c.boundary_points=2;c.layers=(4,4);c.adaptive_sampling.update(interval=2,candidates=20,batch=2,maximum=20)
+        # Clear the paper preset's per-set budgets for this deliberately tiny RAR cap.
+        c=example_config('gpinn_burgers_rar');c.device='cuda';c.points=8;c.boundary_points=2;c.boundary_sampling={};c.layers=(4,4);c.adaptive_sampling.update(interval=2,candidates=20,batch=2,maximum=20)
         m=build_pinn(c);m.train(3,0);n=build_pinn(c);n.load_training_state(m.training_state());m.train(2,0);n.train(2,0)
+        self.assertEqual(len(m.sampling_controller.history),2)
         self.assertEqual(m.loss_history,n.loss_history)
         for name,value in m.network.state_dict().items():torch.testing.assert_close(value,n.network.state_dict()[name],rtol=1e-5,atol=1e-7)

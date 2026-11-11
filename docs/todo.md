@@ -50,10 +50,11 @@ execution is one supported problem root, not arbitrary multi-model simulation.
 - [x] Add an explicit planar GeoSampler schema-v2 NPZ bridge with label/axis
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
 - [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
-- [ ] External prerequisite: validate GPU training when a working NVIDIA driver
-  and CUDA-enabled PyTorch build are available. Audit on 27 October: installed
-  torch 2.14.1+cpu, torch.version.cuda=None, CUDA unavailable; nvidia-smi cannot
-  communicate with the driver. CPU checks do not satisfy this item.
+- [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
+  resolved. The 11 November CUDA audit passes 15 targeted checks without skips,
+  including training, derivatives, continuation, global device selection and
+  portable data. Retain the earlier environment audit as historical evidence;
+  see [current CUDA validation](validation.md#cuda-regression-audit-11-november-2026).
 
 ## Menus and explicit outputs
 

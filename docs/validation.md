@@ -801,3 +801,40 @@ leaving the original CUDA tensor and gradients intact. The maintained capture
 shows page two of a real 214-row RAR set after five CPU updates, including two
 fixed boundary PDE anchors and six additions. This verifies retention and UI
 lifecycle, not numerical accuracy.
+
+## CUDA regression audit — 11 November 2026
+
+The retained [CUDA audit](../assets/benchmarks/cuda-validation-2026-11-11.json)
+passes **15 targeted checks with no skips**, using the existing root environment:
+Python **3.14.8**, Torch **2.14.1+cu130**, compiled CUDA runtime **13.0**, NVIDIA
+GeForce RTX 3060 Laptop GPU. No environment/dependency changes were made.
+
+Coverage includes CPU/GPU loss agreement, automatic device/data placement and
+Poisson training, GPU benchmark artifacts, per-boundary weighting across trainers,
+Expert training and NTK/time marching, Scale-PINN, gPINN with RAR, RBA, inverse
+Burgers coefficients, research components and schedules, detached sampler-page
+inspection, application-level training/inference/resume device switching and
+portable copied-data workflows. These are the existing numerical and lifecycle
+regressions; this does not claim a full-suite run or paper-accuracy reproduction.
+
+The audit exposed a stale **test fixture** in the gPINN CUDA case: reducing the
+common boundary budget had left paper-preset per-set overrides intact, making
+the initial collocation set exceed its deliberately small RAR cap. The numerical
+validator correctly rejected that configuration. The fixture now explicitly clears
+those overrides and asserts two actual RAR events; all six gPINN tests pass,
+including the CUDA derivative/checkpoint case. No solver validation was relaxed.
+
+Reproduce with `examples.validate_cuda`; see [commands](commands.md#audit-actual-cuda-execution).
+The saved JSON includes outcomes and wall times for individual cases, runtime/GPU
+metadata, a base Git commit and SHA-256 fingerprints of numerical/UI source,
+selected test sources and the runner. The fingerprints identify tested bytes even
+when the audit is recorded before its containing commit. Tracebacks remain local
+and do not enter the public JSON.
+
+Five audit-runner checks pass separately. They verify ordinary success, skips,
+expected/unexpected failures, skipped/failed subtests, empty suites, explicit selection
+of the desktop GPU case, exclusion of its mocked-unavailable-GPU case, and the
+no-CUDA CLI path. A missing GPU returns a non-successful unavailable report rather
+than a green skipped suite; existing report files are preserved without
+`--overwrite`. The old 27 October CPU-only prerequisite in TODO is now closed;
+the older dated validation records remain historical.

@@ -451,3 +451,26 @@ Retained adaptive point inspection:
 
 The capture creates a five-update CPU RAR run and records its second retained
 point page under `assets/screenshots/manual-retained-points.png`.
+
+## Audit actual CUDA execution
+
+Use the existing root environment:
+
+```sh
+.venv/bin/python -m examples.validate_cuda
+.venv/bin/python -m examples.validate_cuda --output build/cuda-validation.json
+.venv/bin/python -m unittest discover -s tests -p test_cuda_audit.py -v
+```
+
+The runner selects the maintained CUDA test manifest, including the desktop
+training/inference/resume case. It runs actual checks rather than merely reporting
+`torch.cuda.is_available()`. JSON goes to standard output and test diagnostics to
+standard error; `--output` also saves JSON. Existing reports require an explicit
+`--overwrite`. No environment, driver or dependency changes are made.
+
+Exit status is **0** only when all selected checks execute and pass; **1** means
+failed checks and **2** means CUDA is unavailable or validation is incomplete.
+Skipped and expected-failure cases cannot certify GPU validation. Reports contain
+relative test names, outcomes/timings, Python/Torch/CUDA/device metadata and source
+fingerprints; local tracebacks and absolute filesystem paths are excluded.
+This is a targeted regression audit, not the full suite or a paper-accuracy study.

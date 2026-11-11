@@ -67,3 +67,8 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   [CUDA](research-step-decay-cuda.json): eight-update custom-network AdamW runs,
   halving rates every two updates and checking exact split continuation. API
   lifecycle evidence, not a numerical accuracy benchmark.
+
+- [CUDA regression audit — 11 November 2026](cuda-validation-2026-11-11.json):
+  15 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
+  runtime and source fingerprints; a targeted audit, not a full-suite or
+  paper-accuracy reproduction. Run `examples.validate_cuda` to reproduce.

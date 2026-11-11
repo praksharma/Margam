@@ -396,3 +396,10 @@
   importance anchor ordering. Derive only initial grid counts for archive roles,
   not coordinates/BC labels. Clear on busy/semantic/result changes, resolve owners
   by ID and close deleted owners. Keep evaluation points and archive formats intact.
+
+- Keep examples.validate_cuda's explicit module/desktop-case manifest aligned
+  with actual CUDA regressions; mocked GPU-unavailable checks do not certify
+  CUDA execution. Only executed passes may produce a passed audit. Skips, expected
+  failures and empty suites are incomplete. Public audit JSON includes source/runtime
+  metadata and outcomes, never local tracebacks, usernames or absolute paths.
+  Do not weaken numerical validators to accommodate stale small test presets.
