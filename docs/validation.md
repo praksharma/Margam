@@ -914,3 +914,23 @@ operator on the new retained-state handle. That check was corrected to construct
 the physical operators from configuration; its two-case module then passed.
 The final isolated-job module passed seven cases, including actual CUDA
 continuation, and the refreshed CUDA audit passed 18 cases without skips.
+
+## Post-isolation reliability pass
+
+On 2026-11-11, a fresh complete CPU/offscreen discovery finished cleanly:
+**338 tests, 319 passed and 19 CUDA-dependent skips** (753.329 seconds).
+This supersedes the earlier full-run failure described above; no further runtime
+changes were needed. The separate 18-case CUDA audit remains applicable to the
+unchanged runtime and audited test sources.
+
+The maintained Jorvik annulus saved-project workflow was also rerun independently
+on **CPU and CUDA**. Both passed project save/reopen, cooperative stop after 50
+updates, archive reopening, two-update continuation with exact uninterrupted-run
+weights/history, evaluation without changing weights, project relocation and
+explicit VTU export. Export checks preserved the three supplied coordinates,
+point IDs and predicted values. The optional VTK reader was unavailable, so these
+runs verified XML contents directly rather than claiming reader interoperability.
+The existing [CPU](../assets/benchmarks/jorvik-workflow-cpu.json) and
+[CUDA](../assets/benchmarks/jorvik-workflow-cuda.json) records remain unchanged
+because the reruns produced identical results. These are lifecycle/correctness
+checks, not numerical-accuracy benchmarks.
