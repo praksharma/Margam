@@ -421,3 +421,13 @@ Research step-decay continuation example (no desktop changes):
 .venv/bin/python -m examples.research_custom --step-decay --device cpu --output build/research-decay
 .venv/bin/python -m unittest discover -s tests -p 'test_research*.py' -v
 ```
+
+Crowded-diagram wire-routing evidence:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_wire_routing.py -v
+.venv/bin/python -m examples.capture_wire_routing --overwrite
+```
+
+The capture helper reproduces the same heat graph and note with the routing
+preference off/on. It saves before/after screenshots under `assets/screenshots`.

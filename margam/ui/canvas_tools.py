@@ -33,6 +33,9 @@ class CanvasTools:
         self.snap_grid_action.setToolTip('Snap new items and drag release to the 20-unit grid; group offsets stay unchanged')
         self.show_grid_action.toggled.connect(lambda checked:self.set_canvas_preference('show_grid',checked))
         self.snap_grid_action.toggled.connect(lambda checked:self.set_canvas_preference('snap_grid',checked))
+        self.route_wires_action=self.view_menu.addAction('Route wires around blocks');self.route_wires_action.setCheckable(True)
+        self.route_wires_action.setToolTip('Use bounded right-angle detours around up to 64 blocks/notes. Curved fallback when no clear lane exists; wire crossings may remain.')
+        self.route_wires_action.toggled.connect(lambda checked:self.set_canvas_preference('route_wires',checked))
         menu=self.view_menu.addMenu('Highlight dependencies');group=QActionGroup(self);group.setExclusive(True)
         self.dependency_actions={};self.dependency_mode='off'
         for key,label in [('off','Off'),('upstream','Upstream'),('downstream','Downstream'),('both','Both directions')]:
@@ -43,6 +46,7 @@ class CanvasTools:
 
     def set_canvas_preference(self,key,value):
         setattr(self.scene,key,bool(value));self.scene.update()
+        if key=='route_wires':self.scene.reroute_wires()
         state=getattr(self,'desktop_state',None)
         if state is not None:state.settings.setValue(key,bool(value))
 
@@ -63,6 +67,7 @@ class CanvasTools:
 
     def presentation_changed(self):
         # Notes affect the editable document/recovery, never the numerical state.
+        self.scene.reroute_wires()
         self.refresh_dependencies();self.update_document_title();self.update_clipboard_actions();self.update_layout_actions()
         for node in self.scene.nodes():
             if node.kind=='annotation':self.refresh_note(node)

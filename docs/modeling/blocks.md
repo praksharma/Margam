@@ -214,3 +214,36 @@ Saved models use format **31** for optional label metadata. Older versions of
 Margam cannot read this new format; this release still reads formats 1–30.
 Model comparison treats labels as presentation changes, visible when
 **Include names, notes and positions** is checked.
+
+## Route wires around blocks
+
+Enable **View → Route wires around blocks** to use right-angle detours around
+computational blocks and notes. This is an optional local display preference,
+off by default. Existing curved wires return when you turn it off. Model files,
+connections, numerical settings, trained results and Undo history stay unchanged.
+The setting is remembered on this desktop, rather than stored in a model.
+
+The fixture below puts a note over the interior-sampler connection in the heat
+example. Both screenshots have exactly the same block positions and arrows.
+
+![A note obscures a curved wire in the heat diagram](../../assets/screenshots/manual-wire-routing-before.png)
+
+![Optional right-angle routing detours around the note](../../assets/screenshots/manual-wire-routing-after.png)
+
+Routes update as blocks/notes move, appear or disappear, including through
+Undo/Redo. You can select a routed wire and inspect its usual endpoint and payload
+information. Toggling the view is also available while training; it does not change
+where the PDE or any other loss is applied.
+
+This is a bounded lane search, not a general diagram optimizer. It checks a short
+horizontal escape from each port, two elbow paths, and lanes above/below expanded
+block rectangles, choosing a shortest clear candidate. It handles up to **64
+blocks, including notes**. Overlapping blocks, obstructed port escapes, or a larger
+diagram may leave a wire curved; its tooltip then explains the routing fallback.
+Move the obstructing items or try **Format → Auto arrange model**. Routing itself
+never moves or repairs blocks.
+
+Wire-to-wire crossings and shared lanes may remain. They do **not** create a
+connection or a junction: only the stored source and destination ports define an
+arrow. Select a wire to inspect those endpoints. Manual waypoints, automatic lane
+separation and a guarantee of crossing-free diagrams remain outside this option.

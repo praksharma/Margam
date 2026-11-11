@@ -744,3 +744,25 @@ The runnable example's eight-update scheduled AdamW checks also pass on
 [CUDA](../assets/benchmarks/research-step-decay-cuda.json). Both reproduce the split
 run exactly, log a final-update rate of `0.000375`, and retain `0.0001875` for the
 next update. These are lifecycle checks, not convergence or paper-accuracy claims.
+
+## Crowded-diagram wire routing
+
+`tests/test_wire_routing.py` covers deterministic clear/detour routes, backwards
+and vertically separated ports, blocked escapes, invalid coordinates and the
+64-block bound. Its native Qt workflows select a routed wire, drag the blocking
+note, Undo/Redo its movement and deletion, exercise fallback explanations and
+restore the preference from isolated desktop state. A real two-update CPU run
+retains its trained model and result throughout the presentation changes; this
+is lifecycle evidence, not an accuracy test.
+
+`examples.capture_wire_routing` reproduces a heat graph with a note obscuring an
+interior-to-PDE connection. The maintained before/after screenshots show the same
+blocks and connections with only the view preference changed; all twelve wires
+find clear routes in this fixture. The capture asserts unchanged serialized model
+and Undo index, checks the painted stroke around the note, and records image
+hashes. See [routing scope and screenshots](modeling/blocks.md#route-wires-around-blocks).
+
+The affected canvas/navigation, dependency explanations, edit history, block-label
+and saved-model checks are run alongside the routing tests. Default curved wires,
+physics validation and model formats are preserved. Crossings/shared lanes remain
+possible; neither implies a new connection. No CUDA numerical code changes.

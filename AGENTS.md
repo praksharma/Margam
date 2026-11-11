@@ -374,3 +374,10 @@
   Reject external rate edits, zero-rate underflow and custom-step composition.
   Scheduled research checkpoints use format 2 with exact schedule/history checks;
   preserve unscheduled format 1 and copy optimizer tensors when restoring snapshots.
+
+- Optional wire routing is a local visual preference, not model metadata. Use
+  bounded orthogonal lane detours around up to 64 block/note rectangles, with
+  explicit curved fallback; preserve topology, selection, numerical state and
+  Undo history when toggling. Recompute on moves/insertion/deletion and Undo/Redo.
+  Shared lanes/crossings are not graph junctions. Keep pending-wire drawing and
+  the default curved mode intact; test painted strokes, not implicit path fills.

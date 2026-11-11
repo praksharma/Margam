@@ -1,0 +1,19 @@
+{
+  "generator": "examples.capture_wire_routing",
+  "scope": "The same heat graph and note before/after a visual preference; no training or accuracy claim.",
+  "fixture_wire": "interior -> pde",
+  "routed": 12,
+  "fallback": 0,
+  "files": [
+    {
+      "file": "manual-wire-routing-before.png",
+      "bytes": 201103,
+      "sha256": "3e88960c55e4b473cc4f00b58bca8623ad1e666a7c31c7643f2c1923eae51881"
+    },
+    {
+      "file": "manual-wire-routing-after.png",
+      "bytes": 188857,
+      "sha256": "5f456eaac23a76a1e40c05ddf5c0a59ec1918c833eeaaa465baf2abd0a27c1d7"
+    }
+  ]
+}

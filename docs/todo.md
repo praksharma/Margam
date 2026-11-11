@@ -551,8 +551,11 @@ Next editor improvements, in priority order:
   results and undo history, including while training.
 - [x] Add canvas-level context actions for alignment/distribution and selected-block
   fit. Preserve multi-selection when opening a group context menu.
-- [ ] Review dense diagrams for wire crossings and overlapping blocks. Add routing
-  improvements only with concrete diagrams and reproducible interaction tests.
+- [x] Review a reproducible crowded heat diagram and add optional, bounded block/note-avoiding
+  right-angle routing with native wire selection, drag, Undo/Redo, result preservation
+  and before/after captures. Shared lanes/crossings may remain; no topology or block
+  placement changes. Overlap/blocked escapes and diagrams above 64 blocks use an
+  explicit curved fallback; general routing/manual waypoints remain deferred.
 - [x] Add independent block labels in Properties and the context menu, keeping
   type and ID visible. Preserve numerical state, Undo, copy/paste, saved/recovered
   models and compact/expanded root/network labels; format 31 reads older models.

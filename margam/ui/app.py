@@ -96,9 +96,29 @@ class Wire(QGraphicsPathItem):
         bend = max(60, abs(b.x() - a.x()) / 2)
         path = QPainterPath(a)
         path.cubicTo(a + QPointF(bend, 0), b - QPointF(bend, 0), b)
+        self.route_status='curved'
+        scene=self.source.scene()
+        if self.target is not None and scene is not None and scene.route_wires:
+            from .wire_routing import route,MAX_BLOCKS
+            nodes=scene.nodes()
+            if len(nodes)<=MAX_BLOCKS:
+                source=self.source.parentItem();target=self.target.parentItem()
+                if source in nodes and target in nodes:
+                    rectangles=[]
+                    for node in nodes:
+                        rect=node.sceneBoundingRect()
+                        rectangles.append((rect.left(),rect.top(),rect.right(),rect.bottom()))
+                    points=route((a.x(),a.y()),(b.x(),b.y()),rectangles,nodes.index(source),nodes.index(target))
+                    if points is not None:
+                        path=QPainterPath(QPointF(*points[0]))
+                        for point in points[1:]:path.lineTo(QPointF(*point))
+                        self.route_status='routed'
+            if self.route_status!='routed':self.route_status='fallback'
         self.setPath(path)
         from .graph_explanations import wire_text
-        self.setToolTip(literal_tooltip(wire_text(self)))
+        text=wire_text(self)
+        if self.route_status=='fallback':text+='\n\nRouting fallback: no clear route in the bounded lane search, or more than 64 blocks. Move overlapping blocks or use Auto arrange.'
+        self.setToolTip(literal_tooltip(text))
 
     def paint(self,painter,option,widget=None):
         painter.save()
@@ -201,12 +221,15 @@ class Canvas(QGraphicsScene):
         super().__init__()
         self.wires, self.pending = [], None
         self.locked = False
-        self.show_grid=False;self.snap_grid=False;self.grid_spacing=20
+        self.show_grid=False;self.snap_grid=False;self.route_wires=False;self.grid_spacing=20
         self._drag_anchor=None
         self.edit_handler = None
         self._move_start = {}
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setBackgroundBrush(QColor(colors()['canvas']))
+
+    def reroute_wires(self):
+        for wire in self.wires:wire.update_path()
 
     def snap_point(self,point):
         return QPointF(round(point.x()/self.grid_spacing)*self.grid_spacing,round(point.y()/self.grid_spacing)*self.grid_spacing) if self.snap_grid else QPointF(point)
@@ -1751,6 +1774,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.update_run_actions()
 
     def graph_changed(self):
+        self.scene.reroute_wires()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.mark_stale()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.mark_stale()
         self.preserve_evaluation_weights()
