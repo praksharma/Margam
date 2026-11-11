@@ -132,6 +132,48 @@ flow configuration.
 - Rectangle **Preview samples** shows the initial recipe only. It does not display
   the live adaptive set. No new field heatmap or global figure pane is introduced.
 
+## Inspect the retained training points
+
+After a completed or stopped run, right-click the connected **RAR** or
+**Residual importance sampling** block and choose **Inspect retained PDE
+points…**. The same button is in its Properties. Reopened run archives support
+the inspector without retraining or reading the original input files.
+
+![A retained RAR page with initial points, fixed boundary anchors and additions](../assets/screenshots/manual-retained-points.png)
+
+*Actual retained rows after five CPU updates. The example starts with 206 interior
+points and two explicitly connected boundary PDE anchors, then adds six RAR
+points. Page two shows the final 14 of 214 rows. This is lifecycle evidence,
+not a solution-accuracy benchmark.*
+
+The read-only table pages through **200 rows at a time**, preserving stored order
+and duplicates. Columns show the stored row number, physical coordinates, row
+role and **PDE correction** multiplier. Roles distinguish original interior rows,
+RAR additions, importance draws and fixed boundary/initial PDE anchors. Anchors
+are included only when their source was connected to the PDE; they remain separate
+from boundary-condition operators and their loss coefficients. No boundary label
+or BC type is inferred from a coordinate.
+
+Importance correction is the multiplier of the squared residual, **not** the draw
+probability or an attention weight. It is one before the first importance update,
+and fixed boundary PDE anchors keep correction one. Repeated importance draws
+remain visible. RAR retains initial rows (including anchors) before its additions.
+The caption gives the retained optimizer update, actual total/anchor counts and
+adaptive event count. Last candidate residual statistics are historical values
+from that event; opening a page does not rescore the residual.
+
+The inspector uses the idle model or its saved adaptive checkpoint. Only the
+selected page is copied to CPU, without reconstructing a network, regenerating
+samples, predicting, changing weights or modifying the run. Evaluation/export
+points remain independent. It is deliberately **not a live worker view**: while a
+job or geometry editor is active, the page clears and Refresh refuses tensor
+reads. Refresh after completion to inspect the retained set. A model edit clears
+the page; deleting its owner closes it. Labels and layout changes preserve it.
+
+Page selection is temporary and is not saved in model/run formats. All numerical
+sampler settings, archive data and continuation behavior retain their existing
+contracts. There is no point export or spatial figure added by this inspector.
+
 ## Saved models and runs
 
 Model format 13 records the sampler block and schedule. Versions 1–12 retain

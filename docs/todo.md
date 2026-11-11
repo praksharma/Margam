@@ -356,7 +356,10 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Document formulas, DeepXDE differences, screenshots and CPU workflow evidence.
 - [ ] GeoSampler-provided admissible candidate sets for imported/non-box geometries.
 - [ ] Define SA-PINN mask and Adam-moment transfer before combining it with moving points.
-- [ ] Consider a sampler-owned live point-set view when there is a concrete need.
+- [x] Add sampler-owned retained PDE point inspection for RAR/importance: bounded
+  pages, fixed-anchor roles, correction weights and archived runs, without inference
+  or sampler mutation. Explicitly choose idle snapshots; safe live-worker transfer
+  remains deferred until a workflow needs it.
 - [ ] Revisit XPINN after a practical GeoSampler subdomain/interface sampling workflow exists.
 
 - [x] Cross-check importance loss correction against NVIDIA Sym's area/density

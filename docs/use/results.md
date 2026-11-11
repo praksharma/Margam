@@ -231,3 +231,11 @@ compatible vector group and inspect six discrete absolute/relative norms. Zero
 reference norms have an explicit policy; field choices do not retrain the model
 or change stored results. See [Error norms](error-norms.md) for definitions and the
 reusable research-script function.
+
+## Inspect adaptive training locations
+
+For RAR or residual importance sampling, open the sampler's **Inspect retained
+PDE points…** context/Properties action after a run or after opening its run
+archive. This separate read-only table shows actual active coordinates, fixed
+PDE anchors and importance correction weights in pages of 200. It never substitutes
+training points for your output evaluation dataset. See [retained training points](../adaptive-sampling.md#inspect-the-retained-training-points).

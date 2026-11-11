@@ -441,3 +441,13 @@ Stored physical-time selection evidence:
 
 The capture uses a two-update CPU Burgers run and writes
 `assets/screenshots/manual-result-times.png` with its evidence manifest.
+
+Retained adaptive point inspection:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p test_sample_points.py -v
+.venv/bin/python -m examples.capture_sample_points --overwrite
+```
+
+The capture creates a five-update CPU RAR run and records its second retained
+point page under `assets/screenshots/manual-retained-points.png`.

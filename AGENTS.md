@@ -388,3 +388,11 @@
   inference call, export filter or model/archive setting. Label existing metrics
   as full-data metrics; Error norms retain their complete stored-row scope. Reset
   on new results and release data on invalidation; preserve steady-table behavior.
+
+- Adaptive point inspection belongs to the connected RAR/importance sampler and
+  reads retained idle-model/checkpoint data only. Never read a worker's tensors,
+  regenerate samples or rescore residuals. Copy at most a 200-row page to CPU;
+  retain order/duplicates, actual correction weights and the existing RAR versus
+  importance anchor ordering. Derive only initial grid counts for archive roles,
+  not coordinates/BC labels. Clear on busy/semantic/result changes, resolve owners
+  by ID and close deleted owners. Keep evaluation points and archive formats intact.

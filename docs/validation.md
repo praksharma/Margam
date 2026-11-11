@@ -783,3 +783,21 @@ still contains all nine physical times. An archive reopens with complete data an
 All stored rows selected, then supports filtering offline. The screenshot capture
 uses this same short-run setup and records its hash; it is a lifecycle example,
 not an accuracy benchmark. No numerical CUDA implementation changes.
+
+## Retained adaptive point inspection
+
+`tests/test_sample_points.py` checks page order/bounds, detached copies, RAR's
+initial anchor positions, importance's trailing anchors, actual correction
+weights, warm-up unit weights and invalid/non-finite data rejection. Native
+RAR/importance runs compare every displayed coordinate/weight against the actual
+retained tensors. Inspection is guarded against residual scoring, prediction and
+resampling; model, Undo index, result identity, loss history and weights stay
+unchanged. The same page reopens from an archive without sample generation.
+Busy/editor state refuses reads; renaming preserves the snapshot, semantic edits
+clear it, and deleting the owner closes its dialog.
+
+The CUDA case checks that only a detached 200-row page is copied for display,
+leaving the original CUDA tensor and gradients intact. The maintained capture
+shows page two of a real 214-row RAR set after five CPU updates, including two
+fixed boundary PDE anchors and six additions. This verifies retention and UI
+lifecycle, not numerical accuracy.

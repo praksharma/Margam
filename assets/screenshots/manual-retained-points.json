@@ -1,0 +1,138 @@
+{
+  "generator": "examples.capture_sample_points",
+  "scope": "Actual RAR points after five CPU updates; page two includes original rows, fixed PDE anchors and additions. Lifecycle evidence, not accuracy.",
+  "snapshot": {
+    "rows": [
+      {
+        "row": 201,
+        "coordinates": [
+          0.9733009934425354
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 202,
+        "coordinates": [
+          0.9781553149223328
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 203,
+        "coordinates": [
+          0.9830096960067749
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 204,
+        "coordinates": [
+          0.987864077091217
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 205,
+        "coordinates": [
+          0.9927184581756592
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 206,
+        "coordinates": [
+          0.9975728392601013
+        ],
+        "kind": "Initial interior",
+        "correction": 1.0
+      },
+      {
+        "row": 207,
+        "coordinates": [
+          0.0
+        ],
+        "kind": "Boundary/initial PDE anchor",
+        "correction": 1.0
+      },
+      {
+        "row": 208,
+        "coordinates": [
+          1.0
+        ],
+        "kind": "Boundary/initial PDE anchor",
+        "correction": 1.0
+      },
+      {
+        "row": 209,
+        "coordinates": [
+          0.6166500449180603
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      },
+      {
+        "row": 210,
+        "coordinates": [
+          0.5542704463005066
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      },
+      {
+        "row": 211,
+        "coordinates": [
+          0.7034803628921509
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      },
+      {
+        "row": 212,
+        "coordinates": [
+          0.6298826932907104
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      },
+      {
+        "row": 213,
+        "coordinates": [
+          0.6539225578308105
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      },
+      {
+        "row": 214,
+        "coordinates": [
+          0.587384819984436
+        ],
+        "kind": "RAR addition",
+        "correction": 1.0
+      }
+    ],
+    "page": 2,
+    "pages": 2,
+    "count": 214,
+    "boundary_count": 2,
+    "initial_count": 208,
+    "steps": 5,
+    "method": "rar",
+    "last_event": {
+      "step": 4,
+      "points": 214,
+      "mean_residual": 2.2973690472151103,
+      "max_residual": 2.3955166339874268
+    },
+    "events": 2,
+    "corrected": false
+  },
+  "file": "manual-retained-points.png",
+  "bytes": 103130,
+  "sha256": "3e2b9d3737aebaf5c87b340358ff4330cbd1b0ac62aabc5c1d8569c27737eb96"
+}

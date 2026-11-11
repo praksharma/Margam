@@ -541,6 +541,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.messages_dock.hide()
         self.output_views=OutputViews(self)
         self.error_norm_dialogs={}
+        self.sample_point_dialogs={}
         self.setup_menus()
         self.setup_icons()
         self.scene.blockOpened.connect(self.open_block)
@@ -1184,6 +1185,15 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         except (OSError,ValueError,KeyError) as error:QMessageBox.warning(self,'Predictions could not be exported',str(error));return False
         self.statusBar().showMessage('Exported '+label+' · '+Path(path).name);return True
 
+    def show_sample_points(self,node):
+        if not isValid(self) or not isValid(node) or node.scene() is not self.scene or node.kind not in ('rar','importance'):return None
+        from .sample_points import SamplePointsDialog
+        dialog=self.sample_point_dialogs.get(node.identifier)
+        if dialog is None or not isValid(dialog):
+            dialog=SamplePointsDialog(self,node.identifier);self.sample_point_dialogs[node.identifier]=dialog
+        dialog.refresh();dialog.show();dialog.raise_()
+        return dialog
+
     def show_error_norms(self,node):
         if not isValid(self) or not isValid(node) or node.scene() is not self.scene or node.kind!='comparison':return None
         from .error_norms import ErrorNormsDialog
@@ -1213,6 +1223,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         menu.addAction('Properties').triggered.connect(lambda:self.show_block_properties(node))
         label_action=menu.addAction('Rename block…');label_action.setEnabled(not self.is_running() and not self.scene.locked)
         label_action.triggered.connect(lambda:self.request_block_label(node))
+        if node.kind in ('rar','importance'):menu.addAction('Inspect retained PDE points…').triggered.connect(lambda:self.show_sample_points(node))
         if node.kind=='comparison':menu.addAction('Error norms…').triggered.connect(lambda:self.show_error_norms(node))
         if node.kind in ('inverse_recipe','inverse_method','inverse_pde'):
             menu.addAction('Learned coefficients…').triggered.connect(self.show_inverse_parameters)
@@ -1758,6 +1769,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             elif dialog.owner() is None:
                 dialog.close();dialog.deleteLater();self.error_norm_dialogs.pop(identifier,None)
             else:dialog.check_current(force=phase in ('changed','Running','Evaluating','Failed'))
+        for identifier,dialog in list(getattr(self,'sample_point_dialogs',{}).items()):
+            if not isValid(dialog):self.sample_point_dialogs.pop(identifier,None)
+            elif dialog.owner() is None:
+                dialog.close();dialog.deleteLater();self.sample_point_dialogs.pop(identifier,None)
+            elif phase in ('changed','Running','Evaluating','Failed') or self.is_running():
+                dialog.clear('Run data changed or a job is active. Refresh after completion to inspect retained points.')
+            else:dialog.setWindowTitle(dialog.owner().title+' · Retained PDE points')
 
     def clear_run_data(self):
         self.refresh_result_status('changed')
@@ -2176,6 +2194,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     self.form.addRow(label,widget)
                 note=QLabel('The trainer scores candidates with the current PDE/network after each completed interval. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
                 note.setWordWrap(True);self.form.addRow(note)
+                inspect=QPushButton('Inspect retained PDE points…');inspect.clicked.connect(lambda checked=False,n=node:self.show_sample_points(n));self.form.addRow(inspect)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='boundary' and (self.config.is_paper_case or self.config.pde_preset=='kdv_1d'):
             note=QLabel('Named sets: '+', '.join(self.config.constraint_names)+'. Walls combine their individual open edges; the cylinder is sampled by angle. Periodic sets contain paired endpoint/edge coordinates.')
@@ -2629,6 +2648,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
 
     def set_busy(self,busy):
         if busy:
+            for dialog in getattr(self,'sample_point_dialogs',{}).values():
+                if isValid(dialog):dialog.clear('A job/editor is active. Refresh after it finishes; live tensors are not read.')
             self.scene.cancel_wire()
             if self.quick_insert is not None:self.quick_insert.reject()
         for control in [self.train_button,self.validate_button,self.library,self.property_scroll]:control.setEnabled(not busy)
@@ -2691,7 +2712,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.log.appendPlainText(f"Expert update {summary['step']}: Adam rate {summary['learning_rate']:.5g}, minimum causal weight {summary['minimum_causal_weight']:.5g}")
 
     def sampling_progress(self,event):
-        self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} interior points; candidate mean residual {event['mean_residual']:.4g}, max {event['max_residual']:.4g}")
+        self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} PDE collocation rows; candidate mean residual {event['mean_residual']:.4g}, max {event['max_residual']:.4g}")
 
     def training_progress(self,step,records):
         self.progress_bar.setValue(step)
