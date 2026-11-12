@@ -80,6 +80,8 @@ coefficient reporting, exact-resume evidence and current scope.
 
 ## DSGNAR examples
 
-**File → Examples → DSGNAR examples** contains Poisson (1D) and Burgers (1D +
-time), with small double-precision presets and ordinary replaceable networks.
+**File → Examples → DSGNAR examples** contains Poisson (1D), Burgers (1D +
+time), and **Lid-driven cavity · 2D · smooth lid · Re=100**, with small double-precision
+presets and ordinary replaceable networks. The cavity has a parabolic lid, stationary
+walls and explicit pressure gauge; its title describes the problem.
 These are [correctness starting points](dsgnar.md), not paper reproductions.

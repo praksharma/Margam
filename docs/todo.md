@@ -671,7 +671,7 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   Poisson/Burgers presets, explicit precision, diagnostics and checkpoints.
 - [ ] Profile larger DSGNAR residual batches and SVD workspaces before claiming
   upstream throughput; retain tested mathematical and continuation checks.
-- [ ] Extend DSGNAR to imported samples, coupled fields or time marching only
+- [ ] Extend DSGNAR to imported samples, further coupled fields or time marching only
   with concrete workflows and continuation tests.
 
 - [x] Correct DSGNAR's equal-ratio probe plateaus, independently check PCHIP roots,
@@ -683,3 +683,6 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [ ] Profile/fuse more of DSGNAR's sketch/probe loop before claiming parity with
   the authors' compiled-JAX/H100 runtime. The numerical threshold was matched;
   the speed and complete evaluation protocol were not.
+
+- [x] Add a descriptively named Re=100 smooth-lid cavity UI example and an independent
+  five-condition, pressure-offset-free DSGNAR research experiment with reference checks.

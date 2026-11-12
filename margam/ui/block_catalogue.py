@@ -85,4 +85,4 @@ def describe_block(kind):
     return ('Implemented · '+parameters+'\nInputs: '+inputs+'\nOutput: '+(output.label if output else 'none')+'\n'+limits)
 
 CAPABILITIES['dsgnar_recipe']=('DSGNAR · compact or expanded','Replaceable pointwise network and doubly-sketched Gauss–Newton trainer. Fixed scalar Poisson/Burgers-type problems; CPU/CUDA.')
-CAPABILITIES['dsgnar_method']=('SVD trust-region probes, residual balancing and two-stage target ratio','Independent paper-based DSGNAR. Fixed built-in scalar points, mean losses, float32/float64. No Adam update, imported geometry, adaptive sampling or mixed trainers. Attempt budget includes rejected steps; minimum radius stops early.')
+CAPABILITIES['dsgnar_method']=('SVD trust-region probes, residual balancing and two-stage target ratio','Independent paper-based DSGNAR. Fixed built-in scalar or steady 2D rectangular flow points, mean losses, float32/float64. No Adam update, imported geometry, adaptive sampling or mixed trainers. Attempt budget includes rejected steps; minimum radius stops early.')

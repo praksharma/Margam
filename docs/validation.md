@@ -987,3 +987,27 @@ The [compiled derivative check](../assets/benchmarks/dsgnar-functional-validatio
 compares paper-sized 1,447-parameter CUDA PDE/IC Jacobians and probe residuals
 against generic autograd. Backend/compiler identity is explicit for benchmark
 continuation; weights-only warm starts are labelled separately.
+
+## DSGNAR smooth-lid cavity
+
+The new **Lid-driven cavity · 2D · smooth lid · Re=100** UI example uses actual
+incompressible u/v/p physics. CPU/GPU checks cover isolated training, exact
+fresh-process 2+1 versus uninterrupted continuation, recipe transformations,
+model/run save/open, evaluation and CSV/steady VTI export. Host-process numerical
+parity uses a separate double-precision tolerance, as in the existing workflow.
+
+The independent research problem follows Appendix C.7's five scalar conditions
+without a pressure gauge. Analytic polynomial/Couette checks verify advection,
+viscous and pressure terms, divergence, pressure-offset invariance and the smooth
+lid. Tests compare functional/generic parameter Jacobians including remainder
+batches, plus exact checkpoint continuation. The independent finite-difference
+reference solver checks its discrete Poisson normalization/sign and steady flow.
+The [real-GPU 60×4 Jacobian/reference-refinement record](../assets/benchmarks/dsgnar-cavity-jacobian-cuda.json)
+contains explicit measured discrepancies.
+
+The [training record](../assets/benchmarks/dsgnar-cavity-pilot.json) retains a
+115-attempt, 1,350-parameter float64 solve. Fresh CPU/GPU reloads give **0.247%**
+relative velocity difference against an independent 257×257 reference. Reference
+resolution changes matter (129 versus 257 differs by **0.152%**); this does not
+match the paper's full training/evaluation protocol or reported accuracy. See
+[the cavity guide](dsgnar.md#smooth-lid-cavity-re100) for exact settings and commands.

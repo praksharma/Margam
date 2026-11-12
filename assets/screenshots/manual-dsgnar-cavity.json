@@ -1,0 +1,7 @@
+{
+  "generator": "examples.dsgnar_workflow --example dsgnar_cavity --device cpu --screenshot",
+  "scope": "Actual state-isolated smooth-lid Re=100 cavity builder after six validation attempts; not an accuracy run.",
+  "file": "manual-dsgnar-cavity.png",
+  "bytes": 274899,
+  "sha256": "85f4237471e6be1482d8428dd1a5aa53c7b65f8be460a26ab160561a2f9d79e6"
+}

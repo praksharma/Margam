@@ -1,0 +1,67 @@
+{
+  "scope": "Six-attempt desktop lifecycle checks; not paper accuracy, speed or memory reproduction.",
+  "cases": [
+    {
+      "example": "dsgnar_cavity",
+      "device": "cpu",
+      "precision": "float64",
+      "separate_headless_process": true,
+      "checkpoint_exact_resume": true,
+      "evaluation_preserved_weights": true,
+      "regularization_diagnostic_tolerance": 5e-14,
+      "export_verified": true,
+      "raw_final_mse": {
+        "pde": 0.3013862551587764,
+        "left:u": 0.08958148016770874,
+        "left:v": 0.07775157790625081,
+        "right:u": 0.06557226534682087,
+        "right:v": 0.13754502380200265,
+        "bottom:u": 0.004167853150442753,
+        "bottom:v": 0.06415370991957565,
+        "top:u": 1.707493121204223,
+        "top:v": 0.026209678931823938,
+        "pressure_gauge": 0.06424623776621313
+      },
+      "attempts": 6,
+      "accepted": 3,
+      "radius": 0.4356656670968546,
+      "target_ratio": 0.075,
+      "converged": false,
+      "weights": {
+        "pde": 0.07918313111132583,
+        "left:u": 0.5782481228807692,
+        "left:v": 0.938100733126121,
+        "right:u": 0.6369867807318035,
+        "right:v": 0.9393669817442327,
+        "bottom:u": 0.9320394590306545,
+        "bottom:v": 0.9863270403150678,
+        "top:u": 0.3764587312658411,
+        "top:v": 0.9232249298150468,
+        "pressure_gauge": 3.6100640899791365
+      },
+      "last": {
+        "step": 6,
+        "accepted": false,
+        "radius": 3.8230669539250903,
+        "next_radius": 0.4356656670968546,
+        "regularization": 0.001173288325086376,
+        "ratio": -0.6040138037342507,
+        "target_ratio": 0.075,
+        "objective_before": 1.366050237650498,
+        "objective_after": 1.366050237650498,
+        "weights": {
+          "pde": 0.07410545791796581,
+          "left:u": 0.563697741937134,
+          "left:v": 0.9311163873920483,
+          "right:u": 0.6139632642421621,
+          "right:v": 0.960858278415566,
+          "bottom:u": 0.7927872382299194,
+          "bottom:v": 0.9716888646935058,
+          "top:u": 0.4190008465833432,
+          "top:v": 0.8646523514982821,
+          "pressure_gauge": 3.808129569090073
+        }
+      }
+    }
+  ]
+}

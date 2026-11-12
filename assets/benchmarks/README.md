@@ -100,3 +100,14 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   reloads: about `2.56e-7` float32 relative L2 on the independent evaluation grid,
   below the paper's reported `4.75e-7` threshold. This does not reproduce its
   reference-grid protocol or 9.8-second H100 runtime.
+
+- `dsgnar-cavity-ui-cpu.json`: actual six-attempt smooth-lid cavity UI save/open,
+  exact fresh-process continuation and exports. Not accuracy evidence.
+- `dsgnar-cavity-jacobian-cuda.json`: all five full 60×4 SIREN condition Jacobians
+  checked against generic autograd on CUDA (11,347 actual parameters).
+- `dsgnar-cavity-pilot.json`: independently implemented five-condition Re=100
+  cavity training with a smaller 24×3 SIREN and sketch 700. Retains measured
+  losses/history; reference-based evaluation is recorded separately.
+- `dsgnar-cavity-reloaded-cpu129.json` and `dsgnar-cavity-reloaded-{cpu,cuda}257.json`:
+  unchanged final-checkpoint inference against independent 129/257 references.
+  Fine-grid velocity agreement is about 0.247%; not a paper accuracy reproduction.

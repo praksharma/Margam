@@ -438,7 +438,7 @@
   fresh CountSketch/SRCT operators, SVD trust-region probes and condition balancing.
   Preserve dedicated sketch RNG, attempt/rejection history, positive coefficients,
   stopping/stage state and strict physics/data/dtype continuation. No Adam step or
-  implicit advanced-trainer composition. Keep scalar fixed built-in scope explicit.
+  implicit advanced-trainer composition. Keep fixed built-in scalar/steady rectangular 2D flow scope explicit.
   Derivative helpers must preserve the solution dtype rather than global defaults;
   check fresh-process float32/float64 CPU/CUDA continuation. No upstream source
   licence is declared in the inspected checkout; keep the implementation independent.
@@ -450,3 +450,10 @@
   Distinguish matching an error threshold on an independent grid from reproducing
   the paper's complete protocol or hardware/runtime. Preserve superseded results
   with explicit labels, and validate qualifying checkpoints by fresh inference.
+
+- The DSGNAR smooth-lid cavity is Re=100 with u=4*x*(1-x) on the lid.
+  Keep the native pressure gauge/grouped-flow variation distinct from the
+  research five-condition ungauged Appendix C.7 case. Label the actual SIREN
+  parameter count; the paper caption and notebook disagree. Independent finite-
+  difference references require steady and spatial-refinement checks and must
+  not be labelled exact/Dedalus or used to claim the full paper protocol.

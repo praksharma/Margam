@@ -541,3 +541,6 @@ python -m examples.evaluate_dsgnar_burgers build/dsgnar-accuracy/burgers-target.
 The achieved run uses zero explicit grace (`--stage-grace 0`), with its first
 stage-two attempt at 102; replay confirms equivalence to an 80-attempt grace.
 The native trained Poisson archive is `build/dsgnar-accuracy/poisson.margam-run.pt`.
+
+Smooth-lid cavity setup, independent reference generation, training and read-only
+checkpoint evaluation commands are in the [DSGNAR cavity guide](dsgnar.md#smooth-lid-cavity-re100).

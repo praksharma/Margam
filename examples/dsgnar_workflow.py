@@ -10,6 +10,7 @@ import time
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device',choices=('cpu','cuda'),default='cpu')
+    parser.add_argument('--example',choices=('dsgnar_poisson_1d','dsgnar_burgers','dsgnar_cavity'))
     parser.add_argument('--output',type=Path)
     parser.add_argument('--screenshot',type=Path)
     args=parser.parse_args();os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
@@ -29,7 +30,7 @@ def main():
     reports=[]
     try:
         assert w.set_application_device(args.device)
-        for key in ('dsgnar_poisson_1d','dsgnar_burgers'):
+        for key in ((args.example,) if args.example else ('dsgnar_poisson_1d','dsgnar_burgers')):
             assert w.load_example(key) and w.validate_model()
             w.change('iterations',4)
             for node in w.scene.nodes():
@@ -57,13 +58,14 @@ def main():
                 for name,value in direct.network.state_dict().items():torch.testing.assert_close(value.cpu(),retained.network.state_dict()[name],rtol=1e-11,atol=1e-12)
                 assert w.evaluate_trained_outputs();finish()
                 export=next(n for n in w.scene.nodes() if n.kind=='export');assert w.export_block_data(export,directory/'solution.csv')
-                if key=='dsgnar_burgers':
-                    export=next(n for n in w.scene.nodes() if n.kind=='paraview');assert w.export_block_data(export,directory/'solution.pvd')
+                if key in ('dsgnar_burgers','dsgnar_cavity'):
+                    suffix='solution.pvd' if key=='dsgnar_burgers' else 'solution.vti'
+                    export=next(n for n in w.scene.nodes() if n.kind=='paraview');assert w.export_block_data(export,directory/suffix)
                 summary=retained.dsgnar_summary();raw={name:value.item() for name,value in direct.compute_losses().items()}
                 reports.append(dict(example=key,device=args.device,precision=w.config.dsgnar_settings['precision'],
                     separate_headless_process=True,checkpoint_exact_resume=True,evaluation_preserved_weights=True,regularization_diagnostic_tolerance=5e-14,
                     export_verified=True,raw_final_mse=raw,**summary))
-                if args.screenshot and key=='dsgnar_poisson_1d':
+                if args.screenshot and key==(args.example or 'dsgnar_poisson_1d'):
                     trainer=next(n for n in w.scene.nodes() if n.kind=='dsgnar_method')
                     w.resize(1850,1100);w.properties_dock.setMinimumWidth(550);w.show();w.show_block_properties(trainer);w.fit_model();app.processEvents()
                     for cls in (QLabel,QLineEdit,QPlainTextEdit):

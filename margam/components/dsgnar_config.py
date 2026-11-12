@@ -23,7 +23,9 @@ def validate_dsgnar_settings(s):
 
 def validate_dsgnar_problem(c):
     validate_dsgnar_settings(c.dsgnar_settings)
-    if c.physics!='scalar' or c.is_paper_case or c.shape not in ('Interval','Rectangle','SpaceTime1D'):
-        raise ValueError('DSGNAR currently supports built-in scalar interval, rectangle and 1D space-time problems.')
+    supported=(c.physics=='scalar' and c.shape in ('Interval','Rectangle','SpaceTime1D') or
+               c.physics=='incompressible_2d' and c.shape=='Rectangle')
+    if not supported or c.is_paper_case:
+        raise ValueError('DSGNAR supports built-in scalar interval, rectangle, 1D space-time and steady 2D rectangular flow problems.')
     if c.loss_formulation!='mean' or c.adaptive_sampling or c.interior_data or c.boundary_data:
         raise ValueError('DSGNAR currently requires mean loss and fixed built-in points; imported or adaptive samples are not supported.')

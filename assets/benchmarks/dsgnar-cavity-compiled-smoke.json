@@ -1,0 +1,99 @@
+{
+  "case": "DSGNAR smooth-lid cavity; Re=100; paper Appendix C.7",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "source": {
+    "base_commit": "2c49e3e495f5443ee207d559fde58d03196e3427",
+    "runtime_and_test_sha256": "fd545700d1195ed62181084927ea44d60ca84fa09559d2264e9ed5b960626afd",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "benchmark_script_sha256": "67b52f1f048f2f41b0fd86266b6c2f810b8c321433c40cee39485fab5f61f93a"
+  },
+  "configuration": {
+    "case": "smooth-lid-cavity-C7-v1",
+    "reynolds": 100.0,
+    "width": 4,
+    "depth": 2,
+    "seed": 0,
+    "sampling": "uniform",
+    "derivative_backend": "compiled-functional",
+    "torch_version": "2.14.1+cu130"
+  },
+  "scope": "One-attempt actual-CUDA compiled-versus-eager cavity smoke check with remainder batches; not accuracy or throughput evidence.",
+  "paper_target_velocity_l2": 0.000113,
+  "paper_seconds": 402.9,
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "precision": "float64",
+  "parameters": 49,
+  "pde_points": 5,
+  "boundary_points": 9,
+  "settings": {
+    "sketch_size": 8,
+    "hashes": 4,
+    "batch_size": 3,
+    "probes": 3,
+    "initial_radius": 1.0,
+    "min_radius": 1e-08,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "stage_grace": 80,
+    "precision": "float64",
+    "seed": 0
+  },
+  "starting_attempt": 0,
+  "attempts": 1,
+  "inference_only": false,
+  "attempts_this_run": 1,
+  "inference_preserved_weights_iteration_rng": null,
+  "checkpoint_sha256": null,
+  "seconds": 79.30227560499998,
+  "initial_losses": {
+    "pde": 0.32375170457405017,
+    "momentum_y": 0.025230738788469688,
+    "continuity": 0.05096479555818144,
+    "boundary_u": 0.6175934632284497,
+    "boundary_v": 0.06768316321346719
+  },
+  "final_losses": {
+    "pde": 1.160909932496702,
+    "momentum_y": 1.409244799393133,
+    "continuity": 0.155639419496996,
+    "boundary_u": 0.24906875761951935,
+    "boundary_v": 0.24664466992925757
+  },
+  "history": [
+    {
+      "attempt": 1,
+      "seconds": 79.28814623500011,
+      "losses": {
+        "pde": 1.160909932496702,
+        "momentum_y": 1.409244799393133,
+        "continuity": 0.155639419496996,
+        "boundary_u": 0.24906875761951935,
+        "boundary_v": 0.24664466992925757
+      },
+      "radius": 3.0,
+      "accepted": true
+    }
+  ],
+  "reference": null,
+  "relative_velocity_l2": null,
+  "velocity_min": [
+    -0.5082402840433053,
+    -0.6763704539030047
+  ],
+  "velocity_max": [
+    -0.03425796054538967,
+    -0.43180896679667685
+  ],
+  "eager_final_losses": {
+    "pde": 1.1609099324967,
+    "momentum_y": 1.409244799393132,
+    "continuity": 0.15563941949699503,
+    "boundary_u": 0.24906875761951985,
+    "boundary_v": 0.24664466992925785
+  },
+  "compiled_eager_parity_passed": true
+}

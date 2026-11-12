@@ -1,0 +1,58 @@
+{
+  "scope": "Actual-device full 60x4 cavity network parameter Jacobians versus generic autograd; no accuracy or speed claim.",
+  "source": {
+    "base_commit": "2c49e3e495f5443ee207d559fde58d03196e3427",
+    "runtime_and_test_sha256": "fd545700d1195ed62181084927ea44d60ca84fa09559d2264e9ed5b960626afd",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "cavity_script_sha256": "7ae22a086484507138aa474b6fe59ebf5e9cedb99d36c58a4cc78458c6fc60e1"
+  },
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "parameters": 11347,
+  "precision": "float64",
+  "checks": [
+    {
+      "condition": "pde",
+      "jacobian_max_abs": 1.7763568394002505e-15,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "condition": "momentum_y",
+      "jacobian_max_abs": 1.7763568394002505e-15,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "condition": "continuity",
+      "jacobian_max_abs": 4.440892098500626e-16,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "condition": "boundary_u",
+      "jacobian_max_abs": 1.1102230246251565e-16,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "condition": "boundary_v",
+      "jacobian_max_abs": 2.220446049250313e-16,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    }
+  ],
+  "reference_refinement": {
+    "coarse_grid": 129,
+    "fine_grid": 257,
+    "relative_velocity_difference": 0.0015213095299522123,
+    "max_abs_velocity_difference": 0.0024749172902611,
+    "coarse_steady_residual": 9.1958309023088e-09,
+    "fine_steady_residual": 9.832462295744637e-09,
+    "coarse_seconds": 55.27212097400002,
+    "fine_seconds": 623.5675290959999,
+    "coarse_sha256": "99a08ddb4c4be79756f2f97801ef43acdc26e5d2d1894424b1386875f50caf15",
+    "fine_sha256": "f7ba86244a20d310841e2c71ef49852ca157272db32ec251fdf10630badae60f",
+    "scope": "Difference on coincident nodes; evidence of discretization error, not a rigorous error bound or Dedalus reproduction."
+  }
+}
