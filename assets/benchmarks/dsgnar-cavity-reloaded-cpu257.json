@@ -2,10 +2,10 @@
   "case": "DSGNAR smooth-lid cavity; Re=100; paper Appendix C.7",
   "paper": "https://arxiv.org/abs/2607.02194",
   "source": {
-    "base_commit": "2c49e3e495f5443ee207d559fde58d03196e3427",
+    "base_commit": "f9c8001b5950fea593bc7ae553a3e1a9d2ecb4bc",
     "runtime_and_test_sha256": "fd545700d1195ed62181084927ea44d60ca84fa09559d2264e9ed5b960626afd",
     "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
-    "benchmark_script_sha256": "3fc75595e152e222016472757633d87f7d86159d7b7b92ceb804f4181a5dac6a"
+    "benchmark_script_sha256": "67b52f1f048f2f41b0fd86266b6c2f810b8c321433c40cee39485fab5f61f93a"
   },
   "configuration": {
     "case": "smooth-lid-cavity-C7-v1",
@@ -48,7 +48,7 @@
   "attempts_this_run": 0,
   "inference_preserved_weights_iteration_rng": true,
   "checkpoint_sha256": "fccbdb1d1d0854cbf3c02b9aa53bc90fcff5246e965c2138238595b058593ffa",
-  "seconds": 0.3526696369999627,
+  "seconds": 0.34291097899995293,
   "initial_losses": {
     "pde": 1.348990750358761e-06,
     "momentum_y": 1.0879332147237795e-06,

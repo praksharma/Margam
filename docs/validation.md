@@ -1011,3 +1011,10 @@ relative velocity difference against an independent 257×257 reference. Referenc
 resolution changes matter (129 versus 257 differs by **0.152%**); this does not
 match the paper's full training/evaluation protocol or reported accuracy. See
 [the cavity guide](dsgnar.md#smooth-lid-cavity-re100) for exact settings and commands.
+
+Final cavity regression discovery ran **361 tests: 340 passed, 21 CUDA-dependent
+checks skipped** (777.5 seconds). The separate real-GPU audit passed **all 20
+selected tests without skips**, including the expanded cavity desktop workflow.
+The optional compiled/eager cavity smoke comparison also passes; compiler
+specializations are locally bounded and restored. The complete manual builds
+and checks **71 rendered pages** without broken local links or images.

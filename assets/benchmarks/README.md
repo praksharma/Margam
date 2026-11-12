@@ -111,3 +111,5 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 - `dsgnar-cavity-reloaded-cpu129.json` and `dsgnar-cavity-reloaded-{cpu,cuda}257.json`:
   unchanged final-checkpoint inference against independent 129/257 references.
   Fine-grid velocity agreement is about 0.247%; not a paper accuracy reproduction.
+- `dsgnar-cavity-compiled-smoke.json`: one actual CUDA attempt with five
+  conditions/remainder batches; compiled and eager final losses agree.

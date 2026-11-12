@@ -315,8 +315,9 @@ interior/boundary wires control PDE collocation explicitly.
 The UI preset uses the existing pressure anchor `p(0,0)=0`, a grouped three-component
 PDE loss and separate wall/component losses. These are deliberate variations from
 Appendix C.7, which leaves the pressure offset free and balances **five** conditions:
-x momentum, y momentum, continuity, boundary u and boundary v. The compact UI
-settings are starting values, not the paper's full training configuration.
+x momentum, y momentum, continuity, boundary u and boundary v. The existing UI SIREN also has configurable fixed frequencies, whereas the
+research network learns them. The compact UI settings are starting values, not
+the paper's full training configuration.
 
 The independent research example `examples/dsgnar_cavity.py` implements those five
 conditions separately and leaves pressure ungauged. It uses a sine network with
@@ -399,3 +400,7 @@ Local artifacts are retained under `build/dsgnar-cavity/`: `pilot.pt`,
 `x,y,u,v,p` columns. Generated checkpoints/data are intentionally outside version
 control; public JSON records retain settings, fingerprints and measured outcomes.
 Reference generation requires the optional SciPy dependency.
+
+The optional compiler route has a [real-CUDA compiled/eager smoke check](../assets/benchmarks/dsgnar-cavity-compiled-smoke.json)
+with remainder batches. This one-attempt check establishes numerical parity,
+not accuracy or steady-state compiler throughput.

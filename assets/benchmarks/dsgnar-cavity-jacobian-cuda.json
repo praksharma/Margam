@@ -1,10 +1,10 @@
 {
   "scope": "Actual-device full 60x4 cavity network parameter Jacobians versus generic autograd; no accuracy or speed claim.",
   "source": {
-    "base_commit": "2c49e3e495f5443ee207d559fde58d03196e3427",
+    "base_commit": "f9c8001b5950fea593bc7ae553a3e1a9d2ecb4bc",
     "runtime_and_test_sha256": "fd545700d1195ed62181084927ea44d60ca84fa09559d2264e9ed5b960626afd",
     "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
-    "cavity_script_sha256": "7ae22a086484507138aa474b6fe59ebf5e9cedb99d36c58a4cc78458c6fc60e1"
+    "cavity_script_sha256": "67b52f1f048f2f41b0fd86266b6c2f810b8c321433c40cee39485fab5f61f93a"
   },
   "device": "cuda",
   "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
