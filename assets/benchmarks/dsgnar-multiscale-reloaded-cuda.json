@@ -1,0 +1,99 @@
+{
+  "case": "multiscale",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "source": {
+    "base_commit": "0b84bfecdd0461e73240845d79d9d5cf837d822e",
+    "runtime_and_test_sha256": "fb9ec8d783c5d902827236749ed8ec9b66bdec60a0ee4356f21ca06ddd094b72",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "benchmark_script_sha256": "08d47d88bf7edcca7340c9b5dfb4c87e64911dadbab877d65fe356385ba48bf5"
+  },
+  "scope": "Exact paper equations; smaller Fourier network, fixed samples and single wave time window. Not a full paper protocol or speed reproduction.",
+  "precision": "float64",
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "parameters": 1681,
+  "configuration": {
+    "case": "multiscale",
+    "version": 1,
+    "width": 24,
+    "depth": 3,
+    "seed": 0,
+    "network_spec": {
+      "type": "fourier",
+      "options": {
+        "encoding": "axis",
+        "frequencies": [
+          2.0,
+          4.0,
+          6.0,
+          8.0
+        ],
+        "features": 16,
+        "scale": 1.0,
+        "activation": "tanh",
+        "skip_connections": false
+      },
+      "layers": [
+        24,
+        24,
+        24
+      ],
+      "inputs": 2,
+      "outputs": 1,
+      "bounds": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "seed": 0
+    }
+  },
+  "points": 2048,
+  "boundary": 512,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 64,
+    "probes": 16,
+    "initial_radius": 1.0,
+    "min_radius": 1e-08,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "stage_grace": 80,
+    "precision": "float64",
+    "seed": 0
+  },
+  "attempts": 106,
+  "starting_attempt": 106,
+  "seconds": 0.1744463850000102,
+  "initial_losses": {
+    "pde": 0.013282365192504754,
+    "boundary": 2.910504067860222e-10
+  },
+  "final_losses": {
+    "pde": 0.013282365192504754,
+    "boundary": 2.910504067860222e-10
+  },
+  "final_condition_weights": {
+    "pde": 1.5183131198289147e-06,
+    "boundary": 1.99999848168688
+  },
+  "relative_l2": 0.00047531618434443115,
+  "evaluation_grid": [
+    129,
+    129
+  ],
+  "reference": "Analytical four-mode Poisson",
+  "inference_only": true,
+  "inference_preserved_weights_iteration_rng": true,
+  "checkpoint_sha256": "443a176058a59e726c82c74286c076e1a557d14782485aab2dc5cb639814f9cb",
+  "history": []
+}

@@ -32,7 +32,7 @@ def execution_plan(window):
     requests=window.scene.output_requests(config)
     nodes={n.identifier:n for n in window.scene.nodes()}
     text=[f'Device: {config.device} (application selection)',f'PINN method: {config.method}',
-          f'Physics: {config.pde_preset or config.physics}','Trainable coefficients: lambda_1, lambda_2=exp(log_lambda_2)' if config.method=='inverse_burgers' else f'Equation coefficients: source c={config.source:g}, viscosity/diffusivity={config.viscosity:g}',f'Coordinates: {", ".join(config.coordinate_names)}',f'Predicted fields: {", ".join(config.field_names)}',
+          f'Physics: {config.pde_preset or config.physics}','Trainable coefficients: lambda_1, lambda_2=exp(log_lambda_2)' if config.method=='inverse_burgers' else f'Wave speed c={config.source:g}; independent displacement and initial-velocity conditions' if config.pde_preset=='wave_1d' else f'Equation coefficients: source c={config.source:g}, viscosity/diffusivity={config.viscosity:g}',f'Coordinates: {", ".join(config.coordinate_names)}',f'Predicted fields: {", ".join(config.field_names)}',
           f'Network: {NETWORK_NAMES[config.network_type]}',f'Hidden layers: {", ".join(map(str,config.layers))}',
           'Network options: '+json.dumps(network_options(config.network_type,config.network_options),ensure_ascii=False),
           'Optimizer: DSGNAR · sketched SVD trust-region' if config.method=='dsgnar' else f'Optimizer: Adam · learning rate {config.lr:g}',f'Training budget: {config.iterations} '+('attempts (includes rejections)' if config.method=='dsgnar' else 'updates'),

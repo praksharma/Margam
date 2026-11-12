@@ -85,3 +85,7 @@ time), and **Lid-driven cavity · 2D · smooth lid · Re=100**, with small doubl
 presets and ordinary replaceable networks. The cavity has a parabolic lid, stationary
 walls and explicit pressure gauge; its title describes the problem.
 These are [correctness starting points](dsgnar.md), not paper reproductions.
+
+The same submenu also includes [Wave (1D + time) and Multiscale Poisson (2D)](dsgnar-analytic-examples.md).
+Wave explicitly imposes initial displacement **and velocity**, without a final-time
+condition. Both have analytical references and ordinary replaceable networks.

@@ -544,3 +544,6 @@ The native trained Poisson archive is `build/dsgnar-accuracy/poisson.margam-run.
 
 Smooth-lid cavity setup, independent reference generation, training and read-only
 checkpoint evaluation commands are in the [DSGNAR cavity guide](dsgnar.md#smooth-lid-cavity-re100).
+
+[Wave and multiscale Poisson commands](dsgnar-analytic-examples.md#train-and-evaluate-independently)
+include explicit architecture/settings, checkpoints and read-only analytical evaluation.

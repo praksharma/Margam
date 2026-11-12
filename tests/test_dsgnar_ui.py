@@ -21,7 +21,7 @@ def finish():
  while w.worker is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.003)
  assert w.worker is None and w.result is not None,w.log.toPlainText()
 try:
- for key in ('dsgnar_poisson_1d','dsgnar_burgers','dsgnar_cavity'):
+ for key in ('dsgnar_poisson_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale'):
   assert w.load_example(key) and w.validate_model(),w.validation.text()
   assert w.example_actions[key] in w.dsgnar_examples_menu.actions()
   if key=='dsgnar_cavity':assert w.config.physics=='incompressible_2d' and w.config.field_names==('u','v','p')
@@ -59,8 +59,8 @@ try:
    for name,value in direct.network.state_dict().items():torch.testing.assert_close(value.cpu(),w.last_run.model.network.state_dict()[name],rtol=1e-11,atol=1e-12)
    assert w.evaluate_trained_outputs();finish()
    export=next(n for n in w.scene.nodes() if n.kind=='export');assert w.export_block_data(export,directory/'prediction.csv')
-   if key in ('dsgnar_burgers','dsgnar_cavity'):
-    suffix='prediction.pvd' if key=='dsgnar_burgers' else 'prediction.vti'
+   if key in ('dsgnar_burgers','dsgnar_cavity','dsgnar_wave'):
+    suffix='prediction.pvd' if key in ('dsgnar_burgers','dsgnar_wave') else 'prediction.vti'
     export=next(n for n in w.scene.nodes() if n.kind=='paraview');assert w.export_block_data(export,directory/suffix)
  # Earlier format-32 DSGNAR documents gain a zero stage grace in config/nodes.
  document=capture_model(w);document['config']['dsgnar_settings'].pop('stage_grace')

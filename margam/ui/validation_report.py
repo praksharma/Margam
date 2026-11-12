@@ -119,7 +119,7 @@ def collect_issues(window,execution_error=None):
             if config.physics=='incompressible_2d':
                 for index,text in enumerate(config.flow_residuals):
                     check('Physics',node,lambda text=text,c=config:Expression(text,2,fields=c.field_names),label=('Momentum x','Momentum y','Continuity')[index])
-        if current=='bc' and config.physics=='scalar' and not config.is_paper_case and config.pde_preset!='kdv_1d':
+        if current=='bc' and config.physics=='scalar' and not config.is_paper_case and config.pde_preset not in ('kdv_1d','wave_1d'):
             for side in config.sides:
                 target=config.bc_targets.get(side,'');operator=config.bc_operators.get(side,'')
                 if target:check('Boundary condition',node,lambda text=target,c=config:Expression(text,len(c.bounds[0]),target=True,coordinates=c.coordinate_names),side,label='Target')

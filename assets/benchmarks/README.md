@@ -113,3 +113,16 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   Fine-grid velocity agreement is about 0.247%; not a paper accuracy reproduction.
 - `dsgnar-cavity-compiled-smoke.json`: one actual CUDA attempt with five
   conditions/remainder batches; compiled and eager final losses agree.
+
+- `dsgnar-multiscale-trained.json`: 106-attempt smaller Fourier-network solve;
+  analytical relative L2 0.000475316.
+- `dsgnar-wave-trained.json`: selected 96-attempt SIREN wave experiment;
+  relative L2 0.243392 is **inaccurate**, not a paper reproduction.
+- `dsgnar-wave-{adaptive,fixed-fourier}-attempt.json`: retained unsuccessful
+  Fourier wave experiments; do not mistake small PDE losses for a valid solve.
+- `dsgnar-{wave,multiscale}-reloaded-{cpu,cuda}.json`: independent unchanged-
+  checkpoint inference with analytical errors and checkpoint fingerprints.
+- `dsgnar-analytic-jacobian-cuda.json`: actual-device full-network parameter
+  Jacobian checks for the wave initial-velocity/PDE/BC conditions and Poisson.
+- `dsgnar-{wave,multiscale}-ui-cpu.json`: six-attempt native project lifecycle
+  and exports; separate from analytical-accuracy experiments.

@@ -1,0 +1,7 @@
+{
+  "generator": "examples.dsgnar_workflow --example dsgnar_multiscale --device cpu --screenshot",
+  "scope": "Actual state-isolated six-attempt desktop lifecycle; accuracy evidence is separate.",
+  "file": "manual-dsgnar-multiscale.png",
+  "bytes": 279047,
+  "sha256": "df57ef05a3f082f47bfe4cae9d037c811638eb138b25fb934c5dd89a2bb93495"
+}

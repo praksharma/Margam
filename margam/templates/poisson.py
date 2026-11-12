@@ -119,6 +119,7 @@ class PoissonConfig:
     @property
     def constraint_names(self):
         if self.method=='inverse_burgers':return ('observations',)
+        if self.pde_preset=='wave_1d':return ('initial','initial_velocity','boundary')
         if self.pde_preset=='kdv_1d':return ('initial','periodic_x')
         if self.is_paper_case:
             from .expert_examples import CASES
@@ -130,6 +131,7 @@ class PoissonConfig:
     def loss_weights(self):
         if self.method=='inverse_burgers':return dict(pde=self.pde_weight,observations=self.boundary_weight)
         if self.pde_preset=='kdv_1d':weights={'pde':self.pde_weight,'initial':self.boundary_weight/2,'periodic_x':self.boundary_weight/2}
+        elif self.pde_preset=='wave_1d':weights={'pde':self.pde_weight,**{name:self.boundary_weight/3 for name in self.constraint_names}}
         elif self.is_paper_case:weights={'pde':self.pde_weight,**{name:self.pressure_weight if name=='pressure_gauge' else self.boundary_weight/len(self.constraint_names) for name in self.constraint_names}}
         elif self.physics=='scalar':weights={'pde':self.pde_weight,**{self.constraint_name(s):self.boundary_weight/len(self.sides) for s in self.sides}}
         else:
@@ -259,6 +261,9 @@ class PoissonConfig:
         if self.method=='inverse_burgers':
             from ..components.inverse_config import validate_inverse
             validate_inverse(self);return
+        if self.pde_preset=='wave_1d':
+            from .wave import validate_wave
+            validate_wave(self);return
         if self.pde_preset=='kdv_1d':return
         if self.is_paper_case:
             from .expert_examples import validate_case
@@ -353,6 +358,9 @@ def build_pinn(config,*,initial_teacher=None,time_origin=None):
 def _build_pinn(config,*,initial_teacher=None,time_origin=None):
     """Assemble the existing baseline recipe; torch is loaded only on execution."""
     config.validate()
+    if config.pde_preset=='wave_1d':
+        from .wave import build_wave
+        return build_wave(config)
     if config.pde_preset=='kdv_1d':
         from .kdv import build_kdv
         return build_kdv(config)

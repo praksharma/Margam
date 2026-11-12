@@ -1,0 +1,52 @@
+{
+  "scope": "Six-attempt desktop lifecycle checks; not paper accuracy, speed or memory reproduction.",
+  "cases": [
+    {
+      "example": "dsgnar_multiscale",
+      "device": "cpu",
+      "precision": "float64",
+      "separate_headless_process": true,
+      "checkpoint_exact_resume": true,
+      "evaluation_preserved_weights": true,
+      "regularization_diagnostic_tolerance": 5e-14,
+      "export_verified": true,
+      "raw_final_mse": {
+        "pde": 314748.7848651213,
+        "left": 0.05864960444481444,
+        "right": 0.0432761656454321,
+        "bottom": 0.026246153649171905,
+        "top": 0.026751498926965024
+      },
+      "attempts": 6,
+      "accepted": 6,
+      "radius": 2.808784908373492,
+      "target_ratio": 0.075,
+      "converged": false,
+      "weights": {
+        "pde": 0.0016556973347281218,
+        "left": 1.1294056174060303,
+        "right": 1.169157257320926,
+        "bottom": 1.3463081757119166,
+        "top": 1.3534732522263995
+      },
+      "last": {
+        "step": 6,
+        "accepted": true,
+        "radius": 2.808784908373492,
+        "next_radius": 2.808784908373492,
+        "regularization": 9.654959511993415,
+        "ratio": 0.05283502386608592,
+        "target_ratio": 0.075,
+        "objective_before": 868.4535448258733,
+        "objective_after": 829.7266546051886,
+        "weights": {
+          "pde": 0.0026355495393524508,
+          "left": 1.1835848966897486,
+          "right": 1.2023097059921597,
+          "bottom": 1.3243037915077762,
+          "top": 1.2871660562709621
+        }
+      }
+    }
+  ]
+}

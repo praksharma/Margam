@@ -1,0 +1,7 @@
+{
+  "generator": "examples.dsgnar_workflow --example dsgnar_wave --device cpu --screenshot",
+  "scope": "Actual state-isolated six-attempt desktop lifecycle; accuracy evidence is separate.",
+  "file": "manual-dsgnar-wave.png",
+  "bytes": 289796,
+  "sha256": "ed68e9c106d7b8ce3bec499e79ebc0a2c26c919e60d2a780461c301b6247888e"
+}

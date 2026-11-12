@@ -14,7 +14,7 @@ class ExampleTests(unittest.TestCase):
         torch.set_num_threads(1)
         for key, example in EXAMPLE_PROBLEMS.items():
             with self.subTest(example=key):
-                if key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity') or key.startswith(('expert_','scale_','gpinn_','rba_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
+                if key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale') or key.startswith(('expert_','scale_','gpinn_','rba_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
                 config=example_config(key)
                 model=build_pinn(config)
                 dimensions=1 if config.shape=='Interval' else 2

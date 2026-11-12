@@ -9,7 +9,7 @@ Adaptive Ratio**. It does not require a new neural-network architecture.
 ## Try it
 
 1. Open **File → Examples → DSGNAR examples**.
-2. Choose **Poisson · 1D**, **Burgers · 1D + time**, or
+2. Choose **Poisson · 1D**, **Burgers · 1D + time**, **Wave · 1D + time**, **Multiscale Poisson · 2D**, or
    **Lid-driven cavity · 2D · smooth lid · Re=100**.
 3. Select the **DSGNAR trainer**, review the settings, and choose CPU/GPU in the
    application Device menu. Double precision is the explicit default.
@@ -404,3 +404,9 @@ Reference generation requires the optional SciPy dependency.
 The optional compiler route has a [real-CUDA compiled/eager smoke check](../assets/benchmarks/dsgnar-cavity-compiled-smoke.json)
 with remainder batches. This one-attempt check establishes numerical parity,
 not accuracy or steady-state compiler throughput.
+
+## Wave and multiscale Poisson
+
+The [analytical example guide](dsgnar-analytic-examples.md) describes the two-mode
+wave with separate initial velocity and the four-frequency Poisson case, native
+UI workflows, independent training and recorded successes/failures.

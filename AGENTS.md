@@ -457,3 +457,10 @@
   parameter count; the paper caption and notebook disagree. Independent finite-
   difference references require steady and spatial-refinement checks and must
   not be labelled exact/Dedalus or used to claim the full paper protocol.
+
+- Standing wave owns two-mode initial displacement and zero initial velocity,
+  with separate losses sharing one initial geometric set; no final-time BC.
+  Preserve explicit PDE-source wiring without duplicating initial rows. Keep
+  fixed built-in baseline/DSGNAR scope and the single-window research variation
+  explicit; future window transfer needs both displacement and velocity.
+  Retain unsuccessful adaptive solves and raw condition losses alongside errors.

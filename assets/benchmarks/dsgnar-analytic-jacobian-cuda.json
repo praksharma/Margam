@@ -1,0 +1,68 @@
+{
+  "scope": "Actual-device full-network wave and multiscale Jacobian parity, including remainder batches; not paper accuracy or speed.",
+  "source": {
+    "base_commit": "0b84bfecdd0461e73240845d79d9d5cf837d822e",
+    "runtime_and_test_sha256": "a8ef62cdd5b5319be7804436c736757798b9f02908b681660d21251cb39223ec",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "experiment_script_sha256": "9d9d9b993d4a0d86fbaceab03110f29d2b9bbaf25b8cfb1edd7de78b47262d77"
+  },
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "precision": "float64",
+  "checks": [
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "condition": "pde",
+      "jacobian_max_abs": 4.121147867408581e-13,
+      "residual_max_abs": 1.4210854715202004e-14,
+      "status": "passed"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "condition": "initial",
+      "jacobian_max_abs": 0.0,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "condition": "initial_velocity",
+      "jacobian_max_abs": 0.0,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "condition": "boundary",
+      "jacobian_max_abs": 0.0,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "condition": "pde",
+      "jacobian_max_abs": 1.1368683772161603e-12,
+      "residual_max_abs": 7.958078640513122e-13,
+      "status": "passed"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "condition": "boundary",
+      "jacobian_max_abs": 0.0,
+      "residual_max_abs": 0.0,
+      "status": "passed"
+    }
+  ]
+}

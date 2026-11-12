@@ -1018,3 +1018,36 @@ selected tests without skips**, including the expanded cavity desktop workflow.
 The optional compiled/eager cavity smoke comparison also passes; compiler
 specializations are locally bounded and restored. The complete manual builds
 and checks **71 rendered pages** without broken local links or images.
+
+## DSGNAR standing wave and multiscale Poisson
+
+Three analytical-method regressions cover both exact PDE identities, separate
+wave displacement/velocity losses, no final-time boundary, constant-folded
+Poisson forcing, NumPy/Torch reference agreement, functional/generic parameter
+Jacobians, exact continuation and changed-data rejection. Both Fourier and SIREN
+architecture choices are asserted explicitly. The real-GPU parameter-Jacobian
+audit checks 609- and 1,681-parameter networks, including remainder rows.
+
+Native lifecycle checks include both new examples, compact/expanded recipes,
+model/run persistence, isolated training, exact fresh-process continuation,
+analytical comparisons, CSV and physical-time PVD for the wave. The wave execution
+summary labels its speed and separate initial-velocity condition; the initial
+geometric set is added to wired PDE points once.
+
+The [analytical training guide](dsgnar-analytic-examples.md) reports **0.0475%**
+relative L2 for multiscale Poisson and **24.3%** for the selected single-window
+wave attempt. The latter remains an inaccurate solve. Two failed Fourier wave
+experiments are retained, including adaptive suppression of the displacement
+condition. Independent CPU/GPU checkpoint inference preserves weights, iteration
+and sketch RNG. No paper accuracy or H100-speed reproduction is claimed.
+
+The 364-test CPU discovery found one preset persistence mismatch (342 passed,
+21 CUDA-dependent skips): a tuple of Fourier frequencies became a JSON list on
+reload. The preset now uses JSON-native lists. The entire affected three-test
+example module passes after the correction, including its all-example round-trip
+and manufactured-solution training checks. The analytical-method selection also
+passes its three tests after the final architecture-selection changes. The final
+real-GPU audit passes **20 selected tests without skips**, with a matching runtime
+source fingerprint. The expanded DSGNAR selection passed **26 tests**, and the
+manual builds/checks **72 rendered pages**. No unresolved test failure remains;
+the full discovery was not repeated after this targeted serialization correction.

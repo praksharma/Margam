@@ -1530,6 +1530,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(boundary,pde,'boundary_points');self.scene.connect_nodes(pde,method)
         comparison=None
         output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export') if example.reference else ('Training Monitor','Solution Plot','CSV Export','ParaView Export')
+        if identifier=='dsgnar_wave':output_titles+=('ParaView Export',)
         for index,title in enumerate(output_titles):
             node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
             if node.kind=='comparison':comparison=node
@@ -1820,8 +1821,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'importance':f'{actual} points · importance',
                      'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else len(c.sides) if c.shape=='Interval' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
-                     'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
+                     'boundary':f'{len(c.constraint_names)} conditions · shared initial points' if c.pde_preset=='wave_1d' else f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else len(c.sides) if c.shape=='Interval' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'dsgnar_recipe':f'DSGNAR · {c.iterations} attempts','dsgnar_method':f'SVD · sketch {c.dsgnar_settings["sketch_size"]}',
                      'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
@@ -1837,8 +1838,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent or c.is_paper_case else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if c.pde_preset=='expert_cavity':details['predefined_pde']=f'Lid-driven cavity · Re={abs(c.bc_values["top"])*(c.y_max-c.y_min)/c.viscosity:g}' if c.viscosity>0 else 'Lid-driven cavity · invalid viscosity'
             if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder','Prepared2D':'Coordinate bounds'}.get(c.shape,c.shape)
-            if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
-            if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
+            if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
+            if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
             details['jorvik_geometry']='Selected document · update samples' if node.settings.get('jorvik_files',{}).get('needs_update') else 'Planar samples applied' if node.settings.get('jorvik',{}).get('sha256') else 'Edit geometry · update samples'
             node.type_title=node.title if node.kind in ('domain','boundary','bc','network') else TYPE_NAMES[node.kind]
@@ -2204,8 +2205,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 note.setWordWrap(True);self.form.addRow(note)
                 inspect=QPushButton('Inspect retained PDE points…');inspect.clicked.connect(lambda checked=False,n=node:self.show_sample_points(n));self.form.addRow(inspect)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
-        elif node.kind=='boundary' and (self.config.is_paper_case or self.config.pde_preset=='kdv_1d'):
-            note=QLabel('Named sets: '+', '.join(self.config.constraint_names)+'. Walls combine their individual open edges; the cylinder is sampled by angle. Periodic sets contain paired endpoint/edge coordinates.')
+        elif node.kind=='boundary' and (self.config.is_paper_case or self.config.pde_preset in ('kdv_1d','wave_1d')):
+            note=QLabel('The initial point set supplies both displacement and velocity losses; endpoint sets enforce zero displacement. No final-time boundary.' if self.config.pde_preset=='wave_1d' else 'Named sets: '+', '.join(self.config.constraint_names)+'. Walls combine their individual open edges; the cylinder is sampled by angle. Periodic sets contain paired endpoint/edge coordinates.')
             note.setWordWrap(True);self.form.addRow(note)
             self.field('Points per set / edge','boundary_points','int',minimum=1,maximum=10000)
         elif node.kind=='boundary':
@@ -2259,6 +2260,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 if key!='expert_advection':self.field('Second derivative coefficient β' if key=='expert_ks' else 'Viscosity / diffusion','viscosity',minimum=.000001,maximum=10000)
                 if key=='expert_ks':self.field('Fourth derivative coefficient γ','fourth_order',minimum=.000001,maximum=10000)
             if self.config.pde_preset=='kdv_1d':self.field('Nonlinear coefficient c','source')
+            if self.config.pde_preset=='wave_1d':self.field('Wave speed c','source',minimum=.000001,maximum=100000)
             if preset.forcing:
                 self.field('Squared wavenumber k²' if self.config.pde_preset=='helmholtz' else 'Coefficient c','source')
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
@@ -2287,9 +2289,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
                 self.form.addRow('Residual = 0',edit)
                 note=QLabel('Scalar expressions: '+', '.join(self.config.coordinate_names)+', u, c, nu, pi; D(u,x), '+('D(u,t), ' if self.config.is_time_dependent else '')+'laplace(u), sin/cos/exp/tanh/sqrt/abs. Laplacian is spatial only. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
-        elif node.kind=='bc' and (self.config.is_paper_case or self.config.pde_preset=='kdv_1d'):
+        elif node.kind=='bc' and (self.config.is_paper_case or self.config.pde_preset in ('kdv_1d','wave_1d')):
             from ..templates.expert_examples import condition_description
-            note=QLabel('Initial: cos(πx). Periodic solution, first and second spatial derivatives; no final-time condition.' if self.config.pde_preset=='kdv_1d' else condition_description(self.config));note.setWordWrap(True);self.form.addRow(note)
+            from ..templates.wave import DESCRIPTION
+            note=QLabel(DESCRIPTION if self.config.pde_preset=='wave_1d' else 'Initial: cos(πx). Periodic solution, first and second spatial derivatives; no final-time condition.' if self.config.pde_preset=='kdv_1d' else condition_description(self.config));note.setWordWrap(True);self.form.addRow(note)
             if self.config.pde_preset in ('expert_stokes','expert_cylinder','expert_cavity'):
                 side='top' if self.config.pde_preset=='expert_cavity' else 'left'
                 speed=QDoubleSpinBox();speed.setRange(0.,100000.);speed.setDecimals(5);speed.setValue(self.config.bc_values[side]);speed.valueChanged.connect(lambda value,s=side:self.change_bc(s,'value',value));self.form.addRow('Lid speed' if side=='top' else 'Maximum inlet speed',speed)

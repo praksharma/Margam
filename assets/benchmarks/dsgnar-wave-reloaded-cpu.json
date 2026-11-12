@@ -1,0 +1,96 @@
+{
+  "case": "wave",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "source": {
+    "base_commit": "0b84bfecdd0461e73240845d79d9d5cf837d822e",
+    "runtime_and_test_sha256": "fb9ec8d783c5d902827236749ed8ec9b66bdec60a0ee4356f21ca06ddd094b72",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "benchmark_script_sha256": "a2892c9d6d5a511c8fc01d42e6b32cd521147d046c7c03f21131d524569c121e"
+  },
+  "scope": "Exact paper equations; smaller Fourier network, fixed samples and single wave time window. Not a full paper protocol or speed reproduction.",
+  "precision": "float64",
+  "device": "cpu",
+  "hardware": "CPU",
+  "parameters": 609,
+  "configuration": {
+    "case": "wave",
+    "version": 1,
+    "width": 16,
+    "depth": 3,
+    "seed": 0,
+    "network_spec": {
+      "type": "siren",
+      "options": {
+        "first_omega": 8.0,
+        "omega": 1.0
+      },
+      "layers": [
+        16,
+        16,
+        16
+      ],
+      "inputs": 2,
+      "outputs": 1,
+      "bounds": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "seed": 0
+    }
+  },
+  "points": 2048,
+  "boundary": 512,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 64,
+    "probes": 16,
+    "initial_radius": 1.0,
+    "min_radius": 1e-08,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.0,
+    "history_window": 30,
+    "stage_grace": 80,
+    "precision": "float64",
+    "seed": 0
+  },
+  "attempts": 96,
+  "starting_attempt": 96,
+  "seconds": 0.1346365100002913,
+  "initial_losses": {
+    "pde": 0.13910277817055183,
+    "initial": 0.0007830511299343393,
+    "initial_velocity": 3.674379792511495e-05,
+    "boundary": 0.0045553488611212315
+  },
+  "final_losses": {
+    "pde": 0.13910277817055183,
+    "initial": 0.0007830511299343393,
+    "initial_velocity": 3.674379792511495e-05,
+    "boundary": 0.0045553488611212315
+  },
+  "final_condition_weights": {
+    "pde": 0.01,
+    "initial": 1.0,
+    "initial_velocity": 1.0,
+    "boundary": 1.0
+  },
+  "relative_l2": 0.24339245264895698,
+  "evaluation_grid": [
+    129,
+    129
+  ],
+  "reference": "Analytical standing wave",
+  "inference_only": true,
+  "inference_preserved_weights_iteration_rng": true,
+  "checkpoint_sha256": "3274bbf7ce21ed7f1b78ae4c3402a3b10b0c5d1284db07f35bd0e7cc6098ec17",
+  "history": []
+}

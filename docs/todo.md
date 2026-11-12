@@ -686,3 +686,13 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 
 - [x] Add a descriptively named Re=100 smooth-lid cavity UI example and an independent
   five-condition, pressure-offset-free DSGNAR research experiment with reference checks.
+
+- [x] Add the paper-equation standing-wave and four-mode multiscale Poisson
+  examples, analytical checks, separate initial-velocity loss and trained records.
+- [ ] Add wave-specific time-window continuation only with displacement **and
+  velocity** teacher transfer/checkpoint tests; current research runs use one window.
+
+- [ ] Improve the single-window wave accuracy or reproduce the paper’s two-window
+  schedule with explicit displacement/velocity transfer; current selected run has
+  24.3% relative L2, while multiscale Poisson is 0.0475%. Do not label either
+  smaller-budget result as matching the paper.

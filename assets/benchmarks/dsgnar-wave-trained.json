@@ -1,0 +1,1270 @@
+{
+  "case": "wave",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "source": {
+    "base_commit": "0b84bfecdd0461e73240845d79d9d5cf837d822e",
+    "runtime_and_test_sha256": "b7ad33af6c3ed480dd1c15dbe025b02e2b570ae8708ca3677e443e8511102f44",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "benchmark_script_sha256": "a2892c9d6d5a511c8fc01d42e6b32cd521147d046c7c03f21131d524569c121e"
+  },
+  "scope": "Exact paper equations; smaller SIREN network, fixed samples and single wave time window. Not a full paper protocol or speed reproduction.",
+  "precision": "float64",
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "parameters": 609,
+  "configuration": {
+    "case": "wave",
+    "version": 1,
+    "width": 16,
+    "depth": 3,
+    "seed": 0,
+    "network_spec": {
+      "type": "siren",
+      "options": {
+        "first_omega": 8.0,
+        "omega": 1.0
+      },
+      "layers": [
+        16,
+        16,
+        16
+      ],
+      "inputs": 2,
+      "outputs": 1,
+      "bounds": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "seed": 0
+    }
+  },
+  "points": 2048,
+  "boundary": 512,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 64,
+    "probes": 16,
+    "initial_radius": 1.0,
+    "min_radius": 1e-08,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.0,
+    "history_window": 30,
+    "stage_grace": 80,
+    "precision": "float64",
+    "seed": 0
+  },
+  "attempts": 96,
+  "starting_attempt": 0,
+  "seconds": 127.80311355499998,
+  "initial_losses": {
+    "pde": 1222.6467641182878,
+    "initial": 0.3417460740046616,
+    "initial_velocity": 0.7393278096056846,
+    "boundary": 1.1533469405187842
+  },
+  "final_losses": {
+    "pde": 0.13910277817055045,
+    "initial": 0.0007830511299343445,
+    "initial_velocity": 3.67437979251123e-05,
+    "boundary": 0.004555348861121227
+  },
+  "final_condition_weights": {
+    "pde": 0.01,
+    "initial": 1.0,
+    "initial_velocity": 1.0,
+    "boundary": 1.0
+  },
+  "relative_l2": 0.24339245264895693,
+  "evaluation_grid": [
+    129,
+    129
+  ],
+  "reference": "Analytical standing wave",
+  "inference_only": false,
+  "inference_preserved_weights_iteration_rng": null,
+  "checkpoint_sha256": null,
+  "history": [
+    {
+      "attempt": 1,
+      "seconds": 2.5226260710001043,
+      "losses": {
+        "pde": 1110.2034502745837,
+        "initial": 0.37572271205270336,
+        "initial_velocity": 1.9715505324140472,
+        "boundary": 0.11663573513258142
+      },
+      "radius": 2.123277580136752,
+      "accepted": true
+    },
+    {
+      "attempt": 2,
+      "seconds": 3.3183529330003694,
+      "losses": {
+        "pde": 1110.2034502745837,
+        "initial": 0.37572271205270336,
+        "initial_velocity": 1.9715505324140472,
+        "boundary": 0.11663573513258142
+      },
+      "radius": 0.7077591933789172,
+      "accepted": false
+    },
+    {
+      "attempt": 3,
+      "seconds": 4.029074497000238,
+      "losses": {
+        "pde": 1110.2034502745837,
+        "initial": 0.37572271205270336,
+        "initial_velocity": 1.9715505324140472,
+        "boundary": 0.11663573513258142
+      },
+      "radius": 0.23591973112630574,
+      "accepted": false
+    },
+    {
+      "attempt": 4,
+      "seconds": 4.767257844000142,
+      "losses": {
+        "pde": 114.62482311081598,
+        "initial": 0.22442144062226532,
+        "initial_velocity": 0.5002503740125186,
+        "boundary": 0.016085502904735347
+      },
+      "radius": 0.7077591933789172,
+      "accepted": true
+    },
+    {
+      "attempt": 5,
+      "seconds": 5.843007786000271,
+      "losses": {
+        "pde": 151.7801149666019,
+        "initial": 0.11750335105023166,
+        "initial_velocity": 0.11772805639662376,
+        "boundary": 0.009605368981052381
+      },
+      "radius": 0.690288823111404,
+      "accepted": true,
+      "relative_l2": 0.502265080297618
+    },
+    {
+      "attempt": 6,
+      "seconds": 7.06791776800037,
+      "losses": {
+        "pde": 90.33086433296495,
+        "initial": 0.10497613221631918,
+        "initial_velocity": 0.5628431450795355,
+        "boundary": 0.016629990414449475
+      },
+      "radius": 0.9433139449649787,
+      "accepted": true
+    },
+    {
+      "attempt": 7,
+      "seconds": 8.163934315999995,
+      "losses": {
+        "pde": 94.86772421821455,
+        "initial": 0.12099779112879604,
+        "initial_velocity": 0.4669728158612711,
+        "boundary": 0.005857777084679501
+      },
+      "radius": 0.8297310593024075,
+      "accepted": true
+    },
+    {
+      "attempt": 8,
+      "seconds": 8.889119548000053,
+      "losses": {
+        "pde": 116.54922550240127,
+        "initial": 0.09902485829077665,
+        "initial_velocity": 0.2200959577625688,
+        "boundary": 0.0048433252854003924
+      },
+      "radius": 0.5878831758820188,
+      "accepted": true
+    },
+    {
+      "attempt": 9,
+      "seconds": 10.167026914999951,
+      "losses": {
+        "pde": 99.9846177186767,
+        "initial": 0.09651022054561521,
+        "initial_velocity": 0.24631940671066613,
+        "boundary": 0.014890046752145041
+      },
+      "radius": 0.72350648051821,
+      "accepted": true
+    },
+    {
+      "attempt": 10,
+      "seconds": 11.658959535000122,
+      "losses": {
+        "pde": 81.24686239033062,
+        "initial": 0.07909029668498377,
+        "initial_velocity": 0.4066175330080981,
+        "boundary": 0.01595970284190528
+      },
+      "radius": 0.5978735346873697,
+      "accepted": true,
+      "relative_l2": 0.504834136537532
+    },
+    {
+      "attempt": 11,
+      "seconds": 13.177267821999976,
+      "losses": {
+        "pde": 92.69358862834423,
+        "initial": 0.07521685825067974,
+        "initial_velocity": 0.299485713353891,
+        "boundary": 0.009036189270906946
+      },
+      "radius": 0.8063703457994411,
+      "accepted": true
+    },
+    {
+      "attempt": 12,
+      "seconds": 14.216644717000236,
+      "losses": {
+        "pde": 68.58889983630372,
+        "initial": 0.1219339808609743,
+        "initial_velocity": 0.4448370791148457,
+        "boundary": 0.04093668525100752
+      },
+      "radius": 0.7021101565091057,
+      "accepted": true
+    },
+    {
+      "attempt": 13,
+      "seconds": 15.676152784000351,
+      "losses": {
+        "pde": 65.84680840803944,
+        "initial": 0.06698768359835029,
+        "initial_velocity": 0.5237061942219835,
+        "boundary": 0.013030353588762103
+      },
+      "radius": 0.5902515720869873,
+      "accepted": true
+    },
+    {
+      "attempt": 14,
+      "seconds": 17.0039363410001,
+      "losses": {
+        "pde": 88.94276225529308,
+        "initial": 0.05195665645009401,
+        "initial_velocity": 0.14486009514567633,
+        "boundary": 0.019072463662082748
+      },
+      "radius": 0.5270772762781372,
+      "accepted": true
+    },
+    {
+      "attempt": 15,
+      "seconds": 18.374519044999943,
+      "losses": {
+        "pde": 88.94276225529308,
+        "initial": 0.05195665645009401,
+        "initial_velocity": 0.14486009514567633,
+        "boundary": 0.019072463662082748
+      },
+      "radius": 0.1756924254260457,
+      "accepted": false,
+      "relative_l2": 0.5018922773116642
+    },
+    {
+      "attempt": 16,
+      "seconds": 19.51119226400033,
+      "losses": {
+        "pde": 39.25220625311252,
+        "initial": 0.05744639333770815,
+        "initial_velocity": 0.17143345078274339,
+        "boundary": 0.016166249536097847
+      },
+      "radius": 0.5270772762781372,
+      "accepted": true
+    },
+    {
+      "attempt": 17,
+      "seconds": 21.023379199000374,
+      "losses": {
+        "pde": 42.10170904309765,
+        "initial": 0.035938296967147,
+        "initial_velocity": 0.13123188827145973,
+        "boundary": 0.015693213080042855
+      },
+      "radius": 0.7010557436349044,
+      "accepted": true
+    },
+    {
+      "attempt": 18,
+      "seconds": 22.551101849000133,
+      "losses": {
+        "pde": 19.37781880573379,
+        "initial": 0.02906625450067247,
+        "initial_velocity": 0.3330910052758488,
+        "boundary": 0.0131919762788165
+      },
+      "radius": 0.45196435596249107,
+      "accepted": true
+    },
+    {
+      "attempt": 19,
+      "seconds": 23.998195097000007,
+      "losses": {
+        "pde": 23.503151072357802,
+        "initial": 0.03029041173351452,
+        "initial_velocity": 0.2820531425526499,
+        "boundary": 0.013439943307203921
+      },
+      "radius": 0.44564137158057276,
+      "accepted": true
+    },
+    {
+      "attempt": 20,
+      "seconds": 25.242316051000216,
+      "losses": {
+        "pde": 22.026862647112967,
+        "initial": 0.016208434643000848,
+        "initial_velocity": 0.2537987519166435,
+        "boundary": 0.013529849741449433
+      },
+      "radius": 0.46715326771485766,
+      "accepted": true,
+      "relative_l2": 0.42607938457943284
+    },
+    {
+      "attempt": 21,
+      "seconds": 26.587576400000216,
+      "losses": {
+        "pde": 21.754803812047157,
+        "initial": 0.014185673340415636,
+        "initial_velocity": 0.19374258835044106,
+        "boundary": 0.017979247986539618
+      },
+      "radius": 0.42233493010702694,
+      "accepted": true
+    },
+    {
+      "attempt": 22,
+      "seconds": 27.794526771000164,
+      "losses": {
+        "pde": 36.57861146568806,
+        "initial": 0.006813293942531072,
+        "initial_velocity": 0.04842378152242538,
+        "boundary": 0.013975583542487027
+      },
+      "radius": 0.48768167640459226,
+      "accepted": true
+    },
+    {
+      "attempt": 23,
+      "seconds": 29.01529687900029,
+      "losses": {
+        "pde": 34.774649403269635,
+        "initial": 0.007415264097533493,
+        "initial_velocity": 0.05191103887729441,
+        "boundary": 0.011748679482337045
+      },
+      "radius": 0.7173296109327529,
+      "accepted": true
+    },
+    {
+      "attempt": 24,
+      "seconds": 30.517112508000082,
+      "losses": {
+        "pde": 30.864856227060155,
+        "initial": 0.004736421000439878,
+        "initial_velocity": 0.08670831886376537,
+        "boundary": 0.013922799426512724
+      },
+      "radius": 0.536230717202867,
+      "accepted": true
+    },
+    {
+      "attempt": 25,
+      "seconds": 31.99681241799999,
+      "losses": {
+        "pde": 30.864856227060155,
+        "initial": 0.004736421000439878,
+        "initial_velocity": 0.08670831886376537,
+        "boundary": 0.013922799426512724
+      },
+      "radius": 0.17874357240095565,
+      "accepted": false,
+      "relative_l2": 0.4080110266616898
+    },
+    {
+      "attempt": 26,
+      "seconds": 33.65381155900013,
+      "losses": {
+        "pde": 9.448527571730168,
+        "initial": 0.005162821605843776,
+        "initial_velocity": 0.12910682612814461,
+        "boundary": 0.010459839416916814
+      },
+      "radius": 0.536230717202867,
+      "accepted": true
+    },
+    {
+      "attempt": 27,
+      "seconds": 35.260366602999966,
+      "losses": {
+        "pde": 13.602721357866844,
+        "initial": 0.005084125264007738,
+        "initial_velocity": 0.06354133756449394,
+        "boundary": 0.009379218228857024
+      },
+      "radius": 0.5465605683921476,
+      "accepted": true
+    },
+    {
+      "attempt": 28,
+      "seconds": 36.69361682299996,
+      "losses": {
+        "pde": 8.06764965841285,
+        "initial": 0.006865425972450687,
+        "initial_velocity": 0.09767290914089477,
+        "boundary": 0.011080140621392051
+      },
+      "radius": 0.5055947820149368,
+      "accepted": true
+    },
+    {
+      "attempt": 29,
+      "seconds": 38.0073899680001,
+      "losses": {
+        "pde": 8.1489318214823,
+        "initial": 0.0036309057997348454,
+        "initial_velocity": 0.09397308502528591,
+        "boundary": 0.011583961218102637
+      },
+      "radius": 0.6634924070516489,
+      "accepted": true
+    },
+    {
+      "attempt": 30,
+      "seconds": 39.51473540500001,
+      "losses": {
+        "pde": 9.919895761427531,
+        "initial": 0.002846425109934998,
+        "initial_velocity": 0.07407242388954152,
+        "boundary": 0.01056429766569798
+      },
+      "radius": 0.5661752878739844,
+      "accepted": true,
+      "relative_l2": 0.35658555754432103
+    },
+    {
+      "attempt": 31,
+      "seconds": 41.069420254000306,
+      "losses": {
+        "pde": 12.249973158274548,
+        "initial": 0.005064044880896392,
+        "initial_velocity": 0.037720111255586435,
+        "boundary": 0.01042030789083228
+      },
+      "radius": 0.45904529355199836,
+      "accepted": true
+    },
+    {
+      "attempt": 32,
+      "seconds": 42.55358828600038,
+      "losses": {
+        "pde": 6.5624733050523325,
+        "initial": 0.0027827277962117506,
+        "initial_velocity": 0.0954057887345933,
+        "boundary": 0.01054968058747038
+      },
+      "radius": 0.4571350087322532,
+      "accepted": true
+    },
+    {
+      "attempt": 33,
+      "seconds": 43.858608367000215,
+      "losses": {
+        "pde": 12.196078665785253,
+        "initial": 0.004078608954456346,
+        "initial_velocity": 0.023089115409929622,
+        "boundary": 0.01057728897248683
+      },
+      "radius": 0.5368189986292259,
+      "accepted": true
+    },
+    {
+      "attempt": 34,
+      "seconds": 45.091858119000335,
+      "losses": {
+        "pde": 10.691479749124884,
+        "initial": 0.0024509364601440456,
+        "initial_velocity": 0.030821668234893525,
+        "boundary": 0.009570060073633313
+      },
+      "radius": 0.5029327177217556,
+      "accepted": true
+    },
+    {
+      "attempt": 35,
+      "seconds": 46.47465153300027,
+      "losses": {
+        "pde": 5.713966889612816,
+        "initial": 0.003170014793899726,
+        "initial_velocity": 0.07329063803248437,
+        "boundary": 0.009839792067204374
+      },
+      "radius": 0.3773747339941924,
+      "accepted": true,
+      "relative_l2": 0.33561602571859767
+    },
+    {
+      "attempt": 36,
+      "seconds": 47.90010318800023,
+      "losses": {
+        "pde": 8.190960606310126,
+        "initial": 0.0032488568790952866,
+        "initial_velocity": 0.04118958124351159,
+        "boundary": 0.009022445709467735
+      },
+      "radius": 0.4717844712671167,
+      "accepted": true
+    },
+    {
+      "attempt": 37,
+      "seconds": 49.057929459000206,
+      "losses": {
+        "pde": 9.166571513229117,
+        "initial": 0.0023695393891753867,
+        "initial_velocity": 0.015221026326693688,
+        "boundary": 0.010884168374608934
+      },
+      "radius": 0.35887393636228143,
+      "accepted": true
+    },
+    {
+      "attempt": 38,
+      "seconds": 50.4070638180001,
+      "losses": {
+        "pde": 7.777901521297826,
+        "initial": 0.0024240646849362207,
+        "initial_velocity": 0.027360369957430013,
+        "boundary": 0.010194038014575885
+      },
+      "radius": 0.40297818617639175,
+      "accepted": true
+    },
+    {
+      "attempt": 39,
+      "seconds": 51.87929374400028,
+      "losses": {
+        "pde": 7.777901521297826,
+        "initial": 0.0024240646849362207,
+        "initial_velocity": 0.027360369957430013,
+        "boundary": 0.010194038014575885
+      },
+      "radius": 0.13432606205879724,
+      "accepted": false
+    },
+    {
+      "attempt": 40,
+      "seconds": 53.29804379400002,
+      "losses": {
+        "pde": 2.313213600818794,
+        "initial": 0.0018820456969831916,
+        "initial_velocity": 0.04448814792039069,
+        "boundary": 0.009097966606846253
+      },
+      "radius": 0.4029781861763917,
+      "accepted": true,
+      "relative_l2": 0.33223531565137554
+    },
+    {
+      "attempt": 41,
+      "seconds": 54.93617572700032,
+      "losses": {
+        "pde": 4.390634456767345,
+        "initial": 0.0024847803687305615,
+        "initial_velocity": 0.018638735623882727,
+        "boundary": 0.010637047564589873
+      },
+      "radius": 0.4011640689500501,
+      "accepted": true
+    },
+    {
+      "attempt": 42,
+      "seconds": 56.39836048300003,
+      "losses": {
+        "pde": 2.374382754874536,
+        "initial": 0.0016301385216344112,
+        "initial_velocity": 0.03613112914519885,
+        "boundary": 0.008869450674312405
+      },
+      "radius": 0.34723658659395096,
+      "accepted": true
+    },
+    {
+      "attempt": 43,
+      "seconds": 57.89229576300022,
+      "losses": {
+        "pde": 1.696217260230636,
+        "initial": 0.0020345784839225943,
+        "initial_velocity": 0.03926667271223429,
+        "boundary": 0.008849822574274507
+      },
+      "radius": 0.2945642600789963,
+      "accepted": true
+    },
+    {
+      "attempt": 44,
+      "seconds": 59.38261366400002,
+      "losses": {
+        "pde": 2.3152208866574195,
+        "initial": 0.0032463352997700243,
+        "initial_velocity": 0.026149909298533294,
+        "boundary": 0.00814234593425494
+      },
+      "radius": 0.25846446716055055,
+      "accepted": true
+    },
+    {
+      "attempt": 45,
+      "seconds": 60.87475433100008,
+      "losses": {
+        "pde": 1.894213272315521,
+        "initial": 0.00293543079482893,
+        "initial_velocity": 0.024682144384009373,
+        "boundary": 0.007821920213076249
+      },
+      "radius": 0.3119003319236921,
+      "accepted": true,
+      "relative_l2": 0.3216404686433805
+    },
+    {
+      "attempt": 46,
+      "seconds": 62.4602131810002,
+      "losses": {
+        "pde": 2.6227625785846276,
+        "initial": 0.0026644369198931565,
+        "initial_velocity": 0.013972103770383406,
+        "boundary": 0.008856828472931871
+      },
+      "radius": 0.31352033451953254,
+      "accepted": true
+    },
+    {
+      "attempt": 47,
+      "seconds": 64.01541611300036,
+      "losses": {
+        "pde": 2.394043448504717,
+        "initial": 0.0026012126225529878,
+        "initial_velocity": 0.012822518345371254,
+        "boundary": 0.008307137388850215
+      },
+      "radius": 0.3332898335218691,
+      "accepted": true
+    },
+    {
+      "attempt": 48,
+      "seconds": 64.82712212000024,
+      "losses": {
+        "pde": 3.0756848109124517,
+        "initial": 0.0019612608215307144,
+        "initial_velocity": 0.004944195635808708,
+        "boundary": 0.00927360632896982
+      },
+      "radius": 0.2455366440940456,
+      "accepted": true
+    },
+    {
+      "attempt": 49,
+      "seconds": 65.63408347300037,
+      "losses": {
+        "pde": 1.7460445703801477,
+        "initial": 0.0018181676223245902,
+        "initial_velocity": 0.013927962109508793,
+        "boundary": 0.008752855993464037
+      },
+      "radius": 0.2882375382352023,
+      "accepted": true
+    },
+    {
+      "attempt": 50,
+      "seconds": 66.83051165400002,
+      "losses": {
+        "pde": 1.5242623656171077,
+        "initial": 0.0028037082708626,
+        "initial_velocity": 0.01310966089556875,
+        "boundary": 0.008098806580172625
+      },
+      "radius": 0.32659413217029915,
+      "accepted": true,
+      "relative_l2": 0.31805467556086225
+    },
+    {
+      "attempt": 51,
+      "seconds": 68.5231765540002,
+      "losses": {
+        "pde": 1.545475271770755,
+        "initial": 0.0019795087267791564,
+        "initial_velocity": 0.012927370363096534,
+        "boundary": 0.008385754278978197
+      },
+      "radius": 0.28251785545497654,
+      "accepted": true
+    },
+    {
+      "attempt": 52,
+      "seconds": 69.97881863800012,
+      "losses": {
+        "pde": 2.1272270420561004,
+        "initial": 0.0016536959615713017,
+        "initial_velocity": 0.004589495202282177,
+        "boundary": 0.00848450818252203
+      },
+      "radius": 0.3874189298058934,
+      "accepted": true
+    },
+    {
+      "attempt": 53,
+      "seconds": 71.42859981400034,
+      "losses": {
+        "pde": 1.1068818422984328,
+        "initial": 0.0019866444318080434,
+        "initial_velocity": 0.014232702055696848,
+        "boundary": 0.007578607178444064
+      },
+      "radius": 0.21732793203249642,
+      "accepted": true
+    },
+    {
+      "attempt": 54,
+      "seconds": 72.90292043199997,
+      "losses": {
+        "pde": 1.707418598527041,
+        "initial": 0.002098540701544589,
+        "initial_velocity": 0.0067482045219398315,
+        "boundary": 0.007983791109042898
+      },
+      "radius": 0.2823238732641264,
+      "accepted": true
+    },
+    {
+      "attempt": 55,
+      "seconds": 74.39004834700017,
+      "losses": {
+        "pde": 1.6747175530310519,
+        "initial": 0.0018923619993774826,
+        "initial_velocity": 0.005722765357100312,
+        "boundary": 0.007937761487205234
+      },
+      "radius": 0.21086902110905692,
+      "accepted": true,
+      "relative_l2": 0.31420014306061117
+    },
+    {
+      "attempt": 56,
+      "seconds": 75.98865379100016,
+      "losses": {
+        "pde": 2.09783982229674,
+        "initial": 0.0017581392950319593,
+        "initial_velocity": 0.0018670465476904462,
+        "boundary": 0.007688270209795852
+      },
+      "radius": 0.3244691850834718,
+      "accepted": true
+    },
+    {
+      "attempt": 57,
+      "seconds": 77.28173429700018,
+      "losses": {
+        "pde": 0.9495929298901351,
+        "initial": 0.0011284699736388315,
+        "initial_velocity": 0.012067338471441834,
+        "boundary": 0.008153867186157824
+      },
+      "radius": 0.24005884572847142,
+      "accepted": true
+    },
+    {
+      "attempt": 58,
+      "seconds": 78.46477977800032,
+      "losses": {
+        "pde": 1.2807502337042305,
+        "initial": 0.0017141345587844332,
+        "initial_velocity": 0.007104371549321571,
+        "boundary": 0.007859613221810035
+      },
+      "radius": 0.2072579096958352,
+      "accepted": true
+    },
+    {
+      "attempt": 59,
+      "seconds": 79.71178710000004,
+      "losses": {
+        "pde": 1.1932586377778756,
+        "initial": 0.001879198626760675,
+        "initial_velocity": 0.006759710000152098,
+        "boundary": 0.007522002198851139
+      },
+      "radius": 0.20275484838193705,
+      "accepted": true
+    },
+    {
+      "attempt": 60,
+      "seconds": 80.86705897900038,
+      "losses": {
+        "pde": 1.0995784742938037,
+        "initial": 0.001789599885004473,
+        "initial_velocity": 0.007595619530860564,
+        "boundary": 0.006958343832356742
+      },
+      "radius": 0.20458171008090198,
+      "accepted": true,
+      "relative_l2": 0.3035398128593497
+    },
+    {
+      "attempt": 61,
+      "seconds": 81.97147253599996,
+      "losses": {
+        "pde": 1.3789235267737596,
+        "initial": 0.001676030271448066,
+        "initial_velocity": 0.002748639268494695,
+        "boundary": 0.007140240402965627
+      },
+      "radius": 0.2764151941956978,
+      "accepted": true
+    },
+    {
+      "attempt": 62,
+      "seconds": 82.72280691000014,
+      "losses": {
+        "pde": 1.3680003701331853,
+        "initial": 0.0012990084109375227,
+        "initial_velocity": 0.0021998342560219197,
+        "boundary": 0.00697426655807774
+      },
+      "radius": 0.20898928747828693,
+      "accepted": true
+    },
+    {
+      "attempt": 63,
+      "seconds": 83.4904558520002,
+      "losses": {
+        "pde": 1.2215023410660417,
+        "initial": 0.0016226637690352464,
+        "initial_velocity": 0.002582589181026733,
+        "boundary": 0.006488230244585156
+      },
+      "radius": 0.24378355368703455,
+      "accepted": true
+    },
+    {
+      "attempt": 64,
+      "seconds": 84.32006822700032,
+      "losses": {
+        "pde": 0.9057779114328294,
+        "initial": 0.0011477896337923944,
+        "initial_velocity": 0.004434693945634709,
+        "boundary": 0.00720877897873941
+      },
+      "radius": 0.2297944834981559,
+      "accepted": true
+    },
+    {
+      "attempt": 65,
+      "seconds": 85.3200400390001,
+      "losses": {
+        "pde": 1.0163658739511536,
+        "initial": 0.0013845742355488863,
+        "initial_velocity": 0.002800632540530316,
+        "boundary": 0.006726635785445321
+      },
+      "radius": 0.25566404204540194,
+      "accepted": true,
+      "relative_l2": 0.29004799315567126
+    },
+    {
+      "attempt": 66,
+      "seconds": 86.24279652099995,
+      "losses": {
+        "pde": 0.9990945884627249,
+        "initial": 0.0014726262794088798,
+        "initial_velocity": 0.0027433335223871176,
+        "boundary": 0.006272412084503095
+      },
+      "radius": 0.256767818285854,
+      "accepted": true
+    },
+    {
+      "attempt": 67,
+      "seconds": 87.68004274000032,
+      "losses": {
+        "pde": 0.9347774649467364,
+        "initial": 0.0016769750519919678,
+        "initial_velocity": 0.002264643816643484,
+        "boundary": 0.005917283956987039
+      },
+      "radius": 0.20154499325174025,
+      "accepted": true
+    },
+    {
+      "attempt": 68,
+      "seconds": 89.12814710500015,
+      "losses": {
+        "pde": 1.0452793869651371,
+        "initial": 0.0013903653318797558,
+        "initial_velocity": 0.0011508820393716303,
+        "boundary": 0.005806899608458519
+      },
+      "radius": 0.2301847825908197,
+      "accepted": true
+    },
+    {
+      "attempt": 69,
+      "seconds": 90.59846557600031,
+      "losses": {
+        "pde": 0.8477503376585048,
+        "initial": 0.0013672250134678758,
+        "initial_velocity": 0.0016449084981726828,
+        "boundary": 0.005943796055607808
+      },
+      "radius": 0.17217894290940325,
+      "accepted": true
+    },
+    {
+      "attempt": 70,
+      "seconds": 92.10143858500032,
+      "losses": {
+        "pde": 0.7366288979979774,
+        "initial": 0.0011259128774734647,
+        "initial_velocity": 0.0019145458604121,
+        "boundary": 0.005653891924856803
+      },
+      "radius": 0.17332815930726547,
+      "accepted": true,
+      "relative_l2": 0.2695809153031255
+    },
+    {
+      "attempt": 71,
+      "seconds": 93.44483782700036,
+      "losses": {
+        "pde": 0.389641280230388,
+        "initial": 0.001545409829377578,
+        "initial_velocity": 0.004267544417888477,
+        "boundary": 0.005418376274588275
+      },
+      "radius": 0.13677018540740413,
+      "accepted": true
+    },
+    {
+      "attempt": 72,
+      "seconds": 94.94920197800002,
+      "losses": {
+        "pde": 0.6254440231451334,
+        "initial": 0.001328293718151833,
+        "initial_velocity": 0.0014942256468944673,
+        "boundary": 0.005414136638123733
+      },
+      "radius": 0.14808602908756138,
+      "accepted": true
+    },
+    {
+      "attempt": 73,
+      "seconds": 96.41283389800037,
+      "losses": {
+        "pde": 0.5752002529735656,
+        "initial": 0.0009289888412517729,
+        "initial_velocity": 0.0013363622875021638,
+        "boundary": 0.0055544470160666624
+      },
+      "radius": 0.17681229695728157,
+      "accepted": true
+    },
+    {
+      "attempt": 74,
+      "seconds": 97.8575416890003,
+      "losses": {
+        "pde": 0.6037264925338784,
+        "initial": 0.00113586442837802,
+        "initial_velocity": 0.00039377674232698534,
+        "boundary": 0.00534709712457942
+      },
+      "radius": 0.14798479153932576,
+      "accepted": true
+    },
+    {
+      "attempt": 75,
+      "seconds": 98.99791373500011,
+      "losses": {
+        "pde": 0.45669509644148865,
+        "initial": 0.0011286909504405213,
+        "initial_velocity": 0.0015153034957363393,
+        "boundary": 0.004990699954271207
+      },
+      "radius": 0.16975671284575536,
+      "accepted": true,
+      "relative_l2": 0.25640271364737705
+    },
+    {
+      "attempt": 76,
+      "seconds": 100.29200368900001,
+      "losses": {
+        "pde": 0.35263606572532646,
+        "initial": 0.0009218466744574124,
+        "initial_velocity": 0.002038479988591058,
+        "boundary": 0.005104351115870345
+      },
+      "radius": 0.1455417555676126,
+      "accepted": true
+    },
+    {
+      "attempt": 77,
+      "seconds": 101.87253087600038,
+      "losses": {
+        "pde": 0.3363310425200904,
+        "initial": 0.0008450039116198885,
+        "initial_velocity": 0.0015683592350499722,
+        "boundary": 0.005314878295672313
+      },
+      "radius": 0.1440384432893058,
+      "accepted": true
+    },
+    {
+      "attempt": 78,
+      "seconds": 103.4845274090003,
+      "losses": {
+        "pde": 0.3916145474410795,
+        "initial": 0.0009723085549612209,
+        "initial_velocity": 0.0010150534351547513,
+        "boundary": 0.00479892351610392
+      },
+      "radius": 0.12154330646752795,
+      "accepted": true
+    },
+    {
+      "attempt": 79,
+      "seconds": 105.00954117100036,
+      "losses": {
+        "pde": 0.3078062243761641,
+        "initial": 0.0008843492298200061,
+        "initial_velocity": 0.001249811715651988,
+        "boundary": 0.004979552465520744
+      },
+      "radius": 0.08750540933619495,
+      "accepted": true
+    },
+    {
+      "attempt": 80,
+      "seconds": 106.62303979100034,
+      "losses": {
+        "pde": 0.3422362478762722,
+        "initial": 0.0008173076087810674,
+        "initial_velocity": 0.0006598238600315906,
+        "boundary": 0.004835366305294253
+      },
+      "radius": 0.0961757798787706,
+      "accepted": true,
+      "relative_l2": 0.24983040357459643
+    },
+    {
+      "attempt": 81,
+      "seconds": 108.27422127199998,
+      "losses": {
+        "pde": 0.34453611723328614,
+        "initial": 0.0007780951579172658,
+        "initial_velocity": 0.0004093423954901789,
+        "boundary": 0.004690506059204052
+      },
+      "radius": 0.12047398306558184,
+      "accepted": true
+    },
+    {
+      "attempt": 82,
+      "seconds": 109.6682230790002,
+      "losses": {
+        "pde": 0.21652294363274077,
+        "initial": 0.0008284629530248382,
+        "initial_velocity": 8.325948072053372e-05,
+        "boundary": 0.004604375835842981
+      },
+      "radius": 0.04015799435519395,
+      "accepted": true
+    },
+    {
+      "attempt": 83,
+      "seconds": 110.78714786900036,
+      "losses": {
+        "pde": 0.20353453475059952,
+        "initial": 0.0007250152758199377,
+        "initial_velocity": 0.00011984943782701623,
+        "boundary": 0.004665266931998389
+      },
+      "radius": 0.013385998118397986,
+      "accepted": true
+    },
+    {
+      "attempt": 84,
+      "seconds": 111.82182124700012,
+      "losses": {
+        "pde": 0.16869627621832553,
+        "initial": 0.0008258346003958224,
+        "initial_velocity": 8.990202353834862e-05,
+        "boundary": 0.004622965887037638
+      },
+      "radius": 0.0044619993727993265,
+      "accepted": true
+    },
+    {
+      "attempt": 85,
+      "seconds": 112.90954554400014,
+      "losses": {
+        "pde": 0.17585444599138464,
+        "initial": 0.0007974587370475627,
+        "initial_velocity": 8.845806275087524e-05,
+        "boundary": 0.004557665465845999
+      },
+      "radius": 0.0014873331242664417,
+      "accepted": true,
+      "relative_l2": 0.24340980236746837
+    },
+    {
+      "attempt": 86,
+      "seconds": 114.29595207200009,
+      "losses": {
+        "pde": 0.14079254913180655,
+        "initial": 0.000788771200225028,
+        "initial_velocity": 4.992606627189221e-05,
+        "boundary": 0.004550458180683095
+      },
+      "radius": 0.0004957777080888137,
+      "accepted": true
+    },
+    {
+      "attempt": 87,
+      "seconds": 115.45376365500033,
+      "losses": {
+        "pde": 0.14079254913180655,
+        "initial": 0.000788771200225028,
+        "initial_velocity": 4.992606627189221e-05,
+        "boundary": 0.004550458180683095
+      },
+      "radius": 0.00016525923602960456,
+      "accepted": false
+    },
+    {
+      "attempt": 88,
+      "seconds": 116.47905417600032,
+      "losses": {
+        "pde": 0.1395864149584422,
+        "initial": 0.0007829529493418553,
+        "initial_velocity": 3.9563178218872156e-05,
+        "boundary": 0.0045562174427392025
+      },
+      "radius": 5.5086412009868145e-05,
+      "accepted": true
+    },
+    {
+      "attempt": 89,
+      "seconds": 117.86600430199996,
+      "losses": {
+        "pde": 0.1395864149584422,
+        "initial": 0.0007829529493418553,
+        "initial_velocity": 3.9563178218872156e-05,
+        "boundary": 0.0045562174427392025
+      },
+      "radius": 1.8362137336622714e-05,
+      "accepted": false
+    },
+    {
+      "attempt": 90,
+      "seconds": 119.28246137800033,
+      "losses": {
+        "pde": 0.1392103898706649,
+        "initial": 0.0007829585265344733,
+        "initial_velocity": 3.688182601992691e-05,
+        "boundary": 0.004555460905147329
+      },
+      "radius": 6.120712445540901e-06,
+      "accepted": true,
+      "relative_l2": 0.24339613176018496
+    },
+    {
+      "attempt": 91,
+      "seconds": 120.57245824600022,
+      "losses": {
+        "pde": 0.13914095310920416,
+        "initial": 0.0007830667577888442,
+        "initial_velocity": 3.7010362382516884e-05,
+        "boundary": 0.004555366785253187
+      },
+      "radius": 2.040237481846966e-06,
+      "accepted": true
+    },
+    {
+      "attempt": 92,
+      "seconds": 121.95587955500014,
+      "losses": {
+        "pde": 0.13911615568014254,
+        "initial": 0.0007830672222094973,
+        "initial_velocity": 3.6799274377498706e-05,
+        "boundary": 0.004555329365335923
+      },
+      "radius": 6.800791606156551e-07,
+      "accepted": true
+    },
+    {
+      "attempt": 93,
+      "seconds": 123.35150259700004,
+      "losses": {
+        "pde": 0.13910904410641903,
+        "initial": 0.0007830526592187558,
+        "initial_velocity": 3.679202066928632e-05,
+        "boundary": 0.004555347838330023
+      },
+      "radius": 2.266930535385516e-07,
+      "accepted": true
+    },
+    {
+      "attempt": 94,
+      "seconds": 124.7301274890001,
+      "losses": {
+        "pde": 0.13910501561644123,
+        "initial": 0.0007830505650600207,
+        "initial_velocity": 3.675090395731837e-05,
+        "boundary": 0.004555349641327434
+      },
+      "radius": 7.556435117951718e-08,
+      "accepted": true
+    },
+    {
+      "attempt": 95,
+      "seconds": 126.14124117600022,
+      "losses": {
+        "pde": 0.13910322708222295,
+        "initial": 0.000783051074780556,
+        "initial_velocity": 3.674393480994196e-05,
+        "boundary": 0.004555347748305341
+      },
+      "radius": 2.518811705983905e-08,
+      "accepted": true,
+      "relative_l2": 0.24339246985788177
+    },
+    {
+      "attempt": 96,
+      "seconds": 127.66154695700016,
+      "losses": {
+        "pde": 0.13910277817055045,
+        "initial": 0.0007830511299343445,
+        "initial_velocity": 3.67437979251123e-05,
+        "boundary": 0.004555348861121227
+      },
+      "radius": 8.396039019946346e-09,
+      "accepted": true,
+      "relative_l2": 0.24339245264895693
+    }
+  ],
+  "interpretation": "Incomplete single-window wave solve; lower error than the Fourier attempts, but 24.34% relative L2 is not an accurate reproduction."
+}

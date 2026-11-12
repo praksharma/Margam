@@ -10,7 +10,7 @@ import time
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device',choices=('cpu','cuda'),default='cpu')
-    parser.add_argument('--example',choices=('dsgnar_poisson_1d','dsgnar_burgers','dsgnar_cavity'))
+    parser.add_argument('--example',choices=('dsgnar_poisson_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale'))
     parser.add_argument('--output',type=Path)
     parser.add_argument('--screenshot',type=Path)
     args=parser.parse_args();os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
@@ -58,8 +58,8 @@ def main():
                 for name,value in direct.network.state_dict().items():torch.testing.assert_close(value.cpu(),retained.network.state_dict()[name],rtol=1e-11,atol=1e-12)
                 assert w.evaluate_trained_outputs();finish()
                 export=next(n for n in w.scene.nodes() if n.kind=='export');assert w.export_block_data(export,directory/'solution.csv')
-                if key in ('dsgnar_burgers','dsgnar_cavity'):
-                    suffix='solution.pvd' if key=='dsgnar_burgers' else 'solution.vti'
+                if key in ('dsgnar_burgers','dsgnar_cavity','dsgnar_wave'):
+                    suffix='solution.pvd' if key in ('dsgnar_burgers','dsgnar_wave') else 'solution.vti'
                     export=next(n for n in w.scene.nodes() if n.kind=='paraview');assert w.export_block_data(export,directory/suffix)
                 summary=retained.dsgnar_summary();raw={name:value.item() for name,value in direct.compute_losses().items()}
                 reports.append(dict(example=key,device=args.device,precision=w.config.dsgnar_settings['precision'],

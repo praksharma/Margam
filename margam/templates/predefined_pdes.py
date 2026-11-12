@@ -13,6 +13,7 @@ class PDEPreset:
 
 
 PREDEFINED_PDES = {
+    'wave_1d':PDEPreset('Standing wave · 1D + time · two modes','uₜₜ − c² uₓₓ = 0',('SpaceTime1D',),False),
     'kdv_1d':PDEPreset('Korteweg–de Vries · 1D + time','uₜ + c u uₓ + ν uₓₓₓ = 0',('SpaceTime1D',),False),
     'burgers_1d': PDEPreset('Burgers · 1D + time','uₜ + u uₓ − ν uₓₓ = 0',('SpaceTime1D',),False),
     'poisson': PDEPreset('Poisson', 'Δu + c + f(x,y) = 0', ('Interval','Rectangle','Prepared2D')),
@@ -30,7 +31,8 @@ def resolve_predefined(config):
     config.physics='scalar'
     if config.pde_preset.startswith('expert_'):
         config.physics='paper_case';config.pde_expression='';return config
-    if config.pde_preset=='kdv_1d':config.pde_expression='D(u,t)+c*u*D(u,x)+nu*D(D(D(u,x),x),x)'
+    if config.pde_preset=='wave_1d':config.pde_expression='D(D(u,t),t)-c**2*D(D(u,x),x)'
+    elif config.pde_preset=='kdv_1d':config.pde_expression='D(u,t)+c*u*D(u,x)+nu*D(D(D(u,x),x),x)'
     elif config.pde_preset=='burgers_1d':config.pde_expression='D(u,t)+u*D(u,x)-nu*D(D(u,x),x)'
     elif config.pde_preset=='poisson':
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
