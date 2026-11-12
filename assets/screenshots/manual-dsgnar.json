@@ -1,0 +1,7 @@
+{
+  "generator": "examples.dsgnar_workflow --device cpu --screenshot",
+  "scope": "Actual state-isolated DSGNAR Poisson builder and trainer inspector; no paper accuracy claim.",
+  "file": "manual-dsgnar.png",
+  "bytes": 252577,
+  "sha256": "a9bd3a0584bd9bc9076df6e2b536cbfdd1345bafc89ccfea7db1609e4c3567e1"
+}

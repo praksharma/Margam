@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace,asdict
 from pathlib import Path
 import json
-from ..recipes import baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import dsgnar, baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -642,10 +642,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
         self.gpinn_examples_menu=self.examples_menu.addMenu('gPINN examples');self.gpinn_examples_menu.setIcon(icon('gpinn_recipe'))
+        self.dsgnar_examples_menu=self.examples_menu.addMenu('DSGNAR examples');self.dsgnar_examples_menu.setIcon(icon('dsgnar_recipe'))
         self.rba_examples_menu=self.examples_menu.addMenu('RBA examples');self.rba_examples_menu.setIcon(icon('rba_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
+            menu=self.dsgnar_examples_menu if identifier.startswith('dsgnar_') else self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -1029,8 +1030,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if self.is_running() or self.scene.locked:return False
         checkpoint=self.last_run.model.training_state() if self.last_run is not None and self.last_run.model is not None else self.loaded_checkpoint
         if checkpoint is None or checkpoint['iter']>=100000:return False
+        if checkpoint.get('dsgnar',{}).get('converged',False):
+            self.statusBar().showMessage('DSGNAR minimum radius reached; start a new run to change its stopping settings.');return False
         if additional is None:
-            additional,accepted=QInputDialog.getInt(self,'Resume checkpoint','Additional updates',1000,1,100000-checkpoint['iter'])
+            additional,accepted=QInputDialog.getInt(self,'Resume checkpoint','Additional attempts' if self.config.method=='dsgnar' else 'Additional updates',1000,1,100000-checkpoint['iter'])
             if not accepted:return False
         if type(additional) is not int or not 1<=additional<=100000-checkpoint['iter']:return False
         self.change('iterations',checkpoint['iter']+additional)
@@ -1252,6 +1255,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
+        if node.kind in ('dsgnar_recipe','dsgnar_method'):
+            action=menu.addAction('Step diagnostics');action.triggered.connect(self.show_dsgnar_summary)
         if node.kind in ('rba_recipe','rba_method'):
             action=menu.addAction('Attention statistics');action.triggered.connect(self.show_rba_summary)
         if node.kind in ('scale_recipe','scale_method'):
@@ -1510,8 +1515,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     self.scene.wires.remove(wire);self.scene.removeItem(wire)
                     self.scene.connect_nodes(wire.source.parentItem(),interior,wire.target.name)
             self.scene.removeItem(old_interior)
-        if config.method in ('self_adaptive','lra','expert','scale','gpinn','rba'):
-            recipe=residual_attention if config.method=='rba' else gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+        if config.method in ('self_adaptive','lra','expert','scale','gpinn','rba','dsgnar'):
+            recipe=dsgnar if config.method=='dsgnar' else residual_attention if config.method=='rba' else gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
             title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
             old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
@@ -1815,9 +1820,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'importance':f'{actual} points · importance',
                      'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'boundary':f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset=='kdv_1d' else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else len(c.sides) if c.shape=='Interval' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
                      'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset=='kdv_1d' else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
+                     'dsgnar_recipe':f'DSGNAR · {c.iterations} attempts','dsgnar_method':f'SVD · sketch {c.dsgnar_settings["sketch_size"]}',
                      'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
                      'gpinn_recipe':f'gPINN · {c.iterations} steps','gpinn_method':'Scalar residual gradients',
                      'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
@@ -2057,11 +2063,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
-        if self.config.method in ('expert','scale','gpinn','rba','inverse_burgers'):choice.model().item(choice.findData('integral')).setEnabled(False)
+        if self.config.method in ('expert','scale','gpinn','rba','inverse_burgers','dsgnar'):choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
-        note=QLabel('RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note=QLabel('DSGNAR uses a weighted least-squares objective with adaptive condition weights. No integral quadrature or Adam update.' if self.config.method=='dsgnar' else 'RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_sampling_option(self,key,value):
@@ -2352,7 +2358,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             self.field('Network seed','network_seed','int',minimum=0,maximum=2147483647)
         elif node.kind in COMPACT_RECIPES:
             recipe=COMPACT_RECIPES[node.kind]
-            note=QLabel(recipe.NAME+' · full-batch Adam\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
+            note=QLabel(recipe.NAME+(' · sketched Gauss–Newton' if self.config.method=='dsgnar' else ' · full-batch Adam')+'\nNetwork and loss settings are retained inside. Double-click or expand to edit the components.');note.setWordWrap(True);self.form.addRow(note)
             self.property_section('PINN method')
             self.form.addRow(QLabel(recipe.NAME))
             if node.kind=='inverse_recipe':
@@ -2365,16 +2371,19 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             for attribute in recipe.EXPOSED:
                 if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
                 elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
+            if self.config.method=='dsgnar':self.dsgnar_settings_fields()
             if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
-            self.form.addRow('Network optimiser',QLabel('Adam · descent'))
-            self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
+            if self.config.method=='dsgnar':self.form.addRow('Network optimiser',QLabel('DSGNAR · SVD trust-region'))
+            else:
+                self.form.addRow('Network optimiser',QLabel('Adam · descent'))
+                self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
             if 'sa_lr' in recipe.EXPOSED:
                 self.form.addRow('Mask optimiser',QLabel('Adam · ascent'))
                 self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
             self.property_section('Trainer')
-            self.field('Training updates','iterations','int',minimum=1,maximum=100000)
+            self.field('Attempt budget' if self.config.method=='dsgnar' else 'Training updates','iterations','int',minimum=1,maximum=100000).setProperty('help_key','dsgnar_attempts' if self.config.method=='dsgnar' else 'iterations')
             self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             button=QPushButton('Expand into components');button.clicked.connect(lambda checked=False,n=node:self.expand_recipe(n));self.form.addRow(button)
         elif node.kind in TRAINER_RECIPES:
@@ -2383,6 +2392,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             for key,label in [('baseline','Baseline PINN'),('hard_dirichlet','Hard Dirichlet PINN')]:variant.addItem(label,key)
             if node.kind=='inverse_method':variant.addItem('Inverse Burgers PINN','inverse_burgers');variant.setEnabled(False)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
+            if node.kind=='dsgnar_method':variant.addItem('DSGNAR PINN','dsgnar');variant.setEnabled(False)
             if node.kind=='rba_method':variant.addItem('Residual-based attention PINN','rba');variant.setEnabled(False)
             if node.kind=='gpinn_method':variant.addItem('Gradient-enhanced PINN','gpinn');variant.setEnabled(False)
             if node.kind=='scale_method':variant.addItem('Scale-PINN','scale');variant.setEnabled(False)
@@ -2417,17 +2427,20 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if node.kind=='inverse_method':weight.setProperty('help_key','inverse_observation_weight')
             if node.kind=='inverse_method':
                 button=QPushButton('Learned coefficients…');button.clicked.connect(self.show_inverse_parameters);self.form.addRow(button)
+            if self.config.method=='dsgnar':self.dsgnar_settings_fields()
             if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
-            self.form.addRow('Network optimiser',QLabel('Adam · descent'))
-            self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
+            if self.config.method=='dsgnar':self.form.addRow('Network optimiser',QLabel('DSGNAR · SVD trust-region'))
+            else:
+                self.form.addRow('Network optimiser',QLabel('Adam · descent'))
+                self.field('Adam learning rate','lr',minimum=.000001,maximum=1)
             if node.kind=='sa_method':
                 self.form.addRow('Mask optimiser',QLabel('Adam · ascent'))
                 self.field('Mask Adam learning rate','sa_lr',minimum=.000001,maximum=1)
             self.property_section('Trainer')
-            self.form.addRow(QLabel('Full-batch updates'))
-            self.field('Training updates','iterations','int',minimum=1,maximum=100000)
+            self.form.addRow(QLabel('Rejected steps count toward the attempt budget; minimum radius stops early.' if self.config.method=='dsgnar' else 'Full-batch updates'))
+            self.field('Attempt budget' if self.config.method=='dsgnar' else 'Training updates','iterations','int',minimum=1,maximum=100000).setProperty('help_key','dsgnar_attempts' if self.config.method=='dsgnar' else 'iterations')
             self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))
         elif node.kind in OUTPUT_KINDS:
@@ -2533,6 +2546,48 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             weights=state['rba']['attention'];settings=state['rba']['settings']['settings']
             summary=dict(step=state['iter'],minimum=weights.min().item(),mean=weights.mean().item(),maximum=weights.max().item(),asymptotic_bound=settings['rate']/(1-settings['decay']),weighted_pde=state['loss_history'][-1]['pde_weighted'] if state['loss_history'] else None)
         QMessageBox.information(self,'RBA attention statistics','\n'.join(f'{key}: {value}' for key,value in summary.items()))
+
+    def dsgnar_settings_fields(self):
+        self.property_section('DSGNAR controls')
+        from ..components.dsgnar_config import dsgnar_defaults
+        integers={'sketch_size':('Sketch size',1,4096),'hashes':('CountSketch hashes',1,8),'batch_size':('Jacobian batch rows',1,256),'probes':('Radius probes',3,32),'history_window':('Stage-switch history',3,1000),'seed':('Sketch seed',0,2**31-1)}
+        labels={'initial_radius':'Initial radius','min_radius':'Minimum radius','max_radius':'Maximum radius','target_ratio':'First-stage target ratio','stage2_ratio':'Second-stage target ratio','reweight_exponent':'Reweighting exponent'}
+        for key in dsgnar_defaults():
+            if key=='precision':
+                widget=QComboBox();widget.addItem('Double precision (float64)','float64');widget.addItem('Single precision (float32)','float32');widget.setCurrentIndex(widget.findData(self.config.dsgnar_settings[key]))
+                widget.currentIndexChanged.connect(lambda i,w=widget:self.change_dsgnar_setting('precision',w.itemData(i)))
+            elif key=='min_radius':
+                widget=QLineEdit(format(self.config.dsgnar_settings[key],'.12g'))
+                widget.editingFinished.connect(lambda w=widget:self.change_dsgnar_radius(w.text()))
+            elif key in integers:
+                label,low,high=integers[key];widget=QSpinBox();widget.setRange(low,high);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings[key])
+                widget.valueChanged.connect(lambda value,k=key:self.change_dsgnar_setting(k,value))
+            else:
+                widget=QDoubleSpinBox();widget.setDecimals(10);widget.setRange(0 if key=='reweight_exponent' else 1e-10,1 if 'ratio' in key or key=='reweight_exponent' else 1e8);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings[key])
+                widget.valueChanged.connect(lambda value,k=key:self.change_dsgnar_setting(k,value))
+            widget.setObjectName('dsgnar_'+key);self.form.addRow('Precision' if key=='precision' else integers[key][0] if key in integers else labels[key],widget)
+        button=QPushButton('Step diagnostics…');button.clicked.connect(self.show_dsgnar_summary);self.form.addRow(button)
+
+    def change_dsgnar_radius(self,text):
+        import math
+        try:
+            value=float(text)
+            if not math.isfinite(value) or value<=0:raise ValueError()
+        except ValueError:
+            self.statusBar().showMessage('Minimum radius must be a finite positive number.');return
+        self.change_dsgnar_setting('min_radius',value)
+
+    def change_dsgnar_setting(self,key,value):
+        settings=deepcopy(self.config.dsgnar_settings);settings[key]=value;self.change('dsgnar_settings',settings)
+
+    def show_dsgnar_summary(self):
+        state=self.last_run.model.training_state() if self.last_run is not None and self.last_run.model is not None and not self.is_running() else self.loaded_checkpoint if not self.is_running() else None
+        if not state or 'dsgnar' not in state:self.statusBar().showMessage('Train or reopen a DSGNAR run first.');return
+        payload=state['dsgnar'];rows=payload['diagnostics']
+        text=f"Attempts: {len(rows)} · accepted: {sum(row['accepted'] for row in rows)}\nNext radius: {payload['radius']:.6g} · target ratio: {payload['target_ratio']:.6g}\nMinimum-radius stop: {payload['converged']}\nCondition weights: {payload['weights']}"
+        if rows:
+            last=rows[-1];text+=f"\nLast ratio: {last['ratio']:.6g} · regularization: {last['regularization']:.6g}\nObjective: {last['objective_before']:.6g} → {last['objective_after']:.6g}"
+        QMessageBox.information(self,'DSGNAR step diagnostics',text)
 
     def rba_settings_fields(self):
         self.property_section('Residual-based attention')
@@ -2702,7 +2757,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.worker.completed.connect(self.training_completed)
         self.worker.failed.connect(self.training_failed)
         self.worker.finished.connect(self.training_finished)
-        self.log.appendPlainText(f'Training {self.config.shape} · {self.config.iterations} updates · {self.config.device}')
+        self.log.appendPlainText(f'Training {self.config.shape} · {self.config.iterations} '+('attempts' if self.config.method=='dsgnar' else 'updates')+f' · {self.config.device}')
         self.statusBar().showMessage('Preparing samples and network…')
         self.worker.start();self.update_run_actions()
         return True
@@ -2737,8 +2792,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.refresh_result_status('complete')
         for node in self.scene.nodes():self.output_views.refresh(node)
         self.progress_bar.setRange(0,max(1,self.config.iterations));self.progress_bar.setValue(result['steps'])
-        status='Evaluated outputs' if getattr(self.worker,'evaluation_only',False) else 'Stopped' if result['cancelled'] else 'Completed'
-        message=f"{status} · {result['steps']} updates · {result['device']}"
+        status='Evaluated outputs' if getattr(self.worker,'evaluation_only',False) else 'Stopped' if result['cancelled'] else 'Minimum radius reached' if self.config.method=='dsgnar' and (self.worker.model.dsgnar_summary()['converged'] if self.worker is not None and hasattr(self.worker.model,'dsgnar_summary') else False) else 'Completed'
+        message=f"{status} · {result['steps']} {'attempts' if self.config.method=='dsgnar' else 'updates'} · {result['device']}"
         self.statusBar().showMessage(message);self.log.appendPlainText(message)
 
     def training_failed(self,message):

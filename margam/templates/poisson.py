@@ -1,4 +1,5 @@
 """Editable Poisson template; method-specific training remains in methods/pinn.py."""
+from ..components.dsgnar_config import dsgnar_defaults
 from dataclasses import dataclass, field
 import math
 import json
@@ -66,6 +67,7 @@ class PoissonConfig:
     boundary_data: dict = field(default_factory=dict)
     network_seed: int | None = None
     inverse_settings: dict = field(default_factory=lambda:dict(lambda_1=0.,log_lambda_2=-6.))
+    dsgnar_settings: dict = field(default_factory=dsgnar_defaults)
     method: str = 'baseline'
     expert_settings: dict = field(default_factory=expert_defaults)
     physics: str = 'scalar'
@@ -234,7 +236,10 @@ class PoissonConfig:
         if self.method=='scale':validate_scale_problem(self)
         validate_expert_settings(self.expert_settings)
         if self.method=='expert':validate_expert_problem(self)
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers'):raise ValueError('Unknown PINN method.')
+        from ..components.dsgnar_config import validate_dsgnar_settings,validate_dsgnar_problem
+        validate_dsgnar_settings(self.dsgnar_settings)
+        if self.method=='dsgnar':validate_dsgnar_problem(self)
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar'):raise ValueError('Unknown PINN method.')
         if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -321,6 +326,18 @@ def build_pinn(config,*,initial_teacher=None,time_origin=None):
     if config.method=='inverse_burgers':
         from ..methods.inverse_burgers import build_inverse
         return build_inverse(config)
+    if config.method=='dsgnar':
+        from copy import deepcopy
+        from dataclasses import asdict
+        from ..methods.dsgnar import DSGNARPINN
+        baseline=deepcopy(config);baseline.method='baseline'
+        import torch
+        previous_dtype=torch.get_default_dtype()
+        try:
+            torch.set_default_dtype(getattr(torch,config.dsgnar_settings['precision']))
+            model=_build_pinn(baseline)
+        finally:torch.set_default_dtype(previous_dtype)
+        return DSGNARPINN(model.problem,model.network,weights=config.loss_weights,settings=config.dsgnar_settings,configuration=asdict(config)).compile(lr=config.lr,device=config.device)
     if config.method=='scale':
         from copy import deepcopy
         from ..methods.scale import ScalePINN

@@ -138,7 +138,7 @@ or provenance; HTML is displayed literally. Long notes are clipped on the canvas
 the Properties editor and tooltip contain the full text. Notes have no ports and
 never contribute to physics or losses. They survive model saving, run archives and
 recovery through the model document. Notes were introduced in model format 29;
-current documents use format 31. Formats 1–30 remain readable by this release.
+current documents use format 32. Formats 1–31 remain readable by this release.
 Older Margam versions cannot read the new format.
 
 ![A saved plain-text note with optional grid](../../assets/screenshots/manual-canvas-notes.png)
@@ -210,7 +210,7 @@ Notes can have a label above their plain-text body.
 - **Find in model** searches labels; **Find setting** can locate **Block label**.
   Refresh existing search results after renaming.
 
-Saved models use format **31** for optional label metadata. Older versions of
+Optional label metadata was introduced in format **31**; current format **32** also adds DSGNAR settings. Older versions of
 Margam cannot read this new format; this release still reads formats 1–30.
 Model comparison treats labels as presentation changes, visible when
 **Include names, notes and positions** is checked.

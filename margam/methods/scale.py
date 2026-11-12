@@ -25,7 +25,7 @@ class ScalePINN(PINN):
         super().compile(optimiser_string,lr,metrics_string,device)
         self.previous=deepcopy(self.network).eval()
         for parameter in self.previous.parameters():parameter.requires_grad_(False)
-        configuration=asdict(self.config)
+        configuration=asdict(self.config);configuration.pop('dsgnar_settings',None)
         for key in ('iterations','device'):configuration.pop(key)
         self.signature=dict(algorithm='scale-pinn-v1-sequential-correction',configuration=configuration,lr=lr,weights=deepcopy(self.weights))
         self.diagnostics=[];self._fresh_samples(0)

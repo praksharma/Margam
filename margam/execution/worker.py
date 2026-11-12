@@ -52,7 +52,7 @@ def main():
             if job['checkpoint'] is not None:
                 stage='checkpoint restore';model.load_training_state(job['checkpoint'])
             stage='training update'
-            while model.iter<config.iterations and not cancelled.is_set():
+            while model.iter<config.iterations and not cancelled.is_set() and not getattr(model,'converged',False):
                 previous=model.iter;controller=getattr(model,'sampling_controller',None)
                 events=len(controller.history) if controller is not None else 0
                 model.train(min(25,config.iterations-model.iter),display_every=0)
@@ -61,6 +61,7 @@ def main():
                     if hasattr(model,name):emit(event,summary=getattr(model,name)())
                 if controller is not None:
                     for event in controller.history[events:]:emit('sampling',event=event)
+                if getattr(model,'converged',False):break
             stage='checkpoint capture';checkpoint=cpu_tree(model.training_state())
         else:
             stage='checkpoint restore';checkpoint=job['checkpoint'];model=prediction_model(config,checkpoint)
@@ -77,7 +78,7 @@ def main():
             if hasattr(model,'collocation_point_sample'):
                 metadata['points']=model.collocation_point_sample
                 metadata['constraints']=[dict(name=c.name,points=p,target=t) for c,p,t in model._constraints]
-            for name in ('adaptive_summary','balancing_summary','scale_summary','expert_summary','attention_summary'):
+            for name in ('adaptive_summary','balancing_summary','scale_summary','expert_summary','attention_summary','dsgnar_summary'):
                 if hasattr(model,name):metadata[name]=getattr(model,name)()
             if hasattr(model.network,'estimated_parameters'):metadata['estimated_parameters']=model.network.estimated_parameters()
         if any(name=='PySide6' or name.startswith('PySide6.') for name in sys.modules):raise RuntimeError('Numerical child unexpectedly imported Qt.')

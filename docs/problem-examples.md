@@ -77,3 +77,9 @@ with two trainable coefficients and no separate imposed BC loss. Its default
 2,000 measured rows come from the authors' published dataset and are copied into
 the project. See [the inverse guide](inverse-burgers.md) for guesses, loss weights,
 coefficient reporting, exact-resume evidence and current scope.
+
+## DSGNAR examples
+
+**File → Examples → DSGNAR examples** contains Poisson (1D) and Burgers (1D +
+time), with small double-precision presets and ordinary replaceable networks.
+These are [correctness starting points](dsgnar.md), not paper reproductions.

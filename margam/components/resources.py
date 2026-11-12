@@ -86,6 +86,8 @@ def resource_report(config,counts,requests,*,memory,monitor_limits=(),output_nam
         if request.kind=='monitor':continue
         supplied=request.point_data is not None
         outputs.append(dict(identifier=request.identifier,name=(output_names or {}).get(request.identifier,request.kind),rows=len(request.point_data.points) if supplied else request.resolution**len(config.bounds[0]),upper_bound=not supplied))
+    memory=dict(memory)
+    if config.method=='dsgnar':memory.update(dtype='torch.'+config.dsgnar_settings['precision'],scalar_bytes=8 if config.dsgnar_settings['precision']=='float64' else 4)
     scalar=memory.get('scalar_bytes')
     weights=(size['parameters']+size['buffer_elements'])*scalar if scalar else None
     adam=(4*size['parameters']+size['buffer_elements'])*scalar if scalar else None
@@ -129,6 +131,7 @@ def report_text(config,report):
         lines.append('PyTorch may also reuse its own cached memory; driver-free memory is not a complete allocation budget.')
     for row in report['outputs']:lines.append(f"  Output {row['name']}: {'up to ' if row['upper_bound'] else ''}{row['rows']:,} prediction rows")
     lines+=['Derivative/autograd graphs, Fourier feature activations, optimizer temporaries, BC graphs, data copies and retained method states are not estimated.']
+    if config.method=='dsgnar':lines.append('DSGNAR does not use Adam moments. The Adam subtotal is a comparison reference only. Blocked Jacobians, square sketches, SVD workspace and probe derivative graphs require additional memory; sketch size controls SVD cost.')
     if config.method=='scale':lines.append('Scale-PINN retains additional frozen network iterates.')
     if config.method=='expert':lines.append('Expert balancing/NTK workspace and retained time-window teachers add memory beyond the subtotal.')
     if config.method=='self_adaptive':lines.append('SA-PINN point masks and their optimizer state add memory beyond the network subtotal.')

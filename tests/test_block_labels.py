@@ -40,7 +40,7 @@ try:
  assert w.undo_stack.index()==index+1 and network.settings['parameters']==parameters
  assert w.result is result and w.last_run is run and state['loss_history']==run.model.training_state()['loss_history']
  assert w.scene.compile_config()==config
- after=capture_model(w);assert after['version']==31;decode_document(after)
+ after=capture_model(w);assert after['version']==32;decode_document(after)
  assert compare_models(before,after)==[]
  changes=compare_models(before,after,include_presentation=True);assert len(changes)==1 and changes[0].field=='/settings/label'
  headings=[x for x in w.property_scroll.widget().findChildren(QLabel) if x.objectName()=='block_heading']

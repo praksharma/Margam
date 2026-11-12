@@ -433,3 +433,12 @@
   parent-pipe death cleanup and workspace locks until the child is reaped.
   Retained GUI state is not a live PyTorch trainer; research APIs remain direct.
   Process isolation is not a hardware memory quota or a malicious-code sandbox.
+
+- DSGNAR follows the explicitly documented paper Algorithm 1 acceptance rule,
+  fresh CountSketch/SRCT operators, SVD trust-region probes and condition balancing.
+  Preserve dedicated sketch RNG, attempt/rejection history, positive coefficients,
+  stopping/stage state and strict physics/data/dtype continuation. No Adam step or
+  implicit advanced-trainer composition. Keep scalar fixed built-in scope explicit.
+  Derivative helpers must preserve the solution dtype rather than global defaults;
+  check fresh-process float32/float64 CPU/CUDA continuation. No upstream source
+  licence is declared in the inspected checkout; keep the implementation independent.

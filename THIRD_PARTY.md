@@ -187,3 +187,12 @@ Margam replaces structural-analysis tools with PINN graph inspection, bounded
 parameter edits and training/result lifecycle commands. It requires bearer auth
 and keeps manual idle editing available with revision checks; the upstream
 exclusive-control mode and structural schemas are not copied.
+
+## DSGNAR algorithm reference (independent implementation)
+
+Webb, Jerad and Cartis, *An Optimisation Framework for the Well-Conditioned
+Training of Physics-Informed Neural Networks*, arXiv:2607.02194v1 (2026).
+Reference repository: https://github.com/wephy/physics-informed-neural-networks,
+inspected commit `8b30ec3`. No top-level source licence was declared in that
+checkout; no upstream source/data is copied or distributed. Margam implements
+the published mathematics independently; see docs/dsgnar.md for differences.

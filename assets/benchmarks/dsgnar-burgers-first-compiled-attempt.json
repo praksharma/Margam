@@ -1,0 +1,631 @@
+{
+  "case": "Periodic Burgers, paper Appendix C.1",
+  "scope": "Accuracy attempt; reproduction only if settings and measured error match the stated target.",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "target_relative_l2": 4.75e-07,
+  "target_context": "Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.",
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch_version": "2.14.1+cu130",
+  "precision": "float32",
+  "jacobian_backend": "compiled-functional-per-point",
+  "pde_points": 32768,
+  "initial_points": 16384,
+  "parameters": 1447,
+  "width": 16,
+  "depth": 6,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 128,
+    "probes": 24,
+    "initial_radius": 1.0,
+    "min_radius": 0.0001,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "precision": "float32",
+    "seed": 0
+  },
+  "attempts": 80,
+  "starting_attempt": 0,
+  "seconds": 748.3601074890003,
+  "phase_seconds": {},
+  "initial_relative_l2": 1.0923609316321194,
+  "final_relative_l2": 5.0239998369982997e-05,
+  "reference": "Independent Cole-Hopf Gauss-Hermite, 257 x 65 uniform evaluation grid",
+  "reference_256_vs_512_max_abs": 1.3877787807814457e-15,
+  "history": [
+    {
+      "attempt": 1,
+      "relative_l2": 0.8336156408042039,
+      "seconds": 26.170883143000083,
+      "accepted": 1,
+      "radius": 3.0
+    },
+    {
+      "attempt": 2,
+      "relative_l2": 0.8336156408042039,
+      "seconds": 35.606878268999935,
+      "accepted": 1,
+      "radius": 1.0
+    },
+    {
+      "attempt": 3,
+      "relative_l2": 0.8139177445219662,
+      "seconds": 44.27238517000001,
+      "accepted": 2,
+      "radius": 3.0
+    },
+    {
+      "attempt": 4,
+      "relative_l2": 0.8139177445219662,
+      "seconds": 53.30487467900002,
+      "accepted": 2,
+      "radius": 1.0
+    },
+    {
+      "attempt": 5,
+      "relative_l2": 0.6064754844214482,
+      "seconds": 62.89072252999995,
+      "accepted": 3,
+      "radius": 1.478927209715802
+    },
+    {
+      "attempt": 6,
+      "relative_l2": 0.6064754844214482,
+      "seconds": 70.08487772700005,
+      "accepted": 3,
+      "radius": 0.492975736571934
+    },
+    {
+      "attempt": 7,
+      "relative_l2": 0.4336212070435419,
+      "seconds": 78.12687569100012,
+      "accepted": 4,
+      "radius": 1.478927209715802
+    },
+    {
+      "attempt": 8,
+      "relative_l2": 0.41123601476405125,
+      "seconds": 86.66287896400013,
+      "accepted": 5,
+      "radius": 1.5455317767738035
+    },
+    {
+      "attempt": 9,
+      "relative_l2": 0.3541787966540437,
+      "seconds": 93.64587528800007,
+      "accepted": 6,
+      "radius": 1.8490849970825236
+    },
+    {
+      "attempt": 10,
+      "relative_l2": 0.3541787966540437,
+      "seconds": 103.7328798850001,
+      "accepted": 6,
+      "radius": 0.6163616656941745
+    },
+    {
+      "attempt": 11,
+      "relative_l2": 0.3541787966540437,
+      "seconds": 113.47970165100014,
+      "accepted": 6,
+      "radius": 0.20545388856472482
+    },
+    {
+      "attempt": 12,
+      "relative_l2": 0.24159422418642895,
+      "seconds": 122.01787719899994,
+      "accepted": 7,
+      "radius": 0.6163616656941745
+    },
+    {
+      "attempt": 13,
+      "relative_l2": 0.24159422418642895,
+      "seconds": 132.55443129600008,
+      "accepted": 7,
+      "radius": 0.20545388856472482
+    },
+    {
+      "attempt": 14,
+      "relative_l2": 0.20557516347349294,
+      "seconds": 140.857875853,
+      "accepted": 8,
+      "radius": 0.6163616656941745
+    },
+    {
+      "attempt": 15,
+      "relative_l2": 0.20557516347349294,
+      "seconds": 147.57322177600008,
+      "accepted": 8,
+      "radius": 0.20545388856472482
+    },
+    {
+      "attempt": 16,
+      "relative_l2": 0.13165427491469858,
+      "seconds": 152.902875967,
+      "accepted": 9,
+      "radius": 0.5958283129728992
+    },
+    {
+      "attempt": 17,
+      "relative_l2": 0.13165427491469858,
+      "seconds": 160.17012130000012,
+      "accepted": 9,
+      "radius": 0.19860943765763306
+    },
+    {
+      "attempt": 18,
+      "relative_l2": 0.07209607770549328,
+      "seconds": 169.50687655399997,
+      "accepted": 10,
+      "radius": 0.5958283129728992
+    },
+    {
+      "attempt": 19,
+      "relative_l2": 0.06018374464938931,
+      "seconds": 179.62687858000004,
+      "accepted": 11,
+      "radius": 0.8040851478276998
+    },
+    {
+      "attempt": 20,
+      "relative_l2": 0.06018374464938931,
+      "seconds": 188.94387473200004,
+      "accepted": 11,
+      "radius": 0.2680283826092333
+    },
+    {
+      "attempt": 21,
+      "relative_l2": 0.06018374464938931,
+      "seconds": 194.69587525399993,
+      "accepted": 11,
+      "radius": 0.08934279420307777
+    },
+    {
+      "attempt": 22,
+      "relative_l2": 0.02813292447287499,
+      "seconds": 200.19813372399994,
+      "accepted": 12,
+      "radius": 0.26802838260923323
+    },
+    {
+      "attempt": 23,
+      "relative_l2": 0.02813292447287499,
+      "seconds": 207.95387707500004,
+      "accepted": 12,
+      "radius": 0.08934279420307774
+    },
+    {
+      "attempt": 24,
+      "relative_l2": 0.020272573625300622,
+      "seconds": 216.91280224399998,
+      "accepted": 13,
+      "radius": 0.26802838260923323
+    },
+    {
+      "attempt": 25,
+      "relative_l2": 0.020272573625300622,
+      "seconds": 226.01387681100005,
+      "accepted": 13,
+      "radius": 0.08934279420307774
+    },
+    {
+      "attempt": 26,
+      "relative_l2": 0.014607687005564283,
+      "seconds": 236.47108107000008,
+      "accepted": 14,
+      "radius": 0.26802838260923323
+    },
+    {
+      "attempt": 27,
+      "relative_l2": 0.014607687005564283,
+      "seconds": 246.458878786,
+      "accepted": 14,
+      "radius": 0.08934279420307774
+    },
+    {
+      "attempt": 28,
+      "relative_l2": 0.010265181394852555,
+      "seconds": 253.91988117200003,
+      "accepted": 15,
+      "radius": 0.26802838260923323
+    },
+    {
+      "attempt": 29,
+      "relative_l2": 0.010265181394852555,
+      "seconds": 260.71387775900007,
+      "accepted": 15,
+      "radius": 0.08934279420307774
+    },
+    {
+      "attempt": 30,
+      "relative_l2": 0.009055693322800434,
+      "seconds": 271.2568820250001,
+      "accepted": 16,
+      "radius": 0.19292976190793418
+    },
+    {
+      "attempt": 31,
+      "relative_l2": 0.006734530563072145,
+      "seconds": 279.59287690500014,
+      "accepted": 17,
+      "radius": 0.2833874261429244
+    },
+    {
+      "attempt": 32,
+      "relative_l2": 0.008225163906664418,
+      "seconds": 289.4128907270001,
+      "accepted": 18,
+      "radius": 0.40909129468421707
+    },
+    {
+      "attempt": 33,
+      "relative_l2": 0.008225163906664418,
+      "seconds": 297.7037325230001,
+      "accepted": 18,
+      "radius": 0.13636376489473903
+    },
+    {
+      "attempt": 34,
+      "relative_l2": 0.006097386054682088,
+      "seconds": 307.445127104,
+      "accepted": 19,
+      "radius": 0.4090912946842171
+    },
+    {
+      "attempt": 35,
+      "relative_l2": 0.004450466391581552,
+      "seconds": 316.456877005,
+      "accepted": 20,
+      "radius": 0.23724776238796907
+    },
+    {
+      "attempt": 36,
+      "relative_l2": 0.004450466391581552,
+      "seconds": 322.275875286,
+      "accepted": 20,
+      "radius": 0.07908258746265635
+    },
+    {
+      "attempt": 37,
+      "relative_l2": 0.0022611345358068656,
+      "seconds": 330.34087830700014,
+      "accepted": 21,
+      "radius": 0.23724776238796907
+    },
+    {
+      "attempt": 38,
+      "relative_l2": 0.0017839661072022962,
+      "seconds": 337.064877797,
+      "accepted": 22,
+      "radius": 0.25956796444108576
+    },
+    {
+      "attempt": 39,
+      "relative_l2": 0.00202027404977012,
+      "seconds": 348.37082649700005,
+      "accepted": 23,
+      "radius": 0.29483929805352505
+    },
+    {
+      "attempt": 40,
+      "relative_l2": 0.0016154663383438081,
+      "seconds": 359.24388957099995,
+      "accepted": 24,
+      "radius": 0.20780884313890496
+    },
+    {
+      "attempt": 41,
+      "relative_l2": 0.0016154663383438081,
+      "seconds": 369.3230087270001,
+      "accepted": 24,
+      "radius": 0.06926961437963498
+    },
+    {
+      "attempt": 42,
+      "relative_l2": 0.0012297934160730524,
+      "seconds": 379.2405694849999,
+      "accepted": 25,
+      "radius": 0.20780884313890496
+    },
+    {
+      "attempt": 43,
+      "relative_l2": 0.0012297934160730524,
+      "seconds": 389.39569211799994,
+      "accepted": 25,
+      "radius": 0.06926961437963498
+    },
+    {
+      "attempt": 44,
+      "relative_l2": 0.000731818716184773,
+      "seconds": 399.6378797510001,
+      "accepted": 26,
+      "radius": 0.20780884313890496
+    },
+    {
+      "attempt": 45,
+      "relative_l2": 0.000731818716184773,
+      "seconds": 409.65889736300005,
+      "accepted": 26,
+      "radius": 0.06926961437963498
+    },
+    {
+      "attempt": 46,
+      "relative_l2": 0.0008821679175621039,
+      "seconds": 418.25187538900013,
+      "accepted": 27,
+      "radius": 0.20780884313890496
+    },
+    {
+      "attempt": 47,
+      "relative_l2": 0.0008821679175621039,
+      "seconds": 428.17478404400003,
+      "accepted": 27,
+      "radius": 0.06926961437963498
+    },
+    {
+      "attempt": 48,
+      "relative_l2": 0.0007810722091464425,
+      "seconds": 437.677161047,
+      "accepted": 28,
+      "radius": 0.18832833255907153
+    },
+    {
+      "attempt": 49,
+      "relative_l2": 0.0007810722091464425,
+      "seconds": 446.54898327900014,
+      "accepted": 28,
+      "radius": 0.06277611085302384
+    },
+    {
+      "attempt": 50,
+      "relative_l2": 0.0007927103029339384,
+      "seconds": 456.84402512299994,
+      "accepted": 29,
+      "radius": 0.1548360479827455
+    },
+    {
+      "attempt": 51,
+      "relative_l2": 0.0007927103029339384,
+      "seconds": 466.58121557999993,
+      "accepted": 29,
+      "radius": 0.0516120159942485
+    },
+    {
+      "attempt": 52,
+      "relative_l2": 0.0008185017144712543,
+      "seconds": 476.30846830099995,
+      "accepted": 30,
+      "radius": 0.15180990904615194
+    },
+    {
+      "attempt": 53,
+      "relative_l2": 0.0007211604502123605,
+      "seconds": 486.47646992900013,
+      "accepted": 31,
+      "radius": 0.16957570726110627
+    },
+    {
+      "attempt": 54,
+      "relative_l2": 0.0007211604502123605,
+      "seconds": 497.10173915500013,
+      "accepted": 31,
+      "radius": 0.05652523575370209
+    },
+    {
+      "attempt": 55,
+      "relative_l2": 0.000989064916411657,
+      "seconds": 507.666405727,
+      "accepted": 32,
+      "radius": 0.16619880387181232
+    },
+    {
+      "attempt": 56,
+      "relative_l2": 0.000989064916411657,
+      "seconds": 517.9115951640001,
+      "accepted": 32,
+      "radius": 0.05539960129060411
+    },
+    {
+      "attempt": 57,
+      "relative_l2": 0.0004840560848982198,
+      "seconds": 527.706474459,
+      "accepted": 33,
+      "radius": 0.16619880387181232
+    },
+    {
+      "attempt": 58,
+      "relative_l2": 0.000349151465289122,
+      "seconds": 536.9008764600001,
+      "accepted": 34,
+      "radius": 0.10718004394227133
+    },
+    {
+      "attempt": 59,
+      "relative_l2": 0.00038043847714928463,
+      "seconds": 546.8228789899999,
+      "accepted": 35,
+      "radius": 0.14772185417909275
+    },
+    {
+      "attempt": 60,
+      "relative_l2": 0.00029626935844640954,
+      "seconds": 556.8848764500001,
+      "accepted": 36,
+      "radius": 0.10295315582071736
+    },
+    {
+      "attempt": 61,
+      "relative_l2": 0.0002636414942194619,
+      "seconds": 565.4338783000001,
+      "accepted": 37,
+      "radius": 0.11513853035390725
+    },
+    {
+      "attempt": 62,
+      "relative_l2": 0.0002636414942194619,
+      "seconds": 575.1258782970001,
+      "accepted": 37,
+      "radius": 0.038379510117969085
+    },
+    {
+      "attempt": 63,
+      "relative_l2": 0.0002620740681903475,
+      "seconds": 585.416450061,
+      "accepted": 38,
+      "radius": 0.11513853035390725
+    },
+    {
+      "attempt": 64,
+      "relative_l2": 0.0002620740681903475,
+      "seconds": 595.477720974,
+      "accepted": 38,
+      "radius": 0.038379510117969085
+    },
+    {
+      "attempt": 65,
+      "relative_l2": 0.00015881089770799787,
+      "seconds": 605.9099143600001,
+      "accepted": 39,
+      "radius": 0.11513853035390725
+    },
+    {
+      "attempt": 66,
+      "relative_l2": 0.00015881089770799787,
+      "seconds": 616.090038583,
+      "accepted": 39,
+      "radius": 0.038379510117969085
+    },
+    {
+      "attempt": 67,
+      "relative_l2": 0.0001427638812601753,
+      "seconds": 626.27363307,
+      "accepted": 40,
+      "radius": 0.1075272893023212
+    },
+    {
+      "attempt": 68,
+      "relative_l2": 0.0001427638812601753,
+      "seconds": 634.8546963150002,
+      "accepted": 40,
+      "radius": 0.0358424297674404
+    },
+    {
+      "attempt": 69,
+      "relative_l2": 0.0001427638812601753,
+      "seconds": 644.9364214940001,
+      "accepted": 40,
+      "radius": 0.0119474765891468
+    },
+    {
+      "attempt": 70,
+      "relative_l2": 0.00011244825029115995,
+      "seconds": 655.5511901190002,
+      "accepted": 41,
+      "radius": 0.0358424297674404
+    },
+    {
+      "attempt": 71,
+      "relative_l2": 0.00011244825029115995,
+      "seconds": 666.8296670690002,
+      "accepted": 41,
+      "radius": 0.0119474765891468
+    },
+    {
+      "attempt": 72,
+      "relative_l2": 5.278500228551357e-05,
+      "seconds": 675.9108502499998,
+      "accepted": 42,
+      "radius": 0.0358424297674404
+    },
+    {
+      "attempt": 73,
+      "relative_l2": 6.096560313551072e-05,
+      "seconds": 683.5874675129999,
+      "accepted": 43,
+      "radius": 0.03510796651124081
+    },
+    {
+      "attempt": 74,
+      "relative_l2": 0.0001549123442621559,
+      "seconds": 694.0424506560003,
+      "accepted": 44,
+      "radius": 0.03130373008364324
+    },
+    {
+      "attempt": 75,
+      "relative_l2": 5.671326093282823e-05,
+      "seconds": 704.9327142719999,
+      "accepted": 45,
+      "radius": 0.02352398624777158
+    },
+    {
+      "attempt": 76,
+      "relative_l2": 4.282360222824674e-05,
+      "seconds": 714.6570940850002,
+      "accepted": 46,
+      "radius": 0.007841328749257194
+    },
+    {
+      "attempt": 77,
+      "relative_l2": 3.9996730850852495e-05,
+      "seconds": 724.2528818360001,
+      "accepted": 47,
+      "radius": 0.002613776249752397
+    },
+    {
+      "attempt": 78,
+      "relative_l2": 4.78009588006768e-05,
+      "seconds": 732.2241862730002,
+      "accepted": 48,
+      "radius": 0.0008712587499174653
+    },
+    {
+      "attempt": 79,
+      "relative_l2": 4.3447255854145175e-05,
+      "seconds": 739.2475038480002,
+      "accepted": 49,
+      "radius": 0.0002904195833058217
+    },
+    {
+      "attempt": 80,
+      "relative_l2": 5.0239998369982997e-05,
+      "seconds": 748.3407275710001,
+      "accepted": 50,
+      "radius": 9.680652776860719e-05
+    }
+  ],
+  "summary": {
+    "attempts": 80,
+    "accepted": 50,
+    "radius": 9.680652776860719e-05,
+    "target_ratio": 0.5,
+    "converged": true,
+    "weights": {
+      "pde": 0.062288316820755786,
+      "initial": 1.9377116831792442
+    },
+    "last": {
+      "step": 80,
+      "accepted": true,
+      "radius": 9.680652776860719e-05,
+      "next_radius": 9.680652776860719e-05,
+      "regularization": 0.014997534919530155,
+      "ratio": 0.11719350971968089,
+      "target_ratio": 0.5,
+      "objective_before": 6.349989187429203e-09,
+      "objective_after": 6.2532727347987595e-09,
+      "weights": {
+        "pde": 0.06365945493014458,
+        "initial": 1.9363405450698556
+      }
+    }
+  },
+  "target_met": false,
+  "status": "completed before consistent baseline/probe objective batching fix",
+  "solver_implementation": "Initial compiled Jacobian path, generic probes; no paper target match."
+}

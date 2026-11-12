@@ -35,7 +35,7 @@ def execution_plan(window):
           f'Physics: {config.pde_preset or config.physics}','Trainable coefficients: lambda_1, lambda_2=exp(log_lambda_2)' if config.method=='inverse_burgers' else f'Equation coefficients: source c={config.source:g}, viscosity/diffusivity={config.viscosity:g}',f'Coordinates: {", ".join(config.coordinate_names)}',f'Predicted fields: {", ".join(config.field_names)}',
           f'Network: {NETWORK_NAMES[config.network_type]}',f'Hidden layers: {", ".join(map(str,config.layers))}',
           'Network options: '+json.dumps(network_options(config.network_type,config.network_options),ensure_ascii=False),
-          f'Optimizer: Adam · learning rate {config.lr:g}',f'Training budget: {config.iterations} updates',
+          'Optimizer: DSGNAR · sketched SVD trust-region' if config.method=='dsgnar' else f'Optimizer: Adam · learning rate {config.lr:g}',f'Training budget: {config.iterations} '+('attempts (includes rejections)' if config.method=='dsgnar' else 'updates'),
           f'Fixed observation rows · network seed: {config.network_seed if config.network_seed is not None else config.seed}' if config.method=='inverse_burgers' else f'Sampling seed: {config.seed} · network seed: {config.network_seed if config.network_seed is not None else config.seed}',
           f'Loss formulation: {config.loss_formulation}','PDE collocation: observation locations' if config.method=='inverse_burgers' else f'PDE collocation: {config.pde_points}',
           f'Observation/PDE rows: {rows} (same locations); no separate BC/IC loss' if config.method=='inverse_burgers' else f'Initial PDE rows: {rows} = {interior_count} interior + {boundary_count} boundary/initial',
@@ -45,6 +45,7 @@ def execution_plan(window):
     if config.method=='inverse_burgers':text+=['Inverse initial guesses: '+json.dumps(config.inverse_settings),'PDE: u_t + lambda_1*u*u_x - exp(log_lambda_2)*u_xx = 0; data and PDE losses use the same observation rows. No separate boundary/initial loss.']
     if config.physics=='incompressible_2d':text+=['Residuals: '+ ' ; '.join(config.flow_residuals)]
     elif config.pde_expression:text+=['Residual: '+config.pde_expression]
+    if config.method=='dsgnar':text+=['DSGNAR controls: '+json.dumps(config.dsgnar_settings),'Minimum radius can stop before the attempt budget. No Adam update; fixed samples and adaptive condition weights.']
     if config.method=='gpinn':text+=['Residual-gradient coefficients: '+json.dumps(config.gpinn_weights)]
     if config.method=='self_adaptive':text +=[f'Mask Adam ascent rate: {config.sa_lr:g}']
     if windows>1:text +=[f'Time marching: {windows} windows × {config.expert_settings["window_steps"]} updates; counts above are for the first window.']

@@ -1,0 +1,296 @@
+{
+  "case": "Periodic Burgers, paper Appendix C.1",
+  "scope": "Accuracy attempt; reproduction only if settings and measured error match the stated target.",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "target_relative_l2": 4.75e-07,
+  "target_context": "Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.",
+  "warm_start": true,
+  "resumed": false,
+  "matches_reported_precision_and_counts": false,
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch_version": "2.14.1+cu130",
+  "precision": "float64",
+  "jacobian_backend": "compiled-functional-per-point",
+  "pde_points": 32768,
+  "initial_points": 16384,
+  "parameters": 1447,
+  "width": 16,
+  "depth": 6,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 128,
+    "probes": 24,
+    "initial_radius": 1.0,
+    "min_radius": 1e-08,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "precision": "float64",
+    "seed": 0
+  },
+  "attempts": 32,
+  "starting_attempt": 0,
+  "seconds": 204.21826328499992,
+  "phase_seconds": {},
+  "initial_relative_l2": 7.040123320428561e-05,
+  "final_relative_l2": 6.160279058128173e-05,
+  "reference": "Independent Cole-Hopf Gauss-Hermite, 257 x 65 uniform evaluation grid",
+  "reference_256_vs_512_max_abs": 1.3877787807814457e-15,
+  "history": [
+    {
+      "attempt": 1,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 52.95139921200007,
+      "accepted": 0,
+      "radius": 0.3333333333333333
+    },
+    {
+      "attempt": 2,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 56.739239387,
+      "accepted": 0,
+      "radius": 0.1111111111111111
+    },
+    {
+      "attempt": 3,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 62.102078336999966,
+      "accepted": 0,
+      "radius": 0.037037037037037035
+    },
+    {
+      "attempt": 4,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 66.69139458500013,
+      "accepted": 0,
+      "radius": 0.012345679012345678
+    },
+    {
+      "attempt": 5,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 71.84922370699996,
+      "accepted": 0,
+      "radius": 0.004115226337448559
+    },
+    {
+      "attempt": 6,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 76.43038937200026,
+      "accepted": 0,
+      "radius": 0.0013717421124828531
+    },
+    {
+      "attempt": 7,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 80.30038676899994,
+      "accepted": 0,
+      "radius": 0.0004572473708276177
+    },
+    {
+      "attempt": 8,
+      "relative_l2": 7.040123320428561e-05,
+      "seconds": 84.2076839790002,
+      "accepted": 0,
+      "radius": 0.00015241579027587258
+    },
+    {
+      "attempt": 9,
+      "relative_l2": 6.556202108880913e-05,
+      "seconds": 89.74204017400007,
+      "accepted": 1,
+      "radius": 9.711009906703754e-05
+    },
+    {
+      "attempt": 10,
+      "relative_l2": 6.556202108880913e-05,
+      "seconds": 94.69293895999999,
+      "accepted": 1,
+      "radius": 3.237003302234585e-05
+    },
+    {
+      "attempt": 11,
+      "relative_l2": 6.428589100174919e-05,
+      "seconds": 99.15439328999992,
+      "accepted": 2,
+      "radius": 2.3258604117006877e-05
+    },
+    {
+      "attempt": 12,
+      "relative_l2": 6.428589100174919e-05,
+      "seconds": 102.7803907460002,
+      "accepted": 2,
+      "radius": 7.752868039002292e-06
+    },
+    {
+      "attempt": 13,
+      "relative_l2": 6.463740749351385e-05,
+      "seconds": 106.47439080899994,
+      "accepted": 3,
+      "radius": 2.280923279940155e-05
+    },
+    {
+      "attempt": 14,
+      "relative_l2": 6.33951653403741e-05,
+      "seconds": 110.31939703600028,
+      "accepted": 4,
+      "radius": 7.603077599800516e-06
+    },
+    {
+      "attempt": 15,
+      "relative_l2": 6.154154313987109e-05,
+      "seconds": 115.09838906200002,
+      "accepted": 5,
+      "radius": 2.2809232799401556e-05
+    },
+    {
+      "attempt": 16,
+      "relative_l2": 6.154154313987109e-05,
+      "seconds": 120.61438905100022,
+      "accepted": 5,
+      "radius": 7.603077599800519e-06
+    },
+    {
+      "attempt": 17,
+      "relative_l2": 6.222996569141747e-05,
+      "seconds": 126.15639357000009,
+      "accepted": 6,
+      "radius": 4.047887754155585e-06
+    },
+    {
+      "attempt": 18,
+      "relative_l2": 6.222996569141747e-05,
+      "seconds": 131.1523899570002,
+      "accepted": 6,
+      "radius": 1.3492959180518617e-06
+    },
+    {
+      "attempt": 19,
+      "relative_l2": 6.163001453977693e-05,
+      "seconds": 135.51939183700006,
+      "accepted": 7,
+      "radius": 1.4280286135208743e-06
+    },
+    {
+      "attempt": 20,
+      "relative_l2": 6.163001453977693e-05,
+      "seconds": 139.76638751500013,
+      "accepted": 7,
+      "radius": 4.760095378402914e-07
+    },
+    {
+      "attempt": 21,
+      "relative_l2": 6.150230211888709e-05,
+      "seconds": 145.2263892310002,
+      "accepted": 8,
+      "radius": 1.4280286135208745e-06
+    },
+    {
+      "attempt": 22,
+      "relative_l2": 6.186923383309136e-05,
+      "seconds": 150.20701675500004,
+      "accepted": 9,
+      "radius": 2.3525679492952043e-06
+    },
+    {
+      "attempt": 23,
+      "relative_l2": 6.182131167176209e-05,
+      "seconds": 155.60138916799997,
+      "accepted": 10,
+      "radius": 1.290222381962097e-06
+    },
+    {
+      "attempt": 24,
+      "relative_l2": 6.17767518574771e-05,
+      "seconds": 160.9941995510003,
+      "accepted": 11,
+      "radius": 4.3007412732069856e-07
+    },
+    {
+      "attempt": 25,
+      "relative_l2": 6.169290084858687e-05,
+      "seconds": 166.46684618200015,
+      "accepted": 12,
+      "radius": 1.2902223819620962e-06
+    },
+    {
+      "attempt": 26,
+      "relative_l2": 6.169290084858687e-05,
+      "seconds": 171.92338916300014,
+      "accepted": 12,
+      "radius": 4.300741273206987e-07
+    },
+    {
+      "attempt": 27,
+      "relative_l2": 6.167270347794063e-05,
+      "seconds": 177.4153901970003,
+      "accepted": 13,
+      "radius": 1.433580424402328e-07
+    },
+    {
+      "attempt": 28,
+      "relative_l2": 6.16049060495555e-05,
+      "seconds": 182.88339053500022,
+      "accepted": 14,
+      "radius": 3.6331787759542946e-07
+    },
+    {
+      "attempt": 29,
+      "relative_l2": 6.16049060495555e-05,
+      "seconds": 188.3303891800001,
+      "accepted": 14,
+      "radius": 1.2110595919847648e-07
+    },
+    {
+      "attempt": 30,
+      "relative_l2": 6.16049060495555e-05,
+      "seconds": 193.73281412000006,
+      "accepted": 14,
+      "radius": 4.0368653066158826e-08
+    },
+    {
+      "attempt": 31,
+      "relative_l2": 6.1601626074676e-05,
+      "seconds": 199.14719978600033,
+      "accepted": 15,
+      "radius": 1.3456217688719602e-08
+    },
+    {
+      "attempt": 32,
+      "relative_l2": 6.160279058128173e-05,
+      "seconds": 204.19438884200008,
+      "accepted": 16,
+      "radius": 4.485405896239875e-09
+    }
+  ],
+  "summary": {
+    "attempts": 32,
+    "accepted": 16,
+    "radius": 4.485405896239875e-09,
+    "target_ratio": 0.5,
+    "converged": true,
+    "weights": {
+      "pde": 0.00921768268845836,
+      "initial": 1.9907823173115413
+    },
+    "last": {
+      "step": 32,
+      "accepted": true,
+      "radius": 4.485405896239875e-09,
+      "next_radius": 4.485405896239875e-09,
+      "regularization": 4134.173389293134,
+      "ratio": 0.018797894327521807,
+      "target_ratio": 0.5,
+      "objective_before": 4.786807457505255e-09,
+      "objective_after": 4.786804327252739e-09,
+      "weights": {
+        "pde": 0.009385623587254978,
+        "initial": 1.990614376412745
+      }
+    }
+  },
+  "target_met": false
+}

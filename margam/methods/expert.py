@@ -27,7 +27,7 @@ class ExpertPINN(PINN):
         self._expert_fingerprint=None
         super().compile(optimiser_string,lr,metrics_string,device)
         self.initial_lr=lr;self.coefficients=dict(pde=1.,**({'initial':1.} if self.sample_config.is_time_dependent else {}),boundary=1.);self.balance_history=[];self._causal_min=1.
-        description=asdict(self.sample_config)
+        description=asdict(self.sample_config);description.pop('dsgnar_settings',None)
         for key in ('iterations','device'):description.pop(key)
         self.expert_signature=dict(algorithm='expert-guide-v1-ntk-diagonal' if self.options['balance_mode']=='ntk' else 'expert-guide-v1-sum-grad-norm',configuration=description,lr=lr,weights=deepcopy(self.weights))
         if self.initial_teacher is not None:self.expert_signature['initial_teacher']=self.initial_teacher.identity

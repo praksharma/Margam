@@ -361,3 +361,10 @@ repository and verify that no GUI, MCP package or block registration is loaded.
 as the Comparison report. Supply already aligned prediction/reference arrays and
 explicit compatible fields. It returns finite/None values plus status metadata,
 without changing tensors or gradients. See [error norm definitions and examples](use/error-norms.md).
+
+## Sketched Gauss–Newton experiments
+
+`from margam.research import DSGNARPINN` exposes the same independent
+[DSGNAR trainer](dsgnar.md#script-use) used by desktop blocks. It accepts an
+ordinary pointwise network and fixed PINNProblem, without GUI registration.
+Its SVD update/state contract is separate from Trainer custom-step callbacks.

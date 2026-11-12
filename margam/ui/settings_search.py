@@ -12,7 +12,7 @@ LABELS={'block_label':'Block label name','lr':'Adam learning rate','iterations':
  'bc_targets':'Boundary target expression','bc_operators':'Boundary custom operator','loss_formulation':'Loss formulation mean integral',
  'sa_boundary':'Adapt boundary constraint weights','pressure_point':'Pressure gauge coordinates','interior_data':'Map imported interior data','boundary_data':'Map imported boundary data','shape':'Domain geometry','method':'PINN method variant','sa_lr':'Mask Adam learning rate','pde_preset':'Predefined PDE',
  'boundary_sampling':'Boundary sampling method count seed','flow_boundary':'Flow boundary conditions','source_data':'Map source data','reference_expression':'Reference expression','resolution':'Evaluation points / axis','history_limit':'Retained updates'}
-PREFIXES={'inverse_settings':'inverse','network_options':'network_option','expert_settings':'expert','scale_settings':'scale','rba_settings':'rba','adaptive_sampling':'sampling','gpinn_weights':'gpinn_weight'}
+PREFIXES={'dsgnar_settings':'dsgnar','inverse_settings':'inverse','network_options':'network_option','expert_settings':'expert','scale_settings':'scale','rba_settings':'rba','adaptive_sampling':'sampling','gpinn_weights':'gpinn_weight'}
 ALIASES={'network_type':'network_architecture','pde_preset':'predefined_pde_choice','pde_forcing':'predefined_forcing'}
 
 

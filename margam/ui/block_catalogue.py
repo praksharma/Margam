@@ -6,8 +6,8 @@ BLOCK_CATEGORIES = {
     'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Observation data','observations'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Inverse Burgers PDE','inverse_pde'), ('Boundary condition', 'bc')),
-    'PINN recipes': (('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe'),('Inverse Burgers PINN','inverse_recipe')),
-    'Training': (('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method'),('RBA trainer','rba_method'),('Inverse trainer','inverse_method')),
+    'PINN recipes': (('DSGNAR PINN','dsgnar_recipe'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe'),('Inverse Burgers PINN','inverse_recipe')),
+    'Training': (('DSGNAR trainer','dsgnar_method'), ('PINN method', 'method'), ('Self-adaptive trainer','sa_method'), ('LRA trainer','lra_method'),('Expert trainer','expert_method'),('Scale trainer','scale_method'),('gPINN trainer','gpinn_method'),('RBA trainer','rba_method'),('Inverse trainer','inverse_method')),
     'Evaluation data': (('Evaluation points','evaluation_points'),('Reference data','reference_data')),
     'Results': (('Solution Plot', 'solution'), ('Training Monitor', 'monitor'),
                 ('Reference', 'reference'), ('Comparison', 'comparison'), ('CSV Export','export'), ('ParaView Export','paraview')),
@@ -83,3 +83,6 @@ def describe_block(kind):
     inputs=', '.join(spec.label for spec in INPUTS[kind]) or 'none'
     output=OUTPUTS[kind]
     return ('Implemented · '+parameters+'\nInputs: '+inputs+'\nOutput: '+(output.label if output else 'none')+'\n'+limits)
+
+CAPABILITIES['dsgnar_recipe']=('DSGNAR · compact or expanded','Replaceable pointwise network and doubly-sketched Gauss–Newton trainer. Fixed scalar Poisson/Burgers-type problems; CPU/CUDA.')
+CAPABILITIES['dsgnar_method']=('SVD trust-region probes, residual balancing and two-stage target ratio','Independent paper-based DSGNAR. Fixed built-in scalar points, mean losses, float32/float64. No Adam update, imported geometry, adaptive sampling or mixed trainers. Attempt budget includes rejected steps; minimum radius stops early.')

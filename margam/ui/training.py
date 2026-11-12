@@ -36,7 +36,7 @@ class TrainingWorker(QThread):
             if self.checkpoint is not None:
                 stage='checkpoint restore';model.load_training_state(self.checkpoint)
             stage='training update'
-            while model.iter < config.iterations and not self.cancel_event.is_set():
+            while model.iter < config.iterations and not self.cancel_event.is_set() and not getattr(model,'converged',False):
                 previous = model.iter
                 events=len(model.sampling_controller.history) if model.sampling_controller is not None else 0
                 model.train(min(25, config.iterations-model.iter),display_every=0)
@@ -45,6 +45,7 @@ class TrainingWorker(QThread):
                 if hasattr(model,'expert_summary'):self.expert_progress.emit(model.expert_summary())
                 if model.sampling_controller is not None:
                     for event in model.sampling_controller.history[events:]:self.sampling_updated.emit(dict(event))
+                if getattr(model,'converged',False):break
             stage='output evaluation'
             outputs = evaluate_outputs(model, config, self.requests) if getattr(model,'outputs_ready',True) else {}
             self.completed.emit({'outputs': outputs, 'steps': model.iter,

@@ -41,6 +41,7 @@ HELP = {
  'operator':'Custom boundary operator expressed with the restricted mathematical grammar. Normal-dependent operators require explicit outward normals on prepared geometry.',
 }
 HELP.update({
+ 'dsgnar_attempts':'Maximum DSGNAR attempted steps, including rejected proposals. Minimum-radius termination may stop earlier. Resume continues the saved radius, condition weights, stage and sketch random state. This is not an epoch or an accuracy tolerance.',
  'hidden_layers':HELP['layers'],
  'network_architecture':'Pointwise neural network mapping physical coordinates to the requested solution fields. Architectures can be exchanged independently of the PINN trainer. Available choices are explained below; their architecture-specific controls appear after selection.',
  'method_variant':'The baseline uses soft weighted PDE and boundary losses. The supported hard-Dirichlet variant embeds compatible constant boundary values in the output transform. Other PINN algorithms have their own recipe and trainer blocks.',
@@ -79,6 +80,7 @@ HELP.update({
 })
 
 HELP.update({
+ 'dsgnar_attempts':'Maximum DSGNAR attempted steps, including rejected proposals. Minimum-radius termination may stop earlier. Resume continues the saved radius, condition weights, stage and sketch random state. This is not an epoch or an accuracy tolerance.',
  'network_optimiser':'Adam updates network parameters using moving averages of gradients and squared gradients. Trainer loss balancing and SA mask ascent have separate controls. Current desktop trainers use full-batch Adam on their selected active samples.',
  'sa_lr':'Adam ascent rate for self-adaptive pointwise masks. Network parameters still use their own descent learning rate. The squared masks multiply pointwise squared errors.',
  'sa_initial':'Initial positive value of each self-adaptive mask. Its square is the multiplier in the weighted loss. Fixed point identities are required for these masks.',
@@ -152,3 +154,20 @@ class HelpFormLayout(QFormLayout):
             info.clicked.connect(lambda checked=False:show_information(self.window,label,setting_text(label,widget,self.context)))
             row.addWidget(info);row.addStretch();return super().addRow(container,widget)
         return super().addRow(*args)
+
+HELP.update({
+ 'dsgnar_attempts':'Maximum DSGNAR attempted steps, including rejected proposals. Minimum-radius termination may stop earlier. Resume continues the saved radius, condition weights, stage and sketch random state. This is not an epoch or an accuracy tolerance.',
+ 'dsgnar_sketch_size':'Rows and columns of the square compressed Jacobian. Capped at the trainable parameter count during execution. SVD time and workspace grow with this value; it is not the number of samples.',
+ 'dsgnar_hashes':'Independent signed CountSketch hashes per residual, scaled by one over the square root of this count. Conditions share the sketch buckets.',
+ 'dsgnar_batch_size':'Maximum point rows in one residual/Jacobian batch. The full Jacobian is never stored. All remainder rows are included; larger values increase derivative workspace.',
+ 'dsgnar_probes':'Number of geometrically spaced trust-region radii evaluated around the current radius, from radius/3 to 3*radius, capped by the maximum. Each probe evaluates all fixed conditions.',
+ 'dsgnar_initial_radius':'Starting step norm bound in the orthogonal sketched parameter coordinates. DSGNAR selects subsequent radii from actual versus predicted objective reductions.',
+ 'dsgnar_min_radius':'Stop when the next trust-region radius falls below this threshold. This is a numerical stopping rule, not a PDE accuracy tolerance. Attempt budget can end first.',
+ 'dsgnar_max_radius':'Upper bound on probe radii, preventing unbounded trust-region growth. Must be at least the initial radius.',
+ 'dsgnar_target_ratio':'First-stage target for actual reduction divided by sketched-model predicted reduction. Smaller targets favor exploration with less regularization.',
+ 'dsgnar_stage2_ratio':'Larger target used after the log-regularization history has a sustained upward trend. It must exceed the first-stage target and remain below one.',
+ 'dsgnar_reweight_exponent':'Exponent in residual-based condition balancing. Weighted mean-squared condition contributions determine the update, followed by mean-one weight normalization. Zero disables reweighting.',
+ 'dsgnar_history_window':'Number of regularization values used for the stage switch. A positive fitted log slope above 1e-4 and correlation above 0.1 trigger the second stage.',
+ 'dsgnar_precision':'Explicit network, residual, Jacobian and SVD precision. Double precision is the default. This port does not use an automatic mixed-precision warmup.',
+ 'dsgnar_seed':'Dedicated CPU sketch random generator seed, independent of network and point sampling seeds. Its state is retained for same-device continuation.',
+})

@@ -5,7 +5,7 @@ from .FCNN import FullyConnected
 from ..components.network_config import validate_network
 
 
-def build_network(config):
+def _build_network(config):
     options=validate_network(config.network_type,config.network_options,config.layers)
     inputs=len(config.bounds[0]);outputs=len(config.field_names);bounds=config.bounds;layers=config.layers
     seed=config.seed if config.network_seed is None else config.network_seed
@@ -47,4 +47,14 @@ def build_network(config):
     if config.method=='inverse_burgers':
         from ..methods.inverse_burgers import InverseBurgersNetwork
         network=InverseBurgersNetwork(network,config.inverse_settings)
+    if config.method=='dsgnar':network.to(dtype=getattr(torch,config.dsgnar_settings['precision']))
     return network
+
+
+def build_network(config):
+    if config.method!='dsgnar':return _build_network(config)
+    previous=torch.get_default_dtype()
+    try:
+        torch.set_default_dtype(getattr(torch,config.dsgnar_settings['precision']))
+        return _build_network(config)
+    finally:torch.set_default_dtype(previous)

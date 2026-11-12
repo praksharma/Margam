@@ -63,3 +63,10 @@ recipes are expanded/collapsed, saved and reopened.
 Select a trainer or compact recipe to choose **Loss formulation**. Mean squared
 error remains the default; the optional [integral formulation](../integral-loss.md)
 uses domain volume and boundary lengths. It works with the existing architectures.
+
+### DSGNAR
+
+[DSGNAR](../dsgnar.md) replaces Adam with sketched Gauss–Newton/SVD steps. Insert
+its compact recipe or separate trainer. Use fixed built-in scalar points and an
+explicit precision; rejected steps count toward the attempt budget. Existing
+pointwise networks and output blocks remain replaceable.

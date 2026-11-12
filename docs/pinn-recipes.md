@@ -103,3 +103,9 @@ inverse trainer. Its explicit external inputs are the inverse residual and measu
 observation rows, rather than boundary-condition definitions. The PDE and data
 loss must use one shared observation instance. Physical coefficient guesses belong
 to the separate Inverse Burgers PDE block. See [the inverse guide](inverse-burgers.md).
+
+## DSGNAR
+
+`margam/recipes/dsgnar.py` owns the compact DSGNAR PINN and expanded DSGNAR
+trainer/network representation. See [the method guide](dsgnar.md) for fixed-point
+scope, attempt counts, precision, adaptive-ratio controls and checkpoint rules.

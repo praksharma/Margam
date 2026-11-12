@@ -25,6 +25,9 @@ EXAMPLE_PROBLEMS = {
 
 def _example_config(identifier):
     if identifier not in EXAMPLE_PROBLEMS:raise ValueError('Unknown example problem.')
+    if identifier.startswith('dsgnar_'):
+        from .dsgnar_examples import dsgnar_example_config
+        return dsgnar_example_config(identifier)
     if identifier.startswith('rba_'):
         from .rba_examples import rba_example_config
         return rba_example_config(identifier)
@@ -82,3 +85,6 @@ def example_config(identifier):
     config=_example_config(identifier)
     config.pde_points='both'
     return config
+
+from .dsgnar_examples import DSGNAR_EXAMPLES
+for _key,(_label,_description,_reference) in DSGNAR_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,_reference)

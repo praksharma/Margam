@@ -510,3 +510,24 @@ Isolated desktop jobs and lifecycle evidence:
 The workflow prints JSON by default; `--output build/isolated-workflow.json`
 retains a report explicitly. The capture starts a small job and deliberately
 force-stops it after capturing the menu. Neither tool exhausts real memory.
+
+## DSGNAR correctness checks
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_dsgnar*.py' -v
+QT_QPA_PLATFORM=offscreen python -m examples.dsgnar_workflow --device cpu
+QT_QPA_PLATFORM=offscreen python -m examples.dsgnar_workflow --device cuda
+```
+
+DSGNAR accuracy experiments and the reviewable trained Poisson project:
+
+```bash
+python -m examples.dsgnar_poisson_accuracy --output assets/benchmarks/dsgnar-poisson-accuracy.json --checkpoint build/dsgnar-accuracy/poisson.pt
+QT_QPA_PLATFORM=offscreen python -m examples.save_dsgnar_accuracy_project
+python -m examples.dsgnar_accuracy --device cuda --functional --compile-functional --output assets/benchmarks/dsgnar-burgers-paper-attempt.json --checkpoint build/dsgnar-accuracy/burgers.pt
+```
+
+The optional Burgers reference requires SciPy. `--resume` restores the same
+backend/data trajectory; `--warm-start` explicitly loads weights only. Use
+`--help` for budgets and profiling. These scripts do not publish or change the
+root environment. See [accuracy scope and differences](dsgnar.md#accuracy-experiments).

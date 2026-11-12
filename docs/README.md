@@ -87,3 +87,5 @@ implemented or a regression threshold as a measured benchmark result.
 - [gPINN](gpinn.md): scalar residual-gradient enhancement, coordinate weights, RAR and implementation evidence.
 
 - [RBA-PINN](rba-pinn.md): fixed-point residual-history attention, initialization modes and raw/weighted diagnostics.
+
+- [DSGNAR](dsgnar.md): independent sketched Gauss–Newton trainer, adaptive-ratio probes and CPU/CUDA checkpoints.

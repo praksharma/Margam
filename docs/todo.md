@@ -51,7 +51,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
 - [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
 - [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
-  resolved. The 11 November CUDA audit passes 18 targeted checks without skips,
+  resolved. The 12 November CUDA audit passes 20 targeted checks without skips,
   including training, derivatives, continuation, global device selection and
   portable data. Retain the earlier environment audit as historical evidence;
   see [current CUDA validation](validation.md#cuda-regression-audit-11-november-2026).
@@ -664,3 +664,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [ ] Evaluate method-specific microbatching/gradient aggregation and inference
   chunking with mathematical and continuation tests; do not auto-reduce samples
   or change causal/NTK/mask/integral semantics after an OOM.
+
+## DSGNAR follow-up
+
+- [x] Independent fixed-point scalar DSGNAR trainer, compact/expanded recipe,
+  Poisson/Burgers presets, explicit precision, diagnostics and checkpoints.
+- [ ] Profile larger DSGNAR residual batches and SVD workspaces before claiming
+  upstream throughput; retain tested mathematical and continuation checks.
+- [ ] Extend DSGNAR to imported samples, coupled fields or time marching only
+  with concrete workflows and continuation tests.

@@ -59,3 +59,11 @@ The [authors' MIT repository](https://github.com/soanagno/rba-pinns) verifies th
 detached recurrence, squared weighted residual and initialization modes. Source
 hashes and differences are in [the RBA guide](rba-pinn.md). No upstream code or
 data is bundled. This is pointwise weighting, not Transformer attention.
+
+## Doubly-sketched Gauss–Newton (DSGNAR)
+
+Independent PyTorch implementation from Webb, Jerad and Cartis,
+[arXiv:2607.02194v1](https://arxiv.org/abs/2607.02194). The
+[DSGNAR guide](dsgnar.md) records the inspected repository revision, algorithm
+ambiguities, implementation choices and validation scope. No upstream code/data
+is copied; the reference checkout has no declared top-level source licence.

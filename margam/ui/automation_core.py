@@ -20,7 +20,7 @@ TOOLS = {
     'read_results': ('Result reads', 'Read paginated data from explicit output blocks or retained loss history of the identified finished MCP job. No prediction or file export is triggered.'),
 }
 
-EDITABLE = frozenset(('points','sampling','seed','boundary_points','layers','network_type','network_seed','network_options','iterations','lr','pde_weight','boundary_weight','source','viscosity','fourth_order','pde_expression','pde_forcing','bc_values','bc_targets','bc_operators','bc_weights','inverse_settings','gpinn_weights','rba_settings','sa_lr','sa_initial','sa_max','sa_boundary','lra_alpha','lra_interval','lra_epsilon','lra_max'))
+EDITABLE = frozenset(('points','sampling','seed','boundary_points','layers','network_type','network_seed','network_options','iterations','lr','pde_weight','boundary_weight','source','viscosity','fourth_order','pde_expression','pde_forcing','bc_values','bc_targets','bc_operators','bc_weights','inverse_settings','gpinn_weights','rba_settings','dsgnar_settings','sa_lr','sa_initial','sa_max','sa_boundary','lra_alpha','lra_interval','lra_epsilon','lra_max'))
 
 class AutomationError(Exception):
     def __init__(self, code, message, operation_index=None):

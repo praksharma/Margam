@@ -1,0 +1,24 @@
+{
+  "scope": "Compiled functional PDE/IC derivatives versus generic reverse autograd; not an accuracy or speed reproduction.",
+  "device": "cuda",
+  "precision": "float32",
+  "torch": "2.14.1+cu130",
+  "passed": true,
+  "seconds": 20.38456070300026,
+  "cases": [
+    {
+      "condition": "pde",
+      "rows": 128,
+      "parameters": 1447,
+      "jacobian_max_abs": 9.5367431640625e-06,
+      "residual_max_abs": 9.5367431640625e-07
+    },
+    {
+      "condition": "initial",
+      "rows": 128,
+      "parameters": 1447,
+      "jacobian_max_abs": 1.1920928955078125e-07,
+      "residual_max_abs": 0.0
+    }
+  ]
+}

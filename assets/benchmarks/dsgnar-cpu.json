@@ -1,0 +1,90 @@
+{
+  "scope": "Six-attempt desktop lifecycle checks; not paper accuracy, speed or memory reproduction.",
+  "cases": [
+    {
+      "example": "dsgnar_poisson_1d",
+      "device": "cpu",
+      "precision": "float64",
+      "separate_headless_process": true,
+      "checkpoint_exact_resume": true,
+      "evaluation_preserved_weights": true,
+      "regularization_diagnostic_tolerance": 5e-14,
+      "export_verified": true,
+      "raw_final_mse": {
+        "pde": 0.9031674844632426,
+        "left": 0.0024664745461004337,
+        "right": 0.006002237320434283
+      },
+      "attempts": 6,
+      "accepted": 2,
+      "radius": 0.1111111111111111,
+      "target_ratio": 0.075,
+      "converged": false,
+      "weights": {
+        "pde": 0.02268940609609795,
+        "left": 1.8411877335095286,
+        "right": 1.1361228603943738
+      },
+      "last": {
+        "step": 6,
+        "accepted": false,
+        "radius": 0.9648377760942353,
+        "next_radius": 0.1111111111111111,
+        "regularization": 0.004091031677085265,
+        "ratio": -2.2293974137631047,
+        "target_ratio": 0.075,
+        "objective_before": 0.03339733314195555,
+        "objective_after": 0.03339733314195555,
+        "weights": {
+          "pde": 0.02434751052097112,
+          "left": 1.8250995683448445,
+          "right": 1.1505529211341843
+        }
+      }
+    },
+    {
+      "example": "dsgnar_burgers",
+      "device": "cpu",
+      "precision": "float64",
+      "separate_headless_process": true,
+      "checkpoint_exact_resume": true,
+      "evaluation_preserved_weights": true,
+      "regularization_diagnostic_tolerance": 5e-14,
+      "export_verified": true,
+      "raw_final_mse": {
+        "pde": 0.007471034849235685,
+        "left": 0.010559376829870348,
+        "right": 0.013830609648244119,
+        "initial": 0.41581942375500763
+      },
+      "attempts": 6,
+      "accepted": 1,
+      "radius": 0.012345679012345678,
+      "target_ratio": 0.075,
+      "converged": false,
+      "weights": {
+        "pde": 0.118450016105625,
+        "left": 1.57436511814248,
+        "right": 1.5453780527513934,
+        "initial": 0.7618068130005015
+      },
+      "last": {
+        "step": 6,
+        "accepted": false,
+        "radius": 0.01234567901234568,
+        "next_radius": 0.012345679012345678,
+        "regularization": 16.89361517321183,
+        "ratio": -0.21039084711332348,
+        "target_ratio": 0.075,
+        "objective_before": 0.3959564083657155,
+        "objective_after": 0.3959564083657155,
+        "weights": {
+          "pde": 0.09827613727727111,
+          "left": 1.524269247137601,
+          "right": 1.5161241714200147,
+          "initial": 0.8613304441651134
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "case": "Periodic Burgers, paper Appendix C.1",
+  "scope": "Accuracy attempt; reproduction only if settings and measured error match the stated target.",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "target_relative_l2": 4.75e-07,
+  "target_context": "Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.",
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch_version": "2.14.1+cu130",
+  "precision": "float32",
+  "pde_points": 512,
+  "initial_points": 256,
+  "parameters": 1447,
+  "width": 16,
+  "depth": 6,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 64,
+    "probes": 24,
+    "initial_radius": 1.0,
+    "min_radius": 0.0001,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "precision": "float32",
+    "seed": 0
+  },
+  "attempts": 54,
+  "seconds": 101.216472178,
+  "initial_relative_l2": 1.0923609316321194,
+  "final_relative_l2": 0.0009628906055885808,
+  "reference": "Independent Cole-Hopf Gauss-Hermite, 257 x 65 uniform evaluation grid",
+  "reference_256_vs_512_max_abs": 1.3877787807814457e-15,
+  "history": [
+    {
+      "attempt": 10,
+      "relative_l2": 0.46856026978788234,
+      "seconds": 24.801040796999985,
+      "accepted": 7,
+      "radius": 3.1662666975239255
+    },
+    {
+      "attempt": 20,
+      "relative_l2": 0.2718367794360259,
+      "seconds": 40.108051090000004,
+      "accepted": 11,
+      "radius": 0.14055449208602339
+    },
+    {
+      "attempt": 30,
+      "relative_l2": 0.03579229198298296,
+      "seconds": 58.58251051299999,
+      "accepted": 17,
+      "radius": 0.2957214763316403
+    },
+    {
+      "attempt": 40,
+      "relative_l2": 0.0012399630731813303,
+      "seconds": 72.92704350699995,
+      "accepted": 27,
+      "radius": 0.19720143115018224
+    },
+    {
+      "attempt": 50,
+      "relative_l2": 0.000999542587623782,
+      "seconds": 94.57225521099997,
+      "accepted": 37,
+      "radius": 0.0036606997602076584
+    },
+    {
+      "attempt": 54,
+      "relative_l2": 0.0009628906055885808,
+      "seconds": 101.21104052299995,
+      "accepted": 40,
+      "radius": 4.519382420009453e-05
+    }
+  ],
+  "summary": {
+    "attempts": 54,
+    "accepted": 40,
+    "radius": 4.519382420009453e-05,
+    "target_ratio": 0.5,
+    "converged": true,
+    "weights": {
+      "pde": 0.05544015224062812,
+      "initial": 1.9445598477593717
+    },
+    "last": {
+      "step": 54,
+      "accepted": true,
+      "radius": 4.519382420009453e-05,
+      "next_radius": 4.519382420009453e-05,
+      "regularization": 0.03911844827234746,
+      "ratio": 0.19029234069643017,
+      "target_ratio": 0.5,
+      "objective_before": 4.702933390416544e-09,
+      "objective_after": 4.642759749573434e-09,
+      "weights": {
+        "pde": 0.056129037432913184,
+        "initial": 1.9438709625670867
+      }
+    }
+  },
+  "target_met": false
+}

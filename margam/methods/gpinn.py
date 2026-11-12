@@ -16,7 +16,7 @@ class GradientEnhancedPINN(PINN):
         self.coordinates=tuple(coordinates);self.gradient_weights=deepcopy(gradient_weights)
         self.physical_weights=deepcopy(self.weights)
         self.configuration=deepcopy(configuration or {})
-        for key in ('iterations','device'):self.configuration.pop(key,None)
+        for key in ('iterations','device','dsgnar_settings'):self.configuration.pop(key,None)
 
     def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):
         if optimiser_string!='adam' or metrics_string!='MSE' or optimiser is not None:raise ValueError('gPINN currently uses Adam and mean squared losses.')

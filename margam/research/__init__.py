@@ -1,4 +1,5 @@
 """Script-first research components; no desktop or block registration required."""
+from ..methods.dsgnar import DSGNARPINN
 from .trainer import Trainer
 from .schedules import StepDecay
 from ..components.integral_constraint import IntegralConstraint
@@ -9,5 +10,5 @@ from ..utils import laplacian
 from ..components.losses import weighted_loss
 from ..components.error_norms import error_norms
 
-__all__ = ['Trainer', 'StepDecay', 'IntegralConstraint', 'PINNProblem', 'PointConstraint', 'sample_box',
+__all__ = ['DSGNARPINN', 'Trainer', 'StepDecay', 'IntegralConstraint', 'PINNProblem', 'PointConstraint', 'sample_box',
            'derivative', 'laplacian', 'weighted_loss', 'error_norms']

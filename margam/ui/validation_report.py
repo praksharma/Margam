@@ -141,6 +141,9 @@ def collect_issues(window,execution_error=None):
             if config.method=='gpinn':
                 from ..components.gpinn_config import validate_gpinn_problem
                 checks['gPINN']=validate_gpinn_problem
+            if config.method=='dsgnar':
+                from ..components.dsgnar_config import validate_dsgnar_problem
+                checks['DSGNAR']=validate_dsgnar_problem
             if config.method=='rba':
                 from ..components.rba_config import validate_rba_problem
                 checks['RBA']=validate_rba_problem
@@ -175,7 +178,7 @@ def collect_issues(window,execution_error=None):
             # independent checker can safely identify one responsible block.
             if not any(issue.severity=='Error' and issue.category in ('Connections','Graph') for issue in issues):
                 lower=message.lower();owner=None
-                for tokens,kind in [(('integral','quadrature','hard dirichlet','learning rate','iterations'),'method'),(('dirichlet','neumann','boundary','corner','gauge'),'bc'),(('network','layer','neuron','fourier'),'network'),(('method','loss','learning','iteration','lra','expert','scale','gpinn','rba','adaptive'),'method'),(('residual','pde','expression','forcing'),'pde'),(('coordinate','geometry','domain','bound'),'domain')]:
+                for tokens,kind in [(('integral','quadrature','hard dirichlet','learning rate','iterations'),'method'),(('dirichlet','neumann','boundary','corner','gauge'),'bc'),(('network','layer','neuron','fourier'),'network'),(('method','loss','learning','iteration','lra','expert','scale','gpinn','rba','dsgnar','adaptive'),'method'),(('residual','pde','expression','forcing'),'pde'),(('coordinate','geometry','domain','bound'),'domain')]:
                     if any(token in lower for token in tokens):owner=next((n for n in nodes if role(n.kind)==kind),None);break
                 owner=next((n for n in nodes if n.kind in outputs and n.title in message),owner)
                 add('Execution check',message,owner)

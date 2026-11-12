@@ -934,3 +934,46 @@ The existing [CPU](../assets/benchmarks/jorvik-workflow-cpu.json) and
 [CUDA](../assets/benchmarks/jorvik-workflow-cuda.json) records remain unchanged
 because the reruns produced identical results. These are lifecycle/correctness
 checks, not numerical-accuracy benchmarks.
+
+## DSGNAR implementation and accuracy checks
+
+The independent scalar fixed-point trainer implements CountSketch/SRCT, SVD
+trust-region steps, monotone PCHIP probes, adaptive condition weights and the
+lambda-trend stage switch. Tests cover analytic polynomial parameter Jacobians,
+DCT/adjoint identities, hash collisions, singular systems, rejected/failed-step
+rollback, dtype preservation and consistent baseline/trial evaluation batches.
+The 19-case method/reference/desktop selection passes on CPU/CUDA, including
+actual isolated jobs, compact/expanded recipes, model/run files, physical-time
+export and stopped-checkpoint handling. The independent Cole–Hopf reference
+passes initial, periodic, PDE and quadrature-convergence checks. The refreshed
+[12 November CUDA audit](../assets/benchmarks/cuda-validation-2026-11-12.json)
+passes 20 cases without skips and records current source/runtime fingerprints.
+
+The maintained [CPU](../assets/benchmarks/dsgnar-cpu.json) and
+[CUDA](../assets/benchmarks/dsgnar-cuda.json) native workflows compare exact
+four-plus-two versus uninterrupted fresh-process network weights, loss histories
+and sketch RNG state. SVD regularization diagnostics allow only `5e-14` relative
+roundoff; Qt-host direct-engine parity is checked separately at double-precision
+tolerance. A shared Laplacian accumulator was corrected to preserve tensor dtype
+rather than rounding double derivatives through a float32 global default. Fixed
+target functions are evaluated on CPU before transfer to preserve data identity.
+
+The [trained Poisson check](../assets/benchmarks/dsgnar-poisson-accuracy.json)
+achieves about `3e-8` relative L2 error on 1,001 independent evaluation points.
+It is a Margam analytical example, not a paper benchmark. Its checkpoint is
+converted to a genuine native project/run archive under `build/dsgnar-accuracy/`
+and reopened successfully. The
+[full-sampling single-precision periodic Burgers attempt](../assets/benchmarks/dsgnar-burgers-paper-attempt.json)
+uses the paper's 1,447-parameter network, sketch 700 and 32,768/16,384 rows, but
+stops after 113 attempts at `7.04e-5`, **not** the paper's `4.75e-7` target.
+The case differs from the original-PINN Dirichlet Burgers demo. The independent
+evaluation grid, initialisation, backend and timing differences are recorded in
+[the method guide](dsgnar.md#accuracy-experiments). No paper speed/accuracy match
+is claimed; further precision/sketch investigations are separate variations.
+
+A final full CPU/offscreen discovery finishes cleanly: **357 tests, 336 passed
+and 21 CUDA-dependent skips**, in 799.701 seconds. Earlier example-menu and
+manufactured-reference inventory failures were corrected; the reference-free
+transient case keeps its dedicated checks while Poisson retains manufactured
+solution coverage. The separate actual CUDA audit passes all 20 selected cases.
+The manual build checks all 71 rendered pages and their local links/images.

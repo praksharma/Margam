@@ -95,3 +95,6 @@ PATHS['rba_recipe']='M3 3h18v18H3z M6 17l4-6 4 3 4-8 M6 6h4'
 PATHS['rba_method']=PATHS['rba_recipe']
 
 def icon(name):return QIcon(GlyphEngine(name))
+
+PATHS['dsgnar_recipe']='M3 3h18v18H3z M6 16l4-8 4 8 4-8 M6 19h12'
+PATHS['dsgnar_method']=PATHS['dsgnar_recipe']

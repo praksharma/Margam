@@ -1,0 +1,236 @@
+{
+  "case": "Periodic Burgers, paper Appendix C.1",
+  "scope": "Accuracy attempt; reproduction only if settings and measured error match the stated target.",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "target_relative_l2": 4.75e-07,
+  "target_context": "Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.",
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch_version": "2.14.1+cu130",
+  "precision": "float32",
+  "pde_points": 32768,
+  "initial_points": 16384,
+  "parameters": 1447,
+  "width": 16,
+  "depth": 6,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 128,
+    "probes": 24,
+    "initial_radius": 1.0,
+    "min_radius": 0.0001,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "precision": "float32",
+    "seed": 0
+  },
+  "attempts": 24,
+  "seconds": 834.163436995,
+  "initial_relative_l2": 1.0923609316321194,
+  "final_relative_l2": 0.13825117156485,
+  "reference": "Independent Cole-Hopf Gauss-Hermite, 257 x 65 uniform evaluation grid",
+  "reference_256_vs_512_max_abs": 1.3877787807814457e-15,
+  "history": [
+    {
+      "attempt": 1,
+      "relative_l2": 0.8336434582914156,
+      "seconds": 41.949266832000035,
+      "accepted": 1,
+      "radius": 3.0
+    },
+    {
+      "attempt": 2,
+      "relative_l2": 0.8336434582914156,
+      "seconds": 77.16933285799996,
+      "accepted": 1,
+      "radius": 1.0
+    },
+    {
+      "attempt": 3,
+      "relative_l2": 0.8139617226767073,
+      "seconds": 113.64133902599997,
+      "accepted": 2,
+      "radius": 3.0
+    },
+    {
+      "attempt": 4,
+      "relative_l2": 0.8139617226767073,
+      "seconds": 149.76034080800002,
+      "accepted": 2,
+      "radius": 1.0
+    },
+    {
+      "attempt": 5,
+      "relative_l2": 0.6066447665103135,
+      "seconds": 182.97233346300004,
+      "accepted": 3,
+      "radius": 1.4791064295625431
+    },
+    {
+      "attempt": 6,
+      "relative_l2": 0.6066447665103135,
+      "seconds": 219.50024466599996,
+      "accepted": 3,
+      "radius": 0.4930354765208477
+    },
+    {
+      "attempt": 7,
+      "relative_l2": 0.43330035037942904,
+      "seconds": 257.41434838299995,
+      "accepted": 4,
+      "radius": 1.4791064295625431
+    },
+    {
+      "attempt": 8,
+      "relative_l2": 0.41073830100341596,
+      "seconds": 275.75033511899994,
+      "accepted": 5,
+      "radius": 1.538055017044584
+    },
+    {
+      "attempt": 9,
+      "relative_l2": 0.35250828522539385,
+      "seconds": 312.88118896599997,
+      "accepted": 6,
+      "radius": 1.8211218341790387
+    },
+    {
+      "attempt": 10,
+      "relative_l2": 0.40925251851823463,
+      "seconds": 347.86433417800004,
+      "accepted": 7,
+      "radius": 1.8482173452165764
+    },
+    {
+      "attempt": 11,
+      "relative_l2": 0.3870572285861608,
+      "seconds": 379.495333436,
+      "accepted": 8,
+      "radius": 0.9770777141606507
+    },
+    {
+      "attempt": 12,
+      "relative_l2": 0.3878900809781062,
+      "seconds": 410.03548049200003,
+      "accepted": 9,
+      "radius": 1.4699539900454397
+    },
+    {
+      "attempt": 13,
+      "relative_l2": 0.3878900809781062,
+      "seconds": 449.528334999,
+      "accepted": 9,
+      "radius": 0.4899846633484799
+    },
+    {
+      "attempt": 14,
+      "relative_l2": 0.25994540346550027,
+      "seconds": 471.7273316159999,
+      "accepted": 10,
+      "radius": 1.4699539900454397
+    },
+    {
+      "attempt": 15,
+      "relative_l2": 0.28211328682569636,
+      "seconds": 504.08033615,
+      "accepted": 11,
+      "radius": 1.356075405523373
+    },
+    {
+      "attempt": 16,
+      "relative_l2": 0.28211328682569636,
+      "seconds": 536.8993346719999,
+      "accepted": 11,
+      "radius": 0.4520251351744577
+    },
+    {
+      "attempt": 17,
+      "relative_l2": 0.2793427554711621,
+      "seconds": 577.443463758,
+      "accepted": 12,
+      "radius": 1.3339341067979738
+    },
+    {
+      "attempt": 18,
+      "relative_l2": 0.2793427554711621,
+      "seconds": 613.0463373350001,
+      "accepted": 12,
+      "radius": 0.44464470226599123
+    },
+    {
+      "attempt": 19,
+      "relative_l2": 0.285648984665082,
+      "seconds": 642.8701444400001,
+      "accepted": 13,
+      "radius": 1.3252727169816356
+    },
+    {
+      "attempt": 20,
+      "relative_l2": 0.285648984665082,
+      "seconds": 675.1023344089999,
+      "accepted": 13,
+      "radius": 0.44175757232721186
+    },
+    {
+      "attempt": 21,
+      "relative_l2": 0.2225839230768519,
+      "seconds": 713.784336855,
+      "accepted": 14,
+      "radius": 1.3252727169816356
+    },
+    {
+      "attempt": 22,
+      "relative_l2": 0.16344862493247497,
+      "seconds": 750.0624148679999,
+      "accepted": 15,
+      "radius": 1.2311028020695078
+    },
+    {
+      "attempt": 23,
+      "relative_l2": 0.16344862493247497,
+      "seconds": 795.695336362,
+      "accepted": 15,
+      "radius": 0.41036760068983597
+    },
+    {
+      "attempt": 24,
+      "relative_l2": 0.13825117156485,
+      "seconds": 834.163339171,
+      "accepted": 16,
+      "radius": 1.1314776015217922
+    }
+  ],
+  "summary": {
+    "attempts": 24,
+    "accepted": 16,
+    "radius": 1.1314776015217922,
+    "target_ratio": 0.075,
+    "converged": false,
+    "weights": {
+      "pde": 0.07290599123237237,
+      "initial": 1.9270940087676276
+    },
+    "last": {
+      "step": 24,
+      "accepted": true,
+      "radius": 1.1314776015217922,
+      "next_radius": 1.1314776015217922,
+      "regularization": 0.00022409290977520868,
+      "ratio": 0.06353276994094857,
+      "target_ratio": 0.075,
+      "objective_before": 0.02083286783698892,
+      "objective_after": 0.01954619161363418,
+      "weights": {
+        "pde": 0.07247530729355955,
+        "initial": 1.9275246927064407
+      }
+    }
+  },
+  "target_met": false,
+  "status": "interrupted to use validated faster functional derivatives",
+  "jacobian_backend": "generic-batched-reverse"
+}

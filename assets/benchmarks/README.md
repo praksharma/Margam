@@ -68,8 +68,8 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   halving rates every two updates and checking exact split continuation. API
   lifecycle evidence, not a numerical accuracy benchmark.
 
-- [CUDA regression audit — 11 November 2026](cuda-validation-2026-11-11.json):
-  18 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
+- [CUDA regression audit — 12 November 2026](cuda-validation-2026-11-12.json):
+  20 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
   runtime and source fingerprints; a targeted audit, not a full-suite or
   paper-accuracy reproduction. Run `examples.validate_cuda` to reproduce.
 
@@ -82,3 +82,15 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   [CUDA](isolated-worker-cuda.json): separate headless processes, CPU retained
   state, unchanged weights during re-evaluation, archive reopening and exact
   continuation. Lifecycle evidence, not accuracy or capacity benchmarks.
+
+- DSGNAR saved-project workflows [CPU](dsgnar-cpu.json) /
+  [CUDA](dsgnar-cuda.json): fixed scalar Poisson/Burgers, CPU-retained states,
+  model/loss/RNG continuation, references and explicit export. SVD regularization
+  diagnostics allow only documented last-bit roundoff.
+- DSGNAR [Poisson accuracy](dsgnar-poisson-accuracy.json) and
+  [periodic Burgers paper-case attempt](dsgnar-burgers-paper-attempt.json) record
+  actual errors, configurations, stopping and runtime. The Poisson case is not a
+  paper benchmark; Burgers uses an independent reference grid. Read `target_met`
+  and the scope before interpreting the result.
+- [Compiled Burgers derivative validation](dsgnar-functional-validation.json)
+  compares actual 1,447-parameter CUDA Jacobians/residuals with generic autograd.

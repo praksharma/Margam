@@ -126,3 +126,8 @@ INPUTS['inverse_recipe']=(PortSpec('pde','Inverse Burgers residual','inverse_res
 INPUTS['inverse_method']=INPUTS['inverse_recipe']+(PortSpec('network','Neural network','network'),)
 OUTPUTS['inverse_recipe']=OUTPUTS['method']
 OUTPUTS['inverse_method']=OUTPUTS['method']
+
+INPUTS['dsgnar_recipe']=INPUTS['recipe']
+INPUTS['dsgnar_method']=INPUTS['method']
+OUTPUTS['dsgnar_recipe']=OUTPUTS['recipe']
+OUTPUTS['dsgnar_method']=OUTPUTS['method']
