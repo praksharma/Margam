@@ -94,22 +94,26 @@ def main():
     parser.add_argument('--points',type=int,default=32768);parser.add_argument('--initial',type=int,default=16384)
     parser.add_argument('--width',type=int,default=16);parser.add_argument('--depth',type=int,default=6);parser.add_argument('--bias-noise',type=float,default=.01)
     parser.add_argument('--sketch',type=int,default=700);parser.add_argument('--batch',type=int,default=128)
-    parser.add_argument('--probes',type=int,default=24);parser.add_argument('--attempts',type=int,default=300)
+    parser.add_argument('--stage-grace',type=int,default=80);parser.add_argument('--probes',type=int,default=24);parser.add_argument('--attempts',type=int,default=300)
     parser.add_argument('--seconds',type=float,default=1800);parser.add_argument('--seed',type=int,default=0)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--checkpoint',type=Path)
     parser.add_argument('--resume',type=Path);parser.add_argument('--profile',action='store_true')
     parser.add_argument('--functional',action='store_true',help='Use validated per-point functional Burgers Jacobians.')
     parser.add_argument('--compile-functional',action='store_true');parser.add_argument('--warm-start',type=Path)
-    args=parser.parse_args();torch.set_num_threads(1);torch.set_default_dtype(getattr(torch,args.precision));torch.manual_seed(args.seed)
+    args=parser.parse_args()
+    import hashlib
+    from examples.validate_cuda import source_identity
+    source=source_identity(Path(__file__).resolve().parents[1]);source['benchmark_script_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    torch.set_num_threads(1);torch.set_default_dtype(getattr(torch,args.precision));torch.manual_seed(args.seed)
     if args.device=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA requested but unavailable.')
     generator=torch.Generator().manual_seed(args.seed)
     points=torch.rand((args.points,2),generator=generator);points[:,0]=2*points[:,0]-1
     initial=torch.column_stack((torch.linspace(-1,1,args.initial),torch.zeros(args.initial)))
     def residual(x,u):return derivative(u,x,1)+u*derivative(u,x,0)-.01*derivative(u,x,0,2)
     problem=PINNProblem(residual,points,[PointConstraint('initial',initial,lambda x:-torch.sin(math.pi*x[:,0:1]))])
-    settings=dsgnar_defaults();settings.update(sketch_size=args.sketch,batch_size=args.batch,probes=args.probes,precision=args.precision,seed=args.seed,min_radius=1e-4 if args.precision=='float32' else 1e-8)
+    settings=dsgnar_defaults();settings.update(sketch_size=args.sketch,batch_size=args.batch,probes=args.probes,precision=args.precision,seed=args.seed,stage_grace=args.stage_grace,min_radius=1e-4 if args.precision=='float32' else 1e-8)
     model=(FunctionalBurgersTrainer if args.functional else DSGNARPINN)(problem,PeriodicMLP(args.width,args.depth,args.bias_noise),weights=dict(pde=.01,initial=1.),settings=settings,
-        configuration=dict(case='periodic-burgers-2607.02194-C1-v4',viscosity=.01,width=args.width,depth=args.depth,seed=args.seed,bias_noise=args.bias_noise,
+        configuration=dict(case='periodic-burgers-2607.02194-C1-v6-forward-probes-grace',viscosity=.01,width=args.width,depth=args.depth,seed=args.seed,bias_noise=args.bias_noise,
             derivative_backend='compiled-functional' if args.compile_functional else 'functional' if args.functional else 'generic',
             compiler_torch_version=str(torch.__version__) if args.compile_functional else None)).compile(device=args.device)
     if args.resume:
@@ -143,7 +147,7 @@ def main():
         return float(np.linalg.norm(prediction-reference)/np.linalg.norm(reference))
     history=[];started=time.perf_counter();initial_error=error()
     def save():
-        report=dict(case='Periodic Burgers, paper Appendix C.1',scope='Accuracy attempt; reproduction only if settings and measured error match the stated target.',
+        report=dict(case='Periodic Burgers, paper Appendix C.1',source=source,scope='Accuracy attempt; reproduction only if settings and measured error match the stated target.',
             paper='https://arxiv.org/abs/2607.02194',target_relative_l2=4.75e-7,
             target_context='Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.',
             warm_start=bool(args.warm_start),resumed=bool(args.resume),

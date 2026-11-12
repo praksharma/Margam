@@ -1,0 +1,481 @@
+{
+  "case": "Periodic Burgers, paper Appendix C.1",
+  "scope": "Accuracy attempt; reproduction only if settings and measured error match the stated target.",
+  "paper": "https://arxiv.org/abs/2607.02194",
+  "target_relative_l2": 4.75e-07,
+  "target_context": "Paper single-precision 16x6 MLP, 1447 parameters, sketch 700, 32768 PDE / 16384 IC rows, H100; 9.8 seconds.",
+  "warm_start": false,
+  "resumed": false,
+  "matches_reported_precision_and_counts": true,
+  "device": "cuda",
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "torch_version": "2.14.1+cu130",
+  "precision": "float32",
+  "jacobian_backend": "compiled-functional-per-point",
+  "pde_points": 32768,
+  "initial_points": 16384,
+  "parameters": 1447,
+  "width": 16,
+  "depth": 6,
+  "bias_noise": 0.01,
+  "settings": {
+    "sketch_size": 700,
+    "hashes": 4,
+    "batch_size": 128,
+    "probes": 24,
+    "initial_radius": 1.0,
+    "min_radius": 0.0001,
+    "max_radius": 1000.0,
+    "target_ratio": 0.075,
+    "stage2_ratio": 0.5,
+    "reweight_exponent": 0.05,
+    "history_window": 30,
+    "precision": "float32",
+    "seed": 0
+  },
+  "attempts": 58,
+  "starting_attempt": 0,
+  "seconds": 295.59331772800033,
+  "phase_seconds": {},
+  "initial_relative_l2": 1.2939924205781357,
+  "final_relative_l2": 7.848034511382475e-05,
+  "reference": "Independent Cole-Hopf Gauss-Hermite, 257 x 65 uniform evaluation grid",
+  "reference_256_vs_512_max_abs": 1.3877787807814457e-15,
+  "history": [
+    {
+      "attempt": 1,
+      "relative_l2": 1.0903698731706188,
+      "seconds": 28.117663282000194,
+      "accepted": 1,
+      "radius": 3.0
+    },
+    {
+      "attempt": 2,
+      "relative_l2": 1.0903698731706188,
+      "seconds": 33.154183312999976,
+      "accepted": 1,
+      "radius": 1.0
+    },
+    {
+      "attempt": 3,
+      "relative_l2": 0.8695172925955528,
+      "seconds": 38.229336504,
+      "accepted": 2,
+      "radius": 2.8621848146378364
+    },
+    {
+      "attempt": 4,
+      "relative_l2": 0.5584128040090006,
+      "seconds": 42.71649240800025,
+      "accepted": 3,
+      "radius": 4.663755099320147
+    },
+    {
+      "attempt": 5,
+      "relative_l2": 0.5584128040090006,
+      "seconds": 47.439583813000354,
+      "accepted": 3,
+      "radius": 1.5545850331067157
+    },
+    {
+      "attempt": 6,
+      "relative_l2": 0.5584128040090006,
+      "seconds": 52.47743721699999,
+      "accepted": 3,
+      "radius": 0.5181950110355719
+    },
+    {
+      "attempt": 7,
+      "relative_l2": 0.540061728324949,
+      "seconds": 57.518503363000036,
+      "accepted": 4,
+      "radius": 1.5545850331067155
+    },
+    {
+      "attempt": 8,
+      "relative_l2": 0.540061728324949,
+      "seconds": 62.57681582000032,
+      "accepted": 4,
+      "radius": 0.5181950110355719
+    },
+    {
+      "attempt": 9,
+      "relative_l2": 0.45350427408826405,
+      "seconds": 66.74615056900029,
+      "accepted": 5,
+      "radius": 1.5545850331067155
+    },
+    {
+      "attempt": 10,
+      "relative_l2": 0.41409975099851626,
+      "seconds": 71.8222897970004,
+      "accepted": 6,
+      "radius": 1.0619231452991218
+    },
+    {
+      "attempt": 11,
+      "relative_l2": 0.41409975099851626,
+      "seconds": 76.60703901000034,
+      "accepted": 6,
+      "radius": 0.3539743817663739
+    },
+    {
+      "attempt": 12,
+      "relative_l2": 0.35052134113006833,
+      "seconds": 80.4365573910004,
+      "accepted": 7,
+      "radius": 1.0619231452991218
+    },
+    {
+      "attempt": 13,
+      "relative_l2": 0.35052134113006833,
+      "seconds": 85.3615588370003,
+      "accepted": 7,
+      "radius": 0.3539743817663739
+    },
+    {
+      "attempt": 14,
+      "relative_l2": 0.25476726173287356,
+      "seconds": 90.40392519700026,
+      "accepted": 8,
+      "radius": 1.0084077208799034
+    },
+    {
+      "attempt": 15,
+      "relative_l2": 0.25476726173287356,
+      "seconds": 95.4588380260002,
+      "accepted": 8,
+      "radius": 0.3361359069599678
+    },
+    {
+      "attempt": 16,
+      "relative_l2": 0.12105134598456498,
+      "seconds": 100.1937461460002,
+      "accepted": 9,
+      "radius": 0.9211844632539622
+    },
+    {
+      "attempt": 17,
+      "relative_l2": 0.12105134598456498,
+      "seconds": 104.42806879099999,
+      "accepted": 9,
+      "radius": 0.30706148775132075
+    },
+    {
+      "attempt": 18,
+      "relative_l2": 0.05667805610091064,
+      "seconds": 109.043545946,
+      "accepted": 10,
+      "radius": 0.9211844632539623
+    },
+    {
+      "attempt": 19,
+      "relative_l2": 0.05642697312729651,
+      "seconds": 113.3353382930004,
+      "accepted": 11,
+      "radius": 1.4307594018076915
+    },
+    {
+      "attempt": 20,
+      "relative_l2": 0.05642697312729651,
+      "seconds": 116.99333919000037,
+      "accepted": 11,
+      "radius": 0.47691980060256384
+    },
+    {
+      "attempt": 21,
+      "relative_l2": 0.04133020000453671,
+      "seconds": 121.58733890700023,
+      "accepted": 12,
+      "radius": 1.4307594018076915
+    },
+    {
+      "attempt": 22,
+      "relative_l2": 0.04133020000453671,
+      "seconds": 125.36533695100024,
+      "accepted": 12,
+      "radius": 0.47691980060256384
+    },
+    {
+      "attempt": 23,
+      "relative_l2": 0.05090246349620896,
+      "seconds": 130.5786050710003,
+      "accepted": 13,
+      "radius": 1.3808246787270613
+    },
+    {
+      "attempt": 24,
+      "relative_l2": 0.05090246349620896,
+      "seconds": 134.59634509600028,
+      "accepted": 13,
+      "radius": 0.4602748929090204
+    },
+    {
+      "attempt": 25,
+      "relative_l2": 0.05090246349620896,
+      "seconds": 139.0953836460003,
+      "accepted": 13,
+      "radius": 0.1534249643030068
+    },
+    {
+      "attempt": 26,
+      "relative_l2": 0.007541118291959916,
+      "seconds": 144.14044113299997,
+      "accepted": 14,
+      "radius": 0.4602748929090204
+    },
+    {
+      "attempt": 27,
+      "relative_l2": 0.005228724501424469,
+      "seconds": 148.19819294100034,
+      "accepted": 15,
+      "radius": 0.6372192429706652
+    },
+    {
+      "attempt": 28,
+      "relative_l2": 0.005228724501424469,
+      "seconds": 153.28133826900012,
+      "accepted": 15,
+      "radius": 0.2124064143235551
+    },
+    {
+      "attempt": 29,
+      "relative_l2": 0.00508386341028426,
+      "seconds": 157.25139520100038,
+      "accepted": 16,
+      "radius": 0.6372192429706652
+    },
+    {
+      "attempt": 30,
+      "relative_l2": 0.00508386341028426,
+      "seconds": 161.90245628000002,
+      "accepted": 16,
+      "radius": 0.2124064143235551
+    },
+    {
+      "attempt": 31,
+      "relative_l2": 0.00508386341028426,
+      "seconds": 166.76494592000017,
+      "accepted": 16,
+      "radius": 0.0708021381078517
+    },
+    {
+      "attempt": 32,
+      "relative_l2": 0.0009972931628073774,
+      "seconds": 171.109562439,
+      "accepted": 17,
+      "radius": 0.21240641432355511
+    },
+    {
+      "attempt": 33,
+      "relative_l2": 0.0009972931628073774,
+      "seconds": 176.07889569500003,
+      "accepted": 17,
+      "radius": 0.0708021381078517
+    },
+    {
+      "attempt": 34,
+      "relative_l2": 0.0005716756088625559,
+      "seconds": 181.1507373620002,
+      "accepted": 18,
+      "radius": 0.21240641432355511
+    },
+    {
+      "attempt": 35,
+      "relative_l2": 0.0005716756088625559,
+      "seconds": 186.19506350600022,
+      "accepted": 18,
+      "radius": 0.0708021381078517
+    },
+    {
+      "attempt": 36,
+      "relative_l2": 0.0005456083387518049,
+      "seconds": 191.0151928800001,
+      "accepted": 19,
+      "radius": 0.1173071726637689
+    },
+    {
+      "attempt": 37,
+      "relative_l2": 0.0005456083387518049,
+      "seconds": 195.475918955,
+      "accepted": 19,
+      "radius": 0.039102390887922965
+    },
+    {
+      "attempt": 38,
+      "relative_l2": 0.0003763234073375727,
+      "seconds": 200.5266200850001,
+      "accepted": 20,
+      "radius": 0.1173071726637689
+    },
+    {
+      "attempt": 39,
+      "relative_l2": 0.0003763234073375727,
+      "seconds": 205.55862983400039,
+      "accepted": 20,
+      "radius": 0.039102390887922965
+    },
+    {
+      "attempt": 40,
+      "relative_l2": 0.0003255117720548603,
+      "seconds": 210.6014473690002,
+      "accepted": 21,
+      "radius": 0.1173071726637689
+    },
+    {
+      "attempt": 41,
+      "relative_l2": 0.0003425563082251773,
+      "seconds": 215.52742024200006,
+      "accepted": 22,
+      "radius": 0.14161821206437303
+    },
+    {
+      "attempt": 42,
+      "relative_l2": 0.0003425563082251773,
+      "seconds": 220.41590076900002,
+      "accepted": 22,
+      "radius": 0.047206070688124345
+    },
+    {
+      "attempt": 43,
+      "relative_l2": 0.00039080240648350527,
+      "seconds": 224.97719540100024,
+      "accepted": 23,
+      "radius": 0.14161821206437303
+    },
+    {
+      "attempt": 44,
+      "relative_l2": 0.00039080240648350527,
+      "seconds": 230.0228925020001,
+      "accepted": 23,
+      "radius": 0.047206070688124345
+    },
+    {
+      "attempt": 45,
+      "relative_l2": 0.00039080240648350527,
+      "seconds": 235.07490074500038,
+      "accepted": 23,
+      "radius": 0.01573535689604145
+    },
+    {
+      "attempt": 46,
+      "relative_l2": 0.00021610626817915207,
+      "seconds": 240.12595001199998,
+      "accepted": 24,
+      "radius": 0.04720607068812435
+    },
+    {
+      "attempt": 47,
+      "relative_l2": 0.00016327541771628268,
+      "seconds": 245.16007780000018,
+      "accepted": 25,
+      "radius": 0.04737391160826313
+    },
+    {
+      "attempt": 48,
+      "relative_l2": 0.0001741821696084668,
+      "seconds": 250.2130785100003,
+      "accepted": 26,
+      "radius": 0.10620488109385612
+    },
+    {
+      "attempt": 49,
+      "relative_l2": 0.0001853585059115546,
+      "seconds": 255.25129784400042,
+      "accepted": 27,
+      "radius": 0.08267567404283678
+    },
+    {
+      "attempt": 50,
+      "relative_l2": 0.0001853585059115546,
+      "seconds": 260.085402403,
+      "accepted": 27,
+      "radius": 0.027558558014278926
+    },
+    {
+      "attempt": 51,
+      "relative_l2": 0.00020317944513626417,
+      "seconds": 263.8082858380003,
+      "accepted": 28,
+      "radius": 0.08267567404283677
+    },
+    {
+      "attempt": 52,
+      "relative_l2": 0.00020652761790978903,
+      "seconds": 268.38324152500036,
+      "accepted": 29,
+      "radius": 0.036556003138067485
+    },
+    {
+      "attempt": 53,
+      "relative_l2": 0.00017368697946966365,
+      "seconds": 272.9087784840003,
+      "accepted": 30,
+      "radius": 0.012185334379355829
+    },
+    {
+      "attempt": 54,
+      "relative_l2": 0.0001351903161231578,
+      "seconds": 277.9410113400004,
+      "accepted": 31,
+      "radius": 0.004061778126451944
+    },
+    {
+      "attempt": 55,
+      "relative_l2": 8.68678497291614e-05,
+      "seconds": 282.7100243060004,
+      "accepted": 32,
+      "radius": 0.0013539260421506472
+    },
+    {
+      "attempt": 56,
+      "relative_l2": 8.68678497291614e-05,
+      "seconds": 287.75765563699997,
+      "accepted": 32,
+      "radius": 0.0004513086807168824
+    },
+    {
+      "attempt": 57,
+      "relative_l2": 8.506513255040609e-05,
+      "seconds": 292.25086770200005,
+      "accepted": 33,
+      "radius": 0.00015043622690562753
+    },
+    {
+      "attempt": 58,
+      "relative_l2": 7.848034511382475e-05,
+      "seconds": 295.5773346140004,
+      "accepted": 34,
+      "radius": 5.0145408968542484e-05
+    }
+  ],
+  "summary": {
+    "attempts": 58,
+    "accepted": 34,
+    "radius": 5.0145408968542484e-05,
+    "target_ratio": 0.5,
+    "converged": true,
+    "weights": {
+      "pde": 0.0389791586378438,
+      "initial": 1.9610208413621562
+    },
+    "last": {
+      "step": 58,
+      "accepted": true,
+      "radius": 5.0145408968542484e-05,
+      "next_radius": 5.0145408968542484e-05,
+      "regularization": 0.09279562160372734,
+      "ratio": 0.13987236746242077,
+      "target_ratio": 0.5,
+      "objective_before": 2.3823078303555445e-08,
+      "objective_after": 2.36979253835817e-08,
+      "weights": {
+        "pde": 0.040970799923600365,
+        "initial": 1.9590292000763996
+      }
+    }
+  },
+  "target_met": false,
+  "probe_interpolation": "Superseded inverse PCHIP with collapsed duplicate ratios",
+  "superseded_reason": "Equal-ratio plateaus could over-select the radius; corrected forward interpolation is evaluated separately."
+}

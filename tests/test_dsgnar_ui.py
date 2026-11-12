@@ -49,6 +49,13 @@ try:
    export=next(n for n in w.scene.nodes() if n.kind=='export');assert w.export_block_data(export,directory/'prediction.csv')
    if key=='dsgnar_burgers':
     export=next(n for n in w.scene.nodes() if n.kind=='paraview');assert w.export_block_data(export,directory/'prediction.pvd')
+ # Earlier format-32 DSGNAR documents gain a zero stage grace in config/nodes.
+ document=capture_model(w);document['config']['dsgnar_settings'].pop('stage_grace')
+ for item in document['nodes']:
+  values=item['settings'].get('parameters',{}).get('dsgnar_settings')
+  if values is not None:values.pop('stage_grace',None)
+ restored,nodes,_=decode_document(document);assert restored.dsgnar_settings['stage_grace']==0
+ assert next(n for n in nodes if n['kind']=='dsgnar_method')['settings']['parameters']['dsgnar_settings']['stage_grace']==0
  # Legacy model 31 gains defaults without changing old recipes.
  document=capture_model(w);document['version']=31;document['config'].pop('dsgnar_settings')
  assert decode_document(document)[0].dsgnar_settings['precision']=='float64'

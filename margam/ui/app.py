@@ -2550,7 +2550,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def dsgnar_settings_fields(self):
         self.property_section('DSGNAR controls')
         from ..components.dsgnar_config import dsgnar_defaults
-        integers={'sketch_size':('Sketch size',1,4096),'hashes':('CountSketch hashes',1,8),'batch_size':('Jacobian batch rows',1,256),'probes':('Radius probes',3,32),'history_window':('Stage-switch history',3,1000),'seed':('Sketch seed',0,2**31-1)}
+        integers={'sketch_size':('Sketch size',1,4096),'hashes':('CountSketch hashes',1,8),'batch_size':('Jacobian batch rows',1,256),'probes':('Radius probes',3,32),'history_window':('Stage-switch history',3,1000),'stage_grace':('Stage-switch grace attempts',0,100000),'seed':('Sketch seed',0,2**31-1)}
         labels={'initial_radius':'Initial radius','min_radius':'Minimum radius','max_radius':'Maximum radius','target_ratio':'First-stage target ratio','stage2_ratio':'Second-stage target ratio','reweight_exponent':'Reweighting exponent'}
         for key in dsgnar_defaults():
             if key=='precision':
@@ -2560,10 +2560,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 widget=QLineEdit(format(self.config.dsgnar_settings[key],'.12g'))
                 widget.editingFinished.connect(lambda w=widget:self.change_dsgnar_radius(w.text()))
             elif key in integers:
-                label,low,high=integers[key];widget=QSpinBox();widget.setRange(low,high);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings[key])
+                label,low,high=integers[key];widget=QSpinBox();widget.setRange(low,high);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings.get(key,0))
                 widget.valueChanged.connect(lambda value,k=key:self.change_dsgnar_setting(k,value))
             else:
-                widget=QDoubleSpinBox();widget.setDecimals(10);widget.setRange(0 if key=='reweight_exponent' else 1e-10,1 if 'ratio' in key or key=='reweight_exponent' else 1e8);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings[key])
+                widget=QDoubleSpinBox();widget.setDecimals(10);widget.setRange(0 if key=='reweight_exponent' else 1e-10,1 if 'ratio' in key or key=='reweight_exponent' else 1e8);widget.setKeyboardTracking(False);widget.setValue(self.config.dsgnar_settings.get(key,0))
                 widget.valueChanged.connect(lambda value,k=key:self.change_dsgnar_setting(k,value))
             widget.setObjectName('dsgnar_'+key);self.form.addRow('Precision' if key=='precision' else integers[key][0] if key in integers else labels[key],widget)
         button=QPushButton('Step diagnostics…');button.clicked.connect(self.show_dsgnar_summary);self.form.addRow(button)

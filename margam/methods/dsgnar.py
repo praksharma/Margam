@@ -87,15 +87,18 @@ def pchip_value(x,y,query):
 
 
 def choose_radius(radii,ratios,target):
-    # Algorithm 3: cumulative minimum of nonnegative ratios. Invert distinct
-    # monotone knots; repeated plateau values select the larger radius.
+    # Fit ratio as a function of log radius: unlike inverse interpolation, this
+    # remains well-defined on equal-ratio plateaus, including clipped negatives.
     safe=torch.cummin(torch.as_tensor(ratios,dtype=torch.float64).clamp_min(0),0).values
     if safe[-1]>=target:return radii[-1]
     if safe[0]<=target:return radii[0]
-    pairs={}
-    for ratio,radius in zip(safe.tolist(),radii):pairs[ratio]=math.log(radius)
-    keys=sorted(pairs);x=torch.tensor(keys,dtype=torch.float64);y=torch.tensor([pairs[k] for k in keys],dtype=torch.float64)
-    return min(radii[-1],max(radii[0],math.exp(pchip_value(x,y,target))))
+    knots=torch.tensor([math.log(radius) for radius in radii],dtype=torch.float64)
+    low=knots[0].item();high=knots[-1].item()
+    for _ in range(60):
+        middle=(low+high)/2
+        if pchip_value(knots,safe,middle)>=target:low=middle
+        else:high=middle
+    return math.exp((low+high)/2)
 
 
 def reweight(weights,losses,alpha):
@@ -109,7 +112,7 @@ def reweight(weights,losses,alpha):
 
 def next_ratio(history,settings,current):
     count=settings['history_window']
-    if current==settings['stage2_ratio'] or len(history)<count:return current
+    if current==settings['stage2_ratio'] or len(history)<count or len(history)<=settings.get('stage_grace',0):return current
     y=torch.tensor([math.log(max(v,1e-30)) for v in history[-count:]],dtype=torch.float64)
     x=torch.arange(count,dtype=y.dtype);x=x-x.mean();y=y-y.mean()
     slope=(x@y)/(x@x);denom=torch.linalg.vector_norm(x)*torch.linalg.vector_norm(y)
@@ -124,6 +127,8 @@ class DSGNARPINN(PINN):
         self.configuration=deepcopy(configuration or {})
         for key in ('iterations','device'):self.configuration.pop(key,None)
         self.settings=deepcopy(dsgnar_defaults() if settings is None else settings)
+        self.settings.setdefault('stage_grace',0)
+        if isinstance(self.configuration.get('dsgnar_settings'),dict):self.configuration['dsgnar_settings'].setdefault('stage_grace',0)
         validate_dsgnar_settings(self.settings)
 
     def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):

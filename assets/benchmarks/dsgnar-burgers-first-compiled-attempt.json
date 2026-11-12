@@ -627,5 +627,7 @@
   },
   "target_met": false,
   "status": "completed before consistent baseline/probe objective batching fix",
-  "solver_implementation": "Initial compiled Jacobian path, generic probes; no paper target match."
+  "solver_implementation": "Initial compiled Jacobian path, generic probes; no paper target match.",
+  "probe_interpolation": "Superseded inverse PCHIP with collapsed duplicate ratios",
+  "superseded_reason": "Equal-ratio plateaus could over-select the radius; corrected forward interpolation is evaluated separately."
 }

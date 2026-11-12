@@ -673,3 +673,13 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   upstream throughput; retain tested mathematical and continuation checks.
 - [ ] Extend DSGNAR to imported samples, coupled fields or time marching only
   with concrete workflows and continuation tests.
+
+- [x] Correct DSGNAR's equal-ratio probe plateaus, independently check PCHIP roots,
+  and retain a full-sampling float32 Burgers checkpoint below the reported error
+  threshold with independent CPU/GPU inference checks.
+- [ ] Expose the validated periodic benchmark embedding/IC-only graph as a native
+  example only after its explicit network/condition contracts are supported.
+  The current native DSGNAR Burgers preset is the Dirichlet variation.
+- [ ] Profile/fuse more of DSGNAR's sketch/probe loop before claiming parity with
+  the authors' compiled-JAX/H100 runtime. The numerical threshold was matched;
+  the speed and complete evaluation protocol were not.

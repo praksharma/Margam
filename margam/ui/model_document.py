@@ -58,6 +58,7 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<32:
         from ..components.dsgnar_config import dsgnar_defaults
         c=dict(c,dsgnar_settings=c.get('dsgnar_settings',dsgnar_defaults()))
+    if isinstance(c,dict) and isinstance(c.get('dsgnar_settings'),dict):c=dict(c,dsgnar_settings=dict(c['dsgnar_settings'],stage_grace=c['dsgnar_settings'].get('stage_grace',0)))
     from ..components.dsgnar_config import validate_dsgnar_settings
     validate_dsgnar_settings(c.get('dsgnar_settings',{}) if isinstance(c,dict) else {})
     from ..components.inverse_config import validate_inverse_settings
@@ -123,6 +124,11 @@ def decode_document(data):
     values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']))
     config = PoissonConfig(**values)
     nodes, wires = deepcopy(data['nodes']), deepcopy(data['wires'])
+    for item in nodes if isinstance(nodes,list) else []:
+        if isinstance(item,dict) and item.get('kind') in ('dsgnar_method','dsgnar_recipe'):
+            container=item.get('settings',{})
+            parameters=container.get('parameters',{}) if isinstance(container,dict) else {}
+            if isinstance(parameters,dict) and isinstance(parameters.get('dsgnar_settings'),dict):parameters['dsgnar_settings'].setdefault('stage_grace',0)
     require(isinstance(nodes,list) and len(nodes) <= 2000, 'Invalid block list (maximum 2000).')
     require(isinstance(wires,list) and len(wires) <= 10000, 'Invalid wire list (maximum 10000).')
     by_id = {}

@@ -5,12 +5,13 @@ import math
 def dsgnar_defaults():
     return dict(sketch_size=32,hashes=4,batch_size=16,probes=8,initial_radius=1.,
                 min_radius=1e-8,max_radius=1000.,target_ratio=.075,stage2_ratio=.5,
-                reweight_exponent=.05,history_window=30,precision='float64',seed=7)
+                reweight_exponent=.05,history_window=30,stage_grace=0,precision='float64',seed=7)
 
 
 def validate_dsgnar_settings(s):
+    if isinstance(s,dict) and 'stage_grace' not in s:s=dict(s,stage_grace=0)
     if not isinstance(s,dict) or set(s)!=set(dsgnar_defaults()):raise ValueError('Incomplete DSGNAR settings.')
-    for key,lo,hi in [('sketch_size',1,4096),('hashes',1,8),('batch_size',1,256),('probes',3,32),('history_window',3,1000),('seed',0,2**31-1)]:
+    for key,lo,hi in [('sketch_size',1,4096),('hashes',1,8),('batch_size',1,256),('probes',3,32),('history_window',3,1000),('stage_grace',0,100000),('seed',0,2**31-1)]:
         if type(s[key]) is not int or not lo<=s[key]<=hi:raise ValueError(f'DSGNAR {key} must be an integer between {lo} and {hi}.')
     for key in ('initial_radius','min_radius','max_radius','target_ratio','stage2_ratio','reweight_exponent'):
         if type(s[key]) not in (int,float) or not math.isfinite(s[key]):raise ValueError('DSGNAR controls must be finite numbers.')

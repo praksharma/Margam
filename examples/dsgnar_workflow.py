@@ -65,7 +65,7 @@ def main():
                     export_verified=True,raw_final_mse=raw,**summary))
                 if args.screenshot and key=='dsgnar_poisson_1d':
                     trainer=next(n for n in w.scene.nodes() if n.kind=='dsgnar_method')
-                    w.resize(1650,1050);w.show();w.show_block_properties(trainer);w.fit_model();app.processEvents()
+                    w.resize(1850,1100);w.properties_dock.setMinimumWidth(550);w.show();w.show_block_properties(trainer);w.fit_model();app.processEvents()
                     for cls in (QLabel,QLineEdit,QPlainTextEdit):
                         for child in w.findChildren(cls):
                             if child.isVisible():validate_public_text(child.toPlainText() if isinstance(child,QPlainTextEdit) else child.text(),'DSGNAR workflow capture')

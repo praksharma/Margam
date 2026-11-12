@@ -11,7 +11,12 @@ def validate_state(state,settings,initial_weights,configuration=None):
     def number(value):return type(value) in (int,float) and math.isfinite(value)
     payload=state.get('dsgnar') if isinstance(state,dict) else None
     fields={'version','settings','initial_weights','weights','radius','target_ratio','generator','diagnostics','lambda_history','converged','configuration'}
-    require(isinstance(payload,dict) and set(payload)==fields and payload['version']==1)
+    require(isinstance(payload,dict) and set(payload)==fields and type(payload['version']) is int and payload['version']==1)
+    payload=deepcopy(payload)
+    if isinstance(payload.get('settings'),dict):payload['settings'].setdefault('stage_grace',0)
+    if isinstance(payload.get('configuration'),dict) and isinstance(payload['configuration'].get('dsgnar_settings'),dict):payload['configuration']['dsgnar_settings'].setdefault('stage_grace',0)
+    if isinstance(configuration,dict) and isinstance(configuration.get('dsgnar_settings'),dict):
+        configuration=deepcopy(configuration);configuration['dsgnar_settings'].setdefault('stage_grace',0)
     validate_dsgnar_settings(payload['settings'])
     require(payload['settings']==settings and payload['initial_weights']==initial_weights,'DSGNAR settings/initial coefficients differ from this checkpoint.')
     if configuration is not None:require(payload['configuration']==configuration,'DSGNAR physics/configuration differs from this checkpoint.')
@@ -35,7 +40,7 @@ def validate_state(state,settings,initial_weights,configuration=None):
     require(isinstance(loss_history,list) and len(loss_history)==count and isinstance(totals,list) and len(totals)==count)
     for index,(row,record) in enumerate(zip(history,loss_history)):
         require(isinstance(row,dict) and set(row)=={'step','accepted','radius','next_radius','regularization','ratio','target_ratio','objective_before','objective_after','weights'})
-        require(row['step']==index+1 and type(row['accepted']) is bool and weights(row['weights']) and row['weights']==expected_weights)
+        require(type(row['step']) is int and row['step']==index+1 and type(row['accepted']) is bool and weights(row['weights']) and row['weights']==expected_weights)
         require(all(number(row[key]) for key in ('radius','next_radius','regularization','ratio','target_ratio','objective_before','objective_after')))
         require(row['regularization']==lambdas[index] and row['regularization']>=0 and row['target_ratio']==ratio)
         require(0<row['radius']<=settings['max_radius'] and row['next_radius']==(row['radius'] if row['accepted'] else radius/3))

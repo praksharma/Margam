@@ -41,6 +41,17 @@ class AccuracyReferenceTests(unittest.TestCase):
                 torch.testing.assert_close(ja,jb,atol=1e-12,rtol=1e-12)
                 torch.testing.assert_close(ra,rb,atol=1e-13,rtol=1e-13)
 
+    @unittest.skipUnless(importlib.util.find_spec('scipy'),'Optional SciPy interpolation oracle required')
+    def test_forward_probe_crossing_matches_independent_pchip_oracle(self):
+        from scipy.interpolate import PchipInterpolator
+        from scipy.optimize import brentq
+        from margam.methods.dsgnar import choose_radius
+        for ratios,target in [([.9,.3,-1.,-2.],.075),([.9,.5,.5,.1],.7),([.9,.5,.5,.1],.3)]:
+            radii=[1.,2.,4.,8.];knots=np.log(radii);safe=np.minimum.accumulate(np.maximum(ratios,0.))
+            curve=PchipInterpolator(knots,safe)
+            expected=np.exp(brentq(lambda x:curve(x)-target,knots[0],knots[-1],xtol=1e-14))
+            self.assertAlmostEqual(choose_radius(radii,ratios,target),expected,places=12)
+
     @unittest.skipUnless(importlib.util.find_spec('scipy'),'Optional SciPy reference quadrature required')
     def test_cole_hopf_initial_periodic_quadrature_and_pde(self):
         x=np.linspace(-1,1,101);points=np.column_stack((x,np.zeros_like(x)))

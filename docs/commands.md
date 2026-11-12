@@ -531,3 +531,13 @@ The optional Burgers reference requires SciPy. `--resume` restores the same
 backend/data trajectory; `--warm-start` explicitly loads weights only. Use
 `--help` for budgets and profiling. These scripts do not publish or change the
 root environment. See [accuracy scope and differences](dsgnar.md#accuracy-experiments).
+
+Reload the retained periodic Burgers benchmark model without training:
+
+```bash
+python -m examples.evaluate_dsgnar_burgers build/dsgnar-accuracy/burgers-target.pt --device cuda --csv build/dsgnar-accuracy/burgers-target.csv
+```
+
+The achieved run uses zero explicit grace (`--stage-grace 0`), with its first
+stage-two attempt at 102; replay confirms equivalence to an 80-attempt grace.
+The native trained Poisson archive is `build/dsgnar-accuracy/poisson.margam-run.pt`.

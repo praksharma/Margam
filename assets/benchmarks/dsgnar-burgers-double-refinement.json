@@ -292,5 +292,7 @@
       }
     }
   },
-  "target_met": false
+  "target_met": false,
+  "probe_interpolation": "Superseded inverse PCHIP with collapsed duplicate ratios",
+  "superseded_reason": "Equal-ratio plateaus could over-select the radius; corrected forward interpolation is evaluated separately."
 }

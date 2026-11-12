@@ -78,12 +78,17 @@ class DSGNARTests(unittest.TestCase):
         self.assertEqual(choose_radius([1.,2.,4.],[.9,.8,.7],.5),4.)
         self.assertEqual(choose_radius([1.,2.,4.],[-1.,.8,.7],.5),1.)
         chosen=choose_radius([1.,2.,4.,8.],[.9,.5,.5,.1],.3);self.assertTrue(4<chosen<8)
+        self.assertTrue(2<choose_radius([1.,2.,4.,8.],[.9,.3,-1.,-2.],.075)<4)
+        self.assertTrue(1<choose_radius([1.,2.,4.,8.],[.9,.5,.5,.1],.7)<2)
         weights=reweight(dict(a=1.,b=1.),dict(a=4.,b=1.),.5)
         self.assertAlmostEqual(sum(weights.values()),2);self.assertLess(weights['a'],weights['b'])
         self.assertEqual(reweight(dict(a=2.,b=1.),dict(a=0.,b=0.),.05),dict(a=2.,b=1.))
         s=dsgnar_defaults();s['history_window']=3
         self.assertEqual(next_ratio([.1,1.,10.],s,.075),.5)
         self.assertEqual(next_ratio([10.,1.,.1],s,.075),.075)
+        s['stage_grace']=5
+        self.assertEqual(next_ratio([.1,1.,10.],s,.075),.075)
+        self.assertEqual(next_ratio([.001,.01,.1,1.,10.,100.],s,.075),.5)
 
     def test_linear_problem_acceptance_and_no_adam_updates(self):
         net=torch.nn.Linear(1,1,bias=False).double();net.weight.data.zero_()
@@ -162,6 +167,8 @@ class DSGNARTests(unittest.TestCase):
                        lambda s:s['dsgnar'].update(generator=torch.zeros(1,dtype=torch.uint8)),lambda s:s['loss_history'][0].update(total=999.)):
             state=deepcopy(snapshot);mutate(state)
             with self.assertRaises(ValueError):build_pinn(c).load_training_state(state)
+        legacy=deepcopy(snapshot);legacy['dsgnar']['settings'].pop('stage_grace');legacy['dsgnar']['configuration']['dsgnar_settings'].pop('stage_grace')
+        build_pinn(c).load_training_state(legacy)
         changed=deepcopy(c);changed.source=3.
         with self.assertRaises(ValueError):build_pinn(changed).load_training_state(snapshot)
 

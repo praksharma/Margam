@@ -1,0 +1,15 @@
+{
+  "scope": "Fresh-process checkpoint inference, independently evaluated; no optimizer updates or full protocol/runtime reproduction claim.",
+  "checkpoint": "burgers-target.pt",
+  "checkpoint_sha256": "ef057b7d08c2a335351fa6a79189f88334ba504da39226b179d768a2b6ebc360",
+  "device": "cpu",
+  "precision": "float32",
+  "attempts": 127,
+  "evaluation_rows": 16705,
+  "relative_l2": 2.5481623592522055e-07,
+  "reported_single_precision_threshold": 4.75e-07,
+  "threshold_met": true,
+  "no_updates": true,
+  "stage_grace_80_replay_equivalent": true,
+  "first_stage2_attempt": 102
+}

@@ -21,70 +21,71 @@
     "stage2_ratio": 0.5,
     "reweight_exponent": 0.0,
     "history_window": 30,
+    "stage_grace": 0,
     "precision": "float64",
     "seed": 7
   },
-  "attempts": 68,
-  "seconds": 15.032692507999855,
-  "relative_l2": 2.999688553607422e-08,
+  "attempts": 74,
+  "seconds": 13.383258906000265,
+  "relative_l2": 5.5122423423872164e-09,
   "history": [
     {
       "attempt": 10,
-      "relative_l2": 0.06263757031445309,
-      "seconds": 3.7014719779999723
+      "relative_l2": 0.8158382535529669,
+      "seconds": 1.7158085549999669
     },
     {
       "attempt": 20,
-      "relative_l2": 0.28828240192200616,
-      "seconds": 6.234583948999898
+      "relative_l2": 0.3234321093104055,
+      "seconds": 3.4780221680002796
     },
     {
       "attempt": 30,
-      "relative_l2": 0.010399826421727904,
-      "seconds": 8.167179253000086
+      "relative_l2": 0.003351331039074353,
+      "seconds": 5.203663176999726
     },
     {
       "attempt": 40,
-      "relative_l2": 2.801690739768856e-06,
-      "seconds": 9.993828898000174
+      "relative_l2": 0.00027538196955436333,
+      "seconds": 6.9682268120004665
     },
     {
       "attempt": 50,
-      "relative_l2": 5.6610829944180504e-08,
-      "seconds": 11.811132616000123
+      "relative_l2": 0.00017436018913617797,
+      "seconds": 8.78841004900005
     },
     {
       "attempt": 60,
-      "relative_l2": 2.020373169097561e-08,
-      "seconds": 13.603033678999964
+      "relative_l2": 6.913001429532219e-06,
+      "seconds": 10.78324281300047
     },
     {
-      "attempt": 68,
-      "relative_l2": 2.999688553607422e-08,
-      "seconds": 15.032657691000168
+      "attempt": 70,
+      "relative_l2": 2.2977754351839407e-08,
+      "seconds": 12.670878951999839
     }
   ],
   "summary": {
-    "attempts": 68,
-    "accepted": 32,
-    "radius": 5.22582835947359e-13,
+    "attempts": 74,
+    "accepted": 45,
+    "radius": 5.7181521407663776e-05,
     "target_ratio": 0.5,
-    "converged": true,
+    "converged": false,
     "weights": {
       "pde": 1.0,
       "left": 0.5,
       "right": 0.5
     },
     "last": {
-      "step": 68,
+      "step": 74,
       "accepted": true,
-      "radius": 5.22582835947359e-13,
-      "next_radius": 5.22582835947359e-13,
-      "regularization": 227372.93464487718,
-      "ratio": 0.2403881631016959,
+      "radius": 5.7181521407663776e-05,
+      "next_radius": 5.7181521407663776e-05,
+      "regularization": 1.9813632538522082e-10,
+      "ratio": 0.24885416914021383,
       "target_ratio": 0.5,
-      "objective_before": 1.2261310376540376e-13,
-      "objective_after": 1.226130739092152e-13,
+      "objective_before": 1.2134660401991662e-15,
+      "objective_after": 1.2034089024231726e-15,
       "weights": {
         "pde": 1.0,
         "left": 0.5,

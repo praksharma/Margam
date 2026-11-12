@@ -69,6 +69,7 @@ an unresponsive job using the existing [job lifecycle](use/isolated-jobs.md).
 | Initial / minimum / maximum radius | Starting norm bound, stopping threshold and probe upper bound. |
 | First / second target ratio | Desired actual/predicted reduction ratio in the two stages. |
 | Reweighting exponent | Residual-balancing strength; zero disables balancing. Positive values normalize updated weights to mean one. |
+| Stage-switch grace attempts | Wait before testing the lambda trend. Zero follows the displayed algorithm; the reference training defaults use 80 attempts. |
 | Stage-switch history | Recent lambda window; log slope above `1e-4` and correlation above `0.1` trigger stage two. |
 | Precision | Explicit float32 or float64 for the network, residuals, Jacobians and SVD. |
 | Sketch seed | Dedicated CPU generator, separate from network and sampling seeds. |
@@ -161,8 +162,10 @@ The inspected sources contain ambiguities worth making explicit:
   iterations), rather than unconstrained Newton iteration from zero. Exactly zero
   singular directions have zero coefficient; a feasible unregularized step uses
   lambda zero.
-- PCHIP interpolates log radius against distinct monotone ratio knots, using the
-  larger radius on a repeated plateau. All conditions/probes include every row.
+- PCHIP fits the non-increasing ratio against log radius and its crossing is
+  found by bisection. Equal-ratio plateaus remain intact. Inverse interpolation
+  with collapsed duplicate knots was found to overstep negative-ratio plateaus
+  and was corrected; its exploratory accuracy records remain labelled separately. All conditions/probes include every row.
   Probes run sequentially; sorted segmented CountSketch reductions avoid CUDA atomic
   scatter nondeterminism. Parameter Jacobians use batched reverse-mode gradients.
 - Reweighting uses weighted per-condition mean-square contributions (the squared
@@ -207,7 +210,11 @@ The paper's fast Burgers case is **periodic**, with `nu=0.01`, rather than the
 original PINN Dirichlet example's `nu=0.01/pi`. The separate research benchmark
 implements the paper's six 16-wide tanh layers, six learned activation scales
 (1,447 parameters), periodic `(cos(pi*x),sin(pi*x),t)` embedding, sketch 700 and
-32,768 PDE / 16,384 initial rows. Earlier recorded attempts start biases at zero. The later reference-initialisation
+32,768 PDE / 16,384 initial rows. The benchmark command now defaults to the reference training configuration's
+80-attempt stage-switch grace period. The retained successful run used the
+displayed algorithm's zero-grace setting; its stage switch occurred after 80
+attempts and independent replay verifies that an 80-attempt grace produces the
+same realised decisions. Earlier recorded attempts start biases at zero. The later reference-initialisation
 comparison uses Gaussian bias noise with standard deviation `0.01`, as observed
 in the pinned authors' code; random generators still differ from JAX. It uses an independent
 Cole–Hopf heat-convolution reference, evaluated by Gauss–Hermite quadrature.
@@ -216,7 +223,7 @@ Tests check the initial field, periodicity, PDE consistency and quadrature
 convergence. No upstream reference data are used.
 
 ```bash
-python -m examples.dsgnar_accuracy --device cuda --functional --compile-functional --output assets/benchmarks/dsgnar-burgers-paper-attempt.json --checkpoint build/dsgnar-accuracy/burgers.pt
+python -m examples.dsgnar_accuracy --device cuda --functional --compile-functional --stage-grace 0 --output build/dsgnar-accuracy/repeated-run.json --checkpoint build/dsgnar-accuracy/repeated-run.pt
 ```
 
 The functional/compiled path is specific to this research benchmark. It shares
@@ -229,7 +236,7 @@ requires that identity and the fixed data to match. `--warm-start` explicitly
 loads weights only and resets the optimizer trajectory. Neither operation is a
 silent cross-backend exact-continuation claim.
 
-The [full-sampling accuracy attempt](../assets/benchmarks/dsgnar-burgers-paper-attempt.json)
+The [corrected full-sampling accuracy run](../assets/benchmarks/dsgnar-burgers-forward-probes.json)
 records whether it reaches the paper's `4.75e-7` single-precision relative L2
 threshold. Its independent uniform 257×65 evaluation grid differs from the
 authors' reference-grid protocol, so even meeting that threshold alone is not a
@@ -248,3 +255,47 @@ single-precision paper matches. The `bias_noise` field records the initialisatio
 choice in newer accuracy reports. Research benchmark checkpoint identities are
 versioned as these pre-release experimental paths change; weights-only warm
 starts are explicit and are not passed off as exact continuation.
+
+### Achieved errors after correcting probe interpolation
+
+| Case | Precision | Attempts | Relative L2 error | Measured wall time |
+| --- | --- | ---: | ---: | ---: |
+| Poisson, independent 1,001-point analytical check | float64 | 74 | 5.512e-09 | 13.4 s |
+| Periodic Burgers, full sampling, independent 257×65 grid | float32 | 127 | 2.558e-07 | 624.4 s |
+
+The corrected Burgers run first crosses the paper's `4.75e-7` single-precision
+threshold at attempt **123**, and stops normally at attempt **127** when its
+radius falls below `1e-4`. The second stage first applies at attempt **102**;
+replaying the complete lambda history confirms that the reference's 80-attempt
+grace would not have changed any realised stage decision. No reference values
+enter the training objective or acceptance rule.
+
+**This matches the reported numerical error threshold on an independent grid,
+not a complete paper-protocol or speed reproduction.** The paper reports 9.8 s
+on an H100 with its compiled JAX implementation; this run takes about 624 s on an
+RTX 3060 Laptop GPU, including compilation and per-attempt validation. Other
+validation jobs also ran during development, so this is not a controlled speed
+comparison. Bias noise matches the inspected code, but RNG streams, parameter
+ordering, interpolation details and the evaluation grid differ.
+
+The retained checkpoint reloads without optimization on
+[GPU](../assets/benchmarks/dsgnar-burgers-reloaded-cuda.json) and
+[CPU](../assets/benchmarks/dsgnar-burgers-reloaded-cpu.json), measuring
+`2.558e-7` and `2.548e-7` respectively. The
+[retained snapshot](../assets/benchmarks/dsgnar-burgers-target-checkpoint.json)
+records its selection and original configuration. The benchmark-specific
+periodic network currently uses the research path; the native menu's Burgers
+example remains the explicitly documented original-PINN Dirichlet variation.
+
+Reload the retained local model and optionally export its physical `(x,t,u)` rows:
+
+```bash
+python -m examples.evaluate_dsgnar_burgers build/dsgnar-accuracy/burgers-target.pt --device cuda --csv build/dsgnar-accuracy/burgers-target.csv
+python -m examples.evaluate_dsgnar_burgers build/dsgnar-accuracy/burgers-target.pt --device cpu
+```
+
+The trained Poisson result can be opened directly through **File → Open saved
+run** using `build/dsgnar-accuracy/poisson.margam-run.pt`; its model document is
+`build/dsgnar-accuracy/poisson.margam.json`. Generated weights/exports stay local
+under the ignored `build` folder. The public JSON records and commands retain the
+configuration and evidence needed to repeat the experiments.

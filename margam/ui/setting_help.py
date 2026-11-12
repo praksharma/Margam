@@ -157,7 +157,7 @@ class HelpFormLayout(QFormLayout):
 
 HELP.update({
  'dsgnar_attempts':'Maximum DSGNAR attempted steps, including rejected proposals. Minimum-radius termination may stop earlier. Resume continues the saved radius, condition weights, stage and sketch random state. This is not an epoch or an accuracy tolerance.',
- 'dsgnar_sketch_size':'Rows and columns of the square compressed Jacobian. Capped at the trainable parameter count during execution. SVD time and workspace grow with this value; it is not the number of samples.',
+ 'dsgnar_sketch_size':'Rows and columns of the square compressed Jacobian. Capped at the trainable parameter count during execution. SVD time and workspace grow with this value; it is not the number of samples. CUDA sketches of size at most 128 use a stable CPU SVD/step solve; network and PDE evaluation stay on the selected device.',
  'dsgnar_hashes':'Independent signed CountSketch hashes per residual, scaled by one over the square root of this count. Conditions share the sketch buckets.',
  'dsgnar_batch_size':'Maximum point rows in one residual/Jacobian batch. The full Jacobian is never stored. All remainder rows are included; larger values increase derivative workspace.',
  'dsgnar_probes':'Number of geometrically spaced trust-region radii evaluated around the current radius, from radius/3 to 3*radius, capped by the maximum. Each probe evaluates all fixed conditions.',
@@ -167,6 +167,7 @@ HELP.update({
  'dsgnar_target_ratio':'First-stage target for actual reduction divided by sketched-model predicted reduction. Smaller targets favor exploration with less regularization.',
  'dsgnar_stage2_ratio':'Larger target used after the log-regularization history has a sustained upward trend. It must exceed the first-stage target and remain below one.',
  'dsgnar_reweight_exponent':'Exponent in residual-based condition balancing. Weighted mean-squared condition contributions determine the update, followed by mean-one weight normalization. Zero disables reweighting.',
+ 'dsgnar_stage_grace':'Minimum attempted-step grace period before checking the lambda trend for a stage switch. Zero follows the displayed paper algorithm; the reference repository uses 80 attempts in its default training configuration.',
  'dsgnar_history_window':'Number of regularization values used for the stage switch. A positive fitted log slope above 1e-4 and correlation above 0.1 trigger the second stage.',
  'dsgnar_precision':'Explicit network, residual, Jacobian and SVD precision. Double precision is the default. This port does not use an automatic mixed-precision warmup.',
  'dsgnar_seed':'Dedicated CPU sketch random generator seed, independent of network and point sampling seeds. Its state is retained for same-device continuation.',

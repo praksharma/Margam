@@ -11,13 +11,13 @@
       "regularization_diagnostic_tolerance": 5e-14,
       "export_verified": true,
       "raw_final_mse": {
-        "pde": 0.903167484463242,
-        "left": 0.0024664745461003786,
-        "right": 0.006002237320434154
+        "pde": 0.2918393807263346,
+        "left": 0.002112368429997267,
+        "right": 0.015329413214695099
       },
       "attempts": 6,
-      "accepted": 2,
-      "radius": 0.1111111111111111,
+      "accepted": 3,
+      "radius": 0.6878672823347627,
       "target_ratio": 0.075,
       "converged": false,
       "weights": {
@@ -27,14 +27,14 @@
       },
       "last": {
         "step": 6,
-        "accepted": false,
-        "radius": 0.9648377760942329,
-        "next_radius": 0.1111111111111111,
-        "regularization": 0.004091031677085282,
-        "ratio": -2.2293974137631327,
+        "accepted": true,
+        "radius": 0.6878672823347627,
+        "next_radius": 0.6878672823347627,
+        "regularization": 0.008392684512787534,
+        "ratio": 0.23716475575435544,
         "target_ratio": 0.075,
         "objective_before": 0.033397333141955254,
-        "objective_after": 0.033397333141955254,
+        "objective_after": 0.028598146255881803,
         "weights": {
           "pde": 0.024347510520971092,
           "left": 1.8250995683448457,

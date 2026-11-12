@@ -442,3 +442,11 @@
   Derivative helpers must preserve the solution dtype rather than global defaults;
   check fresh-process float32/float64 CPU/CUDA continuation. No upstream source
   licence is declared in the inspected checkout; keep the implementation independent.
+
+- DSGNAR probe interpolation fits ratio against log radius and locates its
+  crossing without collapsing equal-ratio plateaus. Preserve the independent
+  PCHIP oracle/bracket regression. Stage grace defaults to zero for old models;
+  migrate absent values in config, node and checkpoint settings consistently.
+  Distinguish matching an error threshold on an independent grid from reproducing
+  the paper's complete protocol or hardware/runtime. Preserve superseded results
+  with explicit labels, and validate qualifying checkpoints by fresh inference.

@@ -937,43 +937,53 @@ checks, not numerical-accuracy benchmarks.
 
 ## DSGNAR implementation and accuracy checks
 
-The independent scalar fixed-point trainer implements CountSketch/SRCT, SVD
-trust-region steps, monotone PCHIP probes, adaptive condition weights and the
-lambda-trend stage switch. Tests cover analytic polynomial parameter Jacobians,
-DCT/adjoint identities, hash collisions, singular systems, rejected/failed-step
-rollback, dtype preservation and consistent baseline/trial evaluation batches.
-The 19-case method/reference/desktop selection passes on CPU/CUDA, including
-actual isolated jobs, compact/expanded recipes, model/run files, physical-time
-export and stopped-checkpoint handling. The independent Cole–Hopf reference
-passes initial, periodic, PDE and quadrature-convergence checks. The refreshed
-[12 November CUDA audit](../assets/benchmarks/cuda-validation-2026-11-12.json)
-passes 20 cases without skips and records current source/runtime fingerprints.
+The independent fixed-point scalar trainer includes CountSketch/SRCT, SVD
+trust-region steps, adaptive condition coefficients, stage switching, explicit
+precision and strict data/state validation. A faulty inverse interpolation at
+repeated-ratio plateaus was found during accuracy work and replaced by a forward
+monotone PCHIP crossing. Tests compare its roots against SciPy independently.
+Zero-grace defaults preserve earlier format-32 models/checkpoints; the reference
+training schedule's 80-attempt grace is an explicit option.
 
-The maintained [CPU](../assets/benchmarks/dsgnar-cpu.json) and
+The targeted method/reference/desktop selection passes **20 tests**, including
+actual CPU/CUDA training, analytic parameter Jacobians, DCT/adjoint identities,
+CountSketch collisions, singular systems, failed/rejected-step rollback,
+float32/float64 continuation, old-state migration, isolated workers, optional
+views, archives and exports. The [real GPU audit](../assets/benchmarks/cuda-validation-2026-11-12.json)
+contains 20 executed passes without skips and source/runtime fingerprints.
+The final complete discovery ran **358 tests: 337 passed and 21 CUDA-dependent
+checks skipped**, covering the interpolation and migration changes. The separate
+GPU audit above executes the maintained CUDA selection without skips.
+
+Maintained [CPU](../assets/benchmarks/dsgnar-cpu.json) and
 [CUDA](../assets/benchmarks/dsgnar-cuda.json) native workflows compare exact
 four-plus-two versus uninterrupted fresh-process network weights, loss histories
-and sketch RNG state. SVD regularization diagnostics allow only `5e-14` relative
-roundoff; Qt-host direct-engine parity is checked separately at double-precision
-tolerance. A shared Laplacian accumulator was corrected to preserve tensor dtype
-rather than rounding double derivatives through a float32 global default. Fixed
-target functions are evaluated on CPU before transfer to preserve data identity.
+and sketch RNG. Last-bit SVD regularization diagnostics use `5e-14` relative
+tolerance; Qt-host direct-engine parity is separate. Tensor dtype is preserved
+by the shared Laplacian, and baseline/trial objective evaluation uses the same
+batching. Fixed target functions are evaluated canonically on CPU before transfer.
 
-The [trained Poisson check](../assets/benchmarks/dsgnar-poisson-accuracy.json)
-achieves about `3e-8` relative L2 error on 1,001 independent evaluation points.
-It is a Margam analytical example, not a paper benchmark. Its checkpoint is
-converted to a genuine native project/run archive under `build/dsgnar-accuracy/`
-and reopened successfully. The
-[full-sampling single-precision periodic Burgers attempt](../assets/benchmarks/dsgnar-burgers-paper-attempt.json)
-uses the paper's 1,447-parameter network, sketch 700 and 32,768/16,384 rows, but
-stops after 113 attempts at `7.04e-5`, **not** the paper's `4.75e-7` target.
-The case differs from the original-PINN Dirichlet Burgers demo. The independent
-evaluation grid, initialisation, backend and timing differences are recorded in
-[the method guide](dsgnar.md#accuracy-experiments). No paper speed/accuracy match
-is claimed; further precision/sketch investigations are separate variations.
+### Accuracy and checkpoint reloads
 
-A final full CPU/offscreen discovery finishes cleanly: **357 tests, 336 passed
-and 21 CUDA-dependent skips**, in 799.701 seconds. Earlier example-menu and
-manufactured-reference inventory failures were corrected; the reference-free
-transient case keeps its dedicated checks while Poisson retains manufactured
-solution coverage. The separate actual CUDA audit passes all 20 selected cases.
-The manual build checks all 71 rendered pages and their local links/images.
+The [Poisson analytical validation](../assets/benchmarks/dsgnar-poisson-accuracy.json) reaches **5.512e-09 relative L2** on 1,001 evaluation points after 74 attempts. Its native project and trained run archive under `build/dsgnar-accuracy/` are saved and reopened successfully.
+
+The [corrected periodic Burgers run](../assets/benchmarks/dsgnar-burgers-forward-probes.json) reaches **2.558e-07 relative L2 in float32**, with 1,447 parameters, sketch 700 and the full 32,768 PDE / 16,384 initial rows. It first meets the paper's `4.75e-7` threshold at attempt 123 and stops at 127 attempts after 624.4 seconds.
+
+An independently generated Cole–Hopf reference is checked against initial and
+periodic conditions, the PDE, and doubled quadrature resolution. The uniform
+257×65 evaluation grid differs from the authors' protocol. This is a numerical
+threshold match, **not** a full protocol or H100-speed reproduction. The paper's
+9.8-second runtime is not matched by this portable PyTorch port on the RTX 3060.
+Earlier unsuccessful prototype records are retained and marked as superseded
+when they used the incorrect inverse interpolation.
+
+The [retained checkpoint](../assets/benchmarks/dsgnar-burgers-target-checkpoint.json)
+is reloaded in fresh [GPU](../assets/benchmarks/dsgnar-burgers-reloaded-cuda.json)
+and [CPU](../assets/benchmarks/dsgnar-burgers-reloaded-cpu.json) processes without
+updates. Their relative errors are `2.558e-7` and `2.548e-7`; weights, iteration and
+sketch RNG remain unchanged. Stage two begins at attempt 102, and complete replay
+verifies that an 80-attempt grace would not alter this run's decisions.
+The [compiled derivative check](../assets/benchmarks/dsgnar-functional-validation.json)
+compares paper-sized 1,447-parameter CUDA PDE/IC Jacobians and probe residuals
+against generic autograd. Backend/compiler identity is explicit for benchmark
+continuation; weights-only warm starts are labelled separately.

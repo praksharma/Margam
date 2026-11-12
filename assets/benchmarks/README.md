@@ -88,9 +88,15 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   model/loss/RNG continuation, references and explicit export. SVD regularization
   diagnostics allow only documented last-bit roundoff.
 - DSGNAR [Poisson accuracy](dsgnar-poisson-accuracy.json) and
-  [periodic Burgers paper-case attempt](dsgnar-burgers-paper-attempt.json) record
+  [corrected periodic Burgers run](dsgnar-burgers-forward-probes.json) record
   actual errors, configurations, stopping and runtime. The Poisson case is not a
   paper benchmark; Burgers uses an independent reference grid. Read `target_met`
   and the scope before interpreting the result.
 - [Compiled Burgers derivative validation](dsgnar-functional-validation.json)
   compares actual 1,447-parameter CUDA Jacobians/residuals with generic autograd.
+
+- [Burgers qualifying checkpoint](dsgnar-burgers-target-checkpoint.json), fresh
+  [GPU](dsgnar-burgers-reloaded-cuda.json) / [CPU](dsgnar-burgers-reloaded-cpu.json)
+  reloads: about `2.56e-7` float32 relative L2 on the independent evaluation grid,
+  below the paper's reported `4.75e-7` threshold. This does not reproduce its
+  reference-grid protocol or 9.8-second H100 runtime.
