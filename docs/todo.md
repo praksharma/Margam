@@ -701,3 +701,7 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [x] Add opt-in isolated DSGNAR phase/workspace profiling for batches 16–256,
   synchronized CPU/CUDA evidence, uninstrumented reference timing and exact
   per-setting continuation/RNG checks. Larger paper sketches and fusion remain open.
+
+- [x] Avoid empty-bucket reduction work on CPU, preserve exact sums/continuation,
+  retain the existing GPU path after its occupied-row prototype regressed common
+  sizes, and measure 4,000-row accumulation separately from full SVD/training.

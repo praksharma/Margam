@@ -556,3 +556,6 @@ python -m examples.profile_dsgnar --device cuda --output build/dsgnar-profile/cu
 
 See [measurement scopes and limits](dsgnar-profiling.md) before interpreting timing
 or memory as a performance/fit guarantee.
+
+Compare CountSketch production/reference continuations and inspect larger
+accumulation-only workspaces with the [paired benchmark commands](dsgnar-profiling.md#paired-full-attempt-checks).

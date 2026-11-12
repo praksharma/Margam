@@ -45,6 +45,30 @@ class DSGNARTests(unittest.TestCase):
         for a,b in ((0,3),(3,5)):count_add(other,rv,jac[a:b],values[a:b],buckets[:,a:b],signs[:,a:b])
         torch.testing.assert_close(other,matrix);torch.testing.assert_close(rv,vector)
 
+    def _touched_bucket_parity(self,device):
+        from examples.compare_dsgnar_sketch import dense_count_add
+        from margam.methods.dsgnar import _count_add_touched
+        old=torch.get_deterministic_debug_mode()
+        try:
+            torch.use_deterministic_algorithms(True)
+            for dtype in (torch.float32,torch.float64):
+                g=torch.Generator().manual_seed(3)
+                for size,batch,hashes in [(1,1,1),(31,67,4),(700,16,4),(700,256,4),(13,0,4)]:
+                    jac=torch.randn(batch,size,generator=g,dtype=dtype).to(device);values=torch.randn(batch,generator=g,dtype=dtype).to(device)
+                    buckets=torch.randint(size,(hashes,batch),generator=g).to(device);signs=(torch.randint(2,(hashes,batch),generator=g)*2-1).to(device=device,dtype=dtype)
+                    a=torch.randn(size,size,generator=g,dtype=dtype).to(device);b=a.clone();x=torch.randn(size,generator=g,dtype=dtype).to(device);y=x.clone()
+                    z=b.clone();w=y.clone()
+                    dense_count_add(a,x,jac,values,buckets,signs);_count_add_touched(b,y,jac,values,buckets,signs)
+                    count_add(z,w,jac,values,buckets,signs)
+                    torch.testing.assert_close(a,z,rtol=0,atol=0);torch.testing.assert_close(x,w,rtol=0,atol=0)
+                    torch.testing.assert_close(a,b,rtol=0,atol=0);torch.testing.assert_close(x,y,rtol=0,atol=0)
+        finally:torch.set_deterministic_debug_mode(old)
+
+    def test_touched_buckets_equal_dense_reference(self):self._touched_bucket_parity('cpu')
+
+    @unittest.skipUnless(torch.cuda.is_available(),'CUDA required')
+    def test_cuda_touched_buckets_equal_dense_reference(self):self._touched_bucket_parity('cuda')
+
     def test_blocked_physics_jacobian_matches_analytic_polynomial(self):
         from margam.components.differential import derivative
         class Polynomial(torch.nn.Module):

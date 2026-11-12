@@ -72,7 +72,7 @@ each batch setting, not across settings.** These measurements are not evidence
 that the same optimization trajectory or final accuracy survives a batch change.
 A saved checkpoint still requires matching batch settings.
 
-Maintained measurements are [CPU](../assets/benchmarks/dsgnar-profile-cpu.json) and
+Retained **pre-optimization baseline** measurements are [CPU](../assets/benchmarks/dsgnar-profile-cpu.json) and
 [CUDA](../assets/benchmarks/dsgnar-profile-cuda.json). Each contains source
 fingerprints, actual raw losses, measured phase durations and memory scopes.
 They cover small concrete networks and sketches, not the paper's 4,000-square
@@ -106,3 +106,68 @@ can dominate before derivative batches become the peak.
 These results justify further attention to blocked sketch overhead. They do not
 justify silently changing batch settings or claiming the paper’s throughput.
 Short reference timings can also fluctuate relative to instrumented timings.
+
+## Occupied-bucket CPU update
+
+The production CPU accumulator now updates only buckets occupied by the current
+Jacobian batch. Within each hash it keeps the stable bucket sort and the same
+ordered segment sums. Unique destination rows avoid colliding writes. It no
+longer materializes a sketch-sized zero-filled reduction for every small batch.
+Sampling, signs, normalization, hash order and dedicated RNG draws are unchanged.
+No new numerical setting or checkpoint format is introduced.
+
+The existing dense implementation remains the **production CUDA path**. The
+[initial GPU occupied-row prototype](../assets/benchmarks/dsgnar-touched-gpu-prototype.json)
+was mostly slower on the 609/700-sized sketches where extra indexing/kernel overhead appears to outweigh the saved empty-bucket
+work. Large accumulation-kernel gains
+alone do not justify regressing the common end-to-end GPU cases.
+
+### Paired full-attempt checks
+
+```bash
+python -m examples.compare_dsgnar_sketch --device cpu --output build/dsgnar-profile/paired-cpu.json
+python -m examples.compare_dsgnar_sketch --device cuda --output build/dsgnar-profile/paired-cuda.json
+```
+
+Each process creates one common dense-path warm-up checkpoint. The old and
+production implementations continue independently from that same checkpoint;
+branch order alternates across batch sizes. Previous model cycles and allocator
+caches are released between branches.
+
+[CPU](../assets/benchmarks/dsgnar-touched-cpu.json) and
+[CUDA](../assets/benchmarks/dsgnar-touched-cuda.json) cover 16 paired full
+continuations. All trained weights, loss histories, RNG and state match exactly,
+with the established `5e-14` tolerance only for regularization diagnostics. CUDA
+compares two equivalent dense paths, so its short-run timing differences are
+noise, **not** a claimed GPU speedup.
+
+The short CPU wave comparisons show roughly **1.06–1.42×** old/new elapsed ratios.
+Multiscale results are mixed, including a slower sample, so the retained two-
+attempt timings are not a universal end-to-end speed guarantee. Direct kernel
+measurements below separate the targeted reduction from SVD/objective costs.
+
+### Larger accumulation workspace
+
+```bash
+python -m examples.profile_countsketch --device cpu --size 700 --batches 16 64 128 256 --repeats 5 --output build/dsgnar-profile/count700-cpu.json
+python -m examples.profile_countsketch --device cpu --output build/dsgnar-profile/count4000-cpu.json
+python -m examples.profile_countsketch --device cuda --output build/dsgnar-profile/count4000-cuda.json
+```
+
+These are **accumulation-only** tests, including a 4,000×4,000 sketch in float32
+and float64. Half of each hash's rows deliberately collide at bucket zero; the
+remaining assignments are uniform. All output matrix/vector values match the
+old reduction exactly. Matrix zeroing, SRCT, Jacobian construction and SVD are
+excluded. Both output matrices remain resident during peak measurements.
+
+The [700-row CPU kernel record](../assets/benchmarks/dsgnar-countsketch700-cpu.json)
+shows about **2.2–7.7×** float64 kernel ratios across tested batches. The
+[4,000-row CPU](../assets/benchmarks/dsgnar-countsketch4000-cpu.json) and
+[experimental CUDA](../assets/benchmarks/dsgnar-countsketch4000-cuda.json) records
+show why empty buckets can be costly at larger sizes. **These are not whole-
+trainer speedups or 4,000-row SVD measurements.** The CUDA microbenchmark calls
+the experimental helper explicitly; it does not select production GPU behavior.
+
+To reproduce the rejected whole-attempt GPU experiment, add
+`--experimental-touched` to the paired comparison command. This flag belongs to
+the standalone benchmark, not to saved model settings or the GUI.

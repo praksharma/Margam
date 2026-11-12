@@ -131,3 +131,12 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   with post-warmup uninstrumented reference continuations. Nested durations,
   allocator/RSS scope and batch-dependent sketches are explicit. Not paper speed
   or accuracy evidence.
+
+- `dsgnar-touched-{cpu,cuda}.json`: old/production paired complete continuations
+  with exact checkpoint parity; short timing ratios are noisy. Production CUDA
+  retains the old dense path.
+- `dsgnar-touched-gpu-prototype.json`: rejected occupied-row CUDA candidate;
+  common small-sketch cases mostly regressed despite numerical parity.
+- `dsgnar-countsketch700-cpu.json` and `dsgnar-countsketch4000-{cpu,cuda}.json`:
+  exact accumulation-only comparisons with explicit collision/residency scope.
+  CUDA calls the experimental helper; no SVD or end-to-end claim is made.

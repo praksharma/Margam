@@ -38,13 +38,33 @@ def lift_step(y,operators):
 
 
 def count_add(matrix,residual,jacobian,values,buckets,signs):
-    """Deterministic grouped sums, including repeated buckets, on CPU and CUDA."""
+    """CPU touched-row optimization; retain the measured GPU dense path."""
+    if not matrix.is_cuda:
+        return _count_add_touched(matrix,residual,jacobian,values,buckets,signs)
+    # At the tested 609/700 sizes, extra unique/indexing kernel launches cost
+    # more than zero-bucket work on CUDA. Do not impose that regression there.
     for column in range(buckets.shape[0]):
         order=torch.argsort(buckets[column],stable=True)
         counts=torch.bincount(buckets[column],minlength=len(residual))
         factor=signs[column,order]/math.sqrt(buckets.shape[0])
         matrix+=torch.segment_reduce(jacobian[order]*factor[:,None],'sum',lengths=counts)
         residual+=torch.segment_reduce(values[order]*factor,'sum',lengths=counts)
+
+
+def _count_add_touched(matrix,residual,jacobian,values,buckets,signs):
+    """Stable grouped sums, updating each touched bucket once per hash.
+
+    Empty buckets contribute zero; avoid materializing a full sketch-sized
+    reduction for every small Jacobian batch. Rows are sorted and unique, so
+    indexed writes have no collisions or atomic accumulation.
+    """
+    for column in range(buckets.shape[0]):
+        order=torch.argsort(buckets[column],stable=True)
+        rows,counts=torch.unique_consecutive(buckets[column,order],return_counts=True)
+        if not len(rows):continue
+        factor=signs[column,order]/math.sqrt(buckets.shape[0])
+        matrix[rows]+=torch.segment_reduce(jacobian[order]*factor[:,None],'sum',lengths=counts)
+        residual[rows]+=torch.segment_reduce(values[order]*factor,'sum',lengths=counts)
 
 
 def lm_step(singular,projected,vt,radius):

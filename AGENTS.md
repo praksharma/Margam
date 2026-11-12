@@ -470,3 +470,9 @@
   parity against an uninstrumented continuation and distinguish nested phase
   durations. Batch changes alter the realized sketch; do not claim cross-batch
   trajectory equivalence. Allocator peaks and lifetime RSS have different scopes.
+
+- CountSketch CPU accumulation reduces only sorted occupied buckets, preserving
+  each hash’s stable sum/order/normalization and private RNG. Keep CUDA’s dense
+  production path: the small-sketch occupied-row prototype regressed. Check
+  float32/float64 exact reference sums and full continuation before changing
+  dispatch. Kernel-only 4,000-row measurements do not certify SVD or trainer speed.

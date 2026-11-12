@@ -1,0 +1,276 @@
+{
+  "format": "margam-countsketch-comparison",
+  "version": 1,
+  "source": {
+    "base_commit": "4ca715b63b54ba5e42734f8f32887cdd85510baa",
+    "runtime_and_test_sha256": "8115dcbbbf9355c2c50008952eb25762d4575292c590d6d0608d91dba6f5c496",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "comparison_sha256": "d279cd1ea0b8201fcc3ff95177548d072b77ef7fe90fe1325fe0e43878eb7973"
+  },
+  "cases": [
+    {
+      "case": "wave",
+      "device": "cuda",
+      "batch_size": 16,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 3.796649197500301,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 104857600
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 4.46140279149995,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 104857600
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.8509989738505196
+    },
+    {
+      "case": "wave",
+      "device": "cuda",
+      "batch_size": 64,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "candidate",
+        "dense"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 1.3641157755000677,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 109051904
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 1.5464521879998756,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 109051904
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.8820937278794018
+    },
+    {
+      "case": "wave",
+      "device": "cuda",
+      "batch_size": 128,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 0.9786473655003647,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 111149056
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 1.0164541685003314,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 111149056
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.9628052064012422
+    },
+    {
+      "case": "wave",
+      "device": "cuda",
+      "batch_size": 256,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "candidate",
+        "dense"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 0.7768130774998099,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 113246208
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 0.8329396220001399,
+          "memory": {
+            "peak_allocated_bytes": 98900480,
+            "peak_reserved_bytes": 113246208
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.9326163109331344
+    },
+    {
+      "case": "multiscale",
+      "device": "cuda",
+      "batch_size": 16,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 4.068709665999904,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 123731968
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 3.5830074605000846,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 123731968
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 1.1355571292704005
+    },
+    {
+      "case": "multiscale",
+      "device": "cuda",
+      "batch_size": 64,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "candidate",
+        "dense"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 1.4369220605003648,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 127926272
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 1.5164731654999741,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 127926272
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.9475420292231932
+    },
+    {
+      "case": "multiscale",
+      "device": "cuda",
+      "batch_size": 128,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 1.0969013144999735,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 132120576
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 1.116476021500148,
+          "memory": {
+            "peak_allocated_bytes": 109389312,
+            "peak_reserved_bytes": 132120576
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.9824674183563092
+    },
+    {
+      "case": "multiscale",
+      "device": "cuda",
+      "batch_size": 256,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "candidate",
+        "dense"
+      ],
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 0.8776058969997393,
+          "memory": {
+            "peak_allocated_bytes": 121285120,
+            "peak_reserved_bytes": 146800640
+          }
+        },
+        "candidate": {
+          "seconds_per_attempt": 0.885889599499933,
+          "memory": {
+            "peak_allocated_bytes": 121285120,
+            "peak_reserved_bytes": 146800640
+          }
+        }
+      },
+      "full_checkpoint_parity": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "candidate_mode": "experimental-touched",
+      "reference_over_candidate_time_ratio": 0.9906492834943885
+    }
+  ],
+  "scope": "Experimental occupied-row GPU prototype: exact continuations, but mostly slower on 609/700 sketches. Rejected as the production GPU default.",
+  "method": "One common dense warm-up; both branches reload its checkpoint, garbage-collect previous models and release allocator caches. Branch order alternates across batch settings.",
+  "limitations": [
+    "Only two measured attempts per branch by default; elapsed ratios are noisy.",
+    "CUDA peaks exclude driver allocations and are not a fit guarantee.",
+    "Full state parity is checked within each setting; changing batch still changes the realized sketch."
+  ],
+  "rejected_as_gpu_default": true
+}

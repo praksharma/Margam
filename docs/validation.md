@@ -1068,3 +1068,24 @@ private RNG match exactly; regularization diagnostics alone retain the existing
 and process-lifetime RSS have explicit, different scopes. No production numerical
 code, device defaults or batch settings changed. See
 [phase/workspace evidence](dsgnar-profiling.md) for interpretation and limitations.
+
+## CountSketch occupied-bucket CPU optimization
+
+The production CPU path omits empty-bucket reductions; production CUDA retains
+its previous dense path after an occupied-row prototype mostly regressed the
+small measured sketches. Sorted within-hash summation, normalization and RNG
+draws are unchanged. Exact float32/float64 matrix/vector checks cover collisions,
+empty batches and initialized accumulators on CPU and actual CUDA.
+
+The DSGNAR family selection runs **33 tests: 30 pass and 3 CUDA-dependent checks
+skip**. The separate real-GPU audit passes **21 tests without skips**, including
+the new reference kernel check and all native recipe/checkpoint workflows. The
+paired old/production full-attempt records cover **16 CPU/CUDA continuations**
+with exact trained state/loss/RNG parity; regularization diagnostics alone use
+the existing `5e-14` tolerance. Comparison hooks restore on injected failure.
+
+The 700- and 4,000-row accumulation-only measurements also match old sums exactly.
+Their collision pattern, resident outputs and excluded SRCT/Jacobian/SVD work
+are explicit. Kernel ratios are not whole-trainer speedups; short end-to-end
+comparisons are noisy and include a slower CPU sample. Larger paper SVD and GPU
+fusion remain future work. The manual builds/checks **73 pages** successfully.

@@ -1,0 +1,178 @@
+{
+  "format": "margam-countsketch-microbenchmark",
+  "version": 1,
+  "source": {
+    "base_commit": "4ca715b63b54ba5e42734f8f32887cdd85510baa",
+    "runtime_and_test_sha256": "166976559d83ed9ffe8871fbd3b2c62b573b7e1724ba6d4b81380b4b090fd22e",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "microbenchmark_sha256": "0cb42887e35cbd7d60d7aa433ef75cd32a3b1980645e8156791e68baff0d37c9"
+  },
+  "cases": [
+    {
+      "device": "cuda",
+      "dtype": "float32",
+      "sketch_size": 4000,
+      "batch_size": 16,
+      "hashes": 4,
+      "repeats": 3,
+      "collision_pattern": "Half of each hash maps to bucket zero; remainder uniform",
+      "exact_matrix_and_residual_parity": true,
+      "branches": {
+        "dense": {
+          "seconds": [
+            0.007259882000653306,
+            0.0070943380014796276,
+            0.0070439530009025475
+          ],
+          "peak_allocated_bytes": [
+            195648512,
+            195648512,
+            195648512
+          ],
+          "median_seconds": 0.0070943380014796276
+        },
+        "touched": {
+          "seconds": [
+            0.003966555999795673,
+            0.003853231000903179,
+            0.003774572998736403
+          ],
+          "peak_allocated_bytes": [
+            130972160,
+            130972160,
+            130972160
+          ],
+          "median_seconds": 0.003853231000903179
+        }
+      },
+      "median_time_ratio": 1.8411400717519268,
+      "shared_resident_output_bytes": 128032000,
+      "scope": "Accumulation only; two matrices and inputs resident. Matrix zeroing, SRCT, Jacobians and SVD are excluded."
+    },
+    {
+      "device": "cuda",
+      "dtype": "float32",
+      "sketch_size": 4000,
+      "batch_size": 256,
+      "hashes": 4,
+      "repeats": 3,
+      "collision_pattern": "Half of each hash maps to bucket zero; remainder uniform",
+      "exact_matrix_and_residual_parity": true,
+      "branches": {
+        "dense": {
+          "seconds": [
+            0.007154928998716059,
+            0.007140761999835377,
+            0.00709408600050665
+          ],
+          "peak_allocated_bytes": [
+            203342336,
+            203342336,
+            203342336
+          ],
+          "median_seconds": 0.007140761999835377
+        },
+        "touched": {
+          "seconds": [
+            0.003829416000371566,
+            0.003882987999531906,
+            0.0038029269999242388
+          ],
+          "peak_allocated_bytes": [
+            144429056,
+            144429056,
+            144429056
+          ],
+          "median_seconds": 0.003829416000371566
+        }
+      },
+      "median_time_ratio": 1.864713052628002,
+      "shared_resident_output_bytes": 128032000,
+      "scope": "Accumulation only; two matrices and inputs resident. Matrix zeroing, SRCT, Jacobians and SVD are excluded."
+    },
+    {
+      "device": "cuda",
+      "dtype": "float64",
+      "sketch_size": 4000,
+      "batch_size": 16,
+      "hashes": 4,
+      "repeats": 3,
+      "collision_pattern": "Half of each hash maps to bucket zero; remainder uniform",
+      "exact_matrix_and_residual_parity": true,
+      "branches": {
+        "dense": {
+          "seconds": [
+            0.010739782999735326,
+            0.010696545999962837,
+            0.010711039998568594
+          ],
+          "peak_allocated_bytes": [
+            385157120,
+            385157120,
+            385157120
+          ],
+          "median_seconds": 0.010711039998568594
+        },
+        "touched": {
+          "seconds": [
+            0.00374792399998114,
+            0.0037596260008285753,
+            0.003738424000403029
+          ],
+          "peak_allocated_bytes": [
+            257892352,
+            257892352,
+            257892352
+          ],
+          "median_seconds": 0.00374792399998114
+        }
+      },
+      "median_time_ratio": 2.8578594439541716,
+      "shared_resident_output_bytes": 256064000,
+      "scope": "Accumulation only; two matrices and inputs resident. Matrix zeroing, SRCT, Jacobians and SVD are excluded."
+    },
+    {
+      "device": "cuda",
+      "dtype": "float64",
+      "sketch_size": 4000,
+      "batch_size": 256,
+      "hashes": 4,
+      "repeats": 3,
+      "collision_pattern": "Half of each hash maps to bucket zero; remainder uniform",
+      "exact_matrix_and_residual_parity": true,
+      "branches": {
+        "dense": {
+          "seconds": [
+            0.010956004000036046,
+            0.012065654000252835,
+            0.010994778000167571
+          ],
+          "peak_allocated_bytes": [
+            400537088,
+            400537088,
+            400537088
+          ],
+          "median_seconds": 0.010994778000167571
+        },
+        "touched": {
+          "seconds": [
+            0.004112934000659152,
+            0.004342975000326987,
+            0.004081439999936265
+          ],
+          "peak_allocated_bytes": [
+            284795392,
+            284795392,
+            284795392
+          ],
+          "median_seconds": 0.004112934000659152
+        }
+      },
+      "median_time_ratio": 2.673220138812223,
+      "shared_resident_output_bytes": 256064000,
+      "scope": "Accumulation only; two matrices and inputs resident. Matrix zeroing, SRCT, Jacobians and SVD are excluded."
+    }
+  ],
+  "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "scope": "Accumulation only: occupied rows are production CPU and experimental CUDA; not a paper-sized SVD or end-to-end solve."
+}
