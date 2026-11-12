@@ -410,3 +410,9 @@ not accuracy or steady-state compiler throughput.
 The [analytical example guide](dsgnar-analytic-examples.md) describes the two-mode
 wave with separate initial velocity and the four-frequency Poisson case, native
 UI workflows, independent training and recorded successes/failures.
+
+## Phase and workspace profiling
+
+The [isolated profiling guide](dsgnar-profiling.md) measures complete attempts
+across Jacobian batches, separates nested phase costs, records allocator peaks
+and verifies continuation against an uninstrumented reference.

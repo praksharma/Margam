@@ -547,3 +547,12 @@ checkpoint evaluation commands are in the [DSGNAR cavity guide](dsgnar.md#smooth
 
 [Wave and multiscale Poisson commands](dsgnar-analytic-examples.md#train-and-evaluate-independently)
 include explicit architecture/settings, checkpoints and read-only analytical evaluation.
+
+Profile concrete DSGNAR batches without opening or changing a project:
+
+```bash
+python -m examples.profile_dsgnar --device cuda --output build/dsgnar-profile/cuda.json
+```
+
+See [measurement scopes and limits](dsgnar-profiling.md) before interpreting timing
+or memory as a performance/fit guarantee.

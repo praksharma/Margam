@@ -1,0 +1,495 @@
+{
+  "format": "margam-dsgnar-profile",
+  "version": 1,
+  "source": {
+    "base_commit": "82e414ad2102f2e4988c8ca787596cfea576b813",
+    "runtime_and_test_sha256": "a8ef62cdd5b5319be7804436c736757798b9f02908b681660d21251cb39223ec",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "profiler_sha256": "fd6e8937c7aa450c413e6e4feb851e215b2eeb516dfc338cb6ab7629666f1373",
+    "experiment_sha256": "9d9d9b993d4a0d86fbaceab03110f29d2b9bbaf25b8cfb1edd7de78b47262d77"
+  },
+  "fresh_process_per_configuration": true,
+  "cases": [
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 16,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 3.554667682999934,
+      "seconds_per_attempt": 1.777333841499967,
+      "control_seconds_per_attempt": 1.9110217709999233,
+      "instrumentation_time_ratio": 0.9300437433373638,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 1.322293703989999,
+          "calls": 448
+        },
+        "jacobian_and_sketch": {
+          "seconds": 3.0674996570005533,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.2384142970031462,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.1692618120005136,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.03857327399964561,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.027978486999927554,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 759492608
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 1126.3340595661282,
+        "initial": 0.3882437025271232,
+        "initial_velocity": 0.7041807332779304,
+        "boundary": 0.10408843014350286
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 64,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 2.709419245999925,
+      "seconds_per_attempt": 1.3547096229999624,
+      "control_seconds_per_attempt": 1.347233379500267,
+      "instrumentation_time_ratio": 1.0055493306604895,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.7054381860016292,
+          "calls": 112
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.7650132669987215,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.44125757600249926,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.2531641329997001,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.10490879000099085,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.12292115499894862,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 756248576
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 0,
+      "final_raw_losses": {
+        "pde": 1110.20345027436,
+        "initial": 0.375722712052766,
+        "initial_velocity": 1.9715505324148026,
+        "boundary": 0.11663573513259806
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 128,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 1.5625210909993257,
+      "seconds_per_attempt": 0.7812605454996628,
+      "control_seconds_per_attempt": 0.8702593319999323,
+      "instrumentation_time_ratio": 0.8977330282736038,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.37047364299633045,
+          "calls": 56
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.9418158130001757,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.33253471899752185,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.18626412599951436,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.06803394199778268,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.014546249999511929,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 763285504
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 481.0660183297173,
+        "initial": 0.426099685459144,
+        "initial_velocity": 0.625564178467526,
+        "boundary": 0.040897397418231306
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 256,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 0.9400423899996895,
+      "seconds_per_attempt": 0.47002119499984474,
+      "control_seconds_per_attempt": 0.5520843720000812,
+      "instrumentation_time_ratio": 0.8513575439512271,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.16287976499734214,
+          "calls": 28
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.45761882700026035,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.255227101998571,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.11094806900018739,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.04395118000138609,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.0600575629996456,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 769462272
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 295.32528053676015,
+        "initial": 0.1959218209410467,
+        "initial_velocity": 1.29659692288959,
+        "boundary": 0.08671098566905734
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 16,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 6.958719409999503,
+      "seconds_per_attempt": 3.4793597049997516,
+      "control_seconds_per_attempt": 3.6870595440000216,
+      "instrumentation_time_ratio": 0.9436678913042613,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 2.434426346998407,
+          "calls": 320
+        },
+        "jacobian_and_sketch": {
+          "seconds": 5.791276949999883,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.5166378969997822,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.39111499799946614,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.10877843799880793,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.12015405099919008,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 768978944
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 332985.165315912,
+        "boundary": 0.12475167787538462
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 64,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 3.1358929349999016,
+      "seconds_per_attempt": 1.5679464674999508,
+      "control_seconds_per_attempt": 1.564590651999879,
+      "instrumentation_time_ratio": 1.0021448520709122,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.7176233010068245,
+          "calls": 80
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.9865861610005595,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.5006288990043686,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3960185570003887,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.10836125699825061,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.1163441070002591,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 778805248
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 380725.8416334279,
+        "boundary": 0.07321921249265674
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 128,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 2.4302161899995554,
+      "seconds_per_attempt": 1.2151080949997777,
+      "control_seconds_per_attempt": 1.2094724355001745,
+      "instrumentation_time_ratio": 1.004659601437938,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.40165485399757017,
+          "calls": 40
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.2813435500002015,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.502759457999673,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3839855690011973,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.10941185799765663,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.12398643400047149,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 782991360
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 375485.7579343072,
+        "boundary": 0.05634632273892803
+      },
+      "hardware": "CPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cpu",
+      "batch_size": 256,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 2.2725903629998356,
+      "seconds_per_attempt": 1.1362951814999178,
+      "control_seconds_per_attempt": 1.059058891499717,
+      "instrumentation_time_ratio": 1.072929173835487,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.32627869700263545,
+          "calls": 20
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.1288823020004202,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.5019959320006819,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3881036470002073,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.10793466099949,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.11702103999959945,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 817405952
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 365468.98951458733,
+        "boundary": 0.1346739352612507
+      },
+      "hardware": "CPU"
+    }
+  ],
+  "scope": "Synchronized instrumented complete attempts after one warm-up; small fixed concrete cases. Not H100/JAX throughput, a hardware quota, or a paper accuracy claim.",
+  "limitations": [
+    "Jacobian-block seconds are included in jacobian-and-sketch seconds; do not sum them twice.",
+    "Synchronization/instrumentation overhead is included; reference total timing is also recorded. Neither is steady-state compiler throughput.",
+    "Batch sizes change the realized random sketch and floating-point grouping; trajectories are not compared across batches.",
+    "CUDA allocated/reserved peaks are allocator measurements after warm-up, not all driver/OS allocations or a future-fit guarantee.",
+    "Process RSS is the lifetime high-water mark through timing, including imports/warm-up; it is not an update-only delta.",
+    "Reference continuation is checked separately for each batch setting; the control model is created after memory capture."
+  ]
+}

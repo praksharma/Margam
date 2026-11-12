@@ -1051,3 +1051,20 @@ real-GPU audit passes **20 selected tests without skips**, with a matching runti
 source fingerprint. The expanded DSGNAR selection passed **26 tests**, and the
 manual builds/checks **72 rendered pages**. No unresolved test failure remains;
 the full discovery was not repeated after this targeted serialization correction.
+
+## Isolated DSGNAR profiling
+
+Three profiler regressions pass: complete CPU-attempt checkpoint parity; scoped
+method/numerical-function cleanup and unchanged state after an injected failure;
+and fresh subprocess/report behavior, including a real unavailable-CUDA worker
+failure that preserves an existing report. Timing instrumentation does not belong
+in a live GUI job.
+
+The maintained CPU and CUDA profiles cover **16 configurations** across two
+existing cases and batches 16,64,128,256. Each includes a complete post-warmup
+continuation and an uninstrumented same-checkpoint control. Trained state/losses/
+private RNG match exactly; regularization diagnostics alone retain the existing
+`5e-14` tolerance. Global CPU/CUDA RNG remains unchanged. CUDA allocator peaks
+and process-lifetime RSS have explicit, different scopes. No production numerical
+code, device defaults or batch settings changed. See
+[phase/workspace evidence](dsgnar-profiling.md) for interpretation and limitations.

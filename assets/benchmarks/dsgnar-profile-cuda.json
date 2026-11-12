@@ -1,0 +1,519 @@
+{
+  "format": "margam-dsgnar-profile",
+  "version": 1,
+  "source": {
+    "base_commit": "82e414ad2102f2e4988c8ca787596cfea576b813",
+    "runtime_and_test_sha256": "a8ef62cdd5b5319be7804436c736757798b9f02908b681660d21251cb39223ec",
+    "runner_sha256": "ad73ffe3414fc60afc7d746713b5d7bf72a56fec5a6660083acf588a2e3eed98",
+    "profiler_sha256": "fd6e8937c7aa450c413e6e4feb851e215b2eeb516dfc338cb6ab7629666f1373",
+    "experiment_sha256": "9d9d9b993d4a0d86fbaceab03110f29d2b9bbaf25b8cfb1edd7de78b47262d77"
+  },
+  "fresh_process_per_configuration": true,
+  "cases": [
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 16,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 8.322395680000227,
+      "seconds_per_attempt": 4.1611978400001135,
+      "control_seconds_per_attempt": 4.121844657499878,
+      "instrumentation_time_ratio": 1.0095474686142358,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 4.208810805996109,
+          "calls": 448
+        },
+        "jacobian_and_sketch": {
+          "seconds": 7.153133176000665,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.49171959400246124,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.18882388099973468,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.32976667499769974,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.1130185630008782,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67181568,
+        "peak_allocated_bytes": 99414528,
+        "peak_reserved_bytes": 104857600,
+        "process_peak_rss_bytes_at_end": 1521135616
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 1126.3340595666507,
+        "initial": 0.38824370252598017,
+        "initial_velocity": 0.7041807332765084,
+        "boundary": 0.10408843014368564
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 64,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 3.0075737400002254,
+      "seconds_per_attempt": 1.5037868700001127,
+      "control_seconds_per_attempt": 1.486489322000125,
+      "instrumentation_time_ratio": 1.0116365100939395,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 1.113565780994577,
+          "calls": 112
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.8529842620000636,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.46846588000062184,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.17490968700076337,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.33776563099672785,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.12831276199995045,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67181568,
+        "peak_allocated_bytes": 99414528,
+        "peak_reserved_bytes": 109051904,
+        "process_peak_rss_bytes_at_end": 1520443392
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 0,
+      "final_raw_losses": {
+        "pde": 1110.2034502745837,
+        "initial": 0.37572271205270336,
+        "initial_velocity": 1.9715505324140472,
+        "boundary": 0.11663573513258142
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 128,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 1.9542193019997285,
+      "seconds_per_attempt": 0.9771096509998642,
+      "control_seconds_per_attempt": 0.9644373139999516,
+      "instrumentation_time_ratio": 1.0131396170761529,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.5312530060009522,
+          "calls": 56
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.8927360089992362,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.4551567949974924,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.16498958200008929,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.3359621519975917,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.059651951999512676,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67181568,
+        "peak_allocated_bytes": 99414528,
+        "peak_reserved_bytes": 111149056,
+        "process_peak_rss_bytes_at_end": 1521393664
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 481.06601832974695,
+        "initial": 0.42609968545911947,
+        "initial_velocity": 0.6255641784672934,
+        "boundary": 0.040897397418221626
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 609,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 256,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 3584,
+      "sketch_size": 609,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 1.5319991780006603,
+      "seconds_per_attempt": 0.7659995890003302,
+      "control_seconds_per_attempt": 0.7476736015000824,
+      "instrumentation_time_ratio": 1.024510678808881,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.2649042540024311,
+          "calls": 28
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.45064406100027554,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.46283536000009917,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.16342444300062198,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.3419991150021815,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.06655040900022868,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67181568,
+        "peak_allocated_bytes": 99414528,
+        "peak_reserved_bytes": 113246208,
+        "process_peak_rss_bytes_at_end": 1521696768
+      },
+      "hypothetical_dense_jacobian_bytes": 17461248,
+      "sketch_matrix_bytes": 2967048,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 295.32528053666283,
+        "initial": 0.1959218209410188,
+        "initial_velocity": 1.296596922890777,
+        "boundary": 0.08671098566900401
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 16,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 6.769866892999744,
+      "seconds_per_attempt": 3.384933446499872,
+      "control_seconds_per_attempt": 2.921129915000165,
+      "instrumentation_time_ratio": 1.1587753865783408,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 3.2843114289889854,
+          "calls": 320
+        },
+        "jacobian_and_sketch": {
+          "seconds": 5.599641024999983,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.3548250329995426,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3577006449995679,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.29631354400225973,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.11966144600046391,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67185152,
+        "peak_allocated_bytes": 108451840,
+        "peak_reserved_bytes": 130023424,
+        "process_peak_rss_bytes_at_end": 1559801856
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 332985.16531591344,
+        "boundary": 0.12475167787538656
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 64,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 2.9478354650000256,
+      "seconds_per_attempt": 1.4739177325000128,
+      "control_seconds_per_attempt": 1.446256492500197,
+      "instrumentation_time_ratio": 1.0191260956429635,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 1.0606298900029287,
+          "calls": 80
+        },
+        "jacobian_and_sketch": {
+          "seconds": 1.706238335999842,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.43625534499551577,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3042071809995832,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.3364465850027045,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.11670262100051332,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67185152,
+        "peak_allocated_bytes": 108451840,
+        "peak_reserved_bytes": 134217728,
+        "process_peak_rss_bytes_at_end": 1559244800
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 380725.8416334259,
+        "boundary": 0.07321921249266143
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 128,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 2.086559555000349,
+      "seconds_per_attempt": 1.0432797775001745,
+      "control_seconds_per_attempt": 1.0232883394996861,
+      "instrumentation_time_ratio": 1.0195364661442958,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.5150851800035525,
+          "calls": 40
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.8422745449997819,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.4228176549968339,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.31654435100062983,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.3382925500000056,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.12315522500011866,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67185152,
+        "peak_allocated_bytes": 108451840,
+        "peak_reserved_bytes": 138412032,
+        "process_peak_rss_bytes_at_end": 1559932928
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 375485.75793430477,
+        "boundary": 0.05634632273892991
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    },
+    {
+      "case": "multiscale",
+      "network": "fourier",
+      "parameters": 1681,
+      "precision": "float64",
+      "device": "cuda",
+      "batch_size": 256,
+      "points": 2048,
+      "boundary": 512,
+      "scalar_residual_rows": 2560,
+      "sketch_size": 700,
+      "warmup_attempts": 1,
+      "measured_attempts": 2,
+      "seconds": 1.7537782280005558,
+      "seconds_per_attempt": 0.8768891140002779,
+      "control_seconds_per_attempt": 0.8580891320002593,
+      "instrumentation_time_ratio": 1.0219091249369336,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.27470138699936797,
+          "calls": 20
+        },
+        "jacobian_and_sketch": {
+          "seconds": 0.4584635029996207,
+          "calls": 2
+        },
+        "full_objective": {
+          "seconds": 0.4812179539985664,
+          "calls": 36
+        },
+        "svd": {
+          "seconds": 0.3119976179996229,
+          "calls": 2
+        },
+        "regularized_steps": {
+          "seconds": 0.34180795200245484,
+          "calls": 34
+        },
+        "radius_interpolation": {
+          "seconds": 0.11562472599962348,
+          "calls": 2
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67185152,
+        "peak_allocated_bytes": 121285120,
+        "peak_reserved_bytes": 146800640,
+        "process_peak_rss_bytes_at_end": 1560076288
+      },
+      "hypothetical_dense_jacobian_bytes": 34426880,
+      "sketch_matrix_bytes": 3920000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 2,
+      "final_raw_losses": {
+        "pde": 365468.9895145871,
+        "boundary": 0.13467393526125432
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    }
+  ],
+  "scope": "Synchronized instrumented complete attempts after one warm-up; small fixed concrete cases. Not H100/JAX throughput, a hardware quota, or a paper accuracy claim.",
+  "limitations": [
+    "Jacobian-block seconds are included in jacobian-and-sketch seconds; do not sum them twice.",
+    "Synchronization/instrumentation overhead is included; reference total timing is also recorded. Neither is steady-state compiler throughput.",
+    "Batch sizes change the realized random sketch and floating-point grouping; trajectories are not compared across batches.",
+    "CUDA allocated/reserved peaks are allocator measurements after warm-up, not all driver/OS allocations or a future-fit guarantee.",
+    "Process RSS is the lifetime high-water mark through timing, including imports/warm-up; it is not an update-only delta.",
+    "Reference continuation is checked separately for each batch setting; the control model is created after memory capture."
+  ]
+}

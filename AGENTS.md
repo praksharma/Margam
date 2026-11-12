@@ -464,3 +464,9 @@
   fixed built-in baseline/DSGNAR scope and the single-window research variation
   explicit; future window transfer needs both displacement and velocity.
   Retain unsuccessful adaptive solves and raw condition losses alongside errors.
+
+- DSGNAR phase hooks belong only in standalone isolated profiling workers, not
+  active GUI jobs. Restore patched methods/functions on failure, verify checkpoint
+  parity against an uninstrumented continuation and distinguish nested phase
+  durations. Batch changes alter the realized sketch; do not claim cross-batch
+  trajectory equivalence. Allocator peaks and lifetime RSS have different scopes.

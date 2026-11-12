@@ -669,8 +669,9 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 
 - [x] Independent fixed-point scalar DSGNAR trainer, compact/expanded recipe,
   Poisson/Burgers presets, explicit precision, diagnostics and checkpoints.
-- [ ] Profile larger DSGNAR residual batches and SVD workspaces before claiming
-  upstream throughput; retain tested mathematical and continuation checks.
+- [ ] Extend the measured DSGNAR batch-16–256, sketch-609/700 profiles to
+  paper-sized SVD workspaces before claiming upstream throughput; preserve
+  mathematical and continuation checks.
 - [ ] Extend DSGNAR to imported samples, further coupled fields or time marching only
   with concrete workflows and continuation tests.
 
@@ -696,3 +697,7 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   schedule with explicit displacement/velocity transfer; current selected run has
   24.3% relative L2, while multiscale Poisson is 0.0475%. Do not label either
   smaller-budget result as matching the paper.
+
+- [x] Add opt-in isolated DSGNAR phase/workspace profiling for batches 16–256,
+  synchronized CPU/CUDA evidence, uninstrumented reference timing and exact
+  per-setting continuation/RNG checks. Larger paper sketches and fusion remain open.

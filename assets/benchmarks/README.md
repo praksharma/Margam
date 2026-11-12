@@ -126,3 +126,8 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   Jacobian checks for the wave initial-velocity/PDE/BC conditions and Poisson.
 - `dsgnar-{wave,multiscale}-ui-cpu.json`: six-attempt native project lifecycle
   and exports; separate from analytical-accuracy experiments.
+
+- `dsgnar-profile-{cpu,cuda}.json`: isolated batch/phase/workspace measurements
+  with post-warmup uninstrumented reference continuations. Nested durations,
+  allocator/RSS scope and batch-dependent sketches are explicit. Not paper speed
+  or accuracy evidence.
