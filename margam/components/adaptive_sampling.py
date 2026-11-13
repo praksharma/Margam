@@ -19,7 +19,9 @@ def validate_adaptive_sampling(settings):
     if not settings:return
     method=settings.get('method')
     expected=sampling_defaults(method)
-    if set(settings)!=set(expected):raise ValueError('Incomplete adaptive sampling settings.')
+    optional={'pool'} if method=='importance' else set()
+    if not set(expected)<=set(settings)<=set(expected)|optional:raise ValueError('Incomplete adaptive sampling settings.')
+    if 'pool' in settings and settings['pool'] not in ('refresh','fixed'):raise ValueError('Choose refreshed or fixed importance candidates.')
     for key,limit in (('interval',100000),('candidates',100000),('batch',100000),('maximum',100000),('chunk',4096)):
         if key not in settings:continue
         if type(settings[key]) is not int or not 1<=settings[key]<=limit:raise ValueError(f'Adaptive sampling {key} must be between 1 and {limit}.')
@@ -55,6 +57,8 @@ class AdaptiveSampler:
         initial=model.collocation_point_sample
         if initial.shape[1]!=len(lower) or not torch.isfinite(initial).all() or ((initial<initial.new_tensor(lower))|(initial>initial.new_tensor(upper))).any():raise ValueError('Adaptive initial points must lie in the configured interval/rectangle.')
         self.settings=deepcopy(settings);self.bounds=(list(lower),list(upper));self.seed=seed
+        if self.settings.get('pool')=='refresh':self.settings.pop('pool') # Preserve legacy state/settings exactly.
+        self.candidate_pool=model._points(sample_box(*self.bounds,settings['candidates'],'random',seed)) if settings.get('pool')=='fixed' else None
         self.initial_count=len(model.collocation_point_sample)
         self.boundary_anchors=None
         if getattr(model.problem,'boundary_anchor_count',0):
@@ -88,7 +92,7 @@ class AdaptiveSampler:
         old=model.collocation_point_sample
         if s['method']=='rar' and len(old)>=s['maximum']:return
         event_seed=(self.seed+model.iter)%2**31
-        candidates=model._points(sample_box(*self.bounds,s['candidates'],'random',event_seed))
+        candidates=self.candidate_pool if self.candidate_pool is not None else model._points(sample_box(*self.bounds,s['candidates'],'random',event_seed))
         scores=self.scores(model,candidates)
         if s['method']=='rar':
             existing={tuple(row) for row in old.detach().cpu().tolist()}
@@ -116,14 +120,25 @@ class AdaptiveSampler:
         self.history.append(dict(step=model.iter,points=len(points),mean_residual=scores.mean().item(),max_residual=scores.max().item()))
 
     def state(self,model):
-        return deepcopy(dict(settings=self.settings,bounds=self.bounds,seed=self.seed,initial_count=self.initial_count,
-                             points=model.collocation_point_sample,weights=self.weights,history=self.history))
+        state=dict(settings=self.settings,bounds=self.bounds,seed=self.seed,initial_count=self.initial_count,
+                   points=model.collocation_point_sample,weights=self.weights,history=self.history)
+        if self.candidate_pool is not None:state['candidate_pool']=self.candidate_pool
+        return deepcopy(state)
 
     def validate_state(self,model,payload,steps):
         import torch
         keys={'settings','bounds','seed','initial_count','points','weights','history'}
-        if not isinstance(payload,dict) or set(payload)!=keys or payload['settings']!=self.settings or payload['bounds']!=self.bounds or payload['seed']!=self.seed or payload['initial_count']!=self.initial_count:
+        if self.candidate_pool is not None:keys.add('candidate_pool')
+        if not isinstance(payload,dict) or set(payload)!=keys:
             raise ValueError('Adaptive sampling checkpoint settings differ from this recipe.')
+        saved_settings=deepcopy(payload['settings'])
+        if isinstance(saved_settings,dict) and saved_settings.get('pool')=='refresh':saved_settings.pop('pool')
+        if saved_settings!=self.settings or payload['bounds']!=self.bounds or payload['seed']!=self.seed or payload['initial_count']!=self.initial_count:
+            raise ValueError('Adaptive sampling checkpoint settings differ from this recipe.')
+        if self.candidate_pool is not None:
+            pool=payload['candidate_pool']
+            if not isinstance(pool,torch.Tensor) or pool.shape!=self.candidate_pool.shape or pool.dtype!=model.dtype or not torch.equal(pool.to(model.device),self.candidate_pool):
+                raise ValueError('Fixed importance candidate pool differs from the seeded recipe.')
         points=payload['points'];weights=payload['weights'];history=payload['history']
         if not isinstance(points,torch.Tensor) or points.ndim!=2 or points.shape[1]!=len(self.bounds[0]) or not 1<=len(points)<=100000 or points.dtype!=model.dtype or not torch.isfinite(points).all():raise ValueError('Invalid adaptive checkpoint coordinates.')
         if ((points<points.new_tensor(self.bounds[0]))|(points>points.new_tensor(self.bounds[1]))).any():raise ValueError('Adaptive checkpoint points lie outside the domain.')
@@ -141,6 +156,11 @@ class AdaptiveSampler:
         expected_events=(steps-1)//self.settings['interval'] if steps else 0
         if len(history)!=expected_events and not (self.settings['method']=='rar' and count>=self.settings['maximum']):raise ValueError('Missing adaptive sampling history.')
         if len(points)!=count:raise ValueError('Adaptive point count does not match history.')
+        if self.candidate_pool is not None and history:
+            interior=points[:-len(self.boundary_anchors)] if self.boundary_anchors is not None else points
+            candidates={tuple(row) for row in self.candidate_pool.detach().cpu().tolist()}
+            if any(tuple(row) not in candidates for row in interior.detach().cpu().tolist()):
+                raise ValueError('Importance checkpoint contains draws outside the fixed candidate pool.')
         if self.boundary_anchors is not None:
             n=len(self.boundary_anchors);start=self.initial_count-n if self.settings['method']=='rar' else len(points)-n
             if not torch.equal(points[start:start+n].to(self.boundary_anchors.device),self.boundary_anchors):raise ValueError('Adaptive checkpoint changed fixed boundary PDE anchors.')

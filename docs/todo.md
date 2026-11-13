@@ -365,8 +365,11 @@ These are proposed features; current execution still runs one supported problem.
 
 - [x] Cross-check importance loss correction against NVIDIA Sym's area/density
   convention for equal-weight pools, including non-unit volume and gradients.
-- [ ] Consider field-gradient importance measures and fixed candidate pools as
-  explicit options; retain residual sampling semantics for existing saved models.
+- [x] Add fixed seeded candidate pools as an explicit importance-sampling option,
+  with refreshed residual scores, inverse-probability correction, strict pool
+  checkpoints and exact CPU/CUDA continuation. Preserve legacy refreshed pools.
+- [ ] Consider field-gradient importance measures as an explicit option; retain
+  residual sampling semantics for existing saved models.
 
 ## Integral loss formulation (28 October 2026)
 

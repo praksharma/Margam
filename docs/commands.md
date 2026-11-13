@@ -588,3 +588,15 @@ These use isolated desktop state and temporary projects. The Jorvik workflow che
 cross-project paste after source closure, independent document/sample bytes,
 internal wires, Cut/Undo/Redo, save/load and failure without graph changes.
 No geometry editor or GPU is launched.
+
+## Fixed importance candidates
+
+```bash
+.venv/bin/python -m unittest discover -s tests -p test_fixed_importance_pool.py -v
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -p test_adaptive_sampling_ui.py -v
+.venv/bin/python -m examples.capture_adaptive_sampling --overwrite
+```
+
+The numerical checks include exact CPU/CUDA continuation for baseline, hard-BC
+and LRA trainers, fixed boundary PDE anchors and old refreshed-pool checkpoints.
+The capture uses isolated desktop state and shows the fixed-pool choice selected.

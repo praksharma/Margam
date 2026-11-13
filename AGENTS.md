@@ -499,3 +499,11 @@
   or expressions. Cross-project paste must survive source closure; Undo/Redo
   retains independent files. Reject incomplete/malformed bundles before graph
   mutation, keep external links external and forbid owned copies while busy.
+
+- Importance sampling's optional pool='fixed' generates one uniform seeded box
+  pool; rescore it at each event and keep per-event draw seeds and 1/(M*p) weights.
+  Absent/refresh keeps historical candidate generation and checkpoint layout.
+  Store and exactly verify fixed pool coordinates/dtype against regeneration;
+  reject out-of-pool adapted draws and changed modes on resume. Preserve initial
+  warm-up and unit boundary-anchor weights; do not infer imported quadrature or
+  allow moving SA masks. Qualify each supported trainer's CPU/CUDA continuation.

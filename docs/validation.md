@@ -1189,3 +1189,29 @@ project-data cleanup/storage, model-file and run-archive suite completed 31 test
 suite was run separately afterward and passed. The manual build checks 73 rendered
 pages and their local navigation/assets. This is file/desktop lifecycle validation,
 not a new numerical or GPU accuracy claim.
+
+## Fixed importance candidate pools
+
+`tests/test_fixed_importance_pool.py` passes six checks with CUDA available.
+It verifies one-time candidate generation with fresh residual scoring at each
+event, private sampling RNG, finite-pool loss/parameter-gradient correction,
+nonfinite-score atomicity and unchanged legacy refreshed-pool trajectories.
+Fixed candidates retain exact baseline/hard-BC/LRA continuation on CPU and CUDA
+both at and just after update boundaries. Active draws, network weights, histories
+and importance weights match uninterrupted runs; boundary PDE anchors keep unit
+weights. Changed/missing candidate pools, wrong dtypes and out-of-pool adapted
+rows reject continuation before network updates.
+
+The state-isolated desktop sampler workflow now selects Fixed seeded candidate
+pool through its real inspector control, copies the sampler, collapses/expands its
+recipe, saves/loads the model and saves/reopens/resumes the run. It compares the
+resumed loss history against direct uninterrupted training. The related sampler,
+collocation, integral-loss, retained-point, resource, run-file and audit checks ran
+46 tests in CPU mode: 43 passed and three CUDA-only cases were skipped.
+
+The [CUDA audit](../assets/benchmarks/cuda-validation-fixed-importance-2026-11-13.json)
+passes all 25 selected checks without skips and records matching runtime/test
+hashes. These are correctness/continuation checks, not an accuracy benchmark or a
+comparison of the sampling options' convergence. Actual inspector screenshots were
+recaptured and inspected, including the new pool control. The manual build checks
+73 rendered pages and their links/assets.

@@ -8,7 +8,7 @@ import time
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--overwrite',action='store_true');args=parser.parse_args()
     os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
-    from PySide6.QtWidgets import QApplication,QLabel,QLineEdit,QPlainTextEdit,QDoubleSpinBox
+    from PySide6.QtWidgets import QApplication,QLabel,QLineEdit,QPlainTextEdit,QDoubleSpinBox,QComboBox
     from PySide6.QtTest import QTest
     from margam.ui.app import Window
     from margam.ui.theme import configure_theme
@@ -31,7 +31,10 @@ def main():
             if not w.validate_model():raise RuntimeError(w.validation.text())
             for cls in (QLabel,QLineEdit,QPlainTextEdit):
                 for child in w.findChildren(cls):validate_public_text(child.toPlainText() if isinstance(child,QPlainTextEdit) else child.text(),kind)
-            if kind=='importance':assert w.property_scroll.findChild(QDoubleSpinBox,'sampling_mixture') is not None
+            if kind=='importance':
+                assert w.property_scroll.findChild(QDoubleSpinBox,'sampling_mixture') is not None
+                pool=w.property_scroll.findChild(QComboBox,'sampling_pool');pool.setCurrentIndex(pool.findData('fixed'));events()
+                assert w.scene.compile_config().adaptive_sampling['pool']=='fixed'
             w.property_scroll.widget().repaint();w.repaint();QTest.qWait(100);events()
             if not w.grab().save(str(paths[kind])):raise RuntimeError('Screenshot failed.')
         manifest.write_text(json.dumps(dict(scope='Actual Qt adaptive sampler inspectors, light theme; no training run.',

@@ -167,3 +167,11 @@ See the [workflow](../../docs/use/isolated-jobs.md#bounded-prediction-batches).
 [cuda-validation-prediction-batches-2026-11-13.json](cuda-validation-prediction-batches-2026-11-13.json)
 records 24 executed CUDA passes, including native network batch parity, with source
 and runtime metadata. Earlier dated audits remain historical evidence.
+
+## Fixed importance candidates
+
+[cuda-validation-fixed-importance-2026-11-13.json](cuda-validation-fixed-importance-2026-11-13.json)
+records 25 executed CUDA passes, including fixed candidate-pool continuation for
+baseline, hard-BC and LRA trainers. It preserves earlier audits and includes
+runtime/source identity. This validates implementation behavior, not sampling
+accuracy or convergence speed. See [adaptive sampling](../../docs/adaptive-sampling.md).

@@ -2214,6 +2214,12 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     widget.setValue(self.config.adaptive_sampling[key])
                     widget.valueChanged.connect(lambda value,k=key:self.change_sampling_option(k,value))
                     self.form.addRow(label,widget)
+                if node.kind=='importance':
+                    pool=QComboBox();pool.setObjectName('sampling_pool')
+                    pool.addItem('Refresh candidates at each update','refresh');pool.addItem('Fixed seeded candidate pool','fixed')
+                    pool.setCurrentIndex(pool.findData(self.config.adaptive_sampling.get('pool','refresh')))
+                    pool.currentIndexChanged.connect(lambda index,widget=pool:self.change_sampling_option('pool',widget.itemData(index)))
+                    self.form.addRow('Candidate pool',pool)
                 note=QLabel('The trainer scores candidates with the current PDE/network after each completed interval. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
                 note.setWordWrap(True);self.form.addRow(note)
                 inspect=QPushButton('Inspect retained PDE points…');inspect.clicked.connect(lambda checked=False,n=node:self.show_sample_points(n));self.form.addRow(inspect)

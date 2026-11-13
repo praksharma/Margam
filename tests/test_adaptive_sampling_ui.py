@@ -14,7 +14,7 @@ from dataclasses import asdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import torch
-from PySide6.QtWidgets import QApplication,QSpinBox,QDoubleSpinBox
+from PySide6.QtWidgets import QApplication,QSpinBox,QDoubleSpinBox,QComboBox
 from margam.ui.app import Window
 from margam.ui.graph_model import parameters_for
 from margam.ui.model_document import capture_model,decode_document
@@ -38,6 +38,10 @@ try:
     control.setValue(2);app.processEvents();assert w.scene.compile_config().adaptive_sampling['interval']==2
     w.undo_edit();assert w.scene.compile_config().adaptive_sampling['interval']==100
     w.redo_edit();assert w.scene.compile_config().adaptive_sampling['interval']==2
+    if kind=='importance':
+        pool=w.property_scroll.findChild(QComboBox,'sampling_pool');assert pool.currentData()=='refresh'
+        pool.setCurrentIndex(pool.findData('fixed'));app.processEvents()
+        assert w.scene.compile_config().adaptive_sampling['pool']=='fixed'
     w.change('points',6);w.change('layers',(8,));w.change('iterations',7)
     settings=deepcopy(w.scene.compile_config().adaptive_sampling);settings.update(candidates=19,chunk=4)
     if kind=='rar':settings.update(batch=3,maximum=15)

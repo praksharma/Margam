@@ -3,11 +3,11 @@
   "captures": {
     "rar": {
       "file": "manual-sampling-rar.png",
-      "sha256": "7e2658ac61d43875aafe4666a241d20dd2f1087f88d20ec927f200f03d10f5c2"
+      "sha256": "2c1035310d142c451d1694082d02f158b2b1cc945039e43393c750d9b2efce9f"
     },
     "importance": {
       "file": "manual-sampling-importance.png",
-      "sha256": "172b5255b7d6b1b30d5e6d31dbbb37df75d0eabd29a84f355869d9bac666d884"
+      "sha256": "b713288ab9d53d39fb7bce7046c147bc59fbe5d3c38726a7eb6f4156a75912d9"
     }
   }
 }
