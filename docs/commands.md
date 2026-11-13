@@ -613,3 +613,15 @@ The capture explicitly selects CPU and includes an untrained Couette graph in
 addition to the scalar trainer/recipe and 30-update scalar monitor. Numerical
 checks verify separate equation derivatives, callable targets, zero-weight
 baseline parity, exact Couette physics and fixed/RAR CPU/CUDA continuation.
+
+## Paper-sized SCALE cavity experiments
+
+```bash
+.venv/bin/python -m unittest discover -s tests -p test_scale_cavity_benchmark.py -v
+.venv/bin/python -m examples.scale_cavity_benchmark --reynolds 3200 --seed 50 --output build/scale-cavity/re3200-new
+.venv/bin/python -m examples.scale_cavity_benchmark --reynolds 7500 --seed 20 --output build/scale-cavity/re7500-new
+```
+
+Default reference location: sibling `SCALE-PINN/ns-ldc`; use
+`--reference-directory` to change it. No upstream code runs. These are separate
+research checkpoints, not GUI archives. See the [protocol and metric scope](scale-cavity-benchmark.md).

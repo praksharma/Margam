@@ -264,3 +264,10 @@ Earlier Gaussian-network evidence above remains historical. Unit tests verify
 affine values, physical-coordinate derivatives through fourth order, trainable
 projection updates, invalid-expression rejection, old-network loading and UI
 persistence through compact/expanded recipes.
+
+## Full-budget cavity research runs
+
+The [cavity reproduction guide](scale-cavity-benchmark.md) documents the independent
+paper-shaped shared-trunk/three-head network, fixed-cloud mini-batch protocol,
+cosine decay, compiled coordinate-derivative backend and raw CFD comparison.
+Those research runs are distinct from the editable GUI starter presets above.

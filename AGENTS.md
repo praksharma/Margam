@@ -522,3 +522,17 @@
   two dtype epsilons relative tolerance and zero absolute tolerance. Keep the
   failed audit and measured discrepancy visible; never loosen solver validators
   or disguise a diagnostic tolerance as universal bitwise reproducibility.
+
+- SCALE cavity reproduction lives in the separate research case, not the generic
+  GUI presets. Preserve paper-shaped shared/three-head SiLU architecture and
+  affine sine features; explicit derivative jets must match native ScalePINN
+  losses and every parameter gradient. The compiled path is case-specific.
+  Keep fixed-cloud mixed draws, interior-only PDE mask, summed velocity BC loss,
+  no pressure gauge, cosine schedule and previous-before-update timing explicit.
+  Reference interior velocities are evaluation-only; never replace raw boundary
+  predictions in the primary metric. Do not bundle upstream code/reference data.
+  Research checkpoints retain both networks, Adam, sampler RNG, schedule and
+  reference/backend identity. Do not edit runtime/driver sources during active
+  benchmark jobs; source guards refuse publication after changes. Report every
+  seed/failed accuracy attempt and separate synchronized training, compilation,
+  evaluation/I/O and wall time; no RTX3090/JAX parity claim from a local run.

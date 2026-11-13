@@ -416,7 +416,14 @@ These are proposed features; current execution still runs one supported problem.
 - [x] One recipe file, compact/expanded forms, separate trainer controls and Allen–Cahn/cavity starter submenu.
 - [x] Save/resume both network iterates and sampling phase; separate physical/corrected diagnostics and CPU/CUDA evidence.
 - [x] Scale cavity starting presets at Re=400, 3200, 7500, 10,000 and 20,000, plus KS and periodic KdV; distinguish configured physics from reproduced accuracy.
-- [ ] Consider paper-specific architecture/frequency annealing separately; current method scope does not claim it.
+- [x] Add an independently written paper-shaped LDC research network and explicit
+  derivative-jet compiled objective, with native Scale loss/parameter-gradient
+  parity and resumable fixed-cloud mini-batch experiments. Keep it separate from
+  the GUI starter presets and general network compilation.
+- [ ] Qualify full-budget SCALE cavity accuracy across seeds; preserve unsuccessful
+  runs and distinguish paper targets, raw CFD error and local measured runtime.
+- [ ] Consider other paper-specific architectures/frequency settings separately;
+  the reusable GUI method does not claim their full reproduction.
 - [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.
 - [ ] GeoSampler-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
 - [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.
