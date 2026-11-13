@@ -661,9 +661,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   extrapolated adaptive growth and output costs.
 - [ ] Add explicit configurable resource policies/OS budgets for isolated jobs;
   memory availability and exceptions alone cannot prevent an OS-level kill.
-- [ ] Evaluate method-specific microbatching/gradient aggregation and inference
-  chunking with mathematical and continuation tests; do not auto-reduce samples
-  or change causal/NTK/mask/integral semantics after an OOM.
+- [x] Bound native pointwise inference to 2,048 device rows, assemble results on
+  CPU and preserve coordinates/IDs, physical times, trained precision and state.
+  Keep research prediction one-shot by default; record measured CUDA memory.
+- [ ] Evaluate method-specific training microbatching/gradient aggregation with
+  mathematical and continuation tests; do not auto-reduce samples or change
+  causal/NTK/mask/integral semantics after an OOM.
 
 ## DSGNAR follow-up
 

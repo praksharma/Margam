@@ -482,3 +482,11 @@
   and same-checkpoint training comparisons. Large SVD profiles must record actual
   architecture/precision/counts, preserve whole-attempt peaks across phase resets,
   and reject publication when source changes during the run.
+
+- Native pointwise inference uses at most 2,048 rows per forward with full CPU
+  assembly. Preserve input order/IDs/duplicates, physical times and trained dtype;
+  analytical output expressions use CPU float64. Research prediction/output APIs
+  stay one-shot unless explicitly opted in, since custom models can couple rows.
+  Require exact checkpoint/RNG preservation and tolerance-based output parity;
+  GEMM shapes can change rounding. Keep total host/IPC costs and training
+  microbatching limitations explicit; do not promise that batching prevents OOM.

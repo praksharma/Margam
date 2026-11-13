@@ -37,5 +37,5 @@ class RetainedModel:
         from .transport import JobTransport
         payload=dict(operation='predict',config=encode_config(self.config),checkpoint=self.training_state(),requests=[],
             dtype=str(next(iter(self._checkpoint['network'].values())).dtype).removeprefix('torch.'),
-            points=torch.as_tensor(points).detach().cpu(),metadata=self.metadata)
+            points=torch.as_tensor(points,dtype=next(iter(self._checkpoint['network'].values())).dtype).detach().cpu(),metadata=self.metadata)
         return JobTransport().run(payload)['result']['prediction']

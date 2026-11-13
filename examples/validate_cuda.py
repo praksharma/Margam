@@ -16,7 +16,7 @@ MODULES=('test_pinn.py','test_benchmarking.py','test_boundary_weights.py',
     'test_expert.py','test_expert_extensions.py','test_scale.py','test_gpinn.py',
     'test_rba.py','test_inverse_burgers.py','test_research.py',
     'test_research_schedules.py','test_integral_constraints.py','test_resources.py','test_dsgnar.py','test_dsgnar_profile.py','test_dsgnar_ui.py','test_isolated_jobs.py','test_sample_points.py','test_application_device.py',
-    'test_dataset_storage.py')
+    'test_dataset_storage.py','test_prediction_batches.py')
 EXPLICIT={'test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection'}
 # This case deliberately mocks GPU unavailability; it belongs to CPU UI coverage.
 EXCLUDED={'test_application_device.ApplicationDeviceTests.test_unavailable_gpu_and_running_lock'}

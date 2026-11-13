@@ -153,3 +153,17 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 - [CUDA regression audit — 13 November 2026](cuda-validation-2026-11-13.json):
   23 executed GPU cases pass without skips, including actual SVD-memory capture
   and the 3,999/4,000/4,096-row dispatch boundary.
+
+## Bounded pointwise inference
+
+[prediction-batches-cpu.json](prediction-batches-cpu.json) and
+[prediction-batches-cuda.json](prediction-batches-cuda.json) compare one-shot and
+2,048-row forwards for 50,000 points, float64, a 128×6 FCNN (83,073 parameters).
+These are inference memory/timing checks, not training or solution-accuracy
+benchmarks. CUDA allocated peaks exclude driver memory; complete CPU outputs and
+IPC still scale with total rows. Both records check weights/RNG and actual values.
+See the [workflow](../../docs/use/isolated-jobs.md#bounded-prediction-batches).
+
+[cuda-validation-prediction-batches-2026-11-13.json](cuda-validation-prediction-batches-2026-11-13.json)
+records 24 executed CUDA passes, including native network batch parity, with source
+and runtime metadata. Earlier dated audits remain historical evidence.

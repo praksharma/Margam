@@ -63,6 +63,11 @@ those bounds does not establish that it will fit on this machine. Direct API/MCP
 training keeps its existing validation; the resource summary is an explicit GUI
 review, not a new global allocator policy.
 
+Native prediction forwards are bounded to 2,048 rows, as shown in the review.
+Complete outputs are assembled on CPU, so their host memory and transfer costs
+still grow with the total requested rows. See [bounded prediction batches](isolated-jobs.md#bounded-prediction-batches)
+for scope, measured memory and research API behavior.
+
 ## Recover from a memory-allocation failure
 
 Recognized Python/Torch allocation failures in training and prediction produce a

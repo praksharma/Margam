@@ -1,0 +1,38 @@
+{
+  "scope": "Known pointwise network, 50000-row-scale inference; not training memory, a fit guarantee or paper accuracy.",
+  "source": {
+    "base_commit": "e565658f9ab71d65648b8c77e76bfd049ae4c0fc",
+    "runtime_and_test_sha256": "58d1ed3eecac154f4abd0aa60cdaf930dfee78f6fb9f736b3eaa81d8835c5466",
+    "runner_sha256": "daa775cacbdf3b1077e99f5418f484f8036417ebfb043407c38d096af85125de",
+    "validator_sha256": "1b028fae4d63c31316fdcb88589a9a77bdb37176738a828c5c2858f16b3880b5"
+  },
+  "python": "3.14.8",
+  "torch": "2.14.1+cu130",
+  "compiled_cuda": "13.0",
+  "device": "cpu",
+  "hardware": "CPU",
+  "rows": 50000,
+  "batch": 2048,
+  "precision": "float64",
+  "layers": [
+    128,
+    128,
+    128,
+    128,
+    128,
+    128
+  ],
+  "parameters": 83073,
+  "one_shot": {
+    "seconds": 0.3872291430002406
+  },
+  "batched": {
+    "seconds": 0.32570854699997653
+  },
+  "forward_calls": 25,
+  "maximum_forward_rows": 2048,
+  "cpu_output": true,
+  "checkpoint_and_rng_preserved": true,
+  "max_absolute_difference": 0.0,
+  "limits": "Allocator peaks exclude driver memory. Both time and peak figures are short measurements. CPU assembly/output/IPC memory still scales with total rows. Different GEMM batch shapes allow floating-point roundoff."
+}

@@ -1133,3 +1133,35 @@ without broken local links/images.
 The five audit-reporting/skip/failure-handling regressions also pass after
 extending the CUDA manifest. No full unrelated-suite rerun was used to inflate
 this targeted qualification.
+
+## Bounded native inference
+
+`tests/test_prediction_batches.py` has eight focused checks, all passed with real
+CUDA available. They cover every native network factory on CPU/CUDA, checkpoint
+predictors, preserved network mode/weights/RNG, duplicate coordinates and text IDs,
+float64 coordinate/reference precision, multi-window physical-time order and
+out-of-horizon rejection. A real isolated coupled-flow job evaluates 5,001 rows
+through both output and raw prediction paths. Invalid points, inconsistent batch
+fields and a late nonfinite batch fail without publishing partial results.
+A batch-dependent research model remains one-shot by default.
+
+The standalone 50,000-row float64 measurement uses a 128×6 FCNN with 83,073
+parameters. It verifies 25 forwards bounded to 2,048 rows, CPU output assembly,
+checkpoint/RNG preservation and prediction parity. Recorded RTX 3060 Laptop
+CUDA allocated peaks are 172,905,984 bytes one-shot and 24,062,464 bytes batched;
+maximum observed value difference is zero. These are short inference measurements,
+not training-memory bounds, numerical accuracy evidence or a general promise of
+bitwise equality. Full host/IPC storage still grows with requested output rows.
+[CPU record](../assets/benchmarks/prediction-batches-cpu.json),
+[CUDA record](../assets/benchmarks/prediction-batches-cuda.json),
+[user guide](use/isolated-jobs.md#bounded-prediction-batches).
+
+The [targeted CUDA audit](../assets/benchmarks/cuda-validation-prediction-batches-2026-11-13.json)
+passes all 24 selected checks with no skips, including the added network-batching
+case. Its runtime/test hash matches this implementation and regression sources.
+The documentation build checks 73 rendered pages and their local links/assets.
+
+The complete CPU-mode regression run completed 384 tests: 359 passed and 25 were
+skipped (`CUDA_VISIBLE_DEVICES=''`, offscreen Qt). The separate real-CUDA audit
+above supplies GPU coverage; the eight focused batching checks also passed in a
+CUDA-enabled run. No test failures occurred.

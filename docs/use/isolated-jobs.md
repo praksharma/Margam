@@ -73,6 +73,40 @@ Stderr capture is bounded and remains local. Temporary files are cleaned on norm
 success/failure; an abrupt whole-application kill can leave temporary files for the
 operating system to clean. This is failure containment, not an execution sandbox.
 
+## Bounded prediction batches
+
+Native output jobs evaluate at most **2,048 points per network forward** and assemble
+complete results on CPU. This covers outputs attached to training, re-evaluation
+and the retained model's compatibility prediction path. It is automatic; no model
+setting or new block is needed. Training samples, losses and optimizer steps are
+unchanged.
+
+Supplied coordinates, duplicate rows, IDs, field order and physical-time frames
+retain their order. Inference uses the trained scalar dtype; analytical expression
+references evaluate on CPU in float64. Batching does not update weights, optimizer
+state or random generators. Expert time-window predictions still select the trained
+window for each physical time and reject times beyond its horizon.
+
+This applies to Margam's known pointwise network factories. Research `predict()`
+and `evaluate_outputs()` remain one-shot by default: a custom network can depend
+on other rows in its batch. Script authors may explicitly use
+`margam.components.prediction.predict_in_batches` or pass
+`prediction_batch_size` to `evaluate_outputs` only for pointwise models.
+Different matrix batch shapes can introduce small floating-point differences.
+
+A recorded 50,000-point float64 check with six 128-wide hidden layers measured
+CUDA peak allocated memory of **164.9 MiB one-shot versus 22.9 MiB batched** on an
+RTX 3060 Laptop GPU. The 25 batched forwards produced identical values in this
+run; this is not a general bitwise-equivalence claim. Forward times were about
+0.062 s and 0.073 s respectively. See the
+[GPU record](../../assets/benchmarks/prediction-batches-cuda.json) and
+[CPU record](../../assets/benchmarks/prediction-batches-cpu.json).
+
+The full CPU result, serialization and transfer still scale with all requested
+rows. Existing 256 MiB transfer bounds apply. Chunking reduces device activation
+memory; it does not guarantee that a model or complete output will fit, enforce
+a quota, or add training microbatching.
+
 ## Remaining resource limits
 
 Process separation does not reserve RAM/VRAM or enforce a hardware quota. Data

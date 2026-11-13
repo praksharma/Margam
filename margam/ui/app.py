@@ -406,7 +406,7 @@ class Canvas(QGraphicsScene):
                         expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names,coordinates=config.coordinate_names) for part in texts]
                         def evaluate(points,expressions=expressions):
                             import torch
-                            values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
+                            values=torch.cat([expr(torch.tensor(points,dtype=torch.float64),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
                             return values[:,0].tolist() if len(expressions)==1 else values.tolist()
                         reference=ReferenceSource('User reference expression',evaluate,dict(kind='expression',texts=texts))
                     elif data:

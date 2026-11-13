@@ -39,7 +39,7 @@ def main():
     try:
         import torch
         from ..templates.poisson import build_pinn
-        from ..components.prediction import prediction_model
+        from ..components.prediction import prediction_model,predict_in_batches,NATIVE_PREDICTION_BATCH
         from ..components.outputs import evaluate_outputs
         dtype=job['dtype']
         if dtype not in ('float16','bfloat16','float32','float64'):raise ValueError('Unsupported job scalar dtype.')
@@ -66,10 +66,10 @@ def main():
         else:
             stage='checkpoint restore';checkpoint=job['checkpoint'];model=prediction_model(config,checkpoint)
         if operation=='predict':
-            stage='output evaluation';result=dict(prediction=model.predict(job['points']).detach().cpu())
+            stage='output evaluation';result=dict(prediction=predict_in_batches(model,job['points']))
         else:
             stage='output evaluation'
-            outputs=evaluate_outputs(model,config,requests) if getattr(model,'outputs_ready',True) else {}
+            outputs=evaluate_outputs(model,config,requests,prediction_batch_size=NATIVE_PREDICTION_BATCH) if getattr(model,'outputs_ready',True) else {}
             outputs={key:{name:value for name,value in data.items() if name!='config'} for key,data in outputs.items()}
             result=dict(outputs=outputs,steps=model.iter,cancelled=cancelled.is_set(),device=str(model.device))
         metadata=job.get('metadata') or {}

@@ -21,7 +21,7 @@ class OutputRequest:
     reference_data: object = None
 
 
-def evaluate_outputs(model, config, requests):
+def evaluate_outputs(model, config, requests, *, prediction_batch_size=None):
     """Evaluate only requested outputs. Training alone does not call predict()."""
     results = {}
     for request in requests:
@@ -41,7 +41,15 @@ def evaluate_outputs(model, config, requests):
             points=validate_points(request.point_data.points,config,request.point_data.point_ids).tolist()
         import torch
         import numpy as np
-        prediction=model.predict(torch.tensor(points)).detach().cpu().numpy()
+        # Use the trained precision at the first tensor conversion; casting a
+        # float32 temporary to float64 later cannot recover supplied coordinates.
+        dtype=getattr(model,'dtype',torch.get_default_dtype())
+        if not isinstance(dtype,torch.dtype):dtype=torch.get_default_dtype()
+        tensor=torch.tensor(points,dtype=dtype)
+        if prediction_batch_size is None:prediction=model.predict(tensor).detach().cpu().numpy()
+        else:
+            from .prediction import predict_in_batches
+            prediction=predict_in_batches(model,tensor,prediction_batch_size).numpy()
         fields=tuple(getattr(config,'field_names',('u',)))
         if prediction.ndim==1:prediction=prediction[:,None]
         if prediction.shape!=(len(points),len(fields)) or not np.isfinite(prediction).all():

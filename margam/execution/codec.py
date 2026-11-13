@@ -86,7 +86,7 @@ def decode_request(data,config):
             expressions=[Expression(part,len(config.bounds[0]),target=True,fields=config.field_names,coordinates=config.coordinate_names) for part in spec['texts']]
             def evaluate(points):
                 import torch
-                values=torch.cat([expr(torch.tensor(points),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
+                values=torch.cat([expr(torch.tensor(points,dtype=torch.float64),source=config.source,viscosity=config.viscosity) for expr in expressions],dim=1)
                 return values[:,0].tolist() if len(expressions)==1 else values.tolist()
             reference=ReferenceSource('User reference expression',evaluate)
         elif kind=='mapping':reference=ReferenceSource('Imported reference fields',partial(reference_values,spec['source'],components=len(config.field_names)))

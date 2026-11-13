@@ -563,3 +563,16 @@ accumulation-only workspaces with the [paired benchmark commands](dsgnar-profili
 The [4,000-row SVD commands](dsgnar-profiling.md#completed-4000-row-svd-and-full-attempt-profiling)
 record complete attempts and actual phase allocator peaks, rather than only the
 accumulation microbenchmark.
+
+## Bounded inference checks
+
+```bash
+.venv/bin/python -m unittest discover -s tests -p test_prediction_batches.py -v
+.venv/bin/python -m examples.validate_prediction_batches --device cpu --output build/prediction-batches-cpu.json
+.venv/bin/python -m examples.validate_prediction_batches --device cuda --output build/prediction-batches-cuda.json
+```
+
+The standalone measurement compares 50,000 pointwise predictions using float64
+and a six-layer, 128-wide network. It records CUDA allocator peaks, forward row
+bounds, CPU assembly, checkpoint/RNG preservation and value differences. It does
+not measure training memory or certify model accuracy. Choose a fresh output path.

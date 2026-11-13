@@ -81,6 +81,7 @@ def memory_snapshot(device):
 def resource_report(config,counts,requests,*,memory,monitor_limits=(),output_names=None):
     size=architecture_size(config);rows=counts['pde'];adaptive=config.adaptive_sampling
     maximum=adaptive['maximum'] if adaptive.get('method')=='rar' else rows
+    from .prediction import NATIVE_PREDICTION_BATCH
     outputs=[]
     for request in requests:
         if request.kind=='monitor':continue
@@ -101,7 +102,7 @@ def resource_report(config,counts,requests,*,memory,monitor_limits=(),output_nam
     return dict(**size,memory=memory,weights_bytes=weights,adam_reference_bytes=adam,hidden_output_scale_bytes=activations,encoded_input_scale_bytes=encoded,
         initial_pde_rows=rows,maximum_pde_rows=maximum,named_set_rows=sum(counts['sets'].values()),
         candidate_rows=adaptive.get('candidates',0),scoring_chunk=min(adaptive.get('candidates',0),adaptive.get('chunk',0)),
-        outputs=outputs,output_rows=sum(row['rows'] for row in outputs),monitor_record_budget=sum(monitor_limits),warnings=warnings)
+        prediction_batch_rows=NATIVE_PREDICTION_BATCH,outputs=outputs,output_rows=sum(row['rows'] for row in outputs),monitor_record_budget=sum(monitor_limits),warnings=warnings)
 
 
 def byte_text(value):
@@ -124,6 +125,7 @@ def report_text(config,report):
         f"PDE encoded-input scale: {byte_text(report['encoded_input_scale_bytes'])} (one input/feature array; NOT a peak estimate, multi-branch copies excluded)",
         f"Adaptive candidates: {report['candidate_rows']:,}; scoring chunk: {report['scoring_chunk']:,}",
         f"Requested prediction rows across output blocks: up to {report['output_rows']:,}; repeated requests are counted separately",
+        f"Native prediction forwards: at most {report['prediction_batch_rows']:,} rows; complete outputs are assembled on CPU (host/output storage still scales with all requested rows)",
         f"Monitor retained-record budgets (sum): {report['monitor_record_budget']:,}; trainer histories also retain update records",
         f"Host RAM available / total: {byte_text(m['host_available'])} / {byte_text(m['host_total'])} (host snapshot; container/scheduler limits excluded)"]
     if str(config.device).startswith('cuda'):
