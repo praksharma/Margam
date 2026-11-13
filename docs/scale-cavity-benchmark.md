@@ -72,6 +72,50 @@ run archives**. A loaded `ScaleCavityNetwork` can evaluate the trained weights
 without executing upstream code. Pressure is determined only up to a constant;
 the main comparison concerns velocity.
 
+## Explicit refinement experiments
+
+A weights-only warm restart is a **changed training protocol**, not exact
+checkpoint continuation or a 50,000-update paper result:
+
+```bash
+.venv/bin/python -m examples.scale_cavity_benchmark \
+  --reynolds 7500 --seed 50 \
+  --output build/scale-cavity/re7500-seed50-new
+
+.venv/bin/python -m examples.scale_cavity_benchmark \
+  --reynolds 7500 --seed 50 --learning-rate 0.0001 \
+  --warm-start build/scale-cavity/re7500-seed50-new/checkpoint.pt \
+  --output build/scale-cavity/re7500-refine-new
+
+.venv/bin/python -m examples.scale_cavity_benchmark \
+  --reynolds 7500 --seed 50 --learning-rate 0.00005 \
+  --batch-size 4000 --boundary-draws 200 --retain-best \
+  --warm-start build/scale-cavity/re7500-refine-new/checkpoint.pt \
+  --output build/scale-cavity/re7500-large-refine-new
+```
+
+This starts a new 50,000-update cosine phase from the saved network, resetting
+Adam, the sampling stream and the previous iterate. The report records the source
+checkpoint SHA-256, prior update count/cost, new learning rate and cumulative
+training updates/cost. Resuming that phase instead uses `--resume` and the same
+learning-rate override; it restores its optimizer/sampler rather than resetting
+them. Original paper-budget attempts are retained separately.
+
+For a standalone centerline comparison and ParaView vertex cloud:
+
+```bash
+.venv/bin/python -m examples.plot_scale_cavity \
+  --run build/scale-cavity/re7500-large-refine-new --best \
+  --output build/scale-cavity/re7500-centerlines-new.png \
+  --vtu build/scale-cavity/re7500-predicted-new.vtu
+```
+
+The helper independently reloads the checkpoint on CPU, verifies its reference
+identity and raw metric, then exports predicted u/v/p and a velocity vector. It
+does not fabricate mesh connectivity. The centerline figure linearly interpolates
+the **local CFD reference only for its cuts**; global error metrics retain original
+CFD rows without interpolation. Warm-restart figures show cumulative updates.
+
 ## Fast derivatives and correctness
 
 `margam.research.scale_cavity` propagates values, x/y first derivatives and xx/yy
@@ -107,3 +151,68 @@ Low PDE loss alone is not evidence of the correct high-Re flow.
 Exact local notebook protocols/reference fields are currently available for
 Re=3200 and 7500. The higher-Re GUI starters are not automatically promoted to
 validated paper reproductions. No reference fields are fabricated for them.
+
+`--batch-size` and `--boundary-draws` explicitly change the mini-batch protocol.
+The larger-batch refinement uses 4,000 total draws with 200 additional boundary
+draws at Re=7500, and 500 at Re=3200. `--retain-best` separately saves
+`best-checkpoint.pt`, `best-report.json` and `best-predictions.csv` using the
+lowest raw CFD error among reporting intervals. This is **reference-based model
+selection**, not a final fixed-budget iterate. Its search cost includes the
+complete training phase. Plotting it requires `--best`; the default remains final.
+
+## Recorded attempts
+
+[Complete numerical evidence](../assets/benchmarks/scale-cavity-reproduction-2026-11-13.json)
+retains all **11 full-budget training phases** and the two selected snapshots.
+All models were independently reloaded and their raw metrics verified against
+the original reference bytes. Exact hash-matching executed driver revisions are
+preserved locally under `build/scale-cavity/sources/`; future runs save their own
+source snapshots. The snapshots and trained weights remain local artifacts.
+
+The hardware is an **RTX 3060 Laptop GPU**, using Torch 2.14.1+cu130 and float32.
+Across all attempts, measured training totals **2,360 s (39.3 minutes)**, excluding
+compilation and evaluation/checkpoint I/O. This is the complete study cost, not
+one model's time.
+
+### Original 50,000-update budget
+
+| Re | Paper relative L2 | Local best final relative L2 | Seeds measured | Local training per seed |
+| --- | --- | --- | --- | --- |
+| 3200 | 1.73% | 4.17% | 10, 20, 30, 40, 50 | 195–206 s |
+| 7500 | 2.97% | 18.36% | 20, 50 | 199–202 s |
+
+The other Re=7500 seed ended at 37.76%; it is retained, not discarded. The local
+Re=3200 final errors span 4.17–5.98%. These runs establish fast execution of the
+matched mathematical case; they **do not match the published accuracy**.
+
+### Changed-protocol refinements
+
+Both selected initial models received 50,000 more updates at learning rate
+0.0001 with their original batches, followed by 50,000 at 0.00005 with 4,000-row
+batches. Adam and sampling were reset at each phase; the equations, architecture
+and Scale correction were unchanged.
+
+| Re / seed | Final raw relative L2 | Cumulative updates | Cumulative training | Reference-selected snapshot | Updates at selection |
+| --- | --- | --- | --- | --- | --- |
+| 3200 / 40 | 3.93% | 150,000 | 599 s | 3.70% | 101,000 |
+| 7500 / 50 | 4.54% | 150,000 | 756 s | 3.95% | 135,000 |
+
+The selected snapshots were identified retrospectively from the full phase;
+their lower creation-time cost is not presented as the total selection cost.
+The published 1.73%/2.97% targets remain unmatched. Low residuals alone do not
+justify claiming a reproduced or more accurate CFD solution.
+
+![Re=3200 final raw centerline comparison](../assets/benchmarks/scale-cavity-re3200-final.png)
+
+![Re=7500 final raw centerline comparison](../assets/benchmarks/scale-cavity-re7500-final.png)
+
+*Final iterates after 150,000 cumulative updates. The legend and axes use raw
+network velocities; no boundary values are replaced. CFD interpolation applies
+only to the pictured cuts, not the tabulated full-field metrics.*
+
+[Selected Re=3200 figure](../assets/benchmarks/scale-cavity-re3200-selected.png) ·
+[Selected Re=7500 figure](../assets/benchmarks/scale-cavity-re7500-selected.png)
+
+The code/objective/derivative implementation is qualified against native Scale;
+the remaining accuracy and convergence-speed gap is an open reproduction issue.
+Re=10,000/20,000 were not claimed solved from the existing starter presets.

@@ -67,7 +67,7 @@ class ScaleCavityBenchmarkTests(unittest.TestCase):
             values=np.zeros((len(points),3));values[:,0]=points[:,0]*(1-points[:,0])*points[:,1]*(1-points[:,1]);values[points[:,1]==1,0]=1
             reference=root/'LDC_RE3200_100x100_subsample200x200.csv'
             np.savetxt(reference,np.column_stack((points,values)),delimiter=',',header='x,y,u,v,p',comments='')
-            base=[sys.executable,'-m','examples.scale_cavity_benchmark','--reference-directory',str(root),'--device','cpu','--eager','--report-every','1']
+            base=[sys.executable,'-m','examples.scale_cavity_benchmark','--reference-directory',str(root),'--device','cpu','--eager','--report-every','1','--batch-size','64','--boundary-draws','8','--retain-best']
             environment=dict(os.environ,CUDA_VISIBLE_DEVICES='',PYTHONDONTWRITEBYTECODE='1')
             def run(extra):
                 result=subprocess.run(base+extra,cwd=Path(__file__).resolve().parents[1],env=environment,capture_output=True,text=True,timeout=60)
@@ -80,10 +80,31 @@ class ScaleCavityBenchmarkTests(unittest.TestCase):
             self.assertTrue(torch.equal(a['sampler_rng'],b['sampler_rng']))
             for name,value in a['network'].items():torch.testing.assert_close(value,b['network'][name],rtol=0,atol=0)
             for name,value in a['previous'].items():torch.testing.assert_close(value,b['previous'][name],rtol=0,atol=0)
-            np.savetxt(reference,np.column_stack((points,values+1)),delimiter=',',header='x,y,u,v,p',comments='')
+            # A warm restart is explicitly different from continuation: reset
+            # optimizer/sampler, retain source provenance and count prior updates.
+            warm=['--learning-rate','.0001','--warm-start',str(root/'full/checkpoint.pt')]
+            run(warm+['--updates','2','--output',str(root/'warm-split')])
+            run(['--learning-rate','.0001','--updates','4','--output',str(root/'warm-split'),'--resume',str(root/'warm-split/checkpoint.pt')])
+            run(warm+['--updates','4','--output',str(root/'warm-full')])
+            a=torch.load(root/'warm-split/checkpoint.pt',weights_only=True);b=torch.load(root/'warm-full/checkpoint.pt',weights_only=True)
+            self.assertEqual(a['signature']['initialization']['kind'],'warm_start_reset_adam')
+            self.assertEqual(a['signature']['initialization']['source_updates'],4)
+            self.assertEqual(a['history'],b['history'])
+            from examples.plot_scale_cavity import inspect_run
+            best_model,_,best_report,_,_=inspect_run(root/'warm-full',root,best=True)
+            self.assertEqual(best_report['selection']['kind'],'minimum_reported_reference_error')
+            self.assertEqual(best_report['total_updates'],4+best_report['steps'])
+            self.assertLessEqual(best_report['steps'],4)
+            self.assertEqual(next(best_model.parameters()).dtype,torch.float32)
+            for name,value in a['network'].items():torch.testing.assert_close(value,b['network'][name],rtol=0,atol=0)
+            changed=values.copy();inside=((points>0)&(points<1)).all(1);changed[inside,0]+=1
+            np.savetxt(reference,np.column_stack((points,changed)),delimiter=',',header='x,y,u,v,p',comments='')
             rejected=subprocess.run(base+['--updates','5','--output',str(root/'split'),'--resume',str(root/'split/checkpoint.pt')],cwd=Path(__file__).resolve().parents[1],env=environment,capture_output=True,text=True,timeout=30)
             self.assertNotEqual(rejected.returncode,0);self.assertIn('protocol/data/backend differs',rejected.stderr)
             self.assertEqual(torch.load(root/'split/checkpoint.pt',weights_only=True)['step'],4)
+            from examples.scale_cavity_benchmark import load_reference
+            np.savetxt(reference,np.column_stack((points,values+1)),delimiter=',',header='x,y,u,v,p',comments='')
+            with self.assertRaisesRegex(ValueError,'boundary labels'):load_reference(root,3200)
 
     @unittest.skipUnless(torch.cuda.is_available(),'CUDA required')
     def test_cuda_compiled_loss_and_parameter_gradients_match_eager_jets(self):

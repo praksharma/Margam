@@ -420,8 +420,11 @@ These are proposed features; current execution still runs one supported problem.
   derivative-jet compiled objective, with native Scale loss/parameter-gradient
   parity and resumable fixed-cloud mini-batch experiments. Keep it separate from
   the GUI starter presets and general network compilation.
-- [ ] Qualify full-budget SCALE cavity accuracy across seeds; preserve unsuccessful
-  runs and distinguish paper targets, raw CFD error and local measured runtime.
+- [x] Record full-budget SCALE cavity attempts, failed seeds, changed-protocol
+  refinements, raw CFD metrics, independent checkpoint inference and local timing.
+- [ ] Close the remaining SCALE cavity accuracy/convergence gap: best original
+  50k runs are 4.17% (Re=3200) and 18.36% (Re=7500); refinements reach 3.70%/3.95%
+  only with reference selection and extra work. Paper targets are 1.73%/2.97%.
 - [ ] Consider other paper-specific architectures/frequency settings separately;
   the reusable GUI method does not claim their full reproduction.
 - [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.

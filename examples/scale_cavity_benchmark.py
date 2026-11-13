@@ -29,6 +29,10 @@ def load_reference(directory,reynolds):
     if not np.array_equal(points.min(0),[0.,0.]) or not np.array_equal(points.max(0),[1.,1.]):raise ValueError('Expected a unit-square CFD reference.')
     wall=((points==0)|(points==1)).any(1);corner=((points==0)|(points==1)).all(1)
     if (wall&~corner).sum()<50:raise ValueError('Insufficient boundary points.')
+    if not (~wall).any():raise ValueError('The cavity reference needs interior rows.')
+    check=wall&~corner;expected=(points[check,1]==1).astype(float)
+    if not np.allclose(data[check,2],expected,rtol=0,atol=1e-10) or not np.allclose(data[check,3],0.,rtol=0,atol=1e-10):
+        raise ValueError('Reference boundary labels do not describe a unit moving lid and stationary side/bottom walls.')
     return data,wall,corner,dict(file=name,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),rows=len(data))
 
 
@@ -45,7 +49,7 @@ def evaluate(network,data,wall,corner):
     if not np.isfinite(prediction).all():raise FloatingPointError('Nonfinite predictions; no valid checkpoint published.')
     def metric(mask,values=prediction[:,:2]):
         error=values[mask]-target[mask];den=np.linalg.norm(target[mask])
-        return dict(rows=int(mask.sum()),velocity_mse=float(np.mean(error**2)),velocity_relative_l2=float(np.linalg.norm(error)/den),velocity_max_absolute_error=float(abs(error).max()))
+        return dict(rows=int(mask.sum()),velocity_mse=float(np.mean(error**2)),velocity_relative_l2=float(np.linalg.norm(error)/den) if den else None,velocity_max_absolute_error=float(abs(error).max()))
     replaced=prediction[:,:2].copy();replaced[wall]=target[wall]
     return dict(raw_without_corners=metric(~corner),raw_interior=metric(~wall),raw_complete=metric(np.ones(len(data),dtype=bool)),boundary_replaced_for_comparison_only=metric(~corner,replaced)),prediction
 
@@ -56,7 +60,19 @@ def main():
     p.add_argument('--reynolds',type=int,choices=(3200,7500),default=3200);p.add_argument('--seed',type=int)
     p.add_argument('--updates',type=int,default=50000);p.add_argument('--device',choices=('cpu','cuda'),default='cuda');p.add_argument('--eager',action='store_true')
     p.add_argument('--output',type=Path,required=True);p.add_argument('--resume',type=Path);p.add_argument('--report-every',type=int,default=1000)
+    p.add_argument('--warm-start',type=Path,help='Start a new, explicitly changed training phase from network weights only; reset Adam and sampling.')
+    p.add_argument('--learning-rate',type=float,help='Override the notebook initial rate; recorded as a changed protocol.')
+    p.add_argument('--batch-size',type=int,help='Override total draw count; recorded as a changed protocol.')
+    p.add_argument('--boundary-draws',type=int,help='Override the additional boundary draw count.')
+    p.add_argument('--retain-best',action='store_true',help='Also retain the lowest reported CFD-error checkpoint, explicitly labelled as reference-selected.')
     a=p.parse_args();settings=protocol(a.reynolds,a.seed)
+    if a.batch_size is not None:settings['batch']=a.batch_size
+    if a.boundary_draws is not None:settings['boundary_draws']=a.boundary_draws
+    if not 2<=settings['batch']<=8192 or not 1<=settings['boundary_draws']<settings['batch']:p.error('Use total batch 2–8192 and 1 <= boundary draws < batch.')
+    if a.resume and a.warm_start:p.error('Choose checkpoint continuation or a weights-only warm restart.')
+    if a.learning_rate is not None:
+        if not math.isfinite(a.learning_rate) or not 1e-6<=a.learning_rate<=.01:p.error('Initial learning rate must be between 1e-6 and 0.01.')
+        settings['lr']=a.learning_rate
     if not 1<=a.updates<=settings['schedule_steps'] or a.report_every<1:p.error('Use 1–50000 updates and a positive report interval.')
     if a.output.exists() and not a.resume:p.error('Choose a fresh output directory, or explicitly resume.')
     if a.device=='cpu' and not a.eager:p.error('CPU mode currently requires --eager; compiled measurements use CUDA.')
@@ -77,18 +93,33 @@ def main():
     from examples.validate_cuda import source_identity
     root=Path(__file__).resolve().parents[1];source=source_identity(root);script_hash=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     signature.update(torch=str(torch.__version__),device=a.device,network_sha256=hashlib.sha256((root/'margam/research/scale_cavity.py').read_bytes()).hexdigest())
+    snapshots=a.output/'sources';snapshots.mkdir(exist_ok=True);(snapshots/(script_hash+'.py')).write_bytes(Path(__file__).read_bytes())
+    initialization=dict(kind='he_uniform',source_updates=0,source_training_seconds=0.)
+    if a.warm_start:
+        if a.warm_start.stat().st_size>64*1024*1024:raise ValueError('Warm-start checkpoint exceeds 64 MiB.')
+        parent=torch.load(a.warm_start,map_location='cpu',weights_only=True)
+        if parent.get('format')!='margam-scale-cavity-research' or parent.get('version') not in (1,2):raise ValueError('Choose a SCALE cavity research checkpoint.')
+        origin=parent['signature'];prior=origin.get('initialization',{})
+        if origin['protocol']['reynolds']!=a.reynolds or origin['protocol']['width']!=settings['width'] or origin['reference']!=reference:raise ValueError('Warm-start physics/reference differs.')
+        expected=network.state_dict();weights=parent['network']
+        if set(weights)!=set(expected) or any(not isinstance(v,torch.Tensor) or v.shape!=expected[k].shape or v.dtype!=expected[k].dtype or not torch.isfinite(v).all() for k,v in weights.items()):raise ValueError('Invalid warm-start weights.')
+        network.load_state_dict(weights);previous.load_state_dict(weights)
+        initialization=dict(kind='warm_start_reset_adam',source_updates=parent['step']+prior.get('source_updates',0),source_training_seconds=parent['training_seconds']+prior.get('source_training_seconds',0.),source_sha256=hashlib.sha256(a.warm_start.read_bytes()).hexdigest(),source_initial_lr=origin['protocol']['lr'])
     if a.resume:
         if a.resume.stat().st_size>64*1024*1024:raise ValueError('Research checkpoint exceeds 64 MiB.')
         saved=torch.load(a.resume,map_location='cpu',weights_only=True)
-        if saved.get('format')!='margam-scale-cavity-research' or saved.get('version')!=2 or saved.get('signature')!=signature:raise ValueError('Checkpoint protocol/data/backend differs.')
+        old_signature=saved.get('signature',{})
+        if saved.get('format')!='margam-scale-cavity-research' or saved.get('version')!=2 or {k:v for k,v in old_signature.items() if k!='initialization'}!=signature:raise ValueError('Checkpoint protocol/data/backend differs.')
+        initialization=old_signature.get('initialization',initialization)
         network.load_state_dict(saved['network']);previous.load_state_dict(saved['previous']);optimizer.load_state_dict(saved['optimizer'])
         generator.set_state(saved['sampler_rng']);step=saved['step'];history=saved['history'];training_seconds=saved['training_seconds']
         lr=optimizer.param_groups[0]['lr'].to(device=device);optimizer.param_groups[0]['lr']=lr
         if len(history)!=step or not 0<=step<a.updates:raise ValueError('Checkpoint step/history does not match the requested continuation.')
+    signature['initialization']=initialization
     boundary_count=int(flags.sum())
     current_parameters=list(network.parameters());old_parameters=list(previous.parameters())
     def sample_batch():
-        indices=torch.cat((torch.randint(all_count,(settings['batch']-50,),generator=generator,device=device),all_count+torch.randint(boundary_count,(50,),generator=generator,device=device)))
+        indices=torch.cat((torch.randint(all_count,(settings['batch']-settings['boundary_draws'],),generator=generator,device=device),all_count+torch.randint(boundary_count,(settings['boundary_draws'],),generator=generator,device=device)))
         return all_points[indices],all_flags[indices],all_targets[indices]
     def objective(points,boundary,targets):
         corrected,u_bc,v_bc,raw,correction=cavity_terms(network,previous,points,boundary,targets,reynolds=a.reynolds,tau_sc=settings['tau_sc'],tau_alpha=settings['tau_alpha'])
@@ -102,7 +133,8 @@ def main():
     if device.type=='cuda':torch.cuda.synchronize();torch.cuda.reset_peak_memory_stats()
     compilation_seconds=time.perf_counter()-cold
     print(json.dumps(dict(event='ready',settings=settings,parameters=sum(v.numel() for v in current_parameters),compile_and_first_backward_seconds=compilation_seconds)),flush=True)
-    block=[];block_start=time.perf_counter();last_metrics=None
+    block=[];block_start=time.perf_counter();last_metrics=None;best_error=float('inf')
+    if a.retain_best and a.resume and (a.output/'best-report.json').exists():best_error=json.loads((a.output/'best-report.json').read_text())['metrics']['raw_without_corners']['velocity_relative_l2']
     while step<a.updates:
         optimizer.zero_grad(set_to_none=True);lr.fill_(learning_rate(step,settings));loss,stats=function(*sample_batch());loss.backward()
         with torch.no_grad():torch._foreach_copy_(old_parameters,current_parameters)
@@ -127,9 +159,17 @@ def main():
             report=dict(scope='Independent PyTorch Scale-PINN cavity reproduction attempt; research protocol, not a native GUI checkpoint.',settings=settings,reference=reference,steps=step,parameters=sum(v.numel() for v in current_parameters),metrics=last_metrics,
                 training_seconds=training_seconds,compile_and_first_backward_seconds=compilation_seconds,wall_seconds=time.perf_counter()-started,python=platform.python_version(),torch=torch.__version__,hardware=torch.cuda.get_device_name() if device.type=='cuda' else 'CPU',device=a.device,
                 peak_allocated_bytes=torch.cuda.max_memory_allocated() if device.type=='cuda' else None,notes=['Boundary velocity labels only; interior CFD values are evaluation-only.','No pressure gauge, matching the research notebook; velocity metrics are pressure-gauge independent.','Different PyTorch/JAX RNG streams; no bitwise upstream initialization claim.','PDE uses interior rows only for this research protocol; native arrow rules are unchanged.','Times are synchronized local measurements; evaluation/checkpoint I/O excluded from training time.'])
+            report.update(initialization=initialization,total_updates=initialization['source_updates']+step,total_training_seconds=initialization['source_training_seconds']+training_seconds)
+            if initialization['kind']=='warm_start_reset_adam':report['notes'].append('Weights-only warm restart with reset Adam/sampling; changed protocol, not a 50000-update paper reproduction.')
             report['source']=source;report['benchmark_sha256']=script_hash
             (a.output/'report.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
             np.savetxt(a.output/'predictions.csv',np.column_stack((data[:,:2],prediction)),delimiter=',',header='x,y,u,v,p',comments='')
+            if a.retain_best and last_metrics['raw_without_corners']['velocity_relative_l2']<best_error:
+                best_error=last_metrics['raw_without_corners']['velocity_relative_l2']
+                best_report=deepcopy(report);best_report['selection']=dict(kind='minimum_reported_reference_error',report_interval=a.report_every,warning='Reference-selected checkpoint, not the final fixed-budget iterate.')
+                temporary=a.output/'best-checkpoint.tmp';torch.save(state,temporary);temporary.replace(a.output/'best-checkpoint.pt')
+                (a.output/'best-report.json').write_text(json.dumps(best_report,indent=2,allow_nan=False)+'\n')
+                np.savetxt(a.output/'best-predictions.csv',np.column_stack((data[:,:2],prediction)),delimiter=',',header='x,y,u,v,p',comments='')
             print(json.dumps(dict(event='progress',step=step,training_seconds=training_seconds,loss=rows[-1,0],**last_metrics['raw_without_corners'])),flush=True)
             block_start=time.perf_counter()
     return 0

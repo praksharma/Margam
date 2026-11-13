@@ -190,3 +190,20 @@ records all 26 checks passed without skips. Its new flow case retains exact
 weights, active samples and ordinary history, qualifying only raw/weighted CUDA
 gradient-loss diagnostics with two dtype epsilons relative tolerance and zero
 absolute tolerance. Both audits remain available; neither is an accuracy benchmark.
+
+## SCALE cavity reproduction attempts
+
+[scale-cavity-reproduction-2026-11-13.json](scale-cavity-reproduction-2026-11-13.json)
+retains 11 completed 50k-update phases and two separately labelled reference-selected
+snapshots, with settings, reference/checkpoint/source hashes, synchronized local
+costs and fresh CPU inference metrics. Original 50k accuracy is 4.17–5.98% at
+Re=3200 and 18.36–37.76% at Re=7500. Changed-protocol final 150k runs reach
+3.93%/4.54%; selected snapshots reach 3.70%/3.95%. The paper's errors remain
+unmatched. See the [protocol, figures and limitations](../../docs/scale-cavity-benchmark.md).
+
+[cuda-validation-scale-cavity-2026-11-13.json](cuda-validation-scale-cavity-2026-11-13.json)
+records all 27 selected CUDA checks passed, including compiled versus eager
+SCALE cavity loss and parameter gradients. The centerline PNGs are independently
+reloaded model predictions compared with local CFD cuts, not heatmaps or exact
+solutions. Upstream reference fields/code are not bundled; full research checkpoints,
+prediction CSV/VTU files and source snapshots stay under ignored `build/scale-cavity/`.

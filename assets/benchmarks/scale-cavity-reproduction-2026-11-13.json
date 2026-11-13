@@ -1,0 +1,1389 @@
+{
+  "format": "margam-scale-cavity-attempts",
+  "version": 1,
+  "scope": "Independent PyTorch reproduction attempts. Raw velocity metrics on local CFD rows; all attempts retained. A met error threshold alone is not a full paper-protocol or hardware reproduction.",
+  "paper": {
+    "arxiv": "2602.19475v1",
+    "repository_revision": "5ff8219d2604de8a57a5b7a9c7db9b435c5c3257",
+    "reported": {
+      "3200": {
+        "relative_l2": 0.0173,
+        "updates": 50000,
+        "training_seconds": 90
+      },
+      "7500": {
+        "relative_l2": 0.0297,
+        "updates": 50000,
+        "training_seconds": 150
+      }
+    },
+    "hardware": "RTX 3090, JAX"
+  },
+  "records": [
+    {
+      "run": "re3200-seed10",
+      "checkpoint_kind": "final",
+      "report_sha256": "8828c0485958ea18b82384a1000a24185109cc406913c2e9bed4dc00c4cdd85c",
+      "checkpoint_sha256": "e376595b072a7294a1b405ebd8ee719a389a377cf9016a2eddd59f6f063b7218",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 10
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00017696571636071699,
+          "velocity_relative_l2": 0.05984149793157939,
+          "velocity_max_absolute_error": 0.09283004187889099
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00018342170680770212,
+          "velocity_relative_l2": 0.06287697014485505,
+          "velocity_max_absolute_error": 0.09283004187889099
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00018056562528388193,
+          "velocity_relative_l2": 0.060399984588066044,
+          "velocity_max_absolute_error": 0.2534956932067871
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00017636702577663666,
+          "velocity_relative_l2": 0.05974018764805188,
+          "velocity_max_absolute_error": 0.09283004187889099
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00017696566370591882,
+          "velocity_relative_l2": 0.05984148902888826,
+          "velocity_max_absolute_error": 0.09282998227424621
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00018342165565353636,
+          "velocity_relative_l2": 0.06287696137702917,
+          "velocity_max_absolute_error": 0.09282998227424621
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00018056556195650972,
+          "velocity_relative_l2": 0.06039997399642482,
+          "velocity_max_absolute_error": 0.2534952759742737
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.0001763669765899388,
+          "velocity_relative_l2": 0.05974017931763198,
+          "velocity_max_absolute_error": 0.09282998227424621
+        }
+      },
+      "training_seconds": 198.18139980700653,
+      "total_training_seconds": 198.18139980700653,
+      "compile_and_first_backward_seconds": 2.813039269000001,
+      "wall_seconds": 208.52803876300095,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "780aa3b1a0572fc10ad04fdebd9bea31455c70dc",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed20",
+      "checkpoint_kind": "final",
+      "report_sha256": "e9198538bb9cfa31117ec65bf96ed36d0fafd00b153bff17167166868c726672",
+      "checkpoint_sha256": "3fd96a472e5793d4913fb6aca844cc113df007ac0ded3a510c680125044fb866",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 20
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00012849053277428843,
+          "velocity_relative_l2": 0.050990990921424825,
+          "velocity_max_absolute_error": 0.08818201207466125
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00013253337215268638,
+          "velocity_relative_l2": 0.053447680801569065,
+          "velocity_max_absolute_error": 0.08818201207466125
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.0001309140255318684,
+          "velocity_relative_l2": 0.05142950903612681,
+          "velocity_max_absolute_error": 0.20858514308929443
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00012743593476219843,
+          "velocity_relative_l2": 0.050781303123909875,
+          "velocity_max_absolute_error": 0.08818201207466125
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.0001284905210520126,
+          "velocity_relative_l2": 0.05099098859545395,
+          "velocity_max_absolute_error": 0.08818219088859558
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00013253336669965816,
+          "velocity_relative_l2": 0.0534476797020282,
+          "velocity_max_absolute_error": 0.08818219088859558
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00013091404308975248,
+          "velocity_relative_l2": 0.05142951248492966,
+          "velocity_max_absolute_error": 0.20858585834503174
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00012743592951890208,
+          "velocity_relative_l2": 0.0507813020792225,
+          "velocity_max_absolute_error": 0.08818219088859558
+        }
+      },
+      "training_seconds": 198.99273409797752,
+      "total_training_seconds": 198.99273409797752,
+      "compile_and_first_backward_seconds": 2.8109071709986893,
+      "wall_seconds": 209.00361116799832,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "780aa3b1a0572fc10ad04fdebd9bea31455c70dc",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed30",
+      "checkpoint_kind": "final",
+      "report_sha256": "ebde5028a5bfb800a4cd7a17011f3c6eabaf43ab73e3461fd602bc8587a3c173",
+      "checkpoint_sha256": "e2cbf190709902adbf7723f377969e6e816783326b0bfaf4897f6b8ce8d850bd",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 30
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00011589760531988987,
+          "velocity_relative_l2": 0.04842784215315799,
+          "velocity_max_absolute_error": 0.08326284074134827
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00011974118218012593,
+          "velocity_relative_l2": 0.05080284241837928,
+          "velocity_max_absolute_error": 0.08326284074134827
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00011976576760981205,
+          "velocity_relative_l2": 0.04919099881183146,
+          "velocity_max_absolute_error": 0.2609783411026001
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00011513575209627494,
+          "velocity_relative_l2": 0.04826840943729422,
+          "velocity_max_absolute_error": 0.08326284074134827
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00011589758969170262,
+          "velocity_relative_l2": 0.04842783888803699,
+          "velocity_max_absolute_error": 0.08326285564250946
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00011974117241612851,
+          "velocity_relative_l2": 0.050802840347083406,
+          "velocity_max_absolute_error": 0.08326285564250946
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00011976574051543951,
+          "velocity_relative_l2": 0.04919099324764001,
+          "velocity_max_absolute_error": 0.26097816228866577
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00011513574270781586,
+          "velocity_relative_l2": 0.048268407469330366,
+          "velocity_max_absolute_error": 0.08326285564250946
+        }
+      },
+      "training_seconds": 200.72573322098833,
+      "total_training_seconds": 200.72573322098833,
+      "compile_and_first_backward_seconds": 2.6673777809992316,
+      "wall_seconds": 210.58124794800096,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed40",
+      "checkpoint_kind": "final",
+      "report_sha256": "cb03137d9e98ae783480acf6377ef15a05baf326af3f1ce5325937275e90ca19",
+      "checkpoint_sha256": "1a42fba010b2f3d62353e5a04060ad854cdf76527648645c9bd923df88087532",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 40
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 8.577402865872392e-05,
+          "velocity_relative_l2": 0.04166158525668299,
+          "velocity_max_absolute_error": 0.10365360462017059
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 8.785103447694771e-05,
+          "velocity_relative_l2": 0.043515069439234146,
+          "velocity_max_absolute_error": 0.10365360462017059
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 8.820858846207568e-05,
+          "velocity_relative_l2": 0.04221577105894392,
+          "velocity_max_absolute_error": 0.20473968982696533
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 8.447214853552665e-05,
+          "velocity_relative_l2": 0.04134420611917111,
+          "velocity_max_absolute_error": 0.10365360462017059
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 8.57740698603088e-05,
+          "velocity_relative_l2": 0.041661595262760365,
+          "velocity_max_absolute_error": 0.10365354501552582
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 8.785108100110368e-05,
+          "velocity_relative_l2": 0.043515080961589125,
+          "velocity_max_absolute_error": 0.10365354501552582
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 8.820865080538058e-05,
+          "velocity_relative_l2": 0.04221578597739046,
+          "velocity_max_absolute_error": 0.20474064350128174
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 8.4472193270292e-05,
+          "velocity_relative_l2": 0.04134421706670321,
+          "velocity_max_absolute_error": 0.10365354501552582
+        }
+      },
+      "training_seconds": 195.2312638080184,
+      "total_training_seconds": 195.2312638080184,
+      "compile_and_first_backward_seconds": 2.7876792709976144,
+      "wall_seconds": 205.7364734900002,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed50",
+      "checkpoint_kind": "final",
+      "report_sha256": "167ecd4245bc162a8b97fcb31eeb8870171df56221dd82eb69505b0feb4ad46b",
+      "checkpoint_sha256": "ab04f74a92937bb330d0a63c090b2ef1912c1b956f29fdbb6b86250efef1ac29",
+      "checkpoint_version": 1,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 50
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.00014195675122403566,
+          "velocity_relative_l2": 0.053596436161776465,
+          "velocity_max_absolute_error": 0.09551247441120148
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00014712510542419488,
+          "velocity_relative_l2": 0.05631312578565012,
+          "velocity_max_absolute_error": 0.09551247441120148
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.0001435500693726161,
+          "velocity_relative_l2": 0.05385437536917788,
+          "velocity_max_absolute_error": 0.1554408073425293
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.0001414664475232643,
+          "velocity_relative_l2": 0.053503797872779056,
+          "velocity_max_absolute_error": 0.09551247441120148
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 0.0001419567659978744,
+          "velocity_relative_l2": 0.0535964389507424,
+          "velocity_max_absolute_error": 0.09551222109146118
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 0.00014712511826800022,
+          "velocity_relative_l2": 0.056313128243676604,
+          "velocity_max_absolute_error": 0.09551222109146118
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 0.00014355006024379982,
+          "velocity_relative_l2": 0.053854373656790314,
+          "velocity_max_absolute_error": 0.1554396152496338
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 0.00014146645987307715,
+          "velocity_relative_l2": 0.05350380020818044,
+          "velocity_max_absolute_error": 0.09551222109146118
+        }
+      },
+      "training_seconds": 205.7513286680005,
+      "total_training_seconds": 205.7513286680005,
+      "compile_and_first_backward_seconds": 25.931088834997354,
+      "wall_seconds": 238.77377845599767,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "780aa3b1a0572fc10ad04fdebd9bea31455c70dc",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "a1a831dba22048ad63cde1ef5d69713af1a6c7caeb5b2dfd4d615754f65f142b",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re7500-seed20",
+      "checkpoint_kind": "final",
+      "report_sha256": "a60a5050975283a21aa6e6522cafcd4f966b0c1be36476555261ebd50f38f949",
+      "checkpoint_sha256": "7cc1fa1700fed512a30c2df4044e95f6a6b93457154f77fb2c5f33b205583c8a",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 7500,
+        "width": 64,
+        "batch": 1000,
+        "boundary_draws": 50,
+        "tau_sc": 0.095,
+        "tau_alpha": 0.5,
+        "bc_weight": 10.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 1.2,
+        "schedule_steps": 50000,
+        "seed": 20
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 59520,
+      "reference": {
+        "file": "LDC_RE7500_150x150_CELL_sub256x256.csv",
+        "sha256": "a86fa7ad25f68b11474e98678331c94c5a3fe1880fcf09e2782650e78d2d4a96",
+        "rows": 23104
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.006934060067817476,
+          "velocity_relative_l2": 0.37762213774076525,
+          "velocity_max_absolute_error": 0.3871141202842712
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.007117877559892136,
+          "velocity_relative_l2": 0.39086758456839915,
+          "velocity_max_absolute_error": 0.3871141202842712
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.006934188515736972,
+          "velocity_relative_l2": 0.3774903344508521,
+          "velocity_max_absolute_error": 0.3871141202842712
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.006932997623271561,
+          "velocity_relative_l2": 0.37759320678645475,
+          "velocity_max_absolute_error": 0.3871141202842712
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.006934060010390046,
+          "velocity_relative_l2": 0.3776221361770444,
+          "velocity_max_absolute_error": 0.3871144183074951
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.007117877498504958,
+          "velocity_relative_l2": 0.3908675828829067,
+          "velocity_max_absolute_error": 0.3871144183074951
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.0069341884483973965,
+          "velocity_relative_l2": 0.37749033261790227,
+          "velocity_max_absolute_error": 0.3871144183074951
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.006932997563478855,
+          "velocity_relative_l2": 0.3775932051582038,
+          "velocity_max_absolute_error": 0.3871144183074951
+        }
+      },
+      "training_seconds": 201.64122527400468,
+      "total_training_seconds": 201.64122527400468,
+      "compile_and_first_backward_seconds": 30.302374704999238,
+      "wall_seconds": 242.59347056200204,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "780aa3b1a0572fc10ad04fdebd9bea31455c70dc",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re7500-seed50",
+      "checkpoint_kind": "final",
+      "report_sha256": "586bdfb6c30d056eafce83f24a1d7fc5841fb5a2e7b28a2204e8775cfe12eebd",
+      "checkpoint_sha256": "e8f80a1e68bf1e9f9a15078076b9c01eaefbb788a99d105534148c3bc57f0122",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 7500,
+        "width": 64,
+        "batch": 1000,
+        "boundary_draws": 50,
+        "tau_sc": 0.095,
+        "tau_alpha": 0.5,
+        "bc_weight": 10.0,
+        "lr": 0.0005,
+        "end_lr": 1e-10,
+        "cosine_exponent": 1.2,
+        "schedule_steps": 50000,
+        "seed": 50
+      },
+      "steps": 50000,
+      "total_updates": 50000,
+      "parameters": 59520,
+      "reference": {
+        "file": "LDC_RE7500_150x150_CELL_sub256x256.csv",
+        "sha256": "a86fa7ad25f68b11474e98678331c94c5a3fe1880fcf09e2782650e78d2d4a96",
+        "rows": 23104
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.0016386838744104724,
+          "velocity_relative_l2": 0.18357402773778972,
+          "velocity_max_absolute_error": 0.23180693822372436
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.0016814749867438406,
+          "velocity_relative_l2": 0.1899763783135647,
+          "velocity_max_absolute_error": 0.23180693822372436
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.0016393735735321414,
+          "velocity_relative_l2": 0.18354686830489048,
+          "velocity_max_absolute_error": 0.23180693822372436
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.0016378003117634814,
+          "velocity_relative_l2": 0.1835245303861791,
+          "velocity_max_absolute_error": 0.23180693822372436
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.001638683827705323,
+          "velocity_relative_l2": 0.18357402512171084,
+          "velocity_max_absolute_error": 0.2318071170376587
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.0016814749364917143,
+          "velocity_relative_l2": 0.18997637547477222,
+          "velocity_max_absolute_error": 0.2318071170376587
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.0016393735183405328,
+          "velocity_relative_l2": 0.18354686521522035,
+          "velocity_max_absolute_error": 0.2318071170376587
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.0016378002628166047,
+          "velocity_relative_l2": 0.1835245276437958,
+          "velocity_max_absolute_error": 0.2318071170376587
+        }
+      },
+      "training_seconds": 199.34338339199167,
+      "total_training_seconds": 199.34338339199167,
+      "compile_and_first_backward_seconds": 2.8071170339972014,
+      "wall_seconds": 212.50884743400093,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "he_uniform",
+        "source_updates": 0,
+        "source_training_seconds": 0.0
+      },
+      "source": {
+        "base_commit": "780aa3b1a0572fc10ad04fdebd9bea31455c70dc",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "ceb02b8b29a884749926385a71a71b0a7a0e5a10e9c8f2140f8270d2517676ac",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed40-refine",
+      "checkpoint_kind": "final",
+      "report_sha256": "b84daff23cc9315e96297eda0625b996dd8d903b05f527ae1aa87cf873ad84d7",
+      "checkpoint_sha256": "37bb8d8ba70cf7ae05d5befb4b9e5b77a9b79e4a4772c5dacefb7d6b1fb2549c",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 400,
+        "boundary_draws": 50,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 0.0001,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 40
+      },
+      "steps": 50000,
+      "total_updates": 100000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 7.729488232835068e-05,
+          "velocity_relative_l2": 0.03954879512715586,
+          "velocity_max_absolute_error": 0.09163931989021301
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 7.977446905754337e-05,
+          "velocity_relative_l2": 0.041466578494150606,
+          "velocity_max_absolute_error": 0.09163931989021301
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 7.934425437184958e-05,
+          "velocity_relative_l2": 0.04003842925483197,
+          "velocity_max_absolute_error": 0.1809011697769165
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 7.670622024763786e-05,
+          "velocity_relative_l2": 0.03939790951530018,
+          "velocity_max_absolute_error": 0.09163931989021301
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 7.729493161662168e-05,
+          "velocity_relative_l2": 0.039548807736602715,
+          "velocity_max_absolute_error": 0.09163915597743988
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 7.977452048775595e-05,
+          "velocity_relative_l2": 0.04146659186079928,
+          "velocity_max_absolute_error": 0.09163915597743988
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 7.934431810364429e-05,
+          "velocity_relative_l2": 0.04003844533489007,
+          "velocity_max_absolute_error": 0.1809016466140747
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 7.670626969976532e-05,
+          "velocity_relative_l2": 0.03939792221511854,
+          "velocity_max_absolute_error": 0.09163915597743988
+        }
+      },
+      "training_seconds": 201.2104587510039,
+      "total_training_seconds": 396.4417225590223,
+      "compile_and_first_backward_seconds": 2.7827773059980245,
+      "wall_seconds": 211.7771282379981,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 50000,
+        "source_training_seconds": 195.2312638080184,
+        "source_sha256": "1a42fba010b2f3d62353e5a04060ad854cdf76527648645c9bd923df88087532",
+        "source_initial_lr": 0.0005
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "f498e9d066f2f9a7ceac174f9175347d0dd92971665ddd8890070a232c3e73fd",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re7500-seed50-refine",
+      "checkpoint_kind": "final",
+      "report_sha256": "3e250179def5c378580460fa79c0d92d8b0ec97775b7ebd945b7b1de164e5fd3",
+      "checkpoint_sha256": "e2347e03df191d0af7844516143a97d8c613dfb74d86d62503349e1246184421",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 7500,
+        "width": 64,
+        "batch": 1000,
+        "boundary_draws": 50,
+        "tau_sc": 0.095,
+        "tau_alpha": 0.5,
+        "bc_weight": 10.0,
+        "lr": 0.0001,
+        "end_lr": 1e-10,
+        "cosine_exponent": 1.2,
+        "schedule_steps": 50000,
+        "seed": 50
+      },
+      "steps": 50000,
+      "total_updates": 100000,
+      "parameters": 59520,
+      "reference": {
+        "file": "LDC_RE7500_150x150_CELL_sub256x256.csv",
+        "sha256": "a86fa7ad25f68b11474e98678331c94c5a3fe1880fcf09e2782650e78d2d4a96",
+        "rows": 23104
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.00020036770467193212,
+          "velocity_relative_l2": 0.06419149764499739,
+          "velocity_max_absolute_error": 0.10188007780418395
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.00020556029752085607,
+          "velocity_relative_l2": 0.0664238458830372,
+          "velocity_max_absolute_error": 0.10188007780418395
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.00020114857686920535,
+          "velocity_relative_l2": 0.06429341525827954,
+          "velocity_max_absolute_error": 0.16008806228637695
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.00020022106901382088,
+          "velocity_relative_l2": 0.06416800462427763,
+          "velocity_max_absolute_error": 0.10188007780418395
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.00020036771104974262,
+          "velocity_relative_l2": 0.06419149866662213,
+          "velocity_max_absolute_error": 0.10188028642044067
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.00020556030472516167,
+          "velocity_relative_l2": 0.06642384704702092,
+          "velocity_max_absolute_error": 0.10188028642044067
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.00020114858330894027,
+          "velocity_relative_l2": 0.06429341628745049,
+          "velocity_max_absolute_error": 0.16008901596069336
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.00020022107603100158,
+          "velocity_relative_l2": 0.06416800574873094,
+          "velocity_max_absolute_error": 0.10188028642044067
+        }
+      },
+      "training_seconds": 198.85827780199907,
+      "total_training_seconds": 398.20166119399073,
+      "compile_and_first_backward_seconds": 2.82478988100047,
+      "wall_seconds": 212.70473512099852,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 50000,
+        "source_training_seconds": 199.34338339199167,
+        "source_sha256": "e8f80a1e68bf1e9f9a15078076b9c01eaefbb788a99d105534148c3bc57f0122",
+        "source_initial_lr": 0.0005
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "f498e9d066f2f9a7ceac174f9175347d0dd92971665ddd8890070a232c3e73fd",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed40-large-refine",
+      "checkpoint_kind": "final",
+      "report_sha256": "0f4a8d4472b38bdd77307c349f017b582a5089e6aef67bec847f721a2da2d12a",
+      "checkpoint_sha256": "e9943c4a4a4afa288e60afab7553dc13b2093baa1d86b3f0a90bee54d04eec9e",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 4000,
+        "boundary_draws": 500,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 5e-05,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 40
+      },
+      "steps": 50000,
+      "total_updates": 150000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 7.643211340831666e-05,
+          "velocity_relative_l2": 0.03932745302974695,
+          "velocity_max_absolute_error": 0.11264366012268068
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 7.946361673326601e-05,
+          "velocity_relative_l2": 0.04138570949004192,
+          "velocity_max_absolute_error": 0.11264366012268068
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 7.800243407068963e-05,
+          "velocity_relative_l2": 0.03969843326501467,
+          "velocity_max_absolute_error": 0.16730040311813354
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 7.640732378198655e-05,
+          "velocity_relative_l2": 0.03932107487347133,
+          "velocity_max_absolute_error": 0.11264366012268068
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 7.643211926891464e-05,
+          "velocity_relative_l2": 0.03932745453750577,
+          "velocity_max_absolute_error": 0.11264352601222993
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 7.946362331729437e-05,
+          "velocity_relative_l2": 0.0413857112045667,
+          "velocity_max_absolute_error": 0.11264352601222993
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 7.800243579278766e-05,
+          "velocity_relative_l2": 0.03969843370323557,
+          "velocity_max_absolute_error": 0.16729962825775146
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 7.640733011278306e-05,
+          "velocity_relative_l2": 0.03932107650246253,
+          "velocity_max_absolute_error": 0.11264352601222993
+        }
+      },
+      "training_seconds": 202.95799657199677,
+      "total_training_seconds": 599.3997191310191,
+      "compile_and_first_backward_seconds": 30.26630935200228,
+      "wall_seconds": 241.74416009999914,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 100000,
+        "source_training_seconds": 396.4417225590223,
+        "source_sha256": "37bb8d8ba70cf7ae05d5befb4b9e5b77a9b79e4a4772c5dacefb7d6b1fb2549c",
+        "source_initial_lr": 0.0001
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "c2e4ff1d67daa646d5c59aad2d8be99c3241ee206cc829265cbfdd9a62cd9f08",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re3200-seed40-large-refine",
+      "checkpoint_kind": "reference_selected",
+      "report_sha256": "dbead74f068f6fa59715e263bf161bd602f83cd7b6334bfb14956f9d8e616dce",
+      "checkpoint_sha256": "f61fddd71cd45c36adeb45242cc380d635a360c2220b14cbd8e65f5ca476d645",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 3200,
+        "width": 32,
+        "batch": 4000,
+        "boundary_draws": 500,
+        "tau_sc": 0.06,
+        "tau_alpha": 1.0,
+        "bc_weight": 15.0,
+        "lr": 5e-05,
+        "end_lr": 1e-10,
+        "cosine_exponent": 0.8,
+        "schedule_steps": 50000,
+        "seed": 40
+      },
+      "steps": 1000,
+      "total_updates": 101000,
+      "parameters": 15424,
+      "reference": {
+        "file": "LDC_RE3200_100x100_subsample200x200.csv",
+        "sha256": "1b244a066ef09b37a1a76733ac22c5de8a383d265e62c72ffefad2756572b5c1",
+        "rows": 10404
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 6.751760261519693e-05,
+          "velocity_relative_l2": 0.03696293030767613,
+          "velocity_max_absolute_error": 0.09028435730285644
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 6.963346066442412e-05,
+          "velocity_relative_l2": 0.03874139285320424,
+          "velocity_max_absolute_error": 0.09028435730285644
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 6.945497778648415e-05,
+          "velocity_relative_l2": 0.03746027645335548,
+          "velocity_max_absolute_error": 0.17122089862823486
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 6.695525063886933e-05,
+          "velocity_relative_l2": 0.03680867690452314,
+          "velocity_max_absolute_error": 0.09028435730285644
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 10400,
+          "velocity_mse": 6.751759510148061e-05,
+          "velocity_relative_l2": 0.03696292825096077,
+          "velocity_max_absolute_error": 0.09028444670982361
+        },
+        "raw_interior": {
+          "rows": 10000,
+          "velocity_mse": 6.963345783098656e-05,
+          "velocity_relative_l2": 0.03874139206499612,
+          "velocity_max_absolute_error": 0.09028444670982361
+        },
+        "raw_complete": {
+          "rows": 10404,
+          "velocity_mse": 6.945495001055045e-05,
+          "velocity_relative_l2": 0.03746026896293296,
+          "velocity_max_absolute_error": 0.17121988534927368
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 10400,
+          "velocity_mse": 6.695524791441015e-05,
+          "velocity_relative_l2": 0.03680867615563685,
+          "velocity_max_absolute_error": 0.09028444670982361
+        }
+      },
+      "training_seconds": 4.211160241000471,
+      "total_training_seconds": 400.6528828000228,
+      "compile_and_first_backward_seconds": 30.26630935200228,
+      "wall_seconds": 36.26781882299838,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 100000,
+        "source_training_seconds": 396.4417225590223,
+        "source_sha256": "37bb8d8ba70cf7ae05d5befb4b9e5b77a9b79e4a4772c5dacefb7d6b1fb2549c",
+        "source_initial_lr": 0.0001
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "c2e4ff1d67daa646d5c59aad2d8be99c3241ee206cc829265cbfdd9a62cd9f08",
+      "selection": {
+        "kind": "minimum_reported_reference_error",
+        "report_interval": 1000,
+        "warning": "Reference-selected checkpoint, not the final fixed-budget iterate."
+      },
+      "driver_snapshot_verified": true,
+      "selection_search_training_seconds": 599.3997191310191
+    },
+    {
+      "run": "re7500-seed50-large-refine",
+      "checkpoint_kind": "final",
+      "report_sha256": "5fc656ec8e5c766a0f5503dacd37c3e1a16050a201a97acb80ba40dddb2e0c9a",
+      "checkpoint_sha256": "97f0895c5ec41d4425007bcd6f9d4e6402abfacda03395ae457c07125a8fad0e",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 7500,
+        "width": 64,
+        "batch": 4000,
+        "boundary_draws": 200,
+        "tau_sc": 0.095,
+        "tau_alpha": 0.5,
+        "bc_weight": 10.0,
+        "lr": 5e-05,
+        "end_lr": 1e-10,
+        "cosine_exponent": 1.2,
+        "schedule_steps": 50000,
+        "seed": 50
+      },
+      "steps": 50000,
+      "total_updates": 150000,
+      "parameters": 59520,
+      "reference": {
+        "file": "LDC_RE7500_150x150_CELL_sub256x256.csv",
+        "sha256": "a86fa7ad25f68b11474e98678331c94c5a3fe1880fcf09e2782650e78d2d4a96",
+        "rows": 23104
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.00010033446979618133,
+          "velocity_relative_l2": 0.04542435055003753,
+          "velocity_max_absolute_error": 0.10714292951927185
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.00010299001818668801,
+          "velocity_relative_l2": 0.04701668075259232,
+          "velocity_max_absolute_error": 0.10714292951927185
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.00010100773143835548,
+          "velocity_relative_l2": 0.04556016859810686,
+          "velocity_max_absolute_error": 0.13768041133880615
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.00010031495277924156,
+          "velocity_relative_l2": 0.04541993237282545,
+          "velocity_max_absolute_error": 0.10714292951927185
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 0.0001003344515784743,
+          "velocity_relative_l2": 0.04542434642619281,
+          "velocity_max_absolute_error": 0.10714294442043304
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 0.0001029900002723203,
+          "velocity_relative_l2": 0.04701667666348661,
+          "velocity_max_absolute_error": 0.10714294442043304
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 0.00010100771525983024,
+          "velocity_relative_l2": 0.045560164949394244,
+          "velocity_max_absolute_error": 0.1376805305480957
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 0.00010031493533018211,
+          "velocity_relative_l2": 0.045419928422591155,
+          "velocity_max_absolute_error": 0.10714294442043304
+        }
+      },
+      "training_seconds": 357.53224989800583,
+      "total_training_seconds": 755.7339110919966,
+      "compile_and_first_backward_seconds": 31.427871690000757,
+      "wall_seconds": 402.6294688809976,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 100000,
+        "source_training_seconds": 398.20166119399073,
+        "source_sha256": "e2347e03df191d0af7844516143a97d8c613dfb74d86d62503349e1246184421",
+        "source_initial_lr": 0.0001
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "c2e4ff1d67daa646d5c59aad2d8be99c3241ee206cc829265cbfdd9a62cd9f08",
+      "selection": null,
+      "driver_snapshot_verified": true
+    },
+    {
+      "run": "re7500-seed50-large-refine",
+      "checkpoint_kind": "reference_selected",
+      "report_sha256": "6de9e8b25656fba1e50974d97787ce3c7544a2018cbe07d6829939439e9327ea",
+      "checkpoint_sha256": "c1b300285c6d5c4f447e393911c7cbd1b53d25801e1d1864db8078b84e64b8b3",
+      "checkpoint_version": 2,
+      "settings": {
+        "reynolds": 7500,
+        "width": 64,
+        "batch": 4000,
+        "boundary_draws": 200,
+        "tau_sc": 0.095,
+        "tau_alpha": 0.5,
+        "bc_weight": 10.0,
+        "lr": 5e-05,
+        "end_lr": 1e-10,
+        "cosine_exponent": 1.2,
+        "schedule_steps": 50000,
+        "seed": 50
+      },
+      "steps": 35000,
+      "total_updates": 135000,
+      "parameters": 59520,
+      "reference": {
+        "file": "LDC_RE7500_150x150_CELL_sub256x256.csv",
+        "sha256": "a86fa7ad25f68b11474e98678331c94c5a3fe1880fcf09e2782650e78d2d4a96",
+        "rows": 23104
+      },
+      "metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 7.59205160824732e-05,
+          "velocity_relative_l2": 0.0395132927866731,
+          "velocity_max_absolute_error": 0.10526001879081726
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 7.791368961867096e-05,
+          "velocity_relative_l2": 0.04089415925483837,
+          "velocity_max_absolute_error": 0.10526001879081726
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 7.658010454161027e-05,
+          "velocity_relative_l2": 0.03967034627319194,
+          "velocity_max_absolute_error": 0.13921302556991577
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 7.58899574207834e-05,
+          "velocity_relative_l2": 0.03950533976594896,
+          "velocity_max_absolute_error": 0.10526001879081726
+        }
+      },
+      "fresh_cpu_metrics": {
+        "raw_without_corners": {
+          "rows": 23100,
+          "velocity_mse": 7.592052179994884e-05,
+          "velocity_relative_l2": 0.0395132942745205,
+          "velocity_max_absolute_error": 0.10525994428501129
+        },
+        "raw_interior": {
+          "rows": 22500,
+          "velocity_mse": 7.791369648631724e-05,
+          "velocity_relative_l2": 0.0408941610571315,
+          "velocity_max_absolute_error": 0.10525994428501129
+        },
+        "raw_complete": {
+          "rows": 23104,
+          "velocity_mse": 7.65800977632415e-05,
+          "velocity_relative_l2": 0.039670344517512425,
+          "velocity_max_absolute_error": 0.13921159505844116
+        },
+        "boundary_replaced_for_comparison_only": {
+          "rows": 23100,
+          "velocity_mse": 7.588996411004926e-05,
+          "velocity_relative_l2": 0.03950534150703384,
+          "velocity_max_absolute_error": 0.10525994428501129
+        }
+      },
+      "training_seconds": 250.08804341000723,
+      "total_training_seconds": 648.289704603998,
+      "compile_and_first_backward_seconds": 31.427871690000757,
+      "wall_seconds": 291.7205096039979,
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "torch": "2.14.1+cu130",
+      "initialization": {
+        "kind": "warm_start_reset_adam",
+        "source_updates": 100000,
+        "source_training_seconds": 398.20166119399073,
+        "source_sha256": "e2347e03df191d0af7844516143a97d8c613dfb74d86d62503349e1246184421",
+        "source_initial_lr": 0.0001
+      },
+      "source": {
+        "base_commit": "07b4bf4e359eba13cf466c9fb1790e63155e3916",
+        "runtime_and_test_sha256": "fb32d0b17bf4cb6f23c12bda2d10a7910f0f89c72df0c096b7fd6a205d4654f9",
+        "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+      },
+      "benchmark_sha256": "c2e4ff1d67daa646d5c59aad2d8be99c3241ee206cc829265cbfdd9a62cd9f08",
+      "selection": {
+        "kind": "minimum_reported_reference_error",
+        "report_interval": 1000,
+        "warning": "Reference-selected checkpoint, not the final fixed-budget iterate."
+      },
+      "driver_snapshot_verified": true,
+      "selection_search_training_seconds": 755.7339110919966
+    }
+  ],
+  "original_protocol_seed_summary": [
+    {
+      "reynolds": 3200,
+      "runs": 5,
+      "seeds": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "minimum_relative_l2": 0.04166158525668299,
+      "maximum_relative_l2": 0.05984149793157939,
+      "mean_relative_l2": 0.050903670484924335,
+      "best_final_run": "re3200-seed40"
+    },
+    {
+      "reynolds": 7500,
+      "runs": 2,
+      "seeds": [
+        20,
+        50
+      ],
+      "minimum_relative_l2": 0.18357402773778972,
+      "maximum_relative_l2": 0.37762213774076525,
+      "mean_relative_l2": 0.2805980827392775,
+      "best_final_run": "re7500-seed50"
+    }
+  ],
+  "measured_study_training_seconds": 2360.426051290993,
+  "verification": {
+    "python": "3.14.8",
+    "torch": "2.14.1+cu130",
+    "inference": "Fresh CPU network reconstruction; metric checked against stored GPU report with rtol=1e-4, atol=1e-8."
+  },
+  "limitations": [
+    "Random streams differ from upstream JAX; identical numeric seeds are not identical weights.",
+    "Training timing excludes evaluation and checkpoint I/O; compiler and wall time are separate.",
+    "Warm restarts change Adam/sampler state, rate and possibly batch size; cumulative costs are explicit.",
+    "Reference-selected checkpoints are separate from final fixed-budget checkpoints; selection search cost is reported.",
+    "Reference fields and upstream code are not redistributed.",
+    "These research checkpoints are separate from native GUI model/run archives."
+  ]
+}

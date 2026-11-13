@@ -9,6 +9,7 @@ training budgets or software/hardware environments.
 
 | Study | Evidence date / device | What it supports |
 | --- | --- | --- |
+| [SCALE cavity attempts](scale-cavity-benchmark.md#recorded-attempts) | 13 November 2026 / CUDA | Full-budget and explicitly changed refinements; fast execution, paper accuracy remains unmatched |
 | [Helmholtz Fourier/LRA](#helmholtz-with-fourier-lra-pinn) | 27 October 2026 / CPU | Three seeds on the paper problem using an existing Fourier network; changed training protocol |
 | [LRA interval Poisson](#learning-rate-annealing-pinn) | 27 October 2026 / CPU | Equal-budget three-seed comparison and strong coefficient-cap sensitivity; baseline wins here |
 | [Baseline vs SA interval Poisson](#baseline-vs-self-adaptive-pinn) | 27 October 2026 / CPU | Working pointwise adaptation; mixed three-seed comparison |

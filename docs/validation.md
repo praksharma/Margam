@@ -1263,3 +1263,31 @@ passes all 26 selected checks with no skips and matching source/test hashes.
 All six focused flow gPINN tests also pass with real CUDA available. The 50-case
 related CPU-mode run remains 46 passed/four skipped; the follow-up changes only
 the new CUDA diagnostic test and documentation, not training arithmetic.
+
+## SCALE cavity benchmark backend and experiments
+
+`tests/test_scale_cavity_benchmark.py` passes six checks with real CUDA available.
+Five-channel coordinate jets match ordinary autograd through second spatial
+order. The corrected objective, raw residual and every parameter gradient match
+the existing native ScalePINN on an independently assembled flow problem with
+changed previous weights. Interior target changes do not alter BC loss. Parameter
+counts match the paper's 15,424/59,520 architectures. The compiled CUDA objective
+and all parameter gradients match eager jets in float64.
+
+The CLI tests verify exact CPU weights, previous iterate, histories and sampling
+RNG after interrupted continuation, and after a separately declared weights-only
+warm restart. Changed reference bytes and incorrect moving-lid labels reject
+loading; best-checkpoint provenance/cumulative updates are checked independently.
+The related Scale/affine/UI/benchmark suite ran 24 CPU-mode tests: 22 passed and
+two CUDA-only cases were skipped. The [final real-CUDA audit](../assets/benchmarks/cuda-validation-scale-cavity-2026-11-13.json)
+passed all 27 selected checks with matching source hashes and no skips.
+
+The [curated study](../assets/benchmarks/scale-cavity-reproduction-2026-11-13.json)
+contains 11 completed phases and two labelled reference-selected snapshots.
+All 13 checkpoint records were independently reloaded on CPU, with raw metrics
+checked against stored GPU results (rtol=1e-4, atol=1e-8) and exact reference hashes.
+Every executed driver revision has a local hash-matching source snapshot. Final
+and selected centerline figures were rendered and inspected; VTU vertex exports
+contain predicted u/v/p and velocity vectors without fabricated connectivity.
+These tests qualify the implementation, not the paper's reported convergence:
+its accuracy targets remain unmatched, as detailed in the [results guide](scale-cavity-benchmark.md#recorded-attempts).

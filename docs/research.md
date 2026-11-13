@@ -393,3 +393,10 @@ case-specific functional derivative blocks and has its own parity/checkpoint
 contract. Extending that approach requires concrete derivative and continuation
 checks. Compilation also has startup cost and can recompile for changed shapes;
 see the [PyTorch compiler API](https://docs.pytorch.org/docs/2.14/generated/torch.compile.html).
+
+The [SCALE cavity benchmark](scale-cavity-benchmark.md) adds another specifically
+qualified route: explicit sine/SiLU coordinate-derivative channels make the
+complete cavity loss an ordinary first-order parameter-autograd graph. Compiled
+losses and parameter gradients are checked against eager/native Scale calculations.
+This research case does not enable general compiled-network training in desktop
+blocks; its full-budget accuracy attempts and limitations are recorded separately.

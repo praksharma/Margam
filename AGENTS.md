@@ -536,3 +536,11 @@
   benchmark jobs; source guards refuse publication after changes. Report every
   seed/failed accuracy attempt and separate synchronized training, compilation,
   evaluation/I/O and wall time; no RTX3090/JAX parity claim from a local run.
+
+- SCALE cavity refinements are explicitly changed protocols. Keep weights-only
+  warm restart distinct from resume; record reset Adam/sampling, source checkpoint
+  hash and cumulative updates/cost. Reference-selected snapshots must stay separate
+  from final iterates and disclose full selection search cost. Curate every attempt,
+  reload weights independently and preserve exact executed driver snapshots.
+  Standalone centerline interpolation is a labelled benchmark diagnostic only;
+  full-field metrics and raw VTU exports retain supplied coordinates/predictions.
