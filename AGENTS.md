@@ -515,3 +515,10 @@
   Keep steady rectangular u/v/p scope, component BCs/gauge and physical-residual
   RAR scoring; do not infer transient/3D/imported vector support. Require an
   opposing-component cancellation oracle and higher-order parameter gradients.
+
+- Coupled gPINN continuation checks keep weights, active samples and ordinary
+  histories exact. CUDA raw/weighted residual-gradient diagnostic reductions may
+  differ by a ULP between fresh graphs; qualify only those fields with at most
+  two dtype epsilons relative tolerance and zero absolute tolerance. Keep the
+  failed audit and measured discrepancy visible; never loosen solver validators
+  or disguise a diagnostic tolerance as universal bitwise reproducibility.

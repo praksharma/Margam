@@ -171,3 +171,12 @@ checkpoints explicitly identify the three-component gradient aggregation and
 reject a changed component contract, coordinate weights or physical configuration.
 The Couette case is a Margam manufactured verification example, not a reproduced
 flow benchmark from the gPINN paper.
+
+Continuation checks retain exact CPU histories and exact CPU/CUDA weights and
+active samples. Independently allocated CUDA higher-derivative graphs can differ
+by a float32 ULP in raw/weighted gradient-loss diagnostics, so those CUDA fields
+use a two-machine-epsilon relative comparison; other history fields stay exact.
+A measured fixed-point run differed by 4.6566×10⁻¹⁰ in one recorded gradient
+loss, with zero weight difference; the paired RAR run matched completely.
+This does not promise universal bitwise GPU reproducibility; see
+[PyTorch reproducibility](https://docs.pytorch.org/docs/2.14/notes/randomness.html).

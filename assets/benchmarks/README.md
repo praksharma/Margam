@@ -179,6 +179,14 @@ accuracy or convergence speed. See [adaptive sampling](../../docs/adaptive-sampl
 ## Steady-flow gPINN
 
 [cuda-validation-gpinn-flow-2026-11-13.json](cuda-validation-gpinn-flow-2026-11-13.json)
-adds real CUDA checks for the component-wise steady u/v/p gPINN extension,
-including fixed-point and RAR exact continuation. It records current source/runtime
-identity and preserves previous audits. See [method scope and normalization](../../docs/gpinn.md#steady-2d-flow-component-wise-gradients).
+preserves the initial **failed** CUDA audit for the component-wise steady u/v/p
+gPINN extension. Its strict diagnostic-history equality exposed a float32-ULP
+reduction difference between fresh graphs; learned weights and samples matched.
+The follow-up audit below keeps exact state checks and qualifies the gradient
+diagnostic comparison separately. See [method scope and normalization](../../docs/gpinn.md#steady-2d-flow-component-wise-gradients).
+
+[cuda-validation-gpinn-flow-final-2026-11-13.json](cuda-validation-gpinn-flow-final-2026-11-13.json)
+records all 26 checks passed without skips. Its new flow case retains exact
+weights, active samples and ordinary history, qualifying only raw/weighted CUDA
+gradient-loss diagnostics with two dtype epsilons relative tolerance and zero
+absolute tolerance. Both audits remain available; neither is an accuracy benchmark.

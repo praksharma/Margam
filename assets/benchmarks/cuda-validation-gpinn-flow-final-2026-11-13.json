@@ -1,0 +1,155 @@
+{
+  "format": "margam-cuda-validation",
+  "version": 1,
+  "scope": "Targeted existing CUDA regression checks, not the full test suite or a paper-accuracy reproduction.",
+  "python": "3.14.8",
+  "torch": "2.14.1+cu130",
+  "compiled_cuda": "13.0",
+  "source": {
+    "base_commit": "389993774c21a2d5ddcf9ca5a6b315ea9b67faf9",
+    "runtime_and_test_sha256": "5865ee94daade041442c409325e37652cd11e10754cc65475a0635d75b9b8c80",
+    "runner_sha256": "967a7042b2ffc9851d50394efa19421d609eb64eeb4869ea1597cc162a860e74"
+  },
+  "status": "passed",
+  "tests": [
+    {
+      "test": "test_pinn.CUDAPINNTests.test_cpu_gpu_losses_agree",
+      "status": "passed",
+      "seconds": 1.3385985429995344
+    },
+    {
+      "test": "test_pinn.CUDAPINNTests.test_gpu_poisson_and_auto_device",
+      "status": "passed",
+      "seconds": 4.904632536999998
+    },
+    {
+      "test": "test_benchmarking.BenchmarkTests.test_real_gpu_recipe_artifacts",
+      "status": "passed",
+      "seconds": 0.02755875000002561
+    },
+    {
+      "test": "test_boundary_weights.BoundaryWeightTests.test_all_trainers_cuda",
+      "status": "passed",
+      "seconds": 0.9255063099990366
+    },
+    {
+      "test": "test_expert.ExpertTests.test_cuda_training_and_checkpoint",
+      "status": "passed",
+      "seconds": 0.21451519000038388
+    },
+    {
+      "test": "test_expert_extensions.ExpertExtensionTests.test_cuda_ntk_time_marching_archive",
+      "status": "passed",
+      "seconds": 0.650081947000217
+    },
+    {
+      "test": "test_scale.ScaleTests.test_cuda_derivatives_checkpoint_and_cpu_archive_validation",
+      "status": "passed",
+      "seconds": 0.19873864200053504
+    },
+    {
+      "test": "test_gpinn.GPINNTests.test_cuda_derivatives_and_checkpoint",
+      "status": "passed",
+      "seconds": 0.15991042200039374
+    },
+    {
+      "test": "test_rba.RBATests.test_cuda_continuation_and_cpu_archive_identity",
+      "status": "passed",
+      "seconds": 0.11567528400155425
+    },
+    {
+      "test": "test_inverse_burgers.InverseBurgersTests.test_cuda_joint_parameters_and_exact_resume",
+      "status": "passed",
+      "seconds": 0.09858234100101981
+    },
+    {
+      "test": "test_research.ResearchCUDATests.test_cuda_custom_components_and_exact_resume",
+      "status": "passed",
+      "seconds": 0.0996781750000082
+    },
+    {
+      "test": "test_research_schedules.ScheduleCUDATests.test_cuda_scheduled_resume",
+      "status": "passed",
+      "seconds": 0.09439537599973846
+    },
+    {
+      "test": "test_integral_constraints.IntegralConstraintTests.test_cuda_integral_gradient_and_exact_resume",
+      "status": "passed",
+      "seconds": 0.02683662799972808
+    },
+    {
+      "test": "test_resources.ResourceTests.test_cuda_memory_snapshot_is_advisory_without_rng_or_tensor_allocation",
+      "status": "passed",
+      "seconds": 0.00047985700075514615
+    },
+    {
+      "test": "test_dsgnar.DSGNARTests.test_cuda_exact_resume_both_precisions",
+      "status": "passed",
+      "seconds": 1.2627777809993859
+    },
+    {
+      "test": "test_dsgnar.DSGNARTests.test_cuda_large_dispatch_boundary_and_exact_rows",
+      "status": "passed",
+      "seconds": 0.012290657999983523
+    },
+    {
+      "test": "test_dsgnar.DSGNARTests.test_cuda_touched_buckets_equal_dense_reference",
+      "status": "passed",
+      "seconds": 0.10684077000041725
+    },
+    {
+      "test": "test_dsgnar_profile.ProfileTests.test_cuda_svd_peak_and_complete_attempt_peak",
+      "status": "passed",
+      "seconds": 1.3620143409989396
+    },
+    {
+      "test": "test_dsgnar_ui.DSGNARUITests.test_cuda_isolated_examples_exact_resume_and_export",
+      "status": "passed",
+      "seconds": 66.96086310600003
+    },
+    {
+      "test": "test_isolated_jobs.IsolatedJobTests.test_cuda_child_keeps_retained_state_on_cpu_and_resumes_exactly",
+      "status": "passed",
+      "seconds": 8.478189430001294
+    },
+    {
+      "test": "test_sample_points.SamplePointsTests.test_cuda_snapshot_copies_only_a_detached_page",
+      "status": "passed",
+      "seconds": 0.007438566000928404
+    },
+    {
+      "test": "test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection",
+      "status": "passed",
+      "seconds": 10.938128817000688
+    },
+    {
+      "test": "test_dataset_storage.DatasetStorageTests.test_portable_workflow_cuda",
+      "status": "passed",
+      "seconds": 16.865548941999805
+    },
+    {
+      "test": "test_prediction_batches.PredictionBatchTests.test_all_native_networks_cuda",
+      "status": "passed",
+      "seconds": 0.19380734999867855
+    },
+    {
+      "test": "test_fixed_importance_pool.FixedImportancePoolTests.test_cuda_all_supported_trainers_exact_resume",
+      "status": "passed",
+      "seconds": 0.9349806840000383
+    },
+    {
+      "test": "test_gpinn_flow.FlowGPINNTests.test_cuda_fixed_and_rar_flow_exact_resume",
+      "status": "passed",
+      "seconds": 1.6386310329999105
+    }
+  ],
+  "device": {
+    "index": 0,
+    "name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "capability": [
+      8,
+      6
+    ],
+    "memory_bytes": 6132858880
+  }
+}

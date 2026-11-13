@@ -36,7 +36,17 @@ class FlowGPINNTests(unittest.TestCase):
         part=build_pinn(c);part.train(3,0);state=part.training_state()
         self.assertEqual(state['gpinn']['residual_components'],3)
         resumed=build_pinn(c);resumed.load_training_state(state);resumed.train(2,0)
-        self.assertEqual(full.loss_history,resumed.loss_history)
+        if device=='cuda':
+            # Third-derivative diagnostic reductions can differ by a float32 ULP
+            # between independently allocated graphs, even with deterministic
+            # algorithms enabled. Keep weights, samples and other history exact.
+            for expected,actual in zip(full.loss_history,resumed.loss_history):
+                self.assertEqual(set(expected),set(actual))
+                for key,value in expected.items():
+                    if key.startswith(('pde_grad_','weighted:pde_grad_')):
+                        torch.testing.assert_close(torch.tensor(value,dtype=torch.float64),torch.tensor(actual[key],dtype=torch.float64),rtol=2*torch.finfo(full.dtype).eps,atol=0)
+                    else:self.assertEqual(value,actual[key],key)
+        else:self.assertEqual(full.loss_history,resumed.loss_history)
         for name,value in full.network.state_dict().items():torch.testing.assert_close(value,resumed.network.state_dict()[name],rtol=0,atol=0)
         self.assertEqual(tuple(full.predict([[.2,.4]]).shape),(1,3))
         self.assertIn('pressure_gauge',full.loss_history[-1]);self.assertIn('pde_grad_y',full.loss_history[-1])

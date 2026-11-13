@@ -1226,8 +1226,10 @@ with an independent expression. An exact Couette network satisfies each momentum
 continuity, BC, pressure-gauge and residual-gradient term at zero loss.
 
 Steady u/v/p fixed-point and RAR runs preserve exact same-device CPU/CUDA
-continuation: network weights, loss histories and active samples match an
-uninterrupted run. Zero coordinate-gradient weights reproduce baseline flow
+continuation: network weights and active samples match an uninterrupted run
+exactly. CPU histories match exactly; CUDA raw/weighted gradient diagnostics use
+an explicit two-machine-epsilon relative check while other history fields stay
+exact. Zero coordinate-gradient weights reproduce baseline flow
 training exactly. Wrong component counts and changed checkpoint aggregation
 contracts are rejected. Existing scalar gPINN tests retain their arithmetic and
 checkpoint signatures.
@@ -1245,3 +1247,19 @@ validate implementation and lifecycle, not trained-solution accuracy.
 the scalar trainer/recipe, the scalar monitor after 30 updates, and the untrained
 steady-flow graph. The new image was inspected for readable x/y controls and
 correct u/v/p wiring. The manual build checks 73 rendered pages and their assets.
+
+The [initial full CUDA audit](../assets/benchmarks/cuda-validation-gpinn-flow-2026-11-13.json)
+is retained as a failed record: its new flow case required bitwise equality for
+all CUDA gradient-loss diagnostics. A separate deterministic-algorithm probe
+confirmed that independently allocated higher-derivative graphs could still
+produce a 4.656612873077393e-10 diagnostic difference while weights/samples
+matched exactly. The follow-up test preserves exact state/other-history checks
+and limits only gradient-diagnostic comparisons to two dtype machine epsilons,
+with zero absolute tolerance. No solver acceptance criteria or training arithmetic
+were changed.
+
+The [final CUDA audit](../assets/benchmarks/cuda-validation-gpinn-flow-final-2026-11-13.json)
+passes all 26 selected checks with no skips and matching source/test hashes.
+All six focused flow gPINN tests also pass with real CUDA available. The 50-case
+related CPU-mode run remains 46 passed/four skipped; the follow-up changes only
+the new CUDA diagnostic test and documentation, not training arithmetic.
