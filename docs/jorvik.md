@@ -143,8 +143,8 @@ sample schema version 2 and NetCDF3 export, with a 64 MiB file limit, at most
 100000 interior rows and 100000 boundary rows in total. Units remain those of the
 source geometry; no unit conversion is performed. Prepared-domain method limits
 still apply: no automatic RAR/importance candidate generation, integral quadrature,
-or Expert/Scale fresh sampling on unknown domains. Copy/paste of owned geometry
-and owned data blocks is currently disabled. Existing linked CSV/NPZ inputs are unchanged; new imports can optionally be
+or Expert/Scale fresh sampling on unknown domains. Copy/paste now makes independent owned geometry
+and sample copies; see the workflow below. Existing linked CSV/NPZ inputs are unchanged; new imports can optionally be
 copied into the project using File handling in their mapping dialogs.
 
 This integration does not import arbitrary 3D volumes, rotated planes, mesh cells,
@@ -268,3 +268,36 @@ Coefficients belong to the BC block and survive undo/redo, save/load and run
 archives. A coefficient change invalidates cached training state. Updating Jorvik
 clears coefficients for removed/renamed BC aliases along with their old operator
 settings; undo restores them. The original imported points are unchanged.
+
+## Copy geometry into another model
+
+Select the **Jorvik geometry** block together with its **Interior data** and
+**Boundary data** blocks, then use **Edit → Copy blocks** and **Paste blocks**.
+Select any other components you want to carry along. Internal wires between the
+selected blocks are copied; unselected neighbors are not added automatically.
+
+Each paste has new block IDs and independent copies of the saved Jorvik document,
+selected NetCDF export and referenced sample snapshots. The clipboard holds the
+bytes from Copy, so you can paste into another Margam window even after closing
+the original project. Repeated pastes remain independent. A never-edited empty
+geometry block instead gets its own document location when edited.
+
+Pasting does not launch Jorvik, regenerate samples, apply new physics or copy
+training results. Applied dataset roles, boundary names and sample fingerprints
+are retained. The automatic export beside the document stays automatic; an
+explicit export override stays explicit. External linked data remain external
+links. Labels and mathematical expressions are literal text, not file references.
+
+Undo removes the pasted graph and Redo restores the same copies. Cut also leaves
+files available for Undo. These retained files are saved with the project and are
+not deleted automatically when blocks disappear.
+
+The clipboard supports at most **16 MiB of owned file bytes and 128 files**, plus
+the existing 4 MiB model fragment limit. Larger copies are rejected; use **Save
+model as…** for a complete larger project. Missing files, symbolic links and
+malformed payloads are rejected before changing the graph. Finish a numerical job
+or close the geometry editor before copying owned files.
+
+Owned-file clipboard operations require descriptor-based no-follow filesystem
+support. On platforms without it, ordinary block copying remains available but
+owned-file copying/pasting reports that it is unavailable.

@@ -481,7 +481,8 @@ only when the user explicitly requests including it here.
 - [x] Crash recovery for unsaved owned documents alongside model recovery.
 
 - [ ] Import supplied evaluation datasets and mesh connectivity from Jorvik, with an explicit export contract.
-- [ ] Copy/paste owned geometry documents as independent copies.
+- [x] Copy/paste owned geometry documents and referenced samples as independent
+  bounded clipboard snapshots, including cross-project paste and Undo/Redo.
 - [x] Export generated samples directly from the saved Jorvik document on editor close and Update; retain explicit application.
 
 - [x] Optional existing Jorvik project and NetCDF export browse buttons, using validated owned copies.

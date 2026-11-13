@@ -576,3 +576,15 @@ The standalone measurement compares 50,000 pointwise predictions using float64
 and a six-layer, 128-wide network. It records CUDA allocator peaks, forward row
 bounds, CPU assembly, checkpoint/RNG preservation and value differences. It does
 not measure training memory or certify model accuracy. Choose a fresh output path.
+
+## Independent owned-file clipboard checks
+
+```bash
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -p test_clipboard_files.py -v
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -p test_clipboard.py -v
+```
+
+These use isolated desktop state and temporary projects. The Jorvik workflow checks
+cross-project paste after source closure, independent document/sample bytes,
+internal wires, Cut/Undo/Redo, save/load and failure without graph changes.
+No geometry editor or GPU is launched.

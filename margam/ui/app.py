@@ -789,13 +789,19 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         identifiers={node.identifier for node in self.scene.nodes() if node.isSelected()}
         if not identifiers:return False
         document=capture_model(self)
-        if any(node['id'] in identifiers and (node['kind']=='jorvik_geometry' or node['kind']!='annotation' and 'margam-owned:' in json.dumps({key:value for key,value in node['settings'].items() if key not in ('label','network_label')})) for node in document['nodes']):
-            self.statusBar().showMessage('Copying project-owned geometry/data blocks is not supported yet.');return False
         document['nodes']=[n for n in document['nodes'] if n['id'] in identifiers]
         document['wires']=[wire for wire in document['wires'] if wire['source'] in identifiers and wire['target'] in identifiers]
-        content=json.dumps(document,allow_nan=False).encode('utf-8')
-        if len(content)>MAX_BYTES:return False
+        from .clipboard_files import capture_files,encode_files,MIME,BUNDLE_LIMIT
+        try:
+            files=capture_files(document,self.project_workspace,locked=self.is_running() or self.scene.locked)
+            content=json.dumps(document,allow_nan=False).encode('utf-8')
+            if len(content)>MAX_BYTES:raise ValueError('Copied model exceeds 4 MiB.')
+            bundle=encode_files(content,files) if files else b''
+            if len(bundle)>BUNDLE_LIMIT:raise ValueError('Owned clipboard payload exceeds 24 MiB.')
+        except (OSError,ValueError,TypeError) as error:
+            self.statusBar().showMessage('Cannot copy blocks: '+str(error));return False
         mime=QMimeData();mime.setData('application/x-margam-model-fragment',content)
+        if bundle:mime.setData(MIME,bundle)
         QApplication.clipboard().setMimeData(mime);self._paste_serial=0
         return True
 
@@ -812,6 +818,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             content=bytes(mime.data('application/x-margam-model-fragment'))
             if len(content)>MAX_BYTES:raise ValueError('Copied model exceeds 4 MiB.')
             data=json.loads(content,object_pairs_hook=unique_keys)
+            decode_document(data)
+            from .clipboard_files import decode_files,rebase,install,MIME
+            files=decode_files(data,content,bytes(mime.data(MIME)) if mime.hasFormat(MIME) else b'')
+            data,prefix=rebase(data,files)
             _,records,connections=decode_document(data)
             if not records:return False
         except (ValueError,TypeError,KeyError,RecursionError,UnicodeError,OverflowError) as error:
@@ -843,8 +853,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             for wire in wires:self.scene.wires.remove(wire);self.scene.removeItem(wire)
             for node in nodes.values():self.scene.removeItem(node)
             self.presentation_changed() if all(n.kind=='annotation' for n in nodes.values()) else self.graph_changed()
+        try:install(self.project_workspace,files,prefix)
+        except (OSError,ValueError) as error:
+            self.statusBar().showMessage('Cannot paste blocks: '+str(error));return False
         self.push_edit('Paste blocks',add,remove)
-        self.statusBar().showMessage('Pasted blocks · core blocks still use the current template settings')
+        self.statusBar().showMessage('Pasted blocks · owned files copied independently' if files else 'Pasted blocks · core blocks still use the current template settings')
         return True
 
     def update_document_title(self,*args):

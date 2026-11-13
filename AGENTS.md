@@ -490,3 +490,12 @@
   Require exact checkpoint/RNG preservation and tolerance-based output parity;
   GEMM shapes can change rounding. Keep total host/IPC costs and training
   microbatching limitations explicit; do not promise that batching prevents OOM.
+
+- Owned-file clipboard snapshots use a versioned data-only MIME payload bound to
+  the model fragment, with 16 MiB/128-file limits. Copy only referenced regular
+  files with no-follow reads; paste into a fresh descriptor-anchored namespace.
+  Preserve adjacent automatic Jorvik export versus explicit override, applied
+  fingerprints and source alias metadata. Rewrite mapping bindings, never labels
+  or expressions. Cross-project paste must survive source closure; Undo/Redo
+  retains independent files. Reject incomplete/malformed bundles before graph
+  mutation, keep external links external and forbid owned copies while busy.

@@ -1165,3 +1165,27 @@ The complete CPU-mode regression run completed 384 tests: 359 passed and 25 were
 skipped (`CUDA_VISIBLE_DEVICES=''`, offscreen Qt). The separate real-CUDA audit
 above supplies GPU coverage; the eight focused batching checks also passed in a
 CUDA-enabled run. No test failures occurred.
+
+## Independent geometry clipboard snapshots
+
+`tests/test_clipboard_files.py` passes six CPU checks. A real offscreen desktop
+workflow creates an owned Jorvik document and unequal-size NetCDF samples, applies
+them, copies the geometry/interior/boundary subgraph and closes the source window.
+Pasting into another project preserves both internal wires and all sample rows;
+the document, adjacent automatic export and applied snapshot are independent.
+Repeated pastes survive edits to previous copies. Cut/Undo/Redo and model save/load
+retain the correct files. Blank geometry copying stays lazy; missing applied
+geometry documents fail rather than becoming empty copies.
+
+Additional checks cover active mapping/fingerprint rebasing without changing
+literal labels, mismatched/missing/extra/traversal payloads, source and destination
+symlinks, oversized files and an injected disk failure with rollback. A rejected
+paste leaves the graph, history and owned-file set unchanged. No numerical training
+or geometry editor is needed by these new tests.
+
+The related CPU-mode clipboard, Jorvik exchange/workflow, canvas/labels,
+project-data cleanup/storage, model-file and run-archive suite completed 31 tests:
+30 passed and one CUDA-only test was skipped. The finalized six-case clipboard
+suite was run separately afterward and passed. The manual build checks 73 rendered
+pages and their local navigation/assets. This is file/desktop lifecycle validation,
+not a new numerical or GPU accuracy claim.

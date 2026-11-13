@@ -39,6 +39,8 @@ A shared network cannot be hidden inside one recipe if another trainer needs it.
 
 Use selection plus Copy/Paste or the Edit menu to duplicate blocks. Pasted blocks
 have new identities; copied internal connections remain attached to the copies.
+Project-owned geometry and data are copied independently, including between model
+windows; external links remain links. See [geometry copy limits](../jorvik.md#copy-geometry-into-another-model).
 Undo/redo restores graph edits. Deleting a required block makes the graph
 incomplete until you reconnect a replacement.
 
