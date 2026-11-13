@@ -641,6 +641,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   strict scheduled checkpoints, exact same-device continuation and immutable restored snapshots.
 - [ ] Add explicit lifecycle/state contracts for research resampling, extra
   optimizers/schedules and further checkpointable algorithms as concrete uses arise.
+- [ ] Revisit opt-in `torch.compile` after qualifying higher-order coordinate and
+  parameter derivatives for concrete trainers, state-key/resume compatibility,
+  cold-start cost and measured steady-state benefit. The 13 November Torch
+  2.14.1 check passes small CUDA inference but rejects a native Poisson update;
+  do not enable a generic compiled-network training toggle. The specialized
+  functional DSGNAR research benchmark remains separately supported.
 - [ ] Consider promoting mature research components into desktop blocks separately;
   research scripting does not automatically register or execute code from models.
 

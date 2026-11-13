@@ -368,3 +368,28 @@ without changing tensors or gradients. See [error norm definitions and examples]
 [DSGNAR trainer](dsgnar.md#script-use) used by desktop blocks. It accepts an
 ordinary pointwise network and fixed PINNProblem, without GUI registration.
 Its SVD update/state contract is separate from Trainer custom-step callbacks.
+
+## PyTorch compilation
+
+Margam's `Trainer.compile()` prepares training data and optimization; it does not
+mean `torch.compile`. A network is already a PyTorch module. PyTorch also offers
+[in-place `Module.compile`](https://docs.pytorch.org/docs/2.14/generated/torch.nn.Module.html#torch.nn.Module.compile),
+which avoids replacing it with a wrapper that changes state-dictionary key names.
+That alone does not establish compatibility with a PINN loss.
+
+A 13 November check using Torch 2.14.1+cu130 and a small float64 FCNN found that
+compiled CUDA inference matched eager values within tolerance and retained the
+same state keys and weights. A native Poisson update failed with compiled backward
+buffer/graph restrictions on both CPU `aot_eager` and CUDA Inductor. A separate
+one-dimensional tanh network with donated buffers disabled reproduced the explicit
+AOTAutograd double-backward error when differentiating its first coordinate
+derivative. CPU Inductor was not qualified because the local C++ compiler was
+unavailable. These were compatibility probes, not speed or accuracy benchmarks.
+
+Do not compile a general training network as a drop-in change or suppress derivative
+errors with `allow_unused=True`/zero derivatives. Generic compilation stays deferred.
+The existing [DSGNAR functional benchmark](dsgnar.md) instead compiles complete
+case-specific functional derivative blocks and has its own parity/checkpoint
+contract. Extending that approach requires concrete derivative and continuation
+checks. Compilation also has startup cost and can recompile for changed shapes;
+see the [PyTorch compiler API](https://docs.pytorch.org/docs/2.14/generated/torch.compile.html).
