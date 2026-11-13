@@ -472,7 +472,13 @@
   trajectory equivalence. Allocator peaks and lifetime RSS have different scopes.
 
 - CountSketch CPU accumulation reduces only sorted occupied buckets, preserving
-  each hash’s stable sum/order/normalization and private RNG. Keep CUDA’s dense
-  production path: the small-sketch occupied-row prototype regressed. Check
+  each hash’s stable sum/order/normalization and private RNG. Keep CUDA dense
+  below 4,000; full-count paired runs qualify occupied rows at ≥4,000. Check
   float32/float64 exact reference sums and full continuation before changing
   dispatch. Kernel-only 4,000-row measurements do not certify SVD or trainer speed.
+
+- Cache unchanged PCHIP coefficients per radius crossing without altering its
+  arithmetic, plateau treatment or 60-step bisection. Require exact legacy radii
+  and same-checkpoint training comparisons. Large SVD profiles must record actual
+  architecture/precision/counts, preserve whole-attempt peaks across phase resets,
+  and reject publication when source changes during the run.

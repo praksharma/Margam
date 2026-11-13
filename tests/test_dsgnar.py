@@ -69,6 +69,30 @@ class DSGNARTests(unittest.TestCase):
     @unittest.skipUnless(torch.cuda.is_available(),'CUDA required')
     def test_cuda_touched_buckets_equal_dense_reference(self):self._touched_bucket_parity('cuda')
 
+    @unittest.skipUnless(torch.cuda.is_available(),'CUDA required')
+    def test_cuda_large_dispatch_boundary_and_exact_rows(self):
+        from margam.methods import dsgnar
+        for size in (3999,4000,4096):
+            matrix=torch.zeros(size,size,device='cuda');vector=torch.zeros(size,device='cuda')
+            jac=torch.arange(3*size,dtype=torch.float32,device='cuda').reshape(3,size)/1000
+            values=torch.tensor([.25,-.5,1.],device='cuda');buckets=torch.tensor([[0,0,size-1]],device='cuda');signs=torch.ones(1,3,device='cuda')
+            with patch.object(dsgnar,'_count_add_touched',wraps=dsgnar._count_add_touched) as occupied:
+                count_add(matrix,vector,jac,values,buckets,signs)
+            self.assertEqual(occupied.call_count,1 if size>=4000 else 0)
+            torch.testing.assert_close(matrix[0],jac[0]+jac[1],rtol=0,atol=0)
+            torch.testing.assert_close(matrix[-1],jac[2],rtol=0,atol=0)
+            self.assertEqual(vector[0].item(),-.25);self.assertEqual(vector[-1].item(),1.)
+            self.assertEqual(torch.count_nonzero(matrix[1:-1]).item(),0)
+
+    def test_cached_radius_is_exact_uncached_reference(self):
+        from examples.compare_dsgnar_probes import uncached_choose_radius,cases
+        for radii,ratios,target in cases():self.assertEqual(choose_radius(radii,ratios,target),uncached_choose_radius(radii,ratios,target))
+        g=torch.Generator().manual_seed(19)
+        for n in (3,8,16,24,32):
+            radii=torch.logspace(-8,6,n,dtype=torch.float64).tolist()
+            ratios=(torch.rand(n,generator=g,dtype=torch.float64)*2-.5).tolist()
+            for target in (.075,.5):self.assertEqual(choose_radius(radii,ratios,target),uncached_choose_radius(radii,ratios,target))
+
     def test_blocked_physics_jacobian_matches_analytic_polynomial(self):
         from margam.components.differential import derivative
         class Polynomial(torch.nn.Module):

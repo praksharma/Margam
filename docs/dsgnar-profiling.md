@@ -11,7 +11,7 @@ python -m examples.profile_dsgnar --device cuda --output build/dsgnar-profile/cu
 
 Defaults are two measured attempts after one warm-up attempt, for each case and
 batch size **16, 64, 128, 256**. Every configuration gets a fresh subprocess and a
-five-minute worker timeout. Smaller diagnostics can use `--case wave --batches
+configurable 30-minute worker timeout by default. Smaller diagnostics can use `--case wave --batches
 16 64 --points 128 --boundary 64 --attempts 1`. Invalid settings and failed workers
 do not overwrite an existing successful report.
 
@@ -76,8 +76,8 @@ Retained **pre-optimization baseline** measurements are [CPU](../assets/benchmar
 [CUDA](../assets/benchmarks/dsgnar-profile-cuda.json). Each contains source
 fingerprints, actual raw losses, measured phase durations and memory scopes.
 They cover small concrete networks and sketches, not the paper's 4,000-square
-H100/JAX workload. Source fusion, large-sketch workspaces, adaptive growth and
-output/inference costs remain separate work.
+H100/JAX workload. The completed large-SVD/sketch/probe follow-up is documented
+below. Adaptive growth and output/inference costs are outside these measurements.
 
 ## Observed laptop measurements
 
@@ -116,7 +116,7 @@ longer materializes a sketch-sized zero-filled reduction for every small batch.
 Sampling, signs, normalization, hash order and dedicated RNG draws are unchanged.
 No new numerical setting or checkpoint format is introduced.
 
-The existing dense implementation remains the **production CUDA path**. The
+The existing dense implementation remains the **production CUDA path below 4,000 rows**. The later full-size qualification below enables occupied-row updates at 4,000 and above. The
 [initial GPU occupied-row prototype](../assets/benchmarks/dsgnar-touched-gpu-prototype.json)
 was mostly slower on the 609/700-sized sketches where extra indexing/kernel overhead appears to outweigh the saved empty-bucket
 work. Large accumulation-kernel gains
@@ -137,8 +137,8 @@ caches are released between branches.
 [CPU](../assets/benchmarks/dsgnar-touched-cpu.json) and
 [CUDA](../assets/benchmarks/dsgnar-touched-cuda.json) cover 16 paired full
 continuations. All trained weights, loss histories, RNG and state match exactly,
-with the established `5e-14` tolerance only for regularization diagnostics. CUDA
-compares two equivalent dense paths, so its short-run timing differences are
+with the established `5e-14` tolerance only for regularization diagnostics. These historical small-sketch CUDA records
+compare two equivalent dense paths, so its short-run timing differences are
 noise, **not** a claimed GPU speedup.
 
 The short CPU wave comparisons show roughly **1.06–1.42×** old/new elapsed ratios.
@@ -171,3 +171,98 @@ the experimental helper explicitly; it does not select production GPU behavior.
 To reproduce the rejected whole-attempt GPU experiment, add
 `--experimental-touched` to the paired comparison command. This flag belongs to
 the standalone benchmark, not to saved model settings or the GUI.
+
+## Completed 4,000-row SVD and full-attempt profiling
+
+The larger follow-up runs a **real 4,000×4,000 SVD inside complete DSGNAR attempts**.
+It uses the existing 60×4 SIREN with 11,221 parameters, fixed frequencies 8/1,
+separate wave displacement/velocity conditions, and one complete time interval.
+This matches the large sketch dimension, not the paper's full architecture,
+time-window schedule, accuracy or H100 hardware protocol.
+
+CUDA uses **32,768 PDE points and 16,384 rows per boundary/initial condition**
+(81,920 scalar residuals). CPU uses **4,096/1,024** (7,168 residuals), with the same
+actual 4,000-row SVD. CPU/GPU total times therefore are **not** a same-data device
+comparison. Each configuration has one warm-up, one measured complete attempt
+and an uninstrumented same-checkpoint continuation. CUDA runs are sequential
+so another profiling job does not compete for that GPU.
+
+```bash
+python -m examples.profile_dsgnar --case wave --device cuda --width 60 --depth 4 --sketch 4000 --batches 64 256 --points 32768 --boundary 16384 --attempts 1 --precision float64 --svd-memory --output build/dsgnar-profile/large-cuda64.json
+python -m examples.profile_dsgnar --case wave --device cuda --width 60 --depth 4 --sketch 4000 --batches 256 --points 32768 --boundary 16384 --attempts 1 --precision float32 --svd-memory --output build/dsgnar-profile/large-cuda32.json
+python -m examples.profile_dsgnar --case wave --device cpu --width 60 --depth 4 --sketch 4000 --batches 256 --points 4096 --boundary 1024 --attempts 1 --precision float64 --output build/dsgnar-profile/large-cpu64.json
+```
+
+`--precision float32` also works for the CPU command. Width, depth, requested and
+effective sketch size, precision and point counts are recorded explicitly. A
+requested sketch larger than the network is capped and reported, rather than
+misrepresented as a larger SVD. Reports refuse publication if source/revision
+fingerprints change during profiling, preserving any prior report.
+
+### SVD memory scope
+
+`--svd-memory` records the actual solver device, allocation immediately before
+the SVD, the phase's allocator peak, and its growth. **Growth includes SVD outputs
+and temporary workspace**, not just scratch storage. The profiler maintains its
+own running maximum while resetting phase counters, so capturing an SVD peak
+does not erase an earlier whole-attempt peak. These are PyTorch allocator figures;
+CUDA context/driver allocations are outside their scope. CPU retains its honest
+process-lifetime RSS high-water mark, without inventing a phase-specific peak.
+
+### Large-only GPU dispatch and probe caching
+
+The [full-count float32](../assets/benchmarks/dsgnar-large-touched-cuda32.json)
+and [float64](../assets/benchmarks/dsgnar-large-touched-cuda64.json) old/candidate
+comparisons gave **1.088× and 1.122× old/new elapsed ratios**, with exact checkpoint
+parity. This complete-attempt evidence, rather than the earlier kernel-only
+measurements, qualifies the occupied-row CUDA path **only for sketches ≥4,000**.
+Smaller CUDA sketches keep the previous dense path. Boundary tests cover 3,999,
+4,000 and 4,096 rows. The final
+[production comparison](../assets/benchmarks/dsgnar-large-production-cuda64.json)
+also checks the actual dispatch against the old accumulator. These short laptop
+measurements are not universal hardware speed guarantees.
+
+Probe selection now computes unchanged PCHIP coefficients **once per crossing**,
+rather than recomputing them during all 60 bisection evaluations. Arithmetic,
+plateau handling, bisection count, selected radii and RNG behavior are unchanged.
+The [exact-radius comparison](../assets/benchmarks/dsgnar-probe-cache.json)
+shows about **2–9×** interpolation-only ratios across 3–32 probes; endpoint
+fast paths need no crossing calculation. Full
+[CPU](../assets/benchmarks/dsgnar-probe-cache-cpu.json) and
+[GPU](../assets/benchmarks/dsgnar-probe-cache-cuda.json) continuations compare the
+cached implementation with the uncached reference and retain exact state parity.
+These are not SVD speedups or paper-accuracy improvements.
+
+```bash
+python -m examples.compare_dsgnar_probes --output build/dsgnar-profile/probe-cache.json
+python -m examples.compare_dsgnar_sketch --component probe --device cuda --batches 256 --output build/dsgnar-profile/probe-paired.json
+python -m examples.compare_dsgnar_sketch --case wave --device cuda --width 60 --depth 4 --sketch 4000 --points 32768 --boundary 16384 --batches 256 --attempts 1 --output build/dsgnar-profile/large-paired.json
+```
+
+### Final measured full-attempt results
+
+| Backend | Precision | Batch | PDE / condition rows | Attempt s | SVD s | Peak allocated MiB |
+| --- | --- | ---: | --- | ---: | ---: | ---: |
+| CPU | float32 | 256 | 4,096 / 1,024 | 19.29 | 13.87 | — |
+| CPU | float64 | 256 | 4,096 / 1,024 | 24.02 | 18.33 | — |
+| CUDA | float32 | 256 | 32,768 / 16,384 | 14.14 | 2.97 | 561.1 |
+| CUDA | float64 | 64 | 32,768 / 16,384 | 41.22 | 6.77 | 1050.8 |
+| CUDA | float64 | 256 | 32,768 / 16,384 | 21.95 | 6.85 | 1050.8 |
+
+Records: [CPU float32](../assets/benchmarks/dsgnar-large-cpu32.json),
+[CPU float64](../assets/benchmarks/dsgnar-large-cpu64.json),
+[CUDA float32](../assets/benchmarks/dsgnar-large-cuda32.json), and
+[CUDA float64](../assets/benchmarks/dsgnar-large-cuda64.json).
+
+Every row completes an actual attempt and passes same-checkpoint reference
+continuation, global-RNG and source-stability checks. These are short timing
+samples, not a promise of sustained throughput. The GPU SVD phase adds about
+**434 MiB** in float32 and **863 MiB** in float64 above its pre-SVD allocation,
+including outputs and temporary workspace. CPU figures use different point
+counts and report lifetime RSS instead of an invented allocator peak.
+
+The pre-optimization [CPU64](../assets/benchmarks/dsgnar-large-baseline-cpu64.json),
+[CUDA32](../assets/benchmarks/dsgnar-large-baseline-cuda32.json), and
+[CUDA64](../assets/benchmarks/dsgnar-large-baseline-cuda64.json) records remain
+for context. Cross-process baseline/after timing differences are not as controlled
+as the paired comparisons and should not be treated as exact optimization gains.

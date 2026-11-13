@@ -76,7 +76,7 @@ class FunctionalAnalyticTrainer(DSGNARPINN):
             yield jacobian.detach(),(values-expected).detach()
 
 
-def build(case,*,width=24,depth=3,points=2048,boundary=512,seed=0,sketch=700,batch=64,probes=16,reweight=.05,network='fourier',device='cpu'):
+def build(case,*,width=24,depth=3,points=2048,boundary=512,seed=0,sketch=700,batch=64,probes=16,reweight=.05,network='fourier',precision='float64',device='cpu'):
     from margam.templates.examples import example_config
     from margam.nn.factory import build_network
     c=example_config('dsgnar_'+case);c.layers=tuple([width]*depth);c.seed=c.network_seed=seed;c.device=device
@@ -85,6 +85,7 @@ def build(case,*,width=24,depth=3,points=2048,boundary=512,seed=0,sketch=700,bat
         c.network_type='fourier';c.network_options={'frequencies':(.5,1.,2.,4.) if case=='wave' else (2.,4.,6.,8.)}
     else:raise ValueError('Unknown experiment architecture.')
     settings=dsgnar_defaults();settings.update(sketch_size=sketch,batch_size=batch,probes=probes,seed=seed,stage_grace=80,reweight_exponent=reweight)
+    settings['precision']=precision;c.dsgnar_settings['precision']=precision
     network=build_network(c)
     problem=make_problem(case,points,boundary,seed)
     weights={'pde':.01,**{condition.name:1. for condition in problem.constraints}}

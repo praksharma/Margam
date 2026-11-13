@@ -1,0 +1,102 @@
+{
+  "format": "margam-dsgnar-profile",
+  "version": 2,
+  "source": {
+    "base_commit": "8b608340977bf6c7480205194b5476fa38607ac8",
+    "runtime_and_test_sha256": "bf7fa1f3c9958d3dc71eb4835eba2536cf6022528c14502c7c7c383890d26744",
+    "runner_sha256": "c89cabc7f3f9bff142696b8c89b557d2676a65cf06266e51b21f32592532eeb4",
+    "profiler_sha256": "6cf60859d0ac929176757160eace1ee576928d20103aa4524ec8f7fcd52efdc1",
+    "experiment_sha256": "012d2e641c96c2be106b274d929a418018701584d0415da7ca609a1673e829ce"
+  },
+  "python": "3.14.8",
+  "torch_version": "2.14.1+cu130",
+  "compiled_cuda": "13.0",
+  "fresh_process_per_configuration": true,
+  "cases": [
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 11221,
+      "precision": "float32",
+      "device": "cuda",
+      "width": 60,
+      "depth": 4,
+      "requested_sketch_size": 4000,
+      "batch_size": 256,
+      "points": 32768,
+      "boundary": 16384,
+      "scalar_residual_rows": 81920,
+      "sketch_size": 4000,
+      "warmup_attempts": 1,
+      "measured_attempts": 1,
+      "seconds": 14.139335969000058,
+      "seconds_per_attempt": 14.139335969000058,
+      "control_seconds_per_attempt": 14.726917881999952,
+      "instrumentation_time_ratio": 0.9601015013658717,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 3.2753018649991645,
+          "calls": 320
+        },
+        "jacobian_and_sketch": {
+          "seconds": 6.8803684509998675,
+          "calls": 1
+        },
+        "full_objective": {
+          "seconds": 4.0764969109995945,
+          "calls": 18
+        },
+        "svd": {
+          "seconds": 2.966692806000083,
+          "calls": 1
+        },
+        "regularized_steps": {
+          "seconds": 0.1750633609997294,
+          "calls": 17
+        },
+        "radius_interpolation": {
+          "seconds": 0.012819841999998971,
+          "calls": 1
+        }
+      },
+      "memory": {
+        "resident_allocated_bytes_before": 67881984,
+        "peak_allocated_bytes": 588311552,
+        "peak_reserved_bytes": 822083584,
+        "svd_calls": [
+          {
+            "solver_device": "cuda:0",
+            "allocated_before_bytes": 133122560,
+            "peak_allocated_bytes": 588311552,
+            "allocated_growth_bytes": 455188992,
+            "peak_reserved_bytes": 822083584
+          }
+        ],
+        "process_peak_rss_bytes_at_end": 1632440320
+      },
+      "hypothetical_dense_jacobian_bytes": 3676897280,
+      "sketch_matrix_bytes": 64000000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 1,
+      "final_raw_losses": {
+        "pde": 1782.037254333496,
+        "initial": 0.3077379479436786,
+        "initial_velocity": 11.610683700768277,
+        "boundary": 0.27804976515471935
+      },
+      "hardware": "NVIDIA GeForce RTX 3060 Laptop GPU"
+    }
+  ],
+  "scope": "Synchronized instrumented complete attempts after one warm-up; fixed concrete cases with explicitly recorded architecture/sketch/point counts. Not H100/JAX throughput, a hardware quota, or a paper accuracy claim.",
+  "limitations": [
+    "Jacobian-block seconds are included in jacobian-and-sketch seconds; do not sum them twice.",
+    "Synchronization/instrumentation overhead is included; reference total timing is also recorded. Neither is steady-state compiler throughput.",
+    "Batch sizes change the realized random sketch and floating-point grouping; trajectories are not compared across batches.",
+    "CUDA allocated/reserved peaks are allocator measurements after warm-up, not all driver/OS allocations or a future-fit guarantee.",
+    "Optional SVD resets capture phase peaks; an explicit running maximum preserves the complete-attempt peak.",
+    "Process RSS is the lifetime high-water mark through timing, including imports/warm-up; it is not an update-only delta.",
+    "Reference continuation is checked separately for each batch setting; the control model is created after memory capture."
+  ]
+}

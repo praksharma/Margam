@@ -559,3 +559,7 @@ or memory as a performance/fit guarantee.
 
 Compare CountSketch production/reference continuations and inspect larger
 accumulation-only workspaces with the [paired benchmark commands](dsgnar-profiling.md#paired-full-attempt-checks).
+
+The [4,000-row SVD commands](dsgnar-profiling.md#completed-4000-row-svd-and-full-attempt-profiling)
+record complete attempts and actual phase allocator peaks, rather than only the
+accumulation microbenchmark.

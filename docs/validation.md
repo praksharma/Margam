@@ -2,7 +2,17 @@
 
 [Documentation index](README.md) · [Measured results](results.md)
 
-## Latest implementation suite
+## Latest targeted validation — 13 November 2026
+
+The completed large-sketch DSGNAR changes pass **38 family tests: 33 passed,
+5 CUDA-dependent skips**, plus **23 separate real-GPU cases without skips**.
+Actual 4,000-square SVDs and complete same-checkpoint attempts are measured in
+both precisions on CPU/CUDA. The GPU cases use the full point counts. See
+[the complete qualification below](#full-size-dsgnar-profiling-and-probe-optimization)
+for scope, memory measurements and numerical-parity evidence. This is targeted
+coverage, not a fresh run of every unrelated test in the repository.
+
+## Historical implementation suite
 
 27 October 2026: **106 tests: 102 passed, 4 skips**, full local CPU suite in
 offscreen mode after the GitHub dependency fix (145.8 seconds). Skips: three CUDA
@@ -1089,3 +1099,37 @@ Their collision pattern, resident outputs and excluded SRCT/Jacobian/SVD work
 are explicit. Kernel ratios are not whole-trainer speedups; short end-to-end
 comparisons are noisy and include a slower CPU sample. Larger paper SVD and GPU
 fusion remain future work. The manual builds/checks **73 pages** successfully.
+
+## Full-size DSGNAR profiling and probe optimization
+
+Actual **4,000×4,000 SVDs** are measured inside complete CPU/CUDA attempts in
+float32 and float64, with 11,221-parameter networks. GPU uses the full 32,768 PDE
+and 16,384 condition rows; CPU uses reduced 4,096/1,024 counts, stated explicitly.
+Both same-checkpoint continuation and global-RNG checks pass. SVD phase allocator
+resets preserve an explicit running whole-attempt maximum; phase growth includes
+outputs/workspace, not all CUDA driver allocation. Source changes during a long
+profile reject publication without overwriting an earlier report.
+
+Full-count occupied-row GPU qualification passes exact trained-state/loss/RNG
+comparisons in both precisions. Its measured old/new elapsed ratios are 1.088×
+and 1.122×; the actual production-dispatch double-precision comparison also
+passes. CUDA remains dense below 4,000, with 3,999/4,000/4,096 boundary coverage.
+
+PCHIP coefficient caching preserves the original floating-point operation order
+and 60 bisection steps. Exact uncached-reference radii cover increasing/plateau/
+negative-clipped curves and fast paths; the independent SciPy oracle remains.
+CPU/GPU full continuations match the uncached reference. Neither optimization
+changes the mathematical objective, sampling, precision defaults or checkpoint
+format. See [complete timing/workspace evidence](dsgnar-profiling.md#completed-4000-row-svd-and-full-attempt-profiling).
+
+Final DSGNAR regression selection: **38 tests, 33 passed and 5 CUDA-dependent
+skips**. The separate [13 November GPU audit](../assets/benchmarks/cuda-validation-2026-11-13.json)
+executes **23 passes without skips**, including the new SVD-peak test and dispatch
+boundary. Report fingerprints match the measured source. All five final large
+profile configurations pass complete checkpoint/RNG controls; paired probe and
+large-accumulator comparisons also pass. The **73-page manual** builds and checks
+without broken local links/images.
+
+The five audit-reporting/skip/failure-handling regressions also pass after
+extending the CUDA manifest. No full unrelated-suite rerun was used to inflate
+this targeted qualification.

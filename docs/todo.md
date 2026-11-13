@@ -669,9 +669,9 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 
 - [x] Independent fixed-point scalar DSGNAR trainer, compact/expanded recipe,
   Poisson/Burgers presets, explicit precision, diagnostics and checkpoints.
-- [ ] Extend the measured DSGNAR batch-16–256, sketch-609/700 profiles to
-  paper-sized SVD workspaces before claiming upstream throughput; preserve
-  mathematical and continuation checks.
+- [x] Extend DSGNAR profiling to actual 4,000-row SVDs and complete CPU/CUDA
+  float32/float64 attempts, including full GPU point counts, phase allocator
+  peaks, unchanged-checkpoint controls and source-change guards.
 - [ ] Extend DSGNAR to imported samples, further coupled fields or time marching only
   with concrete workflows and continuation tests.
 
@@ -681,9 +681,10 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [ ] Expose the validated periodic benchmark embedding/IC-only graph as a native
   example only after its explicit network/condition contracts are supported.
   The current native DSGNAR Burgers preset is the Dirichlet variation.
-- [ ] Profile/fuse more of DSGNAR's sketch/probe loop before claiming parity with
-  the authors' compiled-JAX/H100 runtime. The numerical threshold was matched;
-  the speed and complete evaluation protocol were not.
+- [x] Optimize the measured large-sketch/probe work: qualify occupied-row CUDA
+  dispatch only at ≥4,000, retain the dense small-sketch path, and cache PCHIP
+  coefficients with exact radius/checkpoint parity. Do not claim H100/JAX speed
+  parity or paper accuracy from these profiling runs.
 
 - [x] Add a descriptively named Re=100 smooth-lid cavity UI example and an independent
   five-condition, pressure-offset-free DSGNAR research experiment with reference checks.
@@ -700,7 +701,7 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 
 - [x] Add opt-in isolated DSGNAR phase/workspace profiling for batches 16–256,
   synchronized CPU/CUDA evidence, uninstrumented reference timing and exact
-  per-setting continuation/RNG checks. Larger paper sketches and fusion remain open.
+  per-setting continuation/RNG checks. The larger-sketch/probe follow-up is completed above.
 
 - [x] Avoid empty-bucket reduction work on CPU, preserve exact sums/continuation,
   retain the existing GPU path after its occupied-row prototype regressed common

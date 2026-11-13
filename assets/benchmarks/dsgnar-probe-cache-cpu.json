@@ -1,0 +1,83 @@
+{
+  "format": "margam-probe-comparison",
+  "version": 2,
+  "source": {
+    "base_commit": "8b608340977bf6c7480205194b5476fa38607ac8",
+    "runtime_and_test_sha256": "c1a1ef5c5fad16f064369ad672cffba107c0f4e22a2123c7b72f95193eec5426",
+    "runner_sha256": "c89cabc7f3f9bff142696b8c89b557d2676a65cf06266e51b21f32592532eeb4",
+    "comparison_sha256": "10dc3693f5d11d85fdd12f7f1f31c46d9f4fbf521a27cf618b6565d12a3e1a06"
+  },
+  "cases": [
+    {
+      "case": "wave",
+      "device": "cpu",
+      "batch_size": 256,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "width": 16,
+      "depth": 3,
+      "sketch_size": 609,
+      "points": 2048,
+      "boundary": 512,
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 0.7449980215000096,
+          "memory": {}
+        },
+        "candidate": {
+          "seconds_per_attempt": 0.7023846879999383,
+          "memory": {}
+        }
+      },
+      "reference_over_candidate_time_ratio": 1.0606695080745767,
+      "full_checkpoint_parity": true,
+      "component": "probe",
+      "candidate_mode": "cached-probe",
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "CPU"
+    },
+    {
+      "case": "multiscale",
+      "device": "cpu",
+      "batch_size": 256,
+      "precision": "float64",
+      "measured_attempts": 2,
+      "order": [
+        "dense",
+        "candidate"
+      ],
+      "width": 24,
+      "depth": 3,
+      "sketch_size": 700,
+      "points": 2048,
+      "boundary": 512,
+      "branches": {
+        "dense": {
+          "seconds_per_attempt": 1.0617016735000107,
+          "memory": {}
+        },
+        "candidate": {
+          "seconds_per_attempt": 0.9798890635000816,
+          "memory": {}
+        }
+      },
+      "reference_over_candidate_time_ratio": 1.0834917064057243,
+      "full_checkpoint_parity": true,
+      "component": "probe",
+      "candidate_mode": "cached-probe",
+      "regularization_diagnostic_rtol": 5e-14,
+      "hardware": "CPU"
+    }
+  ],
+  "scope": "Short paired full-attempt comparison of the specified candidate on fixed cases; not paper accuracy or production throughput.",
+  "method": "One common dense warm-up; both branches reload its checkpoint, garbage-collect previous models and release allocator caches. Branch order alternates across batch settings.",
+  "limitations": [
+    "Only two measured attempts per branch by default; elapsed ratios are noisy.",
+    "CUDA peaks exclude driver allocations and are not a fit guarantee.",
+    "Full state parity is checked within each setting; changing batch still changes the realized sketch."
+  ]
+}

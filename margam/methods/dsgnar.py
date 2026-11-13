@@ -38,11 +38,11 @@ def lift_step(y,operators):
 
 
 def count_add(matrix,residual,jacobian,values,buckets,signs):
-    """CPU touched-row optimization; retain the measured GPU dense path."""
-    if not matrix.is_cuda:
+    """Occupied rows on CPU/large CUDA sketches; dense on small CUDA."""
+    if not matrix.is_cuda or len(residual)>=4000:
         return _count_add_touched(matrix,residual,jacobian,values,buckets,signs)
-    # At the tested 609/700 sizes, extra unique/indexing kernel launches cost
-    # more than zero-bucket work on CUDA. Do not impose that regression there.
+    # Extra launches regress small CUDA sketches. Full-attempt 4,000-row
+    # comparisons validate the occupied-row path there, in both precisions.
     for column in range(buckets.shape[0]):
         order=torch.argsort(buckets[column],stable=True)
         counts=torch.bincount(buckets[column],minlength=len(residual))
@@ -84,8 +84,7 @@ def lm_step(singular,projected,vt,radius):
     return -(vt.T@coefficients(hi)),hi
 
 
-def pchip_value(x,y,query):
-    """Shape-preserving cubic Hermite interpolation on strictly increasing x."""
+def _pchip_coefficients(x,y):
     h=x[1:]-x[:-1];slopes=(y[1:]-y[:-1])/h
     d=torch.zeros_like(y)
     if len(x)==2:d[:]=slopes[0]
@@ -100,11 +99,20 @@ def pchip_value(x,y,query):
             if (value*a).item()<=0:value=a*0
             elif (a*b).item()<0 and abs(value)>abs(3*a):value=3*a
             d[endpoint]=value
+    return h,d
+
+
+def _pchip_evaluate(x,y,h,d,query):
     index=max(0,min(len(x)-2,int(torch.searchsorted(x,x.new_tensor(query)).item())-1))
     t=(query-x[index])/h[index]
     return ((2*t**3-3*t**2+1)*y[index]+(t**3-2*t**2+t)*h[index]*d[index]
             +(-2*t**3+3*t**2)*y[index+1]+(t**3-t**2)*h[index]*d[index+1]).item()
 
+
+def pchip_value(x,y,query):
+    """Shape-preserving cubic Hermite interpolation on strictly increasing x."""
+    h,d=_pchip_coefficients(x,y)
+    return _pchip_evaluate(x,y,h,d,query)
 
 def choose_radius(radii,ratios,target):
     # Fit ratio as a function of log radius: unlike inverse interpolation, this
@@ -114,9 +122,12 @@ def choose_radius(radii,ratios,target):
     if safe[0]<=target:return radii[0]
     knots=torch.tensor([math.log(radius) for radius in radii],dtype=torch.float64)
     low=knots[0].item();high=knots[-1].item()
+    # The knots/ratios do not change during bisection. Prepare once, preserving
+    # the exact same arithmetic for every interpolated value and chosen radius.
+    h,d=_pchip_coefficients(knots,safe)
     for _ in range(60):
         middle=(low+high)/2
-        if pchip_value(knots,safe,middle)>=target:low=middle
+        if _pchip_evaluate(knots,safe,h,d,middle)>=target:low=middle
         else:high=middle
     return math.exp((low+high)/2)
 

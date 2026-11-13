@@ -1,0 +1,90 @@
+{
+  "format": "margam-dsgnar-profile",
+  "version": 2,
+  "source": {
+    "base_commit": "8b608340977bf6c7480205194b5476fa38607ac8",
+    "runtime_and_test_sha256": "bf7fa1f3c9958d3dc71eb4835eba2536cf6022528c14502c7c7c383890d26744",
+    "runner_sha256": "c89cabc7f3f9bff142696b8c89b557d2676a65cf06266e51b21f32592532eeb4",
+    "profiler_sha256": "6cf60859d0ac929176757160eace1ee576928d20103aa4524ec8f7fcd52efdc1",
+    "experiment_sha256": "012d2e641c96c2be106b274d929a418018701584d0415da7ca609a1673e829ce"
+  },
+  "python": "3.14.8",
+  "torch_version": "2.14.1+cu130",
+  "compiled_cuda": "13.0",
+  "fresh_process_per_configuration": true,
+  "cases": [
+    {
+      "case": "wave",
+      "network": "siren",
+      "parameters": 11221,
+      "precision": "float32",
+      "device": "cpu",
+      "width": 60,
+      "depth": 4,
+      "requested_sketch_size": 4000,
+      "batch_size": 256,
+      "points": 4096,
+      "boundary": 1024,
+      "scalar_residual_rows": 7168,
+      "sketch_size": 4000,
+      "warmup_attempts": 1,
+      "measured_attempts": 1,
+      "seconds": 19.29287290299999,
+      "seconds_per_attempt": 19.29287290299999,
+      "control_seconds_per_attempt": 20.389399937999997,
+      "instrumentation_time_ratio": 0.9462207304612043,
+      "phases": {
+        "jacobian_blocks": {
+          "seconds": 0.5636920290000944,
+          "calls": 28
+        },
+        "jacobian_and_sketch": {
+          "seconds": 4.883558950999941,
+          "calls": 1
+        },
+        "full_objective": {
+          "seconds": 0.4196665639999537,
+          "calls": 18
+        },
+        "svd": {
+          "seconds": 13.867085666999856,
+          "calls": 1
+        },
+        "regularized_steps": {
+          "seconds": 0.05307747700089749,
+          "calls": 17
+        },
+        "radius_interpolation": {
+          "seconds": 0.003313982000008764,
+          "calls": 1
+        }
+      },
+      "memory": {
+        "process_peak_rss_bytes_at_end": 1292165120
+      },
+      "hypothetical_dense_jacobian_bytes": 321728512,
+      "sketch_matrix_bytes": 64000000,
+      "checkpoint_parity": true,
+      "global_rng_preserved": true,
+      "regularization_diagnostic_rtol": 5e-14,
+      "accepted_measured_attempts": 1,
+      "final_raw_losses": {
+        "pde": 1990.6781311035156,
+        "initial": 0.5382749438285828,
+        "initial_velocity": 7.296282768249512,
+        "boundary": 0.08214351534843445
+      },
+      "hardware": "CPU"
+    }
+  ],
+  "scope": "Synchronized instrumented complete attempts after one warm-up; fixed concrete cases with explicitly recorded architecture/sketch/point counts. Not H100/JAX throughput, a hardware quota, or a paper accuracy claim.",
+  "limitations": [
+    "Jacobian-block seconds are included in jacobian-and-sketch seconds; do not sum them twice.",
+    "Synchronization/instrumentation overhead is included; reference total timing is also recorded. Neither is steady-state compiler throughput.",
+    "Batch sizes change the realized random sketch and floating-point grouping; trajectories are not compared across batches.",
+    "CUDA allocated/reserved peaks are allocator measurements after warm-up, not all driver/OS allocations or a future-fit guarantee.",
+    "Optional SVD resets capture phase peaks; an explicit running maximum preserves the complete-attempt peak.",
+    "Process RSS is the lifetime high-water mark through timing, including imports/warm-up; it is not an update-only delta.",
+    "Reference continuation is checked separately for each batch setting; the control model is created after memory capture."
+  ]
+}

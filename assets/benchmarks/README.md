@@ -69,7 +69,7 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
   lifecycle evidence, not a numerical accuracy benchmark.
 
 - [CUDA regression audit — 12 November 2026](cuda-validation-2026-11-12.json):
-  20 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
+  21 actual GPU-focused numerical/desktop/data cases pass without skips. Includes
   runtime and source fingerprints; a targeted audit, not a full-suite or
   paper-accuracy reproduction. Run `examples.validate_cuda` to reproduce.
 
@@ -140,3 +140,16 @@ and [results](../../docs/results.md#helmholtz-with-fourier-lra-pinn).
 - `dsgnar-countsketch700-cpu.json` and `dsgnar-countsketch4000-{cpu,cuda}.json`:
   exact accumulation-only comparisons with explicit collision/residency scope.
   CUDA calls the experimental helper; no SVD or end-to-end claim is made.
+
+- `dsgnar-large-baseline-{cpu64,cuda32,cuda64}.json`: pre-optimization actual
+  4,000-row SVD/full-attempt profiles; CPU has reduced point counts, CUDA full counts.
+- `dsgnar-large-{cpu32,cpu64,cuda32,cuda64}.json`: final complete profiles in both
+  precisions/backends; CUDA includes measured SVD allocation peaks and full counts.
+- `dsgnar-large-touched-cuda{32,64}.json` and `dsgnar-large-production-cuda64.json`:
+  full-count old/new accumulation qualification with exact checkpoint parity.
+- `dsgnar-probe-cache.json` and `dsgnar-probe-cache-{cpu,cuda}.json`: exact radius
+  and full-state comparisons against the uncached interpolation reference.
+
+- [CUDA regression audit — 13 November 2026](cuda-validation-2026-11-13.json):
+  23 executed GPU cases pass without skips, including actual SVD-memory capture
+  and the 3,999/4,000/4,096-row dispatch boundary.
