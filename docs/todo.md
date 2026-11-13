@@ -458,7 +458,9 @@ only when the user explicitly requests including it here.
   gradient monitor terms and strict checkpoint/model persistence.
 - [x] Add 2D Poisson sine variation, Burgers and Burgers+RAR examples; verify
   CPU/CUDA derivatives, exact same-device resume, UI/export and document differences.
-- [ ] Consider coupled/vector residual-gradient aggregation against a concrete case.
+- [x] Add component-wise residual-gradient aggregation for steady 2D u/v/p flow,
+  with a Couette example, non-cancellation/target-derivative checks and exact
+  fixed/RAR CPU/CUDA continuation. Other vector systems remain deferred.
 - [ ] Define independent gradient sample sets, inverse unknown parameters and
   integral/importance combinations before exposing those options.
 

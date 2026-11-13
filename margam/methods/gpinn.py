@@ -8,11 +8,14 @@ from ..components.losses import weighted_loss
 
 
 class GradientEnhancedPINN(PINN):
-    def __init__(self,problem,network,*,coordinates,gradient_weights,weights=None,configuration=None):
+    def __init__(self,problem,network,*,coordinates,gradient_weights,weights=None,configuration=None,residual_components=1):
         super().__init__(problem,network,weights=weights)
         from ..components.gpinn_config import validate_gpinn_weights
         validate_gpinn_weights(gradient_weights)
-        if tuple(coordinates) not in (('x',),('x','y'),('x','t')):raise ValueError('gPINN currently uses scalar x, x/y or x/t coordinates.')
+        if tuple(coordinates) not in (('x',),('x','y'),('x','t')):raise ValueError('gPINN currently uses x, x/y or x/t coordinates.')
+        if type(residual_components) is not int or residual_components not in (1,3) or (residual_components==3 and tuple(coordinates)!=('x','y')):
+            raise ValueError('gPINN supports one scalar residual or three steady x/y flow residuals.')
+        self.residual_components=residual_components
         self.coordinates=tuple(coordinates);self.gradient_weights=deepcopy(gradient_weights)
         self.physical_weights=deepcopy(self.weights)
         self.configuration=deepcopy(configuration or {})
@@ -30,6 +33,7 @@ class GradientEnhancedPINN(PINN):
             if term in self.loss_measures:raise ValueError('A boundary name conflicts with '+term)
             self.weights[term]=self.weights.get('pde',1.)*self.gradient_weights[name]
         self.signature=dict(algorithm='yu2022-scalar-residual-gradients',coordinates=list(self.coordinates),gradient_weights=deepcopy(self.gradient_weights),weights=deepcopy(self.weights),configuration=self.configuration)
+        if self.residual_components==3:self.signature.update(algorithm='margam-steady-flow-component-residual-gradients',residual_components=3)
         return self
 
     def pde_samples(self,x):
@@ -37,11 +41,15 @@ class GradientEnhancedPINN(PINN):
         target=self.problem.residual_target(x) if callable(self.problem.residual_target) else self.problem.residual_target
         target=torch.as_tensor(target,dtype=self.dtype,device=self.device)
         residual,target=self._aligned(residual,target,len(x))
-        if residual.shape[1]!=1:raise ValueError('gPINN currently supports one scalar residual.')
+        if residual.shape[1]!=self.residual_components:raise ValueError('gPINN residual component count does not match its configured scalar/flow contract.')
         error=residual-target
         terms={'pde':(residual,target,len(x))}
         for name,axis in self.directions.items():
-            gradient=derivative(error,x,axis)
+            # Differentiate each equation separately: differentiating the sum
+            # would let opposite component gradients cancel before squaring.
+            if self.residual_components==1:gradient=derivative(error,x,axis)
+            else:
+                gradient=torch.cat([derivative(error[:,i:i+1],x,axis) for i in range(self.residual_components)],dim=1)
             terms['pde_grad_'+name]=(gradient,torch.zeros_like(gradient),len(x))
         return terms
 

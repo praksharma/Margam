@@ -10,7 +10,7 @@ from ..components.prepared_data import read_points,normal_fingerprint
 
 
 def validate_flow_config(config):
-    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive','lra','scale','dsgnar'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline, self-adaptive, LRA, Scale or DSGNAR method.')
+    if config.shape!='Rectangle' or config.method not in ('baseline','self_adaptive','lra','scale','dsgnar','gpinn'):raise ValueError('2D flow requires a rectangle/bounding box and a baseline, self-adaptive, LRA, Scale, gPINN or DSGNAR method.')
     if not math.isfinite(config.viscosity) or config.viscosity<=0:raise ValueError('Kinematic viscosity must be positive and finite.')
     if len(config.flow_residuals)!=3:raise ValueError('Flow needs momentum-x, momentum-y and continuity residuals.')
     for text in config.flow_residuals:Expression(text,2,fields=('u','v','p'))
@@ -84,6 +84,10 @@ def build_flow_pinn(config):
     apply_problem_measures(problem,config)
     network=build_network(config)
     weights=config.loss_weights
+    if config.method=='gpinn':
+        from dataclasses import asdict
+        from ..methods.gpinn import GradientEnhancedPINN
+        return GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=weights,configuration=asdict(config),residual_components=3).compile(lr=config.lr,device=config.device)
     if config.method=='self_adaptive':
         from ..methods.self_adaptive import SelfAdaptivePINN
         return SelfAdaptivePINN(problem,network,weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device,adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)

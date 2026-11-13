@@ -211,7 +211,7 @@ def load_run(path):
         elif config.method=='gpinn':
             from dataclasses import asdict
             from ..methods.gpinn import GradientEnhancedPINN
-            model=GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=config.loss_weights,configuration=asdict(config)).compile(lr=config.lr,device='cpu')
+            model=GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=config.loss_weights,configuration=asdict(config),residual_components=3 if config.physics=='incompressible_2d' else 1).compile(lr=config.lr,device='cpu')
         elif config.method=='lra':
             from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
             model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)

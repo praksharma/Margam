@@ -1,5 +1,6 @@
-"""Concrete scalar gPINN demonstrations, separate from its reusable recipe."""
+"""Concrete scalar and steady-flow gPINN demonstrations, separate from its reusable recipe."""
 GPINN_EXAMPLES={
+    'gpinn_couette_2d':('Couette flow · 2D · gPINN','Steady u/v/p variation with separate momentum/continuity residual gradients.','y;0;0'),
     'gpinn_poisson_2d':('Poisson sine · 2D · gPINN','Manufactured sine variation; scalar residual gradients in x and y.','sin(pi*x)*sin(pi*y)'),
     'gpinn_burgers':('Burgers · 1D + time · gPINN','Scalar x/t residual gradients; soft initial/boundary conditions.',''),
     'gpinn_burgers_rar':('Burgers + RAR · 1D + time · gPINN','Residual-gradient losses with physical-residual refinement.',''),
@@ -10,7 +11,10 @@ def gpinn_example_config(key):
     from .poisson import PoissonConfig,BoundarySampling
     from .burgers import burgers_config
     if key not in GPINN_EXAMPLES:raise ValueError('Unknown gPINN example.')
-    if key=='gpinn_poisson_2d':
+    if key=='gpinn_couette_2d':
+        from .incompressible_flow import flow_demo_config
+        c=flow_demo_config();c.lr=.001;c.gpinn_weights=dict(x=1e-4,y=1e-4,t=0.)
+    elif key=='gpinn_poisson_2d':
         c=PoissonConfig(source=0.,pde_preset='poisson',pde_forcing='2*pi*pi*sin(pi*x)*sin(pi*y)',points=144,boundary_points=24,layers=(32,32),iterations=2000,lr=.001,boundary_weight=10.)
         c.gpinn_weights=dict(x=1e-5,y=1e-5,t=0.)
     else:

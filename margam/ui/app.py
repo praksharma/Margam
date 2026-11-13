@@ -1518,7 +1518,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if wire.source.parentItem() is old or wire.target.parentItem() is old:
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
-        pde=self.make_node('Predefined PDE','',480,40)
+        pde=self.make_node('PDE residual' if config.physics=='incompressible_2d' else 'Predefined PDE','',480,40)
         if config.adaptive_sampling:
             old_interior=interior
             title='Residual refinement (RAR)' if config.adaptive_sampling['method']=='rar' else 'Residual importance sampling'
@@ -1839,7 +1839,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'dsgnar_recipe':f'DSGNAR · {c.iterations} attempts','dsgnar_method':f'SVD · sketch {c.dsgnar_settings["sketch_size"]}',
                      'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
-                     'gpinn_recipe':f'gPINN · {c.iterations} steps','gpinn_method':'Scalar residual gradients',
+                     'gpinn_recipe':f'gPINN · {c.iterations} steps','gpinn_method':'Flow component residual gradients' if c.physics=='incompressible_2d' else 'Scalar residual gradients',
                      'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
                      'expert_recipe':f'Expert · {c.iterations} steps', 'expert_method':f'Causal · {c.expert_settings["chunks"]} chunks' if c.is_time_dependent else 'Steady · gradient balance',
                      'lra_recipe':f'LRA · {c.iterations} steps', 'lra_method':f'Gradient balance · every {c.lra_interval}',

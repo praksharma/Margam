@@ -1,17 +1,21 @@
 {
-  "scope": "Actual isolated gPINN recipe/trainer and raw gradient-loss monitor after 30 CPU updates; no accuracy claim.",
+  "scope": "Actual isolated scalar gPINN recipe/trainer and monitor after 30 CPU updates, plus untrained steady-flow example; no accuracy claim.",
   "captures": {
     "trainer": {
       "file": "manual-gpinn-trainer.png",
-      "sha256": "0e46146dae0662a376800f5e435e64491cb34dfaa80fef4d64abd3e7a53db3c6"
+      "sha256": "fed17d55ce2253823e6f2ad77e854ee4ebd3bf9020c5984858df88e39fc365f5"
     },
     "compact": {
       "file": "manual-gpinn-compact.png",
-      "sha256": "0e573376e20ce7c92d42c67654161a86d62d24f322c093fb36d4d68cdcc1b8ff"
+      "sha256": "f76e49cb8d2a469cf4d564cd73df6bc9a2602492df0a714280ad307c307f2c19"
     },
     "monitor": {
       "file": "manual-gpinn-monitor.png",
-      "sha256": "41ac41df2529267dd1c87e76158def4eb7798160de7c00404873426d6ad1f22f"
+      "sha256": "1852e9ee8e3d86941eb8a7e75e6196f445f2e8f13ddeb2b2f078909b219611a9"
+    },
+    "flow": {
+      "file": "manual-gpinn-flow.png",
+      "sha256": "2acdad3960c5c25af66be11dd5db05934085a135c0ab072e291571ac43d4631e"
     }
   }
 }

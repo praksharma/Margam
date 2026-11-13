@@ -9,16 +9,18 @@ class GPINNUITests(unittest.TestCase):
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import xml.etree.ElementTree as ET
-from PySide6.QtWidgets import QApplication,QDoubleSpinBox,QComboBox
+from PySide6.QtWidgets import QApplication,QDoubleSpinBox,QComboBox,QMessageBox
 from margam.ui.app import Window
 from margam.ui.model_document import capture_model,decode_document
+def unexpected_warning(parent,title,text,*args,**kwargs):raise AssertionError(title+': '+text)
+QMessageBox.warning=unexpected_warning
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 def finish():
  deadline=time.monotonic()+30
  while w.worker is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.005)
  assert w.worker is None and w.result is not None,w.log.toPlainText()
 try:
- for key in ('gpinn_poisson_2d','gpinn_burgers','gpinn_burgers_rar'):
+ for key in ('gpinn_poisson_2d','gpinn_burgers','gpinn_burgers_rar','gpinn_couette_2d'):
   assert w.load_example(key) and w.validate_model(),w.validation.text()
   assert w.example_actions[key] in w.gpinn_examples_menu.actions()
   trainer=next(n for n in w.scene.nodes() if n.kind=='gpinn_method');w.show_block_properties(trainer)
@@ -40,7 +42,11 @@ try:
   with TemporaryDirectory() as directory:
    directory=Path(directory);path=directory/'gpinn.pt';assert w.save_current_run(path);w.undo_stack.setClean();assert w.open_saved_run(path)
    assert w.resume_training(additional=2);finish();assert w.result['steps']==5
-   if key!='gpinn_poisson_2d':
+   if key=='gpinn_couette_2d':
+    assert w.result['outputs'][next(n.identifier for n in w.scene.nodes() if n.kind=='solution')]['fields']==['u','v','p']
+    export=next(n for n in w.scene.nodes() if n.kind=='export');csv=directory/'flow.csv';assert w.export_block_data(export,csv)
+    assert 'u,v,p' in csv.read_text().splitlines()[0]
+   if w.config.is_time_dependent:
     export=next(n for n in w.scene.nodes() if n.kind=='paraview');path=directory/'series.pvd';assert w.export_block_data(export,path)
     assert [float(row.get('timestep')) for row in ET.parse(path).findall('Collection/DataSet')]==[0.,.25,.5,.75,1.]
 finally:app.clipboard().clear();w.undo_stack.setClean();w.close();app.processEvents()

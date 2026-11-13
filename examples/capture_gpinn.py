@@ -10,9 +10,9 @@ def main():
     from margam.ui.app import Window
     from margam.ui.theme import configure_theme
     from examples.documentation import validate_public_text
-    root=Path(__file__).resolve().parents[1];os.chdir(root);out=root/'assets/screenshots';paths={name:out/('manual-gpinn-'+name+'.png') for name in ('trainer','compact','monitor')};manifest=out/'manual-gpinn-captures.json'
+    root=Path(__file__).resolve().parents[1];os.chdir(root);out=root/'assets/screenshots';paths={name:out/('manual-gpinn-'+name+'.png') for name in ('trainer','compact','monitor','flow')};manifest=out/'manual-gpinn-captures.json'
     if not args.overwrite and any(path.exists() for path in (*paths.values(),manifest)):parser.error('Captures exist; use --overwrite.')
-    app=QApplication([]);configure_theme(app,'light');w=Window(state_directory=False);w.resize(1560,1200);w.show()
+    app=QApplication([]);configure_theme(app,'light');w=Window(state_directory=False);w.set_application_device('cpu');w.resize(1560,1200);w.show()
     def save(name,widget):
         for _ in range(4):app.processEvents()
         QTest.qWait(100)
@@ -27,7 +27,9 @@ def main():
         assert w.worker is None and w.result is not None,w.log.toPlainText()
         monitor=next(n for n in w.scene.nodes() if n.kind=='monitor');w.open_block(monitor);app.processEvents()
         dock,view=w.output_views.entries[monitor.identifier];dock.setFloating(True);dock.resize(1000,380);app.processEvents();save('monitor',view)
-        manifest.write_text(json.dumps(dict(scope='Actual isolated gPINN recipe/trainer and raw gradient-loss monitor after 30 CPU updates; no accuracy claim.',captures={name:dict(file=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for name,path in paths.items()}),indent=2)+'\n')
+        w.load_example('gpinn_couette_2d');assert w.validate_model()
+        trainer=next(n for n in w.scene.nodes() if n.kind=='gpinn_method');w.show_block_properties(trainer);w.fit_model();save('flow',w)
+        manifest.write_text(json.dumps(dict(scope='Actual isolated scalar gPINN recipe/trainer and monitor after 30 CPU updates, plus untrained steady-flow example; no accuracy claim.',captures={name:dict(file=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for name,path in paths.items()}),indent=2)+'\n')
         print('Captured gPINN trainer, compact recipe and monitor.')
     finally:app.clipboard().clear();w.undo_stack.setClean();w.close();app.processEvents()
 

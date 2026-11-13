@@ -600,3 +600,16 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -p test
 The numerical checks include exact CPU/CUDA continuation for baseline, hard-BC
 and LRA trainers, fixed boundary PDE anchors and old refreshed-pool checkpoints.
 The capture uses isolated desktop state and shows the fixed-pool choice selected.
+
+## Steady-flow gPINN checks
+
+```bash
+.venv/bin/python -m unittest discover -s tests -p test_gpinn_flow.py -v
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -p test_gpinn_ui.py -v
+.venv/bin/python -m examples.capture_gpinn --overwrite
+```
+
+The capture explicitly selects CPU and includes an untrained Couette graph in
+addition to the scalar trainer/recipe and 30-update scalar monitor. Numerical
+checks verify separate equation derivatives, callable targets, zero-weight
+baseline parity, exact Couette physics and fixed/RAR CPU/CUDA continuation.

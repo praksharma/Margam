@@ -160,7 +160,7 @@
   units by default, keep normalization explicit, and do not silently migrate old
   fixed-Fourier checkpoints or claim upstream trunk/head equivalence.
 
-- gPINN differentiates the full scalar residual including forcing/coordinate-callable
+- gPINN differentiates the full scalar residual (or each supported steady-flow component) including forcing/coordinate-callable
   targets, not its square or just the solution. Preserve higher-order parameter
   gradients. Keep coordinate penalties explicit; zero disables a direction. Log
   raw gradient terms separately, preserve BC/IC losses and score RAR on physical
@@ -507,3 +507,11 @@
   reject out-of-pool adapted draws and changed modes on resume. Preserve initial
   warm-up and unit boundary-anchor weights; do not infer imported quadrature or
   allow moving SA masks. Qualify each supported trainer's CPU/CUDA continuation.
+
+- Flow gPINN explicitly differentiates momentum-x, momentum-y and continuity
+  residuals separately, then averages their squared coordinate derivatives.
+  Never differentiate a component sum before squaring. Preserve scalar arithmetic
+  and signature; identify the three-component contract in flow checkpoints.
+  Keep steady rectangular u/v/p scope, component BCs/gauge and physical-residual
+  RAR scoring; do not infer transient/3D/imported vector support. Require an
+  opposing-component cancellation oracle and higher-order parameter gradients.

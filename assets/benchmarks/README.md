@@ -175,3 +175,10 @@ records 25 executed CUDA passes, including fixed candidate-pool continuation for
 baseline, hard-BC and LRA trainers. It preserves earlier audits and includes
 runtime/source identity. This validates implementation behavior, not sampling
 accuracy or convergence speed. See [adaptive sampling](../../docs/adaptive-sampling.md).
+
+## Steady-flow gPINN
+
+[cuda-validation-gpinn-flow-2026-11-13.json](cuda-validation-gpinn-flow-2026-11-13.json)
+adds real CUDA checks for the component-wise steady u/v/p gPINN extension,
+including fixed-point and RAR exact continuation. It records current source/runtime
+identity and preserves previous audits. See [method scope and normalization](../../docs/gpinn.md#steady-2d-flow-component-wise-gradients).

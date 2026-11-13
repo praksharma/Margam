@@ -1,7 +1,8 @@
 # gPINN: gradient-enhanced PINN
 
 Choose **File → Examples → gPINN examples** for a 2D Poisson sine variation,
-Burgers, or Burgers with residual-based adaptive refinement (RAR). The reusable
+Burgers, Burgers with residual-based adaptive refinement (RAR), or steady 2D
+Couette flow. The reusable
 **Gradient-enhanced PINN** compact recipe is under **PINN recipes**, and its
 expanded **gPINN trainer** is under **Training**. Networks remain replaceable.
 
@@ -40,9 +41,36 @@ A second-order PDE generally needs third network derivatives here, increasing
 compute/memory cost. The available smooth pointwise networks remain compatible.
 
 Boundary and initial operators, targets and weights are unchanged. Gradient losses
-use the same interior collocation rows as the physical residual. The paper allows
+use the same explicitly connected PDE collocation rows as the physical residual. The paper allows
 independent derivative sample sets; this first implementation deliberately shares
 them. The base network/trainer is not replaced with the authors' architecture.
+
+## Steady 2D flow: component-wise gradients
+
+The Couette variation uses the existing steady velocity/pressure contract,
+`(u,v,p)` on a rectangle, with momentum-x, momentum-y and continuity residuals.
+For residual vector `r=(r_mx,r_my,r_c)`, the added loss in direction `i` is
+
+```text
+L_grad_i = mean_over_points((∂r_mx/∂i)² + (∂r_my/∂i)² + (∂r_c/∂i)²) / 3
+```
+
+Margam differentiates **each equation separately before squaring**, then averages
+the three component penalties, matching the physical PDE mean-MSE convention.
+Differentiating their sum would allow opposite residual gradients to cancel and
+would define a different objective. Full residual targets/forcing are included.
+The x/y weights multiply this aggregate; they do not separately rescale momentum
+or continuity. Choose appropriate physical nondimensionalization in the equations.
+
+The existing component BCs and pressure gauge are unchanged. Fixed-point and RAR
+sampling are supported; RAR still scores the RMS physical residual, without the
+added gradient penalties. This concrete extension does not add transient flow,
+3D fields, arbitrary vector systems or imported coupled geometry.
+
+![Actual steady-flow gPINN example and its x/y gradient controls](../assets/screenshots/manual-gpinn-flow.png)
+
+*Untrained Couette example. The graph carries u/v/p and keeps outputs opt-in; the
+screenshot is an interface check, not evidence of a trained solution's accuracy.*
 
 ## Compact or expanded
 
@@ -65,6 +93,7 @@ finite and between zero and 10⁶; the current control displays eight decimal pl
 | Poisson sine · 2D | λx=λy=10⁻⁵ | Δu+2π²sin(πx)sin(πy)=0 on [0,1]²; zero Dirichlet edges; explicit sine reference |
 | Burgers · 1D + time | λx=λt=10⁻⁴ | ν=0.01/π, −sin(πx) initial field, zero spatial endpoints; no assumed later-time reference |
 | Burgers + RAR | Same | Actual RAR block, adding points with the largest physical residual |
+| Couette flow · 2D | λx=λy=10⁻⁴ | Steady u=y, v=0, p=0 reference on the unit square; velocity BCs and pressure gauge |
 
 The **Poisson sine case is a manufactured variation**, not the authors' localized
 polynomial-bump benchmark. The authors' code supplies the displayed gradient-weight
@@ -94,10 +123,11 @@ network fields, not residual-gradient arrays.
 
 ## Supported composition and persistence
 
-The first implementation supports scalar intervals, rectangles, prepared 2D data
-and 1D space–time equations, with fixed samples or the existing RAR block. It does
-not silently combine gPINN with SA attention, LRA/NTK balancing, Scale correction,
-Expert causal/time-window training or coupled/vector residuals. Integral gradient
+The implementation supports scalar intervals, rectangles, prepared 2D data,
+1D space–time equations and the explicit steady 2D flow contract, with fixed
+samples or the existing RAR block. It does not silently combine gPINN with SA
+attention, LRA/NTK balancing, Scale correction or Expert causal/time-window training.
+Other coupled/vector systems remain outside this contract. Integral gradient
 quadrature, importance-weighted gradient terms, inverse unknown parameters and
 independent gradient-point datasets remain future work.
 
@@ -135,3 +165,9 @@ hashes and the inspected upstream revision. The
 [capture manifest](../assets/screenshots/manual-gpinn-captures.json) identifies the
 real screenshots. The implementation is independent PyTorch code; DeepXDE,
 TensorFlow, the upstream code and its datasets are not runtime dependencies.
+
+Scalar checkpoints keep their existing signature and arithmetic. Steady-flow
+checkpoints explicitly identify the three-component gradient aggregation and
+reject a changed component contract, coordinate weights or physical configuration.
+The Couette case is a Margam manufactured verification example, not a reproduced
+flow benchmark from the gPINN paper.

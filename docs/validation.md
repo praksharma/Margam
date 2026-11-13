@@ -1215,3 +1215,33 @@ hashes. These are correctness/continuation checks, not an accuracy benchmark or 
 comparison of the sampling options' convergence. Actual inspector screenshots were
 recaptured and inspected, including the new pool control. The manual build checks
 73 rendered pages and their links/assets.
+
+## Steady-flow gPINN component gradients
+
+`tests/test_gpinn_flow.py` passes six checks with real CUDA available. An analytic
+three-component residual includes equal/opposite x-gradient components, preventing
+a mistaken derivative-of-the-sum implementation from passing. The test also
+includes coordinate-callable targets and compares higher-order parameter gradients
+with an independent expression. An exact Couette network satisfies each momentum,
+continuity, BC, pressure-gauge and residual-gradient term at zero loss.
+
+Steady u/v/p fixed-point and RAR runs preserve exact same-device CPU/CUDA
+continuation: network weights, loss histories and active samples match an
+uninterrupted run. Zero coordinate-gradient weights reproduce baseline flow
+training exactly. Wrong component counts and changed checkpoint aggregation
+contracts are rejected. Existing scalar gPINN tests retain their arithmetic and
+checkpoint signatures.
+
+The real offscreen desktop gPINN workflow now includes Couette, checks its example
+menu, compact/expanded recipe, isolated training, run save/open/resume and u/v/p
+CSV output. Archive validation reconstructs the three-component contract instead
+of the scalar one. Unexpected warning dialogs fail this test immediately.
+The final related CPU-mode method/flow/desktop/collocation/prediction/integral-loss/
+resource/archive/audit suite ran 50 tests: 46 passed, four CUDA-only cases skipped.
+The targeted real-GPU audit is recorded separately below. These short checks
+validate implementation and lifecycle, not trained-solution accuracy.
+
+`examples.capture_gpinn` explicitly selects CPU. Its refreshed screenshots show
+the scalar trainer/recipe, the scalar monitor after 30 updates, and the untrained
+steady-flow graph. The new image was inspected for readable x/y controls and
+correct u/v/p wiring. The manual build checks 73 rendered pages and their assets.
