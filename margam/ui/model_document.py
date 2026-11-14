@@ -27,7 +27,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33), 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -140,7 +140,9 @@ def decode_document(data):
         require(isinstance(node['title'],str) and 0 < len(node['title'].strip()) <= 256, 'Invalid block name.')
         require(isinstance(node['position'],list) and len(node['position']) == 2 and all(number(v) and abs(v) <= 1e9 for v in node['position']), 'Invalid block position.')
         settings = node['settings']
-        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data','jorvik','jorvik_files','data_fingerprints','annotation_text','label','network_label'}, 'Invalid output settings.')
+        require(isinstance(settings,dict) and {'resolution','history_limit'} <= set(settings) <= {'resolution','history_limit','reference_expression','reference_data','parameters','source_data','jorvik','jorvik_files','data_fingerprints','annotation_text','label','network_label','enabled'}, 'Invalid output settings.')
+        if 'enabled' in settings:
+            require(data['version']>=33 and node['kind'] in ('monitor','solution','comparison','export','paraview') and type(settings['enabled']) is bool,'Only optional output blocks support a boolean enabled flag (format 33).')
         from .block_labels import valid_label
         for key in ('label','network_label'):
             if key in settings:
@@ -246,7 +248,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':32, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':33, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

@@ -88,6 +88,7 @@ Every output block and opened result view shows its in-memory availability:
 
 | Badge | Meaning |
 | --- | --- |
+| Disabled | This output is excluded from recording, evaluation and export requests |
 | Not run / Not connected | No results calculated for this output, or no source connected |
 | Running / Evaluating | Training or inference is in progress |
 | Current | Requested data belongs to the current in-memory model |
@@ -118,6 +119,38 @@ use Project data overview for file checks and explicit export actions to write d
 The startup graph has no outputs. Complete examples wire useful optional outputs,
 but their windows remain closed until opened. You can keep training without a
 figure on screen. Closing a view is different from deleting its block.
+
+### Keep an output wired but turn it off
+
+Select a Training Monitor, Solution Plot, Comparison, CSV Export or ParaView
+Export and clear **Properties → Output enabled → Include this output in runs**.
+The same **Output enabled** checkbox is in the block's right-click menu.
+The canvas shows **Disabled**; settings and wires stay in place. The change is
+undoable and saved in the model, run archive and clipboard fragment. Older models
+start with all outputs enabled.
+
+![A disabled Solution Plot keeps its wires and exposes the unchecked output setting](../../assets/screenshots/manual-output-disabled.png)
+
+*Actual disabled output inspector. The physics and wiring are unchanged; this
+capture does not run training.*
+
+Disabled blocks request no monitor recording, prediction, comparison or export
+data. Their open/export actions are unavailable. Previously written files are
+left in place. Disabling a Comparison does not silently bypass an enabled export
+connected to it: Validate asks you to enable the Comparison or disable that export.
+Unused reference/data declarations can still appear as advisory validation warnings.
+
+Changing the requested outputs clears old result views but preserves matching
+trained weights. Re-enable a block and use **Evaluate requested outputs** to obtain
+its data without optimizer updates. For a monitor, this can reconstruct retained
+curves from the checkpoint's existing loss history; it does not recover missing
+history. The numerical trainer still keeps its own loss/checkpoint state when
+all monitor blocks are disabled.
+
+Closing a view hides its window while its output stays enabled. Disabling an
+output changes execution requests. Deleting it removes the block and wires.
+These controls apply only to optional outputs: required geometry, sampling,
+physics, network and trainer blocks cannot be disabled to skip a loss.
 
 ![The block-owned monitor appears as a dockable results tab](../../assets/screenshots/manual-monitor.png)
 

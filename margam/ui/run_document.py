@@ -16,6 +16,7 @@ def validate_run(data):
     require(data['format']=='margam-run' and type(data['version']) is int and data['version'] in (1,2,3,4),'Unsupported run version.')
     validate_owned_files(data.get('owned_files',{}))
     config,nodes,_=decode_document(data['model']);kinds={n['id']:n['kind'] for n in nodes}
+    enabled={n['id']:n['settings'].get('enabled',True) for n in nodes}
     result=data['result']
     require(isinstance(result,dict) and set(result)=={'outputs','steps','cancelled','device'},'Invalid run result.')
     steps=result['steps']
@@ -23,6 +24,7 @@ def validate_run(data):
     require(isinstance(result['outputs'],dict),'Invalid run outputs.')
     for identifier,output in result['outputs'].items():
         require(kinds.get(identifier) in ('solution','comparison','export','paraview') and isinstance(output,dict),'Unknown run output.')
+        require(enabled[identifier],'Disabled outputs cannot contain run results.')
         require(set(output)>={'points','values','size','steps','reference','rmse'} and set(output)<={'points','values','size','steps','reference','rmse','reference_name','max_error','fields','rmse_by_field','max_error_by_field','evaluation','point_ids','reference_provenance'},'Invalid output metadata.')
         size=output['size'];points,values=output['points'],output['values']
         supplied='evaluation' in output
@@ -57,6 +59,7 @@ def validate_run(data):
     def check_record(record):return isinstance(record,dict) and loss_record_keys(record,names,config.constraint_names) and all(number(v) for v in record.values())
     for identifier,records in monitors.items():
         require(kinds.get(identifier)=='monitor' and isinstance(records,list) and len(records)<=100000,'Invalid monitor records.')
+        require(enabled[identifier],'Disabled monitors cannot contain retained records.')
         previous=0
         for row in records:
             require(isinstance(row,(tuple,list)) and len(row)==2 and type(row[0]) is int and previous<row[0]<=steps and check_record(row[1]),'Invalid monitor record.')

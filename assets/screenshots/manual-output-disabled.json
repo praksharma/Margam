@@ -1,0 +1,7 @@
+{
+  "generator": "examples.capture_output_controls",
+  "scope": "Actual output inspector and Disabled badge; unchanged physics/wiring, no training.",
+  "file": "manual-output-disabled.png",
+  "sha256": "92a265256b8c909a6665f9adfc8934b6ef261290f42627445b9ec71ca68882ef",
+  "model_version": 33
+}

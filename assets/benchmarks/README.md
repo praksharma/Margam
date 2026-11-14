@@ -217,3 +217,12 @@ no skips, including the new gradient-measure continuation case. The
 [validation guide](../../docs/validation.md#selected-field-gradient-importance-sampling-14-november-2026)
 records the analytical/correction and desktop lifecycle checks. These are
 correctness checks, not a solution-accuracy comparison between sampling measures.
+
+
+## Optional-output enable validation, 14 November 2026
+
+[cuda-validation-output-controls-2026-11-14.json](cuda-validation-output-controls-2026-11-14.json)
+records all 29 selected GPU checks passing, including output-only disabling,
+archive continuation and re-enabled evaluation without optimizer updates.
+See [the validation details](../../docs/validation.md#optional-output-enable-controls-14-november-2026)
+and [the illustrated controls](../../docs/use/results.md#keep-an-output-wired-but-turn-it-off).

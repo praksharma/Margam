@@ -11,7 +11,7 @@ LABELS={'block_label':'Block label name','lr':'Adam learning rate','iterations':
  'bc_weights':'Boundary coefficient weight','bc_types':'Boundary condition type','bc_values':'Boundary constant target value',
  'bc_targets':'Boundary target expression','bc_operators':'Boundary custom operator','loss_formulation':'Loss formulation mean integral',
  'sa_boundary':'Adapt boundary constraint weights','pressure_point':'Pressure gauge coordinates','interior_data':'Map imported interior data','boundary_data':'Map imported boundary data','shape':'Domain geometry','method':'PINN method variant','sa_lr':'Mask Adam learning rate','pde_preset':'Predefined PDE',
- 'boundary_sampling':'Boundary sampling method count seed','flow_boundary':'Flow boundary conditions','source_data':'Map source data','reference_expression':'Reference expression','resolution':'Evaluation points / axis','history_limit':'Retained updates'}
+ 'boundary_sampling':'Boundary sampling method count seed','flow_boundary':'Flow boundary conditions','source_data':'Map source data','reference_expression':'Reference expression','resolution':'Evaluation points / axis','history_limit':'Retained updates','output_enabled':'Output enabled include result recording evaluation export'}
 PREFIXES={'dsgnar_settings':'dsgnar','inverse_settings':'inverse','network_options':'network_option','expert_settings':'expert','scale_settings':'scale','rba_settings':'rba','adaptive_sampling':'sampling','gpinn_weights':'gpinn_weight'}
 ALIASES={'network_type':'network_architecture','pde_preset':'predefined_pde_choice','pde_forcing':'predefined_forcing'}
 
@@ -21,6 +21,7 @@ def entries(window):
     for node in sorted(window.scene.nodes(),key=lambda n:(n.title,n.identifier)):
         parameters=node.settings.get('parameters',{})
         keys=['block_label']+list(PARAMETERS.get(node.kind,()))
+        if node.kind in ('monitor','solution','comparison','export','paraview'):keys+=['output_enabled']
         if node.kind=='annotation':keys+=['annotation_text']
         elif node.kind=='monitor':keys+=['history_limit']
         elif node.kind in ('solution','comparison','export','paraview'):keys+=['resolution']

@@ -6,6 +6,12 @@ from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidg
 OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export', 'paraview'}
 
 
+def output_enabled(node):
+    value=node.settings.get('enabled',True)
+    if type(value) is not bool:raise ValueError('Output enabled must be boolean.')
+    return value
+
+
 class StoredTimesModel(QAbstractListModel):
     """Lazy combo rows: no widget/item per supplied physical-time value."""
     def __init__(self,parent=None):
@@ -127,7 +133,7 @@ class OutputViews:
         self.entries = {}
 
     def open(self, node):
-        if node.kind not in OUTPUT_KINDS or node.kind in ('export','paraview'):
+        if node.kind not in OUTPUT_KINDS or not output_enabled(node) or node.kind in ('export','paraview'):
             return
         if node.identifier not in self.entries:
             view = TrainingMonitorView() if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()

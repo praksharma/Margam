@@ -552,3 +552,12 @@
   in logs/retained inspection and strictly match the measure/field on resume.
   Validate field indices and reject transient field gradients until their
   coordinate/time scaling contract is specified; never pool velocity and pressure.
+
+- Model format 33 adds a boolean `enabled` setting only to optional outputs;
+  missing flags in old models mean enabled. Disabled outputs retain wiring but
+  request no data/monitor recording and cannot export. An enabled export needs
+  its upstream Comparison enabled. Reject flags on required physics, malformed
+  flags and archives carrying disabled-output results/monitor records. Keep
+  toggles guarded while busy, undoable and portable; invalidate old results while
+  preserving matching weights for explicit evaluation without optimizer updates.
+  The Disabled badge is derived from the setting, not serialized UI freshness.

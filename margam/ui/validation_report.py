@@ -60,19 +60,24 @@ def collect_issues(window,execution_error=None):
         if node.identifier in used:return
         used.add(node.identifier)
         for (target,_),source in incoming.items():
-            if target==node.identifier:visit(source)
+            if target==node.identifier and not (source.kind in ('monitor','solution','comparison','export','paraview') and not source.settings.get('enabled',True)):visit(source)
     for method in methods:visit(method)
     outputs={'solution','monitor','comparison','export','paraview'}
+    from .output_views import output_enabled
     active=set(used)
     for node in nodes:
-        if node.kind in outputs and any(target==node.identifier for target,_ in incoming):
+        if node.kind in outputs and output_enabled(node) and any(target==node.identifier for target,_ in incoming):
             visit(node);active.update(used)
     for node in nodes:
         own_in={port:source for (target,port),source in incoming.items() if target==node.identifier}
         core=node.kind in PARAMETERS
+        if node.kind in outputs and not output_enabled(node):
+            add('Outputs','Disabled: this block requests no results; wiring is retained.',node,severity='Warning');continue
         if node.kind in outputs and not own_in:
             add('Outputs','Not connected: this block requests no results.',node,severity='Warning');continue
         if node.kind in outputs:
+            parent=own_in.get('comparison')
+            if parent is not None and not output_enabled(parent):add('Connections','Enable the connected Comparison or disable this export.',node)
             required=['model','reference'] if node.kind=='comparison' else [] if 'comparison' in own_in else ['input']
             if 'comparison' in own_in and set(own_in)!={'comparison'}:add('Connections','Use either compared fields OR a PINN/points connection for this export, not both.',node)
         elif core:required=[spec.name for spec in INPUTS[node.kind] if spec.name!='boundary_points']

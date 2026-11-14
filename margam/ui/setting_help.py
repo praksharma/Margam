@@ -175,3 +175,6 @@ HELP.update({
  'dsgnar_precision':'Explicit network, residual, Jacobian and SVD precision. Double precision is the default. This port does not use an automatic mixed-precision warmup.',
  'dsgnar_seed':'Dedicated CPU sketch random generator seed, independent of network and point sampling seeds. Its state is retained for same-device continuation.',
 })
+
+
+HELP['output_enabled']='Include this optional monitor, solution, comparison or export in execution requests. Disabled blocks keep their wiring and settings but request no recording/evaluation/export. Closing a view only hides it; disabling changes the requested outputs and clears old result views while preserving matching trained weights for Evaluate outputs. An enabled export cannot depend on a disabled Comparison. Physics blocks cannot be disabled.'

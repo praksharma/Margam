@@ -120,7 +120,11 @@ open before/during/after a run; adding, connecting, training or loading never op
 them automatically. Closed monitors still record connected requests. Unconnected
 outputs are ignored; a partially connected Comparison fails validation.
 
-Closing a view hides it; reopening reuses it. Removing a block removes its request
+Closing a view hides it; reopening reuses it. The output-only **Output enabled**
+checkbox excludes its request while keeping wires/settings; an enabled export
+requires its upstream Comparison to be enabled. Required physics cannot be
+disabled. See [the illustrated output controls](use/results.md#keep-an-output-wired-but-turn-it-off).
+Removing a block removes its request
 and view. Monitor retention changes trim retained data; increasing the limit cannot
 recover discarded records. Prediction/comparison requests are evaluated separately.
 With no prediction requests, training does not create field arrays or a reference.
@@ -166,8 +170,8 @@ marks unsaved edits; saving marks the current undo position clean.
 
 | Persistence | Contents and limits |
 | --- | --- |
-| Model JSON (`.margam.json`, current format 10, reads 1–9) | Owned graph settings, IDs, positions and expressions; no weights, results, layout or undo history; incomplete drafts can be saved |
-| Run archive (`.margam-run.pt`, current format 2) | Model, requested predictions/metrics, retained monitor histories, network and Adam state; SA also includes masks and ascent optimiser |
+| Model JSON (`.margam.json`, current format 33, reads 1–32) | Owned graph settings, IDs, positions and expressions; no weights, results, layout or undo history; incomplete drafts can be saved |
+| Run archive (`.margam-run.pt`, current format 4, reads 1–3) | Model, requested predictions/metrics, retained monitor histories, network and Adam state; SA also includes masks and ascent optimiser |
 | Desktop preferences/recovery | Layout/theme/library groups and per-session unsaved model drafts; no trained numerical state |
 
 File model/run actions validate before replacing the current document, and offer

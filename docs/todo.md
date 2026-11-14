@@ -592,9 +592,10 @@ Next editor improvements, in priority order:
 - [ ] Design arbitrary subsystems: explicit typed boundary ports, nested navigation,
   breadcrumbs, collapse/expand, persistence/undo and unchanged numerical assembly.
   Existing compact recipes do not satisfy this contract.
-- [ ] Define disabled-output semantics before adding an enable/disable toggle;
-  disabling a required physics component must fail validation, not silently alter
-  its loss or bypass it.
+- [x] Add output-only enable toggles with explicit monitor/evaluation/export
+  semantics, a Disabled badge, Undo/clipboard/model/run persistence and enabled
+  Comparison dependencies. Required physics flags fail validation; never bypass
+  a loss. Verify CPU/CUDA jobs and evaluation using retained weights.
 - [x] Compare two saved model definitions or a baseline/current graph with
   block-owned parameter, connection and added/removed block changes. Match stable
   IDs, migrate old formats, optionally include names/notes/positions, and preserve

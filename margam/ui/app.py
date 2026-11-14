@@ -18,7 +18,7 @@ from ..components.losses import LOSS_FORMULATIONS
 from ..components.sampling import SAMPLERS
 from ..components.network_config import NETWORK_NAMES, OPTION_SCHEMAS, network_options
 from .plots import RectanglePreview
-from .output_views import OutputViews, OUTPUT_KINDS
+from .output_views import OutputViews, OUTPUT_KINDS, output_enabled
 from .training import IsolatedTrainingWorker as TrainingWorker,IsolatedEvaluationWorker as EvaluationWorker
 from .canvas_view import CanvasView
 from .block_library import BlockLibrary, QuickInsert
@@ -335,6 +335,7 @@ class Canvas(QGraphicsScene):
 
     def validate_graph(self):
         nodes = self.nodes()
+        if any('enabled' in n.settings and n.kind not in OUTPUT_KINDS for n in nodes):raise ValueError('Only optional result blocks support an enabled flag; required physics cannot be disabled.')
         if any(n.kind in ('inverse_recipe','inverse_method') for n in nodes):
             for wire in self.wires:
                 error=self.connection_error(wire.source,wire.target,ignore=wire)
@@ -380,11 +381,13 @@ class Canvas(QGraphicsScene):
             if node.identifier not in sources:sources[node.identifier]=read_point_data(resolve_source(node.settings.get('source_data',{})),config,reference=reference)
             return sources[node.identifier]
         def request(node):
+            if not output_enabled(node):return None
             if node.identifier in cache:return cache[node.identifier]
             incoming={wire.target.name:wire.source.parentItem() for wire in self.wires if wire.target.parentItem() is node}
             if not incoming:return None
             if 'comparison' in incoming:
                 if node.kind not in ('export','paraview') or set(incoming)!={'comparison'}:raise ValueError('Choose a trainer/points connection OR compared fields for export, not both.')
+                if not output_enabled(incoming['comparison']):raise ValueError(node.title+' depends on disabled Comparison '+incoming['comparison'].title+'. Enable it or disable this export.')
                 parent=request(incoming['comparison'])
                 if parent is None:raise ValueError('Connect Comparison to a trained model and reference first.')
                 value=OutputRequest(node.identifier,node.kind,parent.resolution,parent.reference,parent.point_data,parent.reference_data)
@@ -1173,7 +1176,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.resizeDocks([self.library_dock,self.properties_dock],[240,310],Qt.Orientation.Horizontal)
 
     def export_block_data(self,node,path=None):
-        if self.is_running():return False
+        if self.is_running() or not isValid(node) or node.scene() is not self.scene or not output_enabled(node):return False
         data=(self.result or {}).get('outputs',{}).get(node.identifier)
         if data is None:
             self.statusBar().showMessage('Connect this export block and train before exporting.');return False
@@ -1213,7 +1216,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         return dialog
 
     def show_error_norms(self,node):
-        if not isValid(self) or not isValid(node) or node.scene() is not self.scene or node.kind!='comparison':return None
+        if not isValid(self) or not isValid(node) or node.scene() is not self.scene or node.kind!='comparison' or not output_enabled(node):return None
         from .error_norms import ErrorNormsDialog
         dialog=self.error_norm_dialogs.get(node.identifier)
         if dialog is None or not isValid(dialog):
@@ -1231,6 +1234,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if node.kind in COMPACT_RECIPES:return self.expand_recipe(node)
         if node.kind in ('export','paraview'):return self.export_block_data(node)
         if node.kind in OUTPUT_KINDS:
+            if not output_enabled(node):
+                self.statusBar().showMessage('This output is disabled. Enable it in Properties or its context menu.');return
             return self.output_views.open(node)
         self.properties_dock.show()
         self.properties_dock.raise_()
@@ -1242,14 +1247,19 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         label_action=menu.addAction('Rename block…');label_action.setEnabled(not self.is_running() and not self.scene.locked)
         label_action.triggered.connect(lambda:self.request_block_label(node))
         if node.kind in ('rar','importance'):menu.addAction('Inspect retained PDE points…').triggered.connect(lambda:self.show_sample_points(node))
-        if node.kind=='comparison':menu.addAction('Error norms…').triggered.connect(lambda:self.show_error_norms(node))
+        if node.kind in OUTPUT_KINDS:
+            enabled=menu.addAction('Output enabled');enabled.setCheckable(True);enabled.setChecked(output_enabled(node))
+            enabled.setEnabled(not self.is_running() and not self.scene.locked)
+            enabled.toggled.connect(lambda value:self.set_output_enabled(node,value))
+        if node.kind=='comparison':
+            action=menu.addAction('Error norms…');action.setEnabled(output_enabled(node));action.triggered.connect(lambda:self.show_error_norms(node))
         if node.kind in ('inverse_recipe','inverse_method','inverse_pde'):
             menu.addAction('Learned coefficients…').triggered.connect(self.show_inverse_parameters)
         if node.kind=='jorvik_geometry':
             for label,callback in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:
                 action=menu.addAction(label);action.setEnabled(not self.is_running() and not self.scene.locked);action.triggered.connect(lambda checked=False,fn=callback:fn(node))
         if node.kind in ('solution','comparison','export','paraview'):
-            action=menu.addAction('Evaluate requested outputs');action.setEnabled(not self.is_running());action.triggered.connect(self.evaluate_trained_outputs)
+            action=menu.addAction('Evaluate requested outputs');action.setEnabled(not self.is_running() and output_enabled(node));action.triggered.connect(self.evaluate_trained_outputs)
         if node.kind in COMPACT_RECIPES:
             action=menu.addAction('Expand into components');action.setEnabled(not self.is_running())
             action.triggered.connect(lambda:self.expand_recipe(node))
@@ -1263,7 +1273,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
         elif node.kind in OUTPUT_KINDS:
             label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…','paraview':'Export ParaView…'}[node.kind]
-            menu.addAction(label).triggered.connect(lambda:self.open_block(node))
+            action=menu.addAction(label);action.setEnabled(output_enabled(node));action.triggered.connect(lambda:self.open_block(node))
         if node.kind in ('sa_recipe','sa_method'):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not self.is_running() and self.result is not None)
@@ -1400,7 +1410,14 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def rename_output(self,node,name):
         return self.rename_block(node,name)
 
+    def set_output_enabled(self,node,value):
+        if type(value) is not bool or not isValid(node) or node.scene() is not self.scene or node.kind not in OUTPUT_KINDS or self.is_running() or self.scene.locked:return False
+        if output_enabled(node)==value:return False
+        self.change_output(node,'enabled',value)
+        return True
+
     def change_output(self,node,key,value,edit_token=None):
+        if key=='enabled' and (type(value) is not bool or not isValid(node) or node.scene() is not self.scene or node.kind not in OUTPUT_KINDS or self.is_running() or self.scene.locked):return
         existed=key in node.settings;old=deepcopy(node.settings.get(key))
         if key in ('source_data','reference_data'):
             old=self.project_workspace.portable_document(old);value=self.project_workspace.portable_document(value)
@@ -1414,6 +1431,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 del records[:-number]
                 self.output_views.refresh(node)
             else:self.graph_changed()
+            if key=='enabled':self.selection_changed()
         merge=(node.identifier,key,edit_token) if edit_token is not None else None
         self.push_edit('Change output '+key.replace('_',' '),lambda:apply(value),lambda:apply(old,existed),merge)
 
@@ -1772,7 +1790,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         requests=self.scene.output_requests(self.config)
         if model is not None:checkpoint=model.training_state()
         self.loaded_checkpoint=checkpoint;self._trained_config=deepcopy(config)
-        self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor'}
+        self.monitor_records={node.identifier:list(enumerate(checkpoint['loss_history'],1))[-node.settings['history_limit']:] for node in self.scene.nodes() if node.kind=='monitor' and output_enabled(node)}
         self.result=None;self.set_busy(True);self.progress_bar.setRange(0,0)
         if model is not None and str(model.device)!=self.execution_device():model=None
         self.active_output_ids={r.identifier for r in requests}
@@ -2485,6 +2503,12 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             self.form.addRow('Execution device',QLabel(('GPU' if self.execution_device()=='cuda' else 'CPU')+' · application Device menu'))
             self.form.addRow(QLabel('Stop requests are checked every 25 updates.'))
         elif node.kind in OUTPUT_KINDS:
+            enabled=QCheckBox('Include this output in runs');enabled.setObjectName('output_enabled')
+            enabled.setProperty('search_key','output_enabled');enabled.setProperty('help_key','output_enabled')
+            enabled.setChecked(output_enabled(node));enabled.toggled.connect(lambda value,n=node:self.set_output_enabled(n,value))
+            self.form.addRow('Output enabled',enabled)
+            if not output_enabled(node):
+                note=QLabel('Disabled: no recording, evaluation or export request. Wiring is retained. Enable before opening or evaluating this output.');note.setWordWrap(True);self.form.addRow(note)
             if node.kind=='monitor':
                 count=QSpinBox();count.setKeyboardTracking(False);count.setRange(25,100000);count.setValue(node.settings['history_limit'])
                 count.valueChanged.connect(lambda value,n=node,t=object():self.change_output(n,'history_limit',value,t))
@@ -2504,9 +2528,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if node.kind=='export':text='Connect a trainer/recipe with optional Evaluation points, OR connect Comparison for reference/error columns. Supplied rows preserve order and IDs. Export CSV explicitly after training or Evaluate outputs.'
             note=QLabel(text);note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Export CSV…' if node.kind=='export' else 'Export ParaView…' if node.kind=='paraview' else 'Open view');button.clicked.connect(lambda checked=False,n=node:self.open_block(n))
-            self.form.addRow(button)
+            button.setEnabled(output_enabled(node));self.form.addRow(button)
             if node.kind=='comparison':
-                metrics=QPushButton('Error norms…');metrics.clicked.connect(lambda checked=False,n=node:self.show_error_norms(n));self.form.addRow(metrics)
+                metrics=QPushButton('Error norms…');metrics.setEnabled(output_enabled(node));metrics.clicked.connect(lambda checked=False,n=node:self.show_error_norms(n));self.form.addRow(metrics)
         elif node.kind in ('evaluation_points','reference_data'):
             source=node.settings.get('source_data',{});note=QLabel('Coordinates: '+', '.join(self.config.coordinate_names)+(' · fields: '+', '.join(self.config.field_names) if node.kind=='reference_data' else '')+'\n'+self.dataset_label(source));note.setWordWrap(True);self.form.addRow(note)
             button=QPushButton('Map / preview reference data…' if node.kind=='reference_data' else 'Map / preview evaluation points…');button.setProperty('search_key','source_data');button.clicked.connect(lambda checked=False,n=node:self.edit_evaluation_data(n));self.form.addRow(button)

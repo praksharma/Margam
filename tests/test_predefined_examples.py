@@ -67,12 +67,13 @@ for key in EXAMPLE_PROBLEMS:
     assert w.load_example(key)
     config=w.scene.compile_config()
     config.validate()
-    assert sum(n.kind=='predefined_pde' for n in w.scene.nodes())==1
-    assert not any(n.kind=='pde' for n in w.scene.nodes())
+    expected_pde='pde' if config.physics=='incompressible_2d' else 'predefined_pde'
+    assert sum(n.kind==expected_pde for n in w.scene.nodes())==1,key
+    assert not any(n.kind==('predefined_pde' if expected_pde=='pde' else 'pde') for n in w.scene.nodes()),key
     assert not w.output_views.entries
     document=capture_model(w)
     decode_document(document)
-    assert document['version']==32
+    assert document['version']==33
     from tempfile import TemporaryDirectory
     from pathlib import Path
     with TemporaryDirectory() as directory:

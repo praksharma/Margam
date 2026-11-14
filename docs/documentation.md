@@ -100,3 +100,12 @@ happens through the separate workflow. Site URL includes the repository prefix
 so navigation and search resolve beneath `/Margam/`.
 
 [GitHub Pages custom workflow reference](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+
+Capture the output-only enable control in isolated desktop state with:
+
+```sh
+.venv/bin/python -m examples.capture_output_controls --overwrite
+```
+
+The image and manifest go to `assets/screenshots/`; no training is performed.

@@ -1321,3 +1321,35 @@ passed all 28 selected checks with no skips and matching runtime/test hashes.
 The manual checks 74 rendered pages and their local links/assets. This validates
 sampling mathematics and lifecycle, not improved PINN accuracy. See the
 [measure and unit contract](adaptive-sampling.md#choose-the-importance-measure).
+
+
+## Optional-output enable controls, 14 November 2026
+
+Two new real desktop lifecycle cases pass on CPU and CUDA. They exercise all five
+output kinds disabled at once, unchanged numerical configuration/wiring, empty
+execution requests and no prediction calls for an empty request list. Required
+physics flags, non-boolean output flags, active-job edits and stale owners are
+rejected. Undo/Redo, context/Properties controls, settings-search indexing,
+clipboard, model format 33 and older enabled defaults are covered.
+
+The isolated jobs train and resume with no disabled result/monitor payloads.
+Re-enabling Solution Plot and evaluating retained weights preserves the completed
+update count, loss history and every network tensor. An enabled export connected
+to a disabled Comparison fails explicitly. Disabled exports cannot write files,
+and run validation rejects disabled-output results or retained monitor records.
+The actual disabled-output screenshot was rendered and visually inspected;
+[the user guide](use/results.md#keep-an-output-wired-but-turn-it-off) explains the
+recording-versus-hiding distinction and checkpoint-history reconstruction.
+
+The related regression run exercises 38 cases with two CUDA-only skips. It
+initially exposed an outdated expectation that every example has a Predefined
+PDE block: steady incompressible examples intentionally use the existing PDE
+residual block. The test now checks the correct block kind from the concrete
+physics; no execution validator was relaxed. Its three-case module passed on
+recheck, including example save/load paths and legacy formats. The other 35 cases
+yielded 33 passes and two CUDA-only skips in this CPU-mode regression run.
+
+The [CUDA audit](../assets/benchmarks/cuda-validation-output-controls-2026-11-14.json)
+passes all 29 selected checks with matching runtime/test hashes and no skips.
+The manual passed checks on 74 rendered pages and their assets/links.
+This qualifies output selection and persistence, not numerical solution accuracy.

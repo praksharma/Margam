@@ -30,7 +30,7 @@ try:
   trainer=next(n for n in w.scene.nodes() if n.kind=='dsgnar_method');w.show_block_properties(trainer)
   assert w.property_scroll.findChild(QSpinBox,'dsgnar_sketch_size') and w.property_scroll.findChild(QComboBox,'dsgnar_precision')
   compact=w.collapse_recipe(trainer);assert compact;w.show_block_properties(compact);w.expand_recipe(compact)
-  document=capture_model(w);assert document['version']==32;decode_document(document)
+  document=capture_model(w);assert document['version']==33;decode_document(document)
   for n in w.scene.nodes():
    if n.kind in ('solution','comparison','export','paraview'):n.settings['resolution']=3
   with TemporaryDirectory() as directory:
