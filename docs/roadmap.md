@@ -614,3 +614,12 @@ inverse problems and mixed advanced trainers remain explicit future work.
 detached residual-history masks, no second optimizer, and explicit state/identity
 checks. Allen–Cahn and Helmholtz examples cover both notebook initialization modes.
 Moving-point mask transfer and mixed methods remain future work.
+
+
+## Parameter-study preview milestone (14 November 2026)
+
+The first [design-point table](use/parameter-studies.md) is implemented as a
+session-only Cartesian preview of selected block-held numerical controls. It
+shows invalid combinations and update/parameter budgets without changing the
+model or running trials. Portable study export, shared headless execution,
+scheduling, Slurm and collected results remain subsequent milestones.

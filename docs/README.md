@@ -92,3 +92,5 @@ implemented or a regression threshold as a measured benchmark result.
 - [DSGNAR](dsgnar.md): independent sketched Gauss–Newton trainer, adaptive-ratio probes and CPU/CUDA checkpoints.
 
 - [SCALE cavity reproduction attempts](scale-cavity-benchmark.md): full-budget research protocol, derivative checks, timing and raw CFD metrics.
+
+For planned multi-run work, start with the [parameter-study preview](use/parameter-studies.md). This draft does not execute or save a study yet.

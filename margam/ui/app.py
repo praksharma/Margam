@@ -743,6 +743,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.check_action.setShortcut('Ctrl+D')
         self.check_action.triggered.connect(self.validate_button.click)
         self.run_summary_action=run.addAction('Run summary…');self.run_summary_action.triggered.connect(self.show_run_summary)
+        self.study_preview_action=run.addAction('Parameter study preview…');self.study_preview_action.setIcon(icon('comparison'));self.study_preview_action.triggered.connect(self.show_design_points)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
         self.evaluate_action=run.addAction('Evaluate outputs');self.evaluate_action.triggered.connect(self.evaluate_trained_outputs)
@@ -2800,6 +2801,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
         if getattr(self,'dataset_cleanup_dialog',None) is not None:self.dataset_cleanup_dialog.update_buttons()
+
+    def show_design_points(self):
+        from .design_points import DesignPoints
+        dialog=getattr(self,'design_points_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=DesignPoints(self);self.design_points_dialog=dialog
+        dialog.watch();dialog.show();dialog.raise_();return dialog
 
     def show_run_summary(self):
         from .run_summary import RunSummary

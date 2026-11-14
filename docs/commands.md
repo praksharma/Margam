@@ -672,3 +672,16 @@ python -m examples.burgers_reference_workflow --device cuda --output results/bur
 Use fresh directories. Add `--capture` to the workflow to capture the optional
 comparison; `--overwrite-capture` explicitly replaces its screenshot. These
 three-plus-two update checks validate behavior, not trained shock accuracy.
+
+
+### Parameter-study preview
+
+Open **Run → Parameter study preview…** for the session-only draft table.
+It previews combinations and budgets without executing or saving a study.
+
+```bash
+python -m unittest discover -s tests -p 'test_study_preview.py' -v
+python -m examples.capture_study_preview --overwrite
+```
+
+See [the illustrated guide](use/parameter-studies.md).

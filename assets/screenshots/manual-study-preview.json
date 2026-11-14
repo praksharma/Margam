@@ -1,0 +1,9 @@
+{
+  "generator": "examples.capture_study_preview",
+  "scope": "Actual read-only 12-design-point preview; no training, export or persistent study.",
+  "design_points": 12,
+  "total_updates": 24000,
+  "largest_network_parameters": 1185,
+  "file": "manual-study-preview.png",
+  "sha256": "944c2faa28a88f3a4e04832a2ea554d391942617fa89dde600f227a869ab84fd"
+}

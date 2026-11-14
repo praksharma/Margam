@@ -1504,3 +1504,25 @@ separately, without claiming a full audit rerun. Continuation is available only
 for the checkpoint already in the window. Native data/checkpoint validation,
 application device, isolation and job time limits remain authoritative. No file
 loading/export, arbitrary code or graph insertion is added.
+
+
+## Parameter-study preview (14 November 2026)
+
+Five focused checks pass for bounded Cartesian expansion/order, decimal and
+descending ranges, malformed/duplicate/oversized inputs, invalid trial reasons,
+architecture compatibility, compact recipes, selected block identity, missing
+IDs, busy/stale dialogs, close/reopen behavior and preservation of the open
+model, Undo history, retained results and Python/NumPy/Torch RNG state. The
+preflight is guarded against network/sample factories; a fresh-process check
+also executes a built-in-domain preview without importing Torch or Qt.
+
+The real dialog capture shows twelve design points, 24,000 total requested
+updates and a largest network of 1,185 parameters. It performs no training or
+export. Workload counts are not runtime/peak-memory estimates or evidence of
+solution accuracy. Invalid combinations carry no fabricated result metric.
+Existing desktop-startup, graph explanation/run-summary and resource arithmetic
+checks are run separately. See [the illustrated guide](use/parameter-studies.md).
+
+This is a session-only draft/preview milestone. No portable study format, trial
+executor, full per-trial data/output qualification, scheduling or HPC workflow
+is claimed. Saving/export and shared headless execution remain open todos.

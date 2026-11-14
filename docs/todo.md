@@ -296,9 +296,12 @@ paused; operational training monitors and basic rectangle previews remain useful
 See [study/sweep vision](roadmap.md#future-vision-studies-component-alternatives-and-sweeps).
 These are proposed features; current execution still runs one supported problem.
 
-- [ ] Add an ANSYS Mechanical-inspired parameter/design-point table: choose
-  block-owned parameters, fixed values/candidate lists or ranges/steps; preview
-  combinations, trial count and resource budget without copying graphs.
+- [x] Add an ANSYS Mechanical-inspired parameter/design-point draft table for
+  selected existing block controls, fixed/candidate/range choices and bounded
+  Cartesian preview. Show invalid reasons, total requested updates/attempts and
+  allocation-free parameter counts without changing the open graph. This first
+  milestone has no persistent study, runtime/memory prediction or execution; see
+  [parameter study preview](use/parameter-studies.md).
 - [ ] Export a portable, versioned finite-grid study file with the base model,
   parameter choices, seeds, explicit evaluation requests and remappable data paths.
 - [ ] Provide the planned `margam-cli` headless runner for the exported file,
