@@ -77,7 +77,7 @@ SA-PINN applies its squared masks inside the measured loss; monitor term curves
 show the corresponding unmasked integral estimates. LRA uses gradients of these
 measured terms for its coefficient updates. Hard-BC errors remain zero by construction.
 
-For **Residual importance sampling**, with uniform candidate pool size `M`, draw
+For **Importance sampling**, with uniform candidate pool size `M`, draw
 probability `p_i`, and `B` draws:
 
 ```text

@@ -1,4 +1,4 @@
-# Residual-driven sampling
+# Adaptive sampling
 
 Margam has two optional **Sampling** blocks. They replace **Interior sampler**;
 they are not PINN recipes or boundary-condition blocks. The fixed sampler remains
@@ -17,11 +17,11 @@ PhysicsNeMo Sym. Margam implements these tools independently; see the
 
 1. Open a working example. Delete its Interior sampler (the two attached wires
    are removed with it).
-2. Insert **Residual refinement (RAR)** or **Residual importance sampling** from
+2. Insert **Residual refinement (RAR)** or **Importance sampling** from
    the Sampling library.
 3. Connect **Geometry → sampler → PDE residual / Predefined PDE**.
 4. Select the sampler and configure its initial method, point budget and seed,
-   followed by its residual sampling schedule.
+   followed by its adaptive sampling schedule.
 5. Validate and train. **Messages** reports each sampling event and point count.
 
 There is one interior sampler per executable graph. These blocks do not stack.
@@ -51,7 +51,7 @@ No DeepXDE dependency or source code is added.
 RAR uses the usual mean PDE loss over its growing active set. It intentionally
 changes the spatial weighting of that empirical objective.
 
-## Residual importance sampling
+## Importance sampling
 
 Keep the **actual initial sample count** throughout training. At each scheduled
 update, score a uniform candidate pool and draw that many coordinates
@@ -62,7 +62,7 @@ update, score a uniform candidate pool and draw that many coordinates
 - **Refresh candidates at each update** remains the default, including for older
   saved models. Each event generates new seeded box candidates.
 - **Fixed seeded candidate pool** generates one uniform box pool using the sampler
-  seed when the model is prepared. Each event recomputes its residual scores and
+  seed when the model is prepared. Each event recomputes its selected scores and
   draws a new active batch from those same coordinates. The candidate count is
   separate from the active Point budget. Initial warm-up still uses the configured
   initial sampler, rather than replacing its points early.
@@ -73,7 +73,7 @@ The finite population is retained and checkpointed; it is not a guarantee of
 continuous-domain accuracy. Boundary PDE anchors remain separate and keep unit
 correction weights.
 
-For candidate residual score `s_i`, pool size `M`, residual power `k` and residual
+For selected candidate score `s_i`, pool size `M`, score power `k` and score
 probability fraction `beta`:
 
 ```text
@@ -94,13 +94,48 @@ requires mean loss because its anchors have no uniform-domain quadrature weights
 Conditional on the current network and pool, the weighted estimator and its
 network gradient target the **uniform candidate-pool MSE**. This is not the same
 as unweighted residual-biased resampling (often called RAD), and is not an exact
-integral over the continuous domain. For multi-equation residuals, components
+integral over the continuous domain. For multi-equation residual scoring, components
 have equal weight in the score; users must choose suitable physical scaling.
 
 ![Importance sampler inspector with its probability controls](../assets/screenshots/manual-sampling-importance.png)
 
 *Actual inspector with Fixed seeded candidate pool selected. Refreshed candidates
 remain the default for new and older models.*
+
+## Choose the importance measure
+
+In **Importance sampling → Properties → Importance measure**, choose:
+
+- **PDE residual (RMS across equations)**: unchanged default for new and older
+  models. This also remains the only scoring rule for RAR.
+- **Selected field gradient magnitude**: concentrate draws around large spatial
+  derivatives of the current predicted field. **Scoring field** selects `u` for
+  scalar problems, or one of `u`, `v`, `p` for steady incompressible flow. Fields
+  are not pooled and reference data is not used.
+
+For a selected field `f`, the score is `sqrt(sum_a (df/dx_a)^2)` over the spatial
+coordinates. Coordinate derivatives include configured input normalization and
+hard-boundary transforms. There is no extra coordinate rescaling: derivatives
+use current coordinate units, so changing units can change the probabilities.
+A constant field falls back to uniform draws. Scores are detached from training;
+parameter gradient buffers are not changed by scoring.
+
+This option currently supports **steady built-in intervals and rectangles**.
+It is unavailable for time-dependent problems; no implicit mixing of temporal and
+spatial derivatives is introduced. Existing restrictions on trainers, imported
+geometry and pointwise masks still apply. Choosing this measure changes draw
+probabilities, while the PDE loss retains the same inverse-probability correction.
+It does not add a gradient-enhanced PDE loss or promise improved solution accuracy.
+
+![Importance sampler selecting the v-field gradient for steady flow](../assets/screenshots/manual-sampling-gradient.png)
+
+*Actual state-isolated inspector, with a fixed pool and `v` selected. Logs and
+retained-point inspection label the historical values as field-gradient magnitudes,
+rather than PDE residuals. A saved run requires the same measure and selected
+field on continuation.*
+
+The [recorded checks](validation.md#selected-field-gradient-importance-sampling-14-november-2026)
+cover analytical gradients, corrected losses and CPU/CUDA continuation.
 
 ## Comparison with NVIDIA Modulus / PhysicsNeMo Sym
 
@@ -114,7 +149,7 @@ No NVIDIA sampling code is copied and no additional dependency is installed.
 | Choice | NVIDIA Sym reference | Current Margam block |
 | --- | --- | --- |
 | Candidate locations | A fixed supplied point cloud | Fresh uniform box pools by default; optional fixed seeded uniform box pool |
-| Importance measure | User-supplied callable; the documentation illustrates velocity-derivative magnitude | RMS PDE residual across equations, raised to a configurable power |
+| Importance measure | User-supplied callable; the documentation illustrates velocity-derivative magnitude | RMS PDE residual (default) or the spatial-gradient magnitude of one selected steady field, raised to a configurable power |
 | Drawing points | Rejection sampling with replacement for each yielded training batch; periodically refresh importance | Multinomial draws with replacement at scheduled events; retain the drawn batch between events |
 | Loss correction | Reciprocal sampling density stored as integration area per draw | Reciprocal discrete probability in mean PDE loss |
 | Probability safeguards | Inspect the chosen measure for its valid support | Explicit uniform mixture and all-zero fallback |
@@ -128,10 +163,8 @@ This equivalence assumes equal underlying quadrature weights; arbitrary imported
 mesh/point weights require a separate contract.
 
 **Importance sampling does not require the importance measure to be the PDE
-residual.** A field-gradient measure is a reasonable future option. The current
-UI is deliberately named **Residual importance sampling** to state what it
-actually scores. It does not reproduce NVIDIA's full sampler or its example
-flow configuration.
+residual.** The block now offers both measures explicitly. It does not reproduce
+NVIDIA's full sampler or its example flow configuration.
 
 ## Schedule, scoring and reproducibility
 
@@ -141,9 +174,9 @@ flow configuration.
   the sampler seed and completed step number. Fixed candidate coordinates instead
   use the sampler seed once; draw seeds still depend on completed updates.
   Changing worker chunk boundaries does not change the update schedule.
-- **Residual chunk size** limits candidate scoring memory, not training batch size.
+- **Scoring chunk size** limits candidate scoring memory, not training batch size.
   Spatial derivatives remain enabled; scoring does not backpropagate into parameter
-  gradient buffers. Non-finite candidate residuals abort without replacing points.
+  gradient buffers. Non-finite selected scores abort without replacing points or correction weights.
 - Training uses full batches of the active set. RAR can increase training memory
   substantially; the point cap is not a memory guarantee.
 - The Training Monitor's PDE curve is active-set mean loss for RAR and the
@@ -155,7 +188,7 @@ flow configuration.
 ## Inspect the retained training points
 
 After a completed or stopped run, right-click the connected **RAR** or
-**Residual importance sampling** block and choose **Inspect retained PDE
+**Importance sampling** block and choose **Inspect retained PDE
 points…**. The same button is in its Properties. Reopened run archives support
 the inspector without retraining or reading the original input files.
 
@@ -179,8 +212,9 @@ probability or an attention weight. It is one before the first importance update
 and fixed boundary PDE anchors keep correction one. Repeated importance draws
 remain visible. RAR retains initial rows (including anchors) before its additions.
 The caption gives the retained optimizer update, actual total/anchor counts and
-adaptive event count. Last candidate residual statistics are historical values
-from that event; opening a page does not rescore the residual.
+adaptive event count. Last candidate score statistics are historical values
+from that event, labelled as residuals or field-gradient magnitudes; opening a
+page does not rescore the candidates.
 
 The inspector uses the idle model or its saved adaptive checkpoint. Only the
 selected page is copied to CPU, without reconstructing a network, regenerating
@@ -239,6 +273,7 @@ From the repository root, using the existing environment:
 ```bash
 python -m examples.adaptive_sampling
 python -m unittest discover -s tests -p 'test_adaptive_sampling*.py' -v
+python -m unittest discover -s tests -p 'test_*importance*.py' -v
 python -m examples.capture_adaptive_sampling --overwrite
 ```
 

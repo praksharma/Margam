@@ -10,7 +10,7 @@ def prepare(window,kind='rar'):
     from margam.components.adaptive_sampling import sampling_defaults
     window.load_example('interval_poisson')
     window.delete_block(next(n for n in window.scene.nodes() if n.kind=='interior'))
-    node=window.add_node('Residual refinement (RAR)' if kind=='rar' else 'Residual importance sampling')
+    node=window.add_node('Residual refinement (RAR)' if kind=='rar' else 'Importance sampling')
     domain=next(n for n in window.scene.nodes() if n.kind=='domain');pde=next(n for n in window.scene.nodes() if n.kind=='predefined_pde')
     window.scene.connect_nodes(domain,node);window.scene.connect_nodes(node,pde)
     window.change('points',206);window.change('iterations',5);window.change('layers',(4,))

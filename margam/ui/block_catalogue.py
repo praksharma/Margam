@@ -3,7 +3,7 @@
 # Category, then (display title, existing template kind).
 BLOCK_CATEGORIES = {
     'Geometry': (('Rectangle', 'domain'),('Jorvik geometry','jorvik_geometry')),
-    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Observation data','observations'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Residual importance sampling','importance')),
+    'Sampling': (('Interior sampler', 'interior'), ('Boundary points', 'boundary'), ('Interior data','interior_data'), ('Observation data','observations'), ('Boundary data','boundary_data'), ('Residual refinement (RAR)','rar'), ('Importance sampling','importance')),
     'Neural networks': (('Neural network', 'network'),),
     'Loss / Physics': (('PDE residual', 'pde'), ('Predefined PDE','predefined_pde'), ('Inverse Burgers PDE','inverse_pde'), ('Boundary condition', 'bc')),
     'PINN recipes': (('DSGNAR PINN','dsgnar_recipe'), ('Baseline PINN','recipe'), ('Self-adaptive PINN','sa_recipe'), ('Learning-rate annealing PINN','lra_recipe'),('Expert PINN','expert_recipe'),('Scale-PINN','scale_recipe'),('Gradient-enhanced PINN','gpinn_recipe'),('Residual-based attention PINN','rba_recipe'),('Inverse Burgers PINN','inverse_recipe')),
@@ -60,7 +60,7 @@ CAPABILITIES = {
     'recipe': ('Baseline recipe · compact or expanded', 'Contains a replaceable tanh network and full-batch Adam trainer. Exposes steps and learning rate; execution follows the application Device menu. Connect PDE and BC inputs; double-click to expand. Collapse a baseline trainer and its private network to retain edits.'),
     'domain': ('Bounds and shape', 'Interval, rectangle, space–time slab, or concrete channel/cylinder examples. Advanced CAD belongs to GeoSampler.'),
     'rar': ('Initial sampler, candidate pool, schedule, additions and cap', 'Adds the largest-residual candidate points after warm-up. Built-in 1D/2D domains; baseline, hard-BC and LRA trainers. BC points stay fixed. Imported interiors and SA point masks are not supported. Inspect retained PDE points after a run or from its archive.'),
-    'importance': ('Initial sampler/budget, candidates, schedule and probability mixture', 'Fixed initial point count; residual-based draws with replacement and inverse-probability MSE weights. Built-in 1D/2D domains with baseline, hard-BC or LRA; no imported interiors or SA masks. Inspect retained rows and correction weights after a run or from its archive.'),
+    'importance': ('Initial sampler/budget, candidates, schedule and probability mixture', 'Fixed initial point count; residual or selected steady-field-gradient draws with replacement and inverse-probability MSE weights. Built-in 1D/2D domains with baseline, hard-BC or LRA; no imported interiors or SA masks. Inspect retained rows and correction weights after a run or from its archive.'),
     'interior': ('Method, budget, seed', 'Fixed meshless PDE points. Grid may use fewer than the budget; other implemented methods return the exact count.'),
     'boundary': ('Named side, method, count, seed', 'Independent rectangle-side recipes; interval endpoints are fixed. Space–time has left/right traces and an initial set, with no final-time constraint. BC assignment is separate.'),
     'predefined_pde': ('PDE family, coefficient, forcing/diffusivity', 'Tested equations. Collocation arrows choose interior, boundary or both point sets; BC operators and reference data remain separate.'),

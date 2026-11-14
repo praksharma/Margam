@@ -210,6 +210,9 @@ class PoissonConfig:
             if self.interior_data or self.boundary_data:raise ValueError('Integral loss on imported points requires explicit quadrature weights; use built-in geometry samples for now.')
             if self.adaptive_sampling.get('method')=='rar':raise ValueError('Integral loss cannot treat RAR anchors as uniform quadrature. Use fixed uniform-domain sampling or importance sampling.')
         if self.adaptive_sampling:
+            if self.adaptive_sampling.get('score')=='field_gradient':
+                if self.is_time_dependent:raise ValueError('Field-gradient importance currently supports steady spatial domains only.')
+                if self.adaptive_sampling.get('field',0)>=len(self.field_names):raise ValueError('Importance scoring field is not an output of this problem.')
             if self.interior_data:raise ValueError('Adaptive candidate generation currently supports built-in domains only; imported interior points need an explicit candidate source.')
             if self.method=='self_adaptive':raise ValueError('Adaptive sampling cannot yet move SA-PINN pointwise masks. Use baseline, hard-BC or LRA training.')
             initial=math.isqrt(self.points)**2 if len(self.bounds[0])==2 and self.sampling=='grid' else self.points

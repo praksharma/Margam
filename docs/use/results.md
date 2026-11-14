@@ -243,7 +243,7 @@ reusable research-script function.
 
 ## Inspect adaptive training locations
 
-For RAR or residual importance sampling, open the sampler's **Inspect retained
+For RAR or importance sampling, open the sampler's **Inspect retained
 PDE points…** context/Properties action after a run or after opening its run
 archive. This separate read-only table shows actual active coordinates, fixed
 PDE anchors and importance correction weights in pages of 200. It never substitutes

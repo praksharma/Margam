@@ -91,11 +91,12 @@ uv pip install --python .venv/bin/python --torch-backend cpu 'torch>=2.9,<3' 'nu
 Build, preview and screenshot-capture commands are in
 [documentation maintenance](documentation.md).
 
-## Residual-driven sampling
+## Adaptive sampling
 
 ```bash
 python -m examples.adaptive_sampling
 python -m unittest discover -s tests -p 'test_adaptive_sampling*.py' -v
+python -m unittest discover -s tests -p 'test_*importance*.py' -v
 python -m examples.capture_adaptive_sampling --overwrite
 ```
 

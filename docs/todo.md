@@ -368,8 +368,12 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Add fixed seeded candidate pools as an explicit importance-sampling option,
   with refreshed residual scores, inverse-probability correction, strict pool
   checkpoints and exact CPU/CUDA continuation. Preserve legacy refreshed pools.
-- [ ] Consider field-gradient importance measures as an explicit option; retain
-  residual sampling semantics for existing saved models.
+- [x] Add an explicit selected-field spatial-gradient importance measure for
+  steady scalar/2D flow, with corrected PDE loss, score-labelled history,
+  fixed/refreshed pools and strict CPU/CUDA continuation. Preserve residual
+  defaults and old saved trajectories; document and capture the inspector.
+- [ ] Define coordinate/time scaling and field selection before extending
+  field-gradient importance to transient systems; do not pool unlike units.
 
 ## Integral loss formulation (28 October 2026)
 

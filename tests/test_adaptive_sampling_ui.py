@@ -21,7 +21,7 @@ from margam.ui.model_document import capture_model,decode_document
 from margam.templates.poisson import build_pinn
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 try:
- for title,kind in [('Residual refinement (RAR)','rar'),('Residual importance sampling','importance')]:
+ for title,kind in [('Residual refinement (RAR)','rar'),('Importance sampling','importance')]:
     w.load_example('interval_poisson')
     old=next(n for n in w.scene.nodes() if n.kind=='interior')
     w.delete_block(old)
@@ -42,6 +42,12 @@ try:
         pool=w.property_scroll.findChild(QComboBox,'sampling_pool');assert pool.currentData()=='refresh'
         pool.setCurrentIndex(pool.findData('fixed'));app.processEvents()
         assert w.scene.compile_config().adaptive_sampling['pool']=='fixed'
+        score=w.property_scroll.findChild(QComboBox,'sampling_score');assert score.currentData()=='residual'
+        score.setCurrentIndex(score.findData('field_gradient'));app.processEvents()
+        assert w.scene.compile_config().adaptive_sampling['score']=='field_gradient'
+        assert w.property_scroll.findChild(QComboBox,'sampling_field').currentData()==0
+        w.undo_edit();assert 'score' not in w.scene.compile_config().adaptive_sampling
+        w.redo_edit();assert w.scene.compile_config().adaptive_sampling['score']=='field_gradient'
     w.change('points',6);w.change('layers',(8,));w.change('iterations',7)
     settings=deepcopy(w.scene.compile_config().adaptive_sampling);settings.update(candidates=19,chunk=4)
     if kind=='rar':settings.update(batch=3,maximum=15)
@@ -70,6 +76,12 @@ try:
         assert not w.output_views.entries
         assert 'Sampling at update 2' in w.log.toPlainText()
         assert len(w.last_run.model.sampling_controller.history)==3
+        if kind=='importance':
+            assert 'field-gradient magnitude' in w.log.toPlainText()
+            current=next(n for n in w.scene.nodes() if n.kind=='importance')
+            dialog=w.show_sample_points(current)
+            assert 'mean_gradient' in dialog.snapshot['last_event']
+            assert 'field-gradient magnitude' in dialog.status.text()
         archive=Path(directory)/'adaptive.margam-run.pt'
         assert w.save_current_run(archive)
         w.undo_stack.setClean();assert w.open_saved_run(archive)
@@ -77,6 +89,21 @@ try:
         continuous=build_pinn(w.config);continuous.train(9,display_every=0)
         assert w.last_run.model.loss_history==continuous.loss_history
         assert w.last_run.model.sampling_controller.history==continuous.sampling_controller.history
+ # Coupled field choices and the time-dependent guard use the same inspector.
+ w.load_flow_template()
+ old=next(n for n in w.scene.nodes() if n.kind=='interior');w.delete_block(old)
+ sampler=w.add_node('Importance sampling')
+ domain=next(n for n in w.scene.nodes() if n.kind=='domain');pde=next(n for n in w.scene.nodes() if n.kind=='pde')
+ w.scene.connect_nodes(domain,sampler);w.scene.connect_nodes(sampler,pde)
+ w.scene.clearSelection();sampler.setSelected(True);app.processEvents()
+ score=w.property_scroll.findChild(QComboBox,'sampling_score');score.setCurrentIndex(score.findData('field_gradient'));app.processEvents()
+ field=w.property_scroll.findChild(QComboBox,'sampling_field');assert [field.itemText(i) for i in range(field.count())]==['u','v','p']
+ field.setCurrentIndex(field.findData(2));app.processEvents()
+ assert w.scene.compile_config().adaptive_sampling['field']==2 and w.validate_model()
+ score=w.property_scroll.findChild(QComboBox,'sampling_score');score.setCurrentIndex(score.findData('residual'));app.processEvents()
+ assert 'field' not in w.scene.compile_config().adaptive_sampling and 'score' not in w.scene.compile_config().adaptive_sampling
+ w.change('shape','SpaceTime1D');app.processEvents()
+ score=w.property_scroll.findChild(QComboBox,'sampling_score');assert not score.model().item(score.findData('field_gradient')).isEnabled()
  # Old saved instance parameters gain the fixed default without changing wiring.
  w.reset_template();legacy=capture_model(w);legacy['version']=12
  legacy['config'].pop('adaptive_sampling')

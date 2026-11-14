@@ -31,7 +31,7 @@ def snapshot_page(points,weights,*,initial_count,boundary_count,method,steps,his
         anchor=anchor_start<=index<anchor_start+boundary_count
         kind='Boundary/initial PDE anchor' if anchor else 'RAR addition' if method=='rar' and index>=initial_count else 'Initial interior' if method=='rar' or weights is None else 'Importance draw'
         rows.append(dict(row=index+1,coordinates=coordinate,kind=kind,correction=weight))
-    last={key:history[-1][key] for key in ('step','points','mean_residual','max_residual')} if history else None
+    last=dict(history[-1]) if history else None
     return dict(rows=rows,page=page,pages=pages,count=count,boundary_count=boundary_count,
         initial_count=initial_count,steps=steps,method=method,last_event=last,events=len(history),corrected=weights is not None)
 
@@ -93,5 +93,8 @@ class SamplePointsDialog(QDialog):
         self.table.resizeColumnsToContents()
         text=f"Retained at update {steps} · {data['count']} PDE rows ({boundary} fixed boundary/initial anchors) · {data['events']} adaptive event(s)"
         event=data['last_event']
-        if event:text+=f"\nLast candidate scoring: update {event['step']} · mean residual {event['mean_residual']:.6g}, max {event['max_residual']:.6g} (historical, not rescored)"
+        if event:
+            from ..components.adaptive_sampling import score_statistics
+            label,mean,maximum=score_statistics(event)
+            text+=f"\nLast candidate scoring: update {event['step']} · mean {label} {mean:.6g}, max {maximum:.6g} (historical, not rescored)"
         self.status.setText(text)

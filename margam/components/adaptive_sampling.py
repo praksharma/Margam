@@ -1,4 +1,4 @@
-"""Residual-driven interior sampling for concrete interval/rectangle workflows.
+"""Adaptive interior sampling for concrete interval/rectangle workflows.
 
 RAR grows the active set. Importance sampling draws with replacement and uses
 inverse probabilities to estimate uniform candidate-pool MSE. No Qt dependency.
@@ -19,9 +19,12 @@ def validate_adaptive_sampling(settings):
     if not settings:return
     method=settings.get('method')
     expected=sampling_defaults(method)
-    optional={'pool'} if method=='importance' else set()
+    optional={'pool','score','field'} if method=='importance' else set()
     if not set(expected)<=set(settings)<=set(expected)|optional:raise ValueError('Incomplete adaptive sampling settings.')
     if 'pool' in settings and settings['pool'] not in ('refresh','fixed'):raise ValueError('Choose refreshed or fixed importance candidates.')
+    if 'score' in settings and settings['score'] not in ('residual','field_gradient'):raise ValueError('Choose residual or field-gradient importance scoring.')
+    if 'field' in settings and (type(settings['field']) is not int or not 0<=settings['field']<=2):raise ValueError('Importance field must be a supported output index (0–2).')
+    if 'field' in settings and settings.get('score','residual')!='field_gradient':raise ValueError('A scoring field requires field-gradient importance scoring.')
     for key,limit in (('interval',100000),('candidates',100000),('batch',100000),('maximum',100000),('chunk',4096)):
         if key not in settings:continue
         if type(settings[key]) is not int or not 1<=settings[key]<=limit:raise ValueError(f'Adaptive sampling {key} must be between 1 and {limit}.')
@@ -37,6 +40,12 @@ def importance_probabilities(scores,power,mixture):
     maximum=scores.max().item()
     scaled=(scores/maximum).pow(power) if maximum else torch.ones_like(scores)
     return (1-mixture)/len(scores)+mixture*scaled/scaled.sum()
+
+
+def score_statistics(event):
+    """Read recorded statistics without rescoring or mislabelling gradient scores."""
+    if 'mean_gradient' in event:return 'field-gradient magnitude',event['mean_gradient'],event['max_gradient']
+    return 'residual',event['mean_residual'],event['max_residual']
 
 
 class AdaptiveSampler:
@@ -59,6 +68,7 @@ class AdaptiveSampler:
         self.settings=deepcopy(settings);self.bounds=(list(lower),list(upper));self.seed=seed
         if self.settings.get('pool')=='refresh':self.settings.pop('pool') # Preserve legacy state/settings exactly.
         self.candidate_pool=model._points(sample_box(*self.bounds,settings['candidates'],'random',seed)) if settings.get('pool')=='fixed' else None
+        if self.settings.get('score')=='residual':self.settings.pop('score') # Same legacy residual state.
         self.initial_count=len(model.collocation_point_sample)
         self.boundary_anchors=None
         if getattr(model.problem,'boundary_anchor_count',0):
@@ -73,13 +83,26 @@ class AdaptiveSampler:
         with torch.enable_grad():
             for chunk in points.split(self.settings['chunk']):
                 x=chunk.detach().requires_grad_(True)
-                values=model.problem.residual(x,model.network(x))
-                target=model._target(model.problem.residual_target,x)
-                values,target=model._aligned(values,target,len(x))
-                error=values-target
-                if not torch.isfinite(error).all():raise FloatingPointError('Non-finite candidate PDE residual; sampling was not changed.')
-                score=error.detach().to(dtype=torch.float64).square().mean(dim=1).sqrt()
-                if not torch.isfinite(score).all():raise FloatingPointError('Candidate residual score overflow; sampling was not changed.')
+                prediction=model.network(x)
+                if self.settings.get('score')=='field_gradient':
+                    field=self.settings.get('field',0)
+                    if prediction.ndim!=2 or prediction.shape[0]!=len(x) or field>=prediction.shape[1]:
+                        raise ValueError('Importance scoring field is not a network output.')
+                    selected=prediction[:,field]
+                    if not torch.isfinite(selected).all():raise FloatingPointError('Non-finite candidate field; sampling was not changed.')
+                    gradient=torch.autograd.grad(selected.sum(),x,allow_unused=True)[0] if selected.requires_grad else None
+                    # A constant field has a zero coordinate gradient, including
+                    # networks whose output does not depend on input at all.
+                    gradient=torch.zeros_like(x) if gradient is None else gradient
+                    score=gradient.detach().to(dtype=torch.float64).square().sum(dim=1).sqrt()
+                else:
+                    values=model.problem.residual(x,prediction)
+                    target=model._target(model.problem.residual_target,x)
+                    values,target=model._aligned(values,target,len(x))
+                    error=values-target
+                    if not torch.isfinite(error).all():raise FloatingPointError('Non-finite candidate PDE residual; sampling was not changed.')
+                    score=error.detach().to(dtype=torch.float64).square().mean(dim=1).sqrt()
+                if not torch.isfinite(score).all():raise FloatingPointError('Non-finite candidate score; sampling was not changed.')
                 scores.append(score.cpu())
         return torch.cat(scores)
 
@@ -117,7 +140,11 @@ class AdaptiveSampler:
         if not torch.isfinite(labels).all():raise FloatingPointError('Non-finite adaptive PDE targets; sampling was not changed.')
         model.collocation_point_sample=points.detach();model.collocation_point_labels=labels
         self.weights=weights
-        self.history.append(dict(step=model.iter,points=len(points),mean_residual=scores.mean().item(),max_residual=scores.max().item()))
+        mean_key,max_key=self.statistic_keys()
+        self.history.append(dict(step=model.iter,points=len(points),**{mean_key:scores.mean().item(),max_key:scores.max().item()}))
+
+    def statistic_keys(self):
+        return ('mean_gradient','max_gradient') if self.settings.get('score')=='field_gradient' else ('mean_residual','max_residual')
 
     def state(self,model):
         state=dict(settings=self.settings,bounds=self.bounds,seed=self.seed,initial_count=self.initial_count,
@@ -133,6 +160,7 @@ class AdaptiveSampler:
             raise ValueError('Adaptive sampling checkpoint settings differ from this recipe.')
         saved_settings=deepcopy(payload['settings'])
         if isinstance(saved_settings,dict) and saved_settings.get('pool')=='refresh':saved_settings.pop('pool')
+        if isinstance(saved_settings,dict) and saved_settings.get('score')=='residual':saved_settings.pop('score')
         if saved_settings!=self.settings or payload['bounds']!=self.bounds or payload['seed']!=self.seed or payload['initial_count']!=self.initial_count:
             raise ValueError('Adaptive sampling checkpoint settings differ from this recipe.')
         if self.candidate_pool is not None:
@@ -144,14 +172,15 @@ class AdaptiveSampler:
         if ((points<points.new_tensor(self.bounds[0]))|(points>points.new_tensor(self.bounds[1]))).any():raise ValueError('Adaptive checkpoint points lie outside the domain.')
         if not isinstance(history,list):raise ValueError('Invalid adaptive sampling history.')
         previous=0;count=self.initial_count
+        mean_key,max_key=self.statistic_keys()
         for event in history:
-            if not isinstance(event,dict) or set(event)!={'step','points','mean_residual','max_residual'} or type(event['step']) is not int or event['step']!=previous+self.settings['interval'] or event['step']>=steps:
+            if not isinstance(event,dict) or set(event)!={'step','points',mean_key,max_key} or type(event['step']) is not int or event['step']!=previous+self.settings['interval'] or event['step']>=steps:
                 raise ValueError('Invalid adaptive sampling update phase.')
             if type(event['points']) is not int:raise ValueError('Invalid adaptive point count.')
             if self.settings['method']=='rar':
                 if not count<=event['points']<=min(count+self.settings['batch'],self.settings['maximum']):raise ValueError('Invalid RAR growth history.')
             elif event['points']!=self.initial_count:raise ValueError('Invalid importance sampling budget.')
-            if any(type(event[key]) not in (int,float) or not math.isfinite(event[key]) or event[key]<0 for key in ('mean_residual','max_residual')) or event['mean_residual']>event['max_residual']+1e-12:raise ValueError('Invalid residual statistics.')
+            if any(type(event[key]) not in (int,float) or not math.isfinite(event[key]) or event[key]<0 for key in (mean_key,max_key)) or event[mean_key]>event[max_key]+1e-12:raise ValueError('Invalid candidate score statistics.')
             previous=event['step'];count=event['points']
         expected_events=(steps-1)//self.settings['interval'] if steps else 0
         if len(history)!=expected_events and not (self.settings['method']=='rar' and count>=self.settings['maximum']):raise ValueError('Missing adaptive sampling history.')

@@ -1521,7 +1521,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         pde=self.make_node('PDE residual' if config.physics=='incompressible_2d' else 'Predefined PDE','',480,40)
         if config.adaptive_sampling:
             old_interior=interior
-            title='Residual refinement (RAR)' if config.adaptive_sampling['method']=='rar' else 'Residual importance sampling'
+            title='Residual refinement (RAR)' if config.adaptive_sampling['method']=='rar' else 'Importance sampling'
             interior=self.make_node(title,'',old_interior.pos().x(),old_interior.pos().y())
             for wire in list(self.scene.wires):
                 if wire.target.parentItem() is old_interior:
@@ -1831,7 +1831,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
             details={'observations':'Measured u · fixed (x,t) rows','inverse_pde':'u_t + λ1 u u_x − λ2 u_xx = 0','inverse_method':f'Joint Adam · {c.iterations} updates','inverse_recipe':f'Inverse Burgers · {c.iterations} updates','domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
-                     'importance':f'{actual} points · importance',
+                     'importance':f'{actual} points · '+('field gradient' if c.adaptive_sampling.get('score')=='field_gradient' else 'residual importance'),
                      'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
                      'boundary':f'{len(c.constraint_names)} conditions · shared initial points' if c.pde_preset=='wave_1d' else f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else len(c.sides) if c.shape=='Interval' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
@@ -2084,6 +2084,12 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         note=QLabel('DSGNAR uses a weighted least-squares objective with adaptive condition weights. No integral quadrature or Adam update.' if self.config.method=='dsgnar' else 'RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
+    def change_sampling_score(self,value):
+        settings=deepcopy(self.config.adaptive_sampling)
+        settings.pop('field',None);settings.pop('score',None)
+        if value=='field_gradient':settings.update(score=value,field=0)
+        self.change('adaptive_sampling',settings)
+
     def change_sampling_option(self,key,value):
         settings=deepcopy(self.config.adaptive_sampling);settings[key]=value
         self.change('adaptive_sampling',settings)
@@ -2203,10 +2209,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             self.field('Point budget','points','int',minimum=1,maximum=100000)
             self.field('Seed','seed','int',minimum=0,maximum=2147483647)
             if node.kind in ('rar','importance'):
-                self.property_section('Residual sampling schedule')
-                specs=[('Update every (steps)','interval',1,100000),('Candidate points','candidates',1,100000),('Residual chunk size','chunk',1,4096)]
+                self.property_section('Adaptive sampling schedule')
+                specs=[('Update every (steps)','interval',1,100000),('Candidate points','candidates',1,100000),('Scoring chunk size','chunk',1,4096)]
                 if node.kind=='rar':specs += [('Points added per update','batch',1,100000),('Maximum active points','maximum',1,100000)]
-                else:specs += [('Residual power','power',.1,4.),('Residual probability fraction','mixture',0.,.99)]
+                else:specs += [('Score power','power',.1,4.),('Score probability fraction','mixture',0.,.99)]
                 for label,key,low,high in specs:
                     widget=QDoubleSpinBox() if key in ('power','mixture') else QSpinBox()
                     widget.setObjectName('sampling_'+key);widget.setKeyboardTracking(False);widget.setRange(low,high)
@@ -2215,12 +2221,25 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     widget.valueChanged.connect(lambda value,k=key:self.change_sampling_option(k,value))
                     self.form.addRow(label,widget)
                 if node.kind=='importance':
+                    scoring=QComboBox();scoring.setObjectName('sampling_score')
+                    scoring.addItem('PDE residual (RMS across equations)','residual')
+                    scoring.addItem('Selected field gradient magnitude','field_gradient')
+                    scoring.model().item(scoring.findData('field_gradient')).setEnabled(not self.config.is_time_dependent)
+                    scoring.setCurrentIndex(scoring.findData(self.config.adaptive_sampling.get('score','residual')))
+                    scoring.currentIndexChanged.connect(lambda index,widget=scoring:self.change_sampling_score(widget.itemData(index)))
+                    self.form.addRow('Importance measure',scoring)
+                    if self.config.adaptive_sampling.get('score')=='field_gradient':
+                        field=QComboBox();field.setObjectName('sampling_field')
+                        for index,name in enumerate(self.config.field_names):field.addItem(name,index)
+                        field.setCurrentIndex(field.findData(self.config.adaptive_sampling.get('field',0)))
+                        field.currentIndexChanged.connect(lambda index,widget=field:self.change_sampling_option('field',widget.itemData(index)))
+                        self.form.addRow('Scoring field',field)
                     pool=QComboBox();pool.setObjectName('sampling_pool')
                     pool.addItem('Refresh candidates at each update','refresh');pool.addItem('Fixed seeded candidate pool','fixed')
                     pool.setCurrentIndex(pool.findData(self.config.adaptive_sampling.get('pool','refresh')))
                     pool.currentIndexChanged.connect(lambda index,widget=pool:self.change_sampling_option('pool',widget.itemData(index)))
                     self.form.addRow('Candidate pool',pool)
-                note=QLabel('The trainer scores candidates with the current PDE/network after each completed interval. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
+                note=QLabel('The trainer scores candidates after each completed interval. Field gradients use one selected output and spatial coordinates in their current units; steady domains only. Boundary points stay fixed. Rectangle preview shows initial points only. Supports baseline, hard-BC and LRA; SA point masks and imported interiors are not yet supported.')
                 note.setWordWrap(True);self.form.addRow(note)
                 inspect=QPushButton('Inspect retained PDE points…');inspect.clicked.connect(lambda checked=False,n=node:self.show_sample_points(n));self.form.addRow(inspect)
             note=QLabel('Rectangle grids use complete layers and may return fewer points than the budget. Actual counts appear on the block and preview.');note.setWordWrap(True);self.form.addRow(note)
@@ -2792,7 +2811,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.log.appendPlainText(f"Expert update {summary['step']}: Adam rate {summary['learning_rate']:.5g}, minimum causal weight {summary['minimum_causal_weight']:.5g}")
 
     def sampling_progress(self,event):
-        self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} PDE collocation rows; candidate mean residual {event['mean_residual']:.4g}, max {event['max_residual']:.4g}")
+        from ..components.adaptive_sampling import score_statistics
+        label,mean,maximum=score_statistics(event)
+        self.log.appendPlainText(f"Sampling at update {event['step']}: {event['points']} PDE collocation rows; candidate mean {label} {mean:.4g}, max {maximum:.4g}")
 
     def training_progress(self,step,records):
         self.progress_bar.setValue(step)

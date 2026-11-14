@@ -1,4 +1,4 @@
-"""Capture the two real adaptive sampler inspectors without personal UI state."""
+"""Capture the real residual and field-gradient sampler inspectors without personal UI state."""
 import argparse
 import hashlib,json,os
 from pathlib import Path
@@ -14,15 +14,15 @@ def main():
     from margam.ui.theme import configure_theme
     from examples.documentation import validate_public_text
     root=Path(__file__).resolve().parents[1];os.chdir(root);out=root/'assets/screenshots'
-    paths={kind:out/('manual-sampling-'+kind+'.png') for kind in ('rar','importance')}
+    paths={kind:out/('manual-sampling-'+kind+'.png') for kind in ('rar','importance','gradient')}
     manifest=out/'manual-adaptive-captures.json'
     if not args.overwrite and any(p.exists() for p in (*paths.values(),manifest)):parser.error('Captures exist; use --overwrite to replace them.')
     app=QApplication([]);configure_theme(app,'light');w=Window(state_directory=False);w.resize(1560,1050);w.show()
     def events():
         for _ in range(4):app.processEvents()
     try:
-        for kind,title in [('rar','Residual refinement (RAR)'),('importance','Residual importance sampling')]:
-            w.load_heat_template()
+        for kind,title in [('rar','Residual refinement (RAR)'),('importance','Importance sampling'),('gradient','Importance sampling')]:
+            w.load_flow_template() if kind=='gradient' else w.load_heat_template()
             old=next(n for n in w.scene.nodes() if n.kind=='interior');position=old.pos();w.delete_block(old)
             sampler=w.add_node(title,position)
             domain=next(n for n in w.scene.nodes() if n.kind=='domain');pde=next(n for n in w.scene.nodes() if n.kind=='pde')
@@ -31,15 +31,21 @@ def main():
             if not w.validate_model():raise RuntimeError(w.validation.text())
             for cls in (QLabel,QLineEdit,QPlainTextEdit):
                 for child in w.findChildren(cls):validate_public_text(child.toPlainText() if isinstance(child,QPlainTextEdit) else child.text(),kind)
-            if kind=='importance':
+            if kind in ('importance','gradient'):
                 assert w.property_scroll.findChild(QDoubleSpinBox,'sampling_mixture') is not None
                 pool=w.property_scroll.findChild(QComboBox,'sampling_pool');pool.setCurrentIndex(pool.findData('fixed'));events()
                 assert w.scene.compile_config().adaptive_sampling['pool']=='fixed'
+                if kind=='gradient':
+                    score=w.property_scroll.findChild(QComboBox,'sampling_score');score.setCurrentIndex(score.findData('field_gradient'));events()
+                    field=w.property_scroll.findChild(QComboBox,'sampling_field');field.setCurrentIndex(field.findData(1));events()
+                    assert w.scene.compile_config().adaptive_sampling['field']==1
+                    assert w.validate_model(),w.validation.text()
+            if kind in ('importance','gradient'):w.property_scroll.ensureWidgetVisible(w.property_scroll.findChild(QComboBox,'sampling_pool'),30,30);events()
             w.property_scroll.widget().repaint();w.repaint();QTest.qWait(100);events()
             if not w.grab().save(str(paths[kind])):raise RuntimeError('Screenshot failed.')
         manifest.write_text(json.dumps(dict(scope='Actual Qt adaptive sampler inspectors, light theme; no training run.',
             captures={kind:dict(file=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for kind,path in paths.items()}),indent=2)+'\n')
-        print('Captured both adaptive sampler inspectors.')
+        print('Captured all three adaptive sampler inspectors.')
     finally:
         app.clipboard().clear();w.undo_stack.setClean();w.close();events()
 

@@ -1291,3 +1291,33 @@ and selected centerline figures were rendered and inspected; VTU vertex exports
 contain predicted u/v/p and velocity vectors without fabricated connectivity.
 These tests qualify the implementation, not the paper's reported convergence:
 its accuracy targets remain unmatched, as detailed in the [results guide](scale-cavity-benchmark.md#recorded-attempts).
+
+
+## Selected-field-gradient importance sampling, 14 November 2026
+
+The focused/related runs passed 32 tests across the adaptive-sampling suite and
+pool, selected-gradient, retained-point, library, help, port and insertion checks.
+All six new selected-gradient tests passed with real CUDA available. Analytical
+polynomial fields verify each u/v/p gradient independently of the PDE; scoring
+leaves parameter gradients and Torch RNG unchanged. Zero/constant fields give
+uniform probabilities, and non-finite values/derivatives leave active samples,
+weights and history unchanged. An exact finite-pool expectation verifies both
+the corrected PDE loss and its parameter gradient.
+
+Baseline, hard-Dirichlet and LRA checkpoints continue exactly on CPU and CUDA,
+for fixed/refreshed pools and stops just before/after a sampling event. Selected
+coupled fields and non-unit scalar integral loss are also exercised. Changing
+the measure/field or mislabelling history rejects loading before model mutation;
+explicit residual defaults retain legacy trajectories and checkpoint schemas.
+
+The real desktop test covers measure/field edits, Undo/Redo, copy/paste,
+compact/expanded recipes, model save/load, isolated worker logs, retained-point
+inspection and run archive continuation. Transient gradient scoring is disabled
+in the inspector and rejected by numerical validation. Three state-isolated
+inspector screenshots were regenerated and the selected-field capture inspected.
+
+The [CUDA audit](../assets/benchmarks/cuda-validation-gradient-importance-2026-11-14.json)
+passed all 28 selected checks with no skips and matching runtime/test hashes.
+The manual checks 74 rendered pages and their local links/assets. This validates
+sampling mathematics and lifecycle, not improved PINN accuracy. See the
+[measure and unit contract](adaptive-sampling.md#choose-the-importance-measure).

@@ -207,3 +207,13 @@ SCALE cavity loss and parameter gradients. The centerline PNGs are independently
 reloaded model predictions compared with local CFD cuts, not heatmaps or exact
 solutions. Upstream reference fields/code are not bundled; full research checkpoints,
 prediction CSV/VTU files and source snapshots stay under ignored `build/scale-cavity/`.
+
+
+## Selected-field-gradient importance validation, 14 November 2026
+
+[cuda-validation-gradient-importance-2026-11-14.json](cuda-validation-gradient-importance-2026-11-14.json)
+records all 28 selected GPU checks passing with matching runtime/test hashes and
+no skips, including the new gradient-measure continuation case. The
+[validation guide](../../docs/validation.md#selected-field-gradient-importance-sampling-14-november-2026)
+records the analytical/correction and desktop lifecycle checks. These are
+correctness checks, not a solution-accuracy comparison between sampling measures.

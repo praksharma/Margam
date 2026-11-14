@@ -14,8 +14,9 @@ coordinates used by sampling, derivatives and the network's coordinate mapping.
 Select **Interior sampler** for the PDE-point count, sampler and seed. Grid,
 random, Hammersley and stratified sampling are implemented. Current training uses
 fixed samples per compiled run by default. To adapt interior points during training,
-replace this block with **Residual refinement (RAR)** or **Residual importance
-sampling**; see the [adaptive sampling guide](../adaptive-sampling.md).
+replace this block with **Residual refinement (RAR)** or **Importance sampling**. Importance scoring uses PDE residuals by default, or
+a selected field’s spatial-gradient magnitude for steady problems; see the
+[adaptive sampling guide](../adaptive-sampling.md).
 
 ![Interior sampler settings control the PDE collocation points](../../assets/screenshots/manual-interior.png){ .portrait }
 

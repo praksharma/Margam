@@ -544,3 +544,11 @@
   reload weights independently and preserve exact executed driver snapshots.
   Standalone centerline interpolation is a labelled benchmark diagnostic only;
   full-field metrics and raw VTU exports retain supplied coordinates/predictions.
+
+- Importance sampling optionally scores the spatial-gradient magnitude of one
+  selected steady output, without evaluating PDE residuals for those scores.
+  Preserve residual defaults/legacy histories, detached scores, inverse-probability
+  PDE correction and boundary anchors. Keep gradient statistics labelled separately
+  in logs/retained inspection and strictly match the measure/field on resume.
+  Validate field indices and reject transient field gradients until their
+  coordinate/time scaling contract is specified; never pool velocity and pressure.
