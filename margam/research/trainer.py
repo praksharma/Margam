@@ -35,12 +35,17 @@ class Trainer(PINN):
         self.checkpoint_id = checkpoint_id
 
     @property
+    def pointwise_microbatch(self):
+        """Compiled chunk size; recompile explicitly to change reduction order."""
+        return self._pointwise_microbatch
+
+    @property
     def optimizer(self):
         """PyTorch spelling; refers to the same optimizer as legacy optimiser."""
         self._require_compiled()
         return self.optimiser
 
-    def compile(self, *, optimizer=torch.optim.Adam, lr=1e-3, device='auto', schedule=None):
+    def compile(self, *, optimizer=torch.optim.Adam, lr=1e-3, device='auto', schedule=None, pointwise_microbatch=None):
         """optimizer is a factory(parameters, lr=...), not a prebuilt instance.
 
         Use functools.partial or a small function for extra optimizer options.
@@ -52,6 +57,16 @@ class Trainer(PINN):
             raise TypeError('schedule must be StepDecay, CosineDecay or None.')
         if schedule is not None and (self.step is not None or type(self).update is not Trainer.update or type(self).training_step is not Trainer.training_step):
             raise ValueError('Scheduled rates require the default research update; custom steps own their schedules.')
+        if pointwise_microbatch is not None:
+            if type(pointwise_microbatch) is not int or pointwise_microbatch<1:
+                raise ValueError('pointwise_microbatch must be a positive integer or None.')
+            if type(self) is not Trainer or self.loss is not None or self.step is not None or self.loss_formulation!='mean':
+                raise ValueError('Pointwise microbatching requires the standard research Trainer, built-in mean MSE and default update.')
+            if any(isinstance(c,IntegralConstraint) for c in self.problem.constraints):
+                raise ValueError('Pointwise microbatching cannot split a global IntegralConstraint reduction.')
+            from .microbatch import validate_network
+            validate_network(self.network)
+        self._pointwise_microbatch=pointwise_microbatch
         self.schedule=schedule
         self._integral_weights={}
         for condition in self.problem.constraints:
@@ -98,6 +113,9 @@ class Trainer(PINN):
         except Exception:
             self._compiled=False
             raise
+        if pointwise_microbatch is not None and type(self.optimizer) not in (torch.optim.Adam,torch.optim.AdamW,torch.optim.SGD):
+            self._compiled=False
+            raise ValueError('Pointwise microbatching currently supports Adam, AdamW and SGD only.')
         self._base_lrs=tuple(group['lr'] for group in self.optimizer.param_groups)
         if schedule is not None:
             import math
@@ -180,15 +198,46 @@ class Trainer(PINN):
         if self.step is not None:
             self.step(self,terms,total)
             return
+        next_rates=self._prepare_default_update()
+        total.backward()
+        self._finish_default_update(next_rates)
+
+    def _prepare_default_update(self):
+        self._record_weights=dict(self.weights)
         self.check_schedule()
         next_rates=self.scheduled_rates(self.iter+1) if self.schedule is not None else None
         self._update_lrs=tuple(group['lr'] for group in self.optimizer.param_groups)
-        total.backward()
+        return next_rates
+
+    def _finish_default_update(self,next_rates):
         if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in self.network.parameters()):
             raise FloatingPointError('Non-finite research gradient; no optimizer update was taken.')
         self.optimizer.step()
         if next_rates is not None:
             for group,rate in zip(self.optimizer.param_groups,next_rates):group['lr']=rate
+
+    def _before_training_step(self):
+        if self.pointwise_microbatch is not None and self.sampling_controller is not None:
+            raise ValueError('Pointwise research microbatching requires fixed data; adaptive sampling is not composed.')
+        super()._before_training_step()
+
+    def training_step(self):
+        if self.pointwise_microbatch is None:return super().training_step()
+        if self.loss is not None or self.step is not None or self.loss_formulation!='mean' or not isinstance(self.metric,torch.nn.MSELoss) or self.metric.reduction!='mean':
+            raise ValueError('Pointwise microbatching requires built-in mean MSE and the default update.')
+        if self.sampling_controller is not None:
+            raise ValueError('Pointwise research microbatching requires fixed data; adaptive sampling is not composed.')
+        from .microbatch import accumulate,validate_network
+        validate_network(self.network)
+        self.optimizer.zero_grad(set_to_none=True)
+        try:
+            next_rates=self._prepare_default_update()
+            terms,total=accumulate(self,self.pointwise_microbatch)
+            self._finish_default_update(next_rates)
+            return terms,total
+        except Exception:
+            self.optimizer.zero_grad(set_to_none=True)
+            raise
 
     def training_state(self):
         """Tensor/primitive state; Python callbacks and code are never pickled."""

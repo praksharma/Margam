@@ -236,3 +236,14 @@ existing custom-network/custom-loss example, exact split checkpoint continuation
 actual/next rates and selected source hashes. The horizon is eight updates,
 initial rate 0.003, floor ratio 0.05 and power one. These are schedule/API checks,
 not an accuracy comparison. See [the contract](../../docs/research.md#cosine-decay-to-a-fixed-floor).
+
+
+## Pointwise research microbatching, 14 November 2026
+
+[research-microbatch-2026-11-14.json](research-microbatch-2026-11-14.json) preserves
+four fresh-process CPU/CUDA full/chunked runs with exact same-mode continuation
+and verified source hashes. The 4,096-PDE-row FP64/32×32 Poisson case reduces the
+CUDA allocation peak from 36.35 to 17.57 MiB with 256-row chunks. First-update
+measurements include Adam initialization, exclude later checkpoint/output work
+and do not establish steady-state speed or memory capacity. See
+[the full contract and measured table](../../docs/research-microbatch.md).

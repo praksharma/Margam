@@ -34,6 +34,8 @@ def signature(trainer):
         groups=groups,weights=trainer.weights,loss_formulation=trainer.loss_formulation,
         measures=trainer.loss_measures,data_fingerprint=trainer.data_fingerprint(),
         device=str(trainer.collocation_point_sample.device))
+    if trainer.pointwise_microbatch is not None:
+        value['pointwise_microbatch']=dict(size=trainer.pointwise_microbatch,contract='deterministic-pointwise-mean-v1')
     if trainer.schedule is not None:
         value['schedule']=dict(trainer.schedule.settings(),base_lrs=list(trainer._base_lrs))
         for group,rate in zip(groups,trainer._base_lrs):group['lr']=rate
@@ -51,8 +53,12 @@ def set_rng(trainer,state):
     if state['cuda'] is not None:torch.cuda.set_rng_state(state['cuda'].cpu(),trainer.device)
 
 
+def checkpoint_version(trainer):
+    return 3 if trainer.pointwise_microbatch is not None else 2 if trainer.schedule is not None else 1
+
+
 def capture(trainer):
-    return deepcopy(dict(format='margam-research-training',version=2 if trainer.schedule is not None else 1,signature=signature(trainer),
+    return deepcopy(dict(format='margam-research-training',version=checkpoint_version(trainer),signature=signature(trainer),
         network=trainer.network.state_dict(),optimizer=trainer.optimizer.state_dict(),
         iter=trainer.iter,loss_history=trainer.loss_history,training_history=trainer.training_history,
         rng=rng_state(trainer)))
@@ -90,7 +96,7 @@ def validate_optimizer(trainer,state,steps):
 def restore(trainer,state):
     expected_signature=signature(trainer)
     keys={'format','version','signature','network','optimizer','iter','loss_history','training_history','rng'}
-    require(isinstance(state,dict) and set(state)==keys and state['format']=='margam-research-training' and type(state['version']) is int and state['version']==(2 if trainer.schedule is not None else 1),'Invalid research checkpoint.')
+    require(isinstance(state,dict) and set(state)==keys and state['format']=='margam-research-training' and type(state['version']) is int and state['version']==checkpoint_version(trainer),'Invalid research checkpoint.')
     require(canonical(state['signature'])==canonical(expected_signature),'Research checkpoint identity, data, objective, device or optimizer settings differ.')
     steps=state['iter'];history=state['loss_history'];totals=state['training_history']
     require(type(steps) is int and steps>=0 and isinstance(history,list) and isinstance(totals,list) and len(history)==len(totals)==steps,'Checkpoint history/step count mismatch.')

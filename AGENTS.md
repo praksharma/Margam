@@ -568,3 +568,14 @@
   Keep StepDecay and unscheduled identities unchanged, use scheduled format 2
   with exact kind/settings/rate-history validation, and retain same-device Torch
   RNG/optimizer continuation. Custom steps still own their schedules/state.
+
+- Research pointwise_microbatch declares deterministic row-independent network,
+  residual and point operators on fixed data, built-in mean MSE and default
+  Trainer updates only. Scale each chunk by its fraction of that term's rows;
+  accumulate before one optimizer/schedule step. Reject global integrals,
+  custom losses/steps/subclasses, stochastic/batch-dependent layers and adaptive
+  hooks before sampling. Validate complete target lengths before slicing. On a
+  bad chunk/gradient, clear accumulated gradients without committing a step.
+  Use research format 3 with exact chunk-size identity; preserve default formats
+  1/2. Full/chunked arithmetic is tolerance-qualified, while same-chunk resume is
+  tested exactly. Never auto-size after OOM or infer support for advanced trainers.

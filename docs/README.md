@@ -11,6 +11,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | Question | Read |
 | --- | --- |
 | Can I build new methods in my own research script? | [Research Python API](research.md) |
+| Can a pointwise research update use smaller derivative graphs? | [Research microbatching](research-microbatch.md) |
 | Can I follow a screenshot walkthrough? | [Your first PINN](start/first-pinn.md) |
 | Can I reclaim old copied input files safely? | [Clean up unused imports](use/cleanup-imports.md) |
 | What changed between two model definitions? | [Compare models](use/compare-models.md) |

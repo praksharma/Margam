@@ -94,6 +94,18 @@ transfer and preparation still need GUI RAM, and system-wide memory pressure or
 driver failure can affect the application. OS/resource budgets and representative
 capacity probes remain planned work; process separation is not a fit guarantee.
 
+## Pointwise research training chunks
+
+The [research API](../research-microbatch.md) now supports explicit deterministic
+pointwise mean-MSE gradient accumulation. The measured 4,096-row FP64 Poisson
+case reduces peak CUDA tensor allocation from 36.35 to 17.57 MiB with 256-row
+chunks, with exact same-configuration continuation. The first GPU update takes
+longer. All points still contribute before a single optimizer update; this does
+not automatically reduce samples or change an existing desktop run. Native and
+advanced-method training controls remain deferred until their loss/state
+contracts are qualified. The case-specific measurement does not replace the
+planned representative resource probe for arbitrary native jobs.
+
 ## Background references
 
 The implementation is independent. These projects inform the next milestones:

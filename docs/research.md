@@ -263,7 +263,7 @@ metric-driven schedulers, warmup and arbitrary PyTorch scheduler objects still
 own their timing and persistence. This option does not add a desktop block or
 alter desktop trainers.
 
-Scheduled checkpoints use research format 2, storing schedule settings, initial
+Full-batch scheduled checkpoints use research format 2, storing schedule settings, initial
 rates, the completed count and actual per-update rate history with the optimizer.
 Recreate the same schedule and initial rates before loading. Resume restores the
 next rate without taking an extra scheduler step. Format 1 checkpoints remain
@@ -341,6 +341,16 @@ exact split continuation, record selected source hashes and finish with a next
 rate of `0.00015` from an initial `0.003`. These eight-update checks establish
 schedule/lifecycle behavior, not solution accuracy. No desktop block or default
 is changed.
+
+## Bound pointwise training graphs
+
+For deterministic fixed-data mean-MSE problems, compile with
+`pointwise_microbatch=256` to accumulate smaller derivative graphs before one
+optimizer update. This is an explicit pointwise contract covering the network,
+residual and constraint operators, with research checkpoint format 3 and strict
+chunk-size continuation. See [supported components, normalization and measured
+CPU/CUDA workspace](research-microbatch.md). Defaults and desktop trainers stay
+unchanged; custom losses/steps, adaptive masks and global integrals are excluded.
 
 ## Shapes, sampling and device
 

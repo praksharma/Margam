@@ -695,9 +695,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [x] Bound native pointwise inference to 2,048 device rows, assemble results on
   CPU and preserve coordinates/IDs, physical times, trained precision and state.
   Keep research prediction one-shot by default; record measured CUDA memory.
-- [ ] Evaluate method-specific training microbatching/gradient aggregation with
-  mathematical and continuation tests; do not auto-reduce samples or change
-  causal/NTK/mask/integral semantics after an OOM.
+- [x] Qualify opt-in fixed-data research mean-MSE pointwise microbatching with
+  separate term denominators, one optimizer/schedule update, mathematical
+  CPU/CUDA gradient checks, strict chunk-size checkpoints and measured allocator
+  peaks. Never auto-resize after OOM.
+- [ ] Qualify native GUI and advanced-method training accumulation separately;
+  preserve causal/NTK/mask/integral semantics and global reductions.
 
 ## DSGNAR follow-up
 

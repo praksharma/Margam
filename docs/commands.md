@@ -637,3 +637,14 @@ Research cosine-decay continuation example (use separate output folders):
 ```
 
 The schedule is research-only; see [rate timing and checkpoint rules](research.md#cosine-decay-to-a-fixed-floor).
+
+
+Pointwise research microbatch experiment (fresh folders required):
+
+```sh
+.venv/bin/python -m examples.research_microbatch --device cuda --output build/microbatch-full
+.venv/bin/python -m examples.research_microbatch --device cuda --microbatch 256 --output build/microbatch-256
+.venv/bin/python -m unittest discover -s tests -p 'test_research_microbatch.py' -v
+```
+
+Use CPU instead when desired. See [scope, normalization and allocator evidence](research-microbatch.md).

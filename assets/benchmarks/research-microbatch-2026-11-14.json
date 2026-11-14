@@ -1,0 +1,159 @@
+{
+  "format": "margam-research-microbatch-evidence",
+  "version": 1,
+  "recorded_date": "2026-11-14",
+  "scope": "One cold complete update per fresh process, then six-update same-device continuation checks. Fixed Poisson, FP64, 4096 PDE rows, 2 BC rows, 32x32 network. Not steady-state throughput, an accuracy study, or a capacity guarantee.",
+  "cuda_device": {
+    "name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "total_bytes": 6099369984,
+    "compiled_cuda": "13.0"
+  },
+  "runs": {
+    "cpu_full": {
+      "scope": "Fixed-data deterministic research Poisson; one fresh complete update including Adam initialization; not accuracy/capacity evidence.",
+      "device": "cpu",
+      "python": "3.14.8",
+      "torch": "2.14.1+cu130",
+      "dtype": "torch.float64",
+      "points": 4096,
+      "boundary_points": 2,
+      "parameters": 1153,
+      "steps": 6,
+      "pointwise_microbatch": null,
+      "checkpoint_version": 2,
+      "exact_resume": true,
+      "first_update_seconds": 0.3585246199982066,
+      "cuda_allocator": null,
+      "last_preupdate_loss": {
+        "pde": 3.8342487698789975,
+        "boundary": 0.0023610871256169114,
+        "total": 3.8578596411351667,
+        "weighted:boundary": 0.023610871256169112,
+        "learning_rate:0": 0.00016028856829700258
+      },
+      "measurement_scope": "First complete optimizer update in this process; includes Adam moments, excludes model construction, checkpoint copies, predictions and later updates. CUDA figures cover the PyTorch allocator, not driver/system memory. CPU memory peaks are not measured.",
+      "source_sha256": {
+        "examples/research_microbatch.py": "b89952f7e79b2c203ce78f055af4c8c1cafdd66ff38e6b48dacd630d85bbcacf",
+        "margam/research/trainer.py": "7bbc977e5516f0213525c7b0d1ab9cc1e5ed9ff83da54491834e28fe57d61449",
+        "margam/research/microbatch.py": "51b868a9d42c35bb822f0884e4622aca10f9c88c33367d093113dd6726c2b956",
+        "margam/research/checkpoint.py": "a2fd13f1401b1519c6d31eda2d5a7f2f46e306cb9fe31a60e28eb89506586890",
+        "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+        "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa"
+      }
+    },
+    "cpu_chunk256": {
+      "scope": "Fixed-data deterministic research Poisson; one fresh complete update including Adam initialization; not accuracy/capacity evidence.",
+      "device": "cpu",
+      "python": "3.14.8",
+      "torch": "2.14.1+cu130",
+      "dtype": "torch.float64",
+      "points": 4096,
+      "boundary_points": 2,
+      "parameters": 1153,
+      "steps": 6,
+      "pointwise_microbatch": 256,
+      "checkpoint_version": 3,
+      "exact_resume": true,
+      "first_update_seconds": 0.22165258200038807,
+      "cuda_allocator": null,
+      "last_preupdate_loss": {
+        "pde": 3.8342487698789975,
+        "boundary": 0.0023610871256169114,
+        "total": 3.8578596411351667,
+        "weighted:boundary": 0.023610871256169112,
+        "learning_rate:0": 0.00016028856829700258
+      },
+      "measurement_scope": "First complete optimizer update in this process; includes Adam moments, excludes model construction, checkpoint copies, predictions and later updates. CUDA figures cover the PyTorch allocator, not driver/system memory. CPU memory peaks are not measured.",
+      "source_sha256": {
+        "examples/research_microbatch.py": "b89952f7e79b2c203ce78f055af4c8c1cafdd66ff38e6b48dacd630d85bbcacf",
+        "margam/research/trainer.py": "7bbc977e5516f0213525c7b0d1ab9cc1e5ed9ff83da54491834e28fe57d61449",
+        "margam/research/microbatch.py": "51b868a9d42c35bb822f0884e4622aca10f9c88c33367d093113dd6726c2b956",
+        "margam/research/checkpoint.py": "a2fd13f1401b1519c6d31eda2d5a7f2f46e306cb9fe31a60e28eb89506586890",
+        "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+        "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa"
+      }
+    },
+    "cuda_full": {
+      "scope": "Fixed-data deterministic research Poisson; one fresh complete update including Adam initialization; not accuracy/capacity evidence.",
+      "device": "cuda",
+      "python": "3.14.8",
+      "torch": "2.14.1+cu130",
+      "dtype": "torch.float64",
+      "points": 4096,
+      "boundary_points": 2,
+      "parameters": 1153,
+      "steps": 6,
+      "pointwise_microbatch": null,
+      "checkpoint_version": 2,
+      "exact_resume": true,
+      "first_update_seconds": 0.21212477999870316,
+      "cuda_allocator": {
+        "baseline_allocated_bytes": 45056,
+        "baseline_reserved_bytes": 2097152,
+        "peak_allocated_bytes": 38110720,
+        "peak_reserved_bytes": 44040192,
+        "after_allocated_bytes": 17150464,
+        "peak_above_baseline_bytes": 38065664
+      },
+      "last_preupdate_loss": {
+        "pde": 3.8342487698789975,
+        "boundary": 0.0023610871256169153,
+        "total": 3.8578596411351667,
+        "weighted:boundary": 0.023610871256169154,
+        "learning_rate:0": 0.00016028856829700258
+      },
+      "measurement_scope": "First complete optimizer update in this process; includes Adam moments, excludes model construction, checkpoint copies, predictions and later updates. CUDA figures cover the PyTorch allocator, not driver/system memory. CPU memory peaks are not measured.",
+      "source_sha256": {
+        "examples/research_microbatch.py": "b89952f7e79b2c203ce78f055af4c8c1cafdd66ff38e6b48dacd630d85bbcacf",
+        "margam/research/trainer.py": "7bbc977e5516f0213525c7b0d1ab9cc1e5ed9ff83da54491834e28fe57d61449",
+        "margam/research/microbatch.py": "51b868a9d42c35bb822f0884e4622aca10f9c88c33367d093113dd6726c2b956",
+        "margam/research/checkpoint.py": "a2fd13f1401b1519c6d31eda2d5a7f2f46e306cb9fe31a60e28eb89506586890",
+        "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+        "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa"
+      }
+    },
+    "cuda_chunk256": {
+      "scope": "Fixed-data deterministic research Poisson; one fresh complete update including Adam initialization; not accuracy/capacity evidence.",
+      "device": "cuda",
+      "python": "3.14.8",
+      "torch": "2.14.1+cu130",
+      "dtype": "torch.float64",
+      "points": 4096,
+      "boundary_points": 2,
+      "parameters": 1153,
+      "steps": 6,
+      "pointwise_microbatch": 256,
+      "checkpoint_version": 3,
+      "exact_resume": true,
+      "first_update_seconds": 0.27239698199991835,
+      "cuda_allocator": {
+        "baseline_allocated_bytes": 45056,
+        "baseline_reserved_bytes": 2097152,
+        "peak_allocated_bytes": 18420736,
+        "peak_reserved_bytes": 23068672,
+        "after_allocated_bytes": 17118208,
+        "peak_above_baseline_bytes": 18375680
+      },
+      "last_preupdate_loss": {
+        "pde": 3.8342487698789975,
+        "boundary": 0.0023610871256169153,
+        "total": 3.8578596411351667,
+        "weighted:boundary": 0.023610871256169154,
+        "learning_rate:0": 0.00016028856829700258
+      },
+      "measurement_scope": "First complete optimizer update in this process; includes Adam moments, excludes model construction, checkpoint copies, predictions and later updates. CUDA figures cover the PyTorch allocator, not driver/system memory. CPU memory peaks are not measured.",
+      "source_sha256": {
+        "examples/research_microbatch.py": "b89952f7e79b2c203ce78f055af4c8c1cafdd66ff38e6b48dacd630d85bbcacf",
+        "margam/research/trainer.py": "7bbc977e5516f0213525c7b0d1ab9cc1e5ed9ff83da54491834e28fe57d61449",
+        "margam/research/microbatch.py": "51b868a9d42c35bb822f0884e4622aca10f9c88c33367d093113dd6726c2b956",
+        "margam/research/checkpoint.py": "a2fd13f1401b1519c6d31eda2d5a7f2f46e306cb9fe31a60e28eb89506586890",
+        "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+        "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa"
+      }
+    }
+  },
+  "comparison": {
+    "cuda_peak_allocated_ratio_full_over_chunked": 2.0689032186336096,
+    "cuda_peak_allocated_reduction_fraction": 0.5166521125814469
+  }
+}

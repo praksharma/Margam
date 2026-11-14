@@ -1384,3 +1384,36 @@ covered by that check. Separate eight-update
 exact continuation and verified source hashes. This is lifecycle evidence, not a
 solution-accuracy benchmark. The CUDA audit manifest includes the new case;
 this pass runs the focused research suite rather than repeating the entire audit.
+
+
+## Pointwise research microbatching, 14 November 2026
+
+All 42 focused research, schedule and integral-constraint checks pass with real
+CUDA available and no skips. Ten new checks qualify whole-set versus chunked
+mean losses/parameter gradients on scalar/vector targets, second-order PDEs and
+derivative point constraints with unequal counts and uneven last chunks. Float64
+parameter gradients agree at rtol=1e-10/atol=1e-12, and one-step parameters at
+rtol=1e-12/atol=1e-13. Float32 checks use gradient rtol=2e-5/atol=1e-6
+and parameter rtol=1e-6/atol=1e-7. Both precisions have exact same-chunk CPU/CUDA
+continuation checks. Forward hooks verify bounded chunk sizes and that every row
+participates. Constant derivative terms can coexist with trainable constraints.
+
+Adam, AdamW and momentum SGD reproduce exact same-chunk histories/weights on CPU
+and CUDA, with no schedule, StepDecay and CosineDecay. Restricted-load research
+format 3 requires the same chunk size/contract and keeps optimizer snapshots
+immutable. Full-batch formats 1/2 remain unchanged. Invalid late chunks and bad
+gradients clear partial gradients before optimizer/schedule/counter changes.
+Adaptive hooks are rejected before sampling. Full target-length checks prevent
+extra or missing rows being hidden by slicing; custom/global/stochastic
+compositions are rejected. The CLI check validates fresh-folder protection,
+report/source hashes and a reloaded final checkpoint.
+
+The [curated workspace report](../assets/benchmarks/research-microbatch-2026-11-14.json)
+retains four separate CPU/CUDA full/chunked processes. All six-update runs resume
+exactly. The first complete CUDA update's PyTorch allocation peak is 36.35 MiB
+full versus 17.57 MiB at 256 rows; its timing is 0.212 s versus 0.272 s.
+Construction, checkpoint/prediction work and later updates are excluded; CPU
+memory peaks and system/driver peaks are not measured. This is a concrete
+allocator/lifecycle experiment, not a capacity or accuracy claim. See
+[the guide](research-microbatch.md). The CUDA manifest includes the new case;
+this pass runs the focused research suite rather than repeating the full audit.
