@@ -1353,3 +1353,34 @@ The [CUDA audit](../assets/benchmarks/cuda-validation-output-controls-2026-11-14
 passes all 29 selected checks with matching runtime/test hashes and no skips.
 The manual passed checks on 74 rendered pages and their assets/links.
 This qualifies output selection and persistence, not numerical solution accuracy.
+
+
+## Research cosine learning-rate decay, 14 November 2026
+
+All 32 focused/related research, StepDecay, CosineDecay and integral-constraint
+checks passed with real CUDA available and no skips. The eight new cosine checks
+cover the closed-form schedule, exponent placement, per-group rates, first update,
+finite horizon and holding the floor after it. Power one agrees with an independent
+PyTorch CosineAnnealingLR-driven optimizer before the horizon (parameter tolerance
+1e-14); the later hold behavior is deliberately different from cosine cycling.
+The general formula also matches the existing SCALE cavity driver at its original
+exponents/floor, without changing that driver or its recorded experiments.
+
+Adam, momentum SGD and grouped AdamW reproduce exact weights, histories and Torch
+RNG continuation on CPU and CUDA, with stops before, at and after the floor.
+Snapshots remain reusable after continued training and load through weights_only.
+Changed schedule kind/horizon/floor/power, initial rates, actual optimizer rates
+and rate histories reject restoration before mutation. Non-finite forward losses,
+non-finite gradients, rate underflow and external rate edits do not advance the
+optimizer, schedule or successful-update counter. Existing StepDecay/unscheduled
+research checks and integral constraints remain green.
+
+The CLI check verifies the new option, conflicting-option errors, report writing,
+source hashes and exact split continuation. An initially incorrect backend source
+filename in the report writer was corrected to the actual package files and is
+covered by that check. Separate eight-update
+[CPU](../assets/benchmarks/research-cosine-cpu-2026-11-14.json) and
+[CUDA](../assets/benchmarks/research-cosine-cuda-2026-11-14.json) runs finished with
+exact continuation and verified source hashes. This is lifecycle evidence, not a
+solution-accuracy benchmark. The CUDA audit manifest includes the new case;
+this pass runs the focused research suite rather than repeating the entire audit.

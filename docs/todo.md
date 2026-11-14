@@ -659,6 +659,10 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   and guarded fixed-data Adam/AdamW/SGD checkpoints with Torch RNG continuation.
 - [x] Add update-count StepDecay to the research API with per-group rate history,
   strict scheduled checkpoints, exact same-device continuation and immutable restored snapshots.
+- [x] Add explicit CosineDecay to the research trainer with a finite update
+  horizon, positive per-group floor, optional exponent and hold-after-horizon
+  behavior. Verify CPU/CUDA RNG/optimizer continuation, rate histories and the
+  existing SCALE-driver formula; preserve old research checkpoint identities.
 - [ ] Add explicit lifecycle/state contracts for research resampling, extra
   optimizers/schedules and further checkpointable algorithms as concrete uses arise.
 - [ ] Revisit opt-in `torch.compile` after qualifying higher-order coordinate and

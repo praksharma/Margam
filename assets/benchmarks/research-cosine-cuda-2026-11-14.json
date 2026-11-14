@@ -1,0 +1,42 @@
+{
+  "scope": "Research API smoke example; not an accuracy benchmark.",
+  "steps": 8,
+  "device": "cuda",
+  "torch_version": "2.14.1+cu130",
+  "pde_rows": 66,
+  "custom_network": true,
+  "custom_sampler": true,
+  "custom_pde_loss": true,
+  "optimizer": "AdamW",
+  "custom_step": false,
+  "step_decay": false,
+  "cosine_decay": true,
+  "schedule": {
+    "kind": "cosine_decay",
+    "steps": 8,
+    "minimum_ratio": 0.05,
+    "power": 1.0
+  },
+  "exact_resume": true,
+  "next_learning_rates": [
+    0.00015000000000000001
+  ],
+  "last_preupdate_loss": {
+    "pde": 4.116393089294434,
+    "boundary": 0.005057146772742271,
+    "total": 4.166964530944824,
+    "weighted:boundary": 0.050571467727422714,
+    "learning_rate:0": 0.0002584716661714164
+  },
+  "postupdate_rmse": 0.1274295300245285,
+  "source_sha256": {
+    "examples/research_custom.py": "9635a5e8651c9c97c76ffcddfb0fe5b2668ced3225e74a1a59e07951102e8893",
+    "margam/research/trainer.py": "0adbbcc5697b97846e230a9b8bc132b8fc65f9105e2d1486d9d103fec713eb04",
+    "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+    "margam/research/checkpoint.py": "af62f88dd10abfc90a2c2f3e4faff51d60f0b3ffc94e6c799c4b0e591b497da3",
+    "margam/research/__init__.py": "e5bd1ae3489e3e48cf45983be89aeff6f7e1f5268ee782b44a38420714044148",
+    "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa",
+    "margam/backend/__init__.py": "4395ea963c825374c1d68888260a5cb293917f202d477f65e228a78abf4504f3",
+    "margam/backend/utils.py": "2350294f3cec7463e67be77211251574c184850ddda8494379cf56b56bb31bd9"
+  }
+}

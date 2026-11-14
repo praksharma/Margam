@@ -1,7 +1,7 @@
 """Plain PyTorch replacement points on Margam's shared baseline training loop."""
 from collections.abc import Mapping
 import torch
-from .schedules import StepDecay
+from .schedules import StepDecay, CosineDecay
 from ..components.integral_constraint import IntegralConstraint
 from ..methods.pinn import PINN
 
@@ -45,13 +45,13 @@ class Trainer(PINN):
 
         Use functools.partial or a small function for extra optimizer options.
         Closure-based algorithms need a different procedure and are rejected.
-        schedule is an optional StepDecay owned by the default update procedure.
+        schedule is an optional StepDecay or CosineDecay owned by the default update procedure.
         """
         self._compiled=False
-        if schedule is not None and type(schedule) is not StepDecay:
-            raise TypeError('schedule must be StepDecay or None.')
+        if schedule is not None and type(schedule) not in (StepDecay,CosineDecay):
+            raise TypeError('schedule must be StepDecay, CosineDecay or None.')
         if schedule is not None and (self.step is not None or type(self).update is not Trainer.update or type(self).training_step is not Trainer.training_step):
-            raise ValueError('StepDecay requires the default research update; custom steps own their schedules.')
+            raise ValueError('Scheduled rates require the default research update; custom steps own their schedules.')
         self.schedule=schedule
         self._integral_weights={}
         for condition in self.problem.constraints:
@@ -103,7 +103,7 @@ class Trainer(PINN):
             import math
             if any(type(rate) not in (float,int) or not math.isfinite(rate) or rate <= 0 for rate in self._base_lrs):
                 self._compiled=False
-                raise ValueError('StepDecay requires positive finite numeric learning rates in every parameter group.')
+                raise ValueError('Scheduled rates require positive finite numeric learning rates in every parameter group.')
         return self
 
     def scheduled_rates(self, completed=None):

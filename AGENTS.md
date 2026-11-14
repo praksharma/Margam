@@ -561,3 +561,10 @@
   toggles guarded while busy, undoable and portable; invalidate old results while
   preserving matching weights for explicit evaluation without optimizer updates.
   The Disabled badge is derived from the setting, not serialized UI freshness.
+
+- Research CosineDecay is closed-form in completed updates with a positive
+  relative floor per optimizer group and power applied before adding that floor.
+  Clamp at the horizon, then hold; never auto-stop or restart a cosine cycle.
+  Keep StepDecay and unscheduled identities unchanged, use scheduled format 2
+  with exact kind/settings/rate-history validation, and retain same-device Torch
+  RNG/optimizer continuation. Custom steps still own their schedules/state.

@@ -258,7 +258,7 @@ history record contains the rate actually used as `learning_rate:0`,
 rates manually or call another scheduler alongside this one: external rate changes
 are rejected on the next update or checkpoint operation.
 
-The built-in schedule requires the default research update. Custom update hooks,
+Both built-in schedules require the default research update. Custom update hooks,
 metric-driven schedulers, warmup and arbitrary PyTorch scheduler objects still
 own their timing and persistence. This option does not add a desktop block or
 alter desktop trainers.
@@ -276,6 +276,71 @@ and [CUDA](../assets/benchmarks/research-step-decay-cuda.json) both reproduce sp
 continuation exactly. With `lr=0.003, every=2, gamma=0.5`, their last update uses
 `0.000375` and the next update would use `0.0001875`. These short checks establish
 schedule and checkpoint behaviour, not solution accuracy.
+
+### Cosine decay to a fixed floor
+
+For a finite training budget, use the importable `CosineDecay` schedule:
+
+```python
+from margam.research import CosineDecay
+
+trainer = Trainer(
+    problem, network, checkpoint_id="my-cosine-experiment-v1",
+).compile(
+    lr=0.003, device="auto",
+    schedule=CosineDecay(steps=10000, minimum_ratio=0.05, power=1.0),
+)
+trainer.train(10000, display_every=100)
+```
+
+For zero-based update `k`, each optimizer group's initial rate is multiplied by:
+
+```text
+minimum_ratio + (1-minimum_ratio) *
+    ((1 + cos(pi * min(k, steps) / steps)) / 2) ** power
+```
+
+`steps` is the number of completed updates over which the decay occurs, not the
+number of epochs or `train()` calls. The first update uses the initial rate.
+Update `steps` and all later updates use `initial_rate * minimum_ratio`.
+**Training continues at that floor** if you request more updates; there is no
+implicit stopping, warm restart or cosine cycle. To continue an existing schedule,
+keep its original horizon when rebuilding the trainer to load a checkpoint.
+
+`steps` must be a positive integer, `minimum_ratio` must be finite in `(0, 1]`,
+and `power` must be finite and positive. Defaults are `minimum_ratio=0.01` and
+`power=1`. The floor is a ratio of each group's own initial rate, so groups with
+different starting rates keep different floors. Zero rates and floating-point
+underflow are rejected before updating the optimizer. `power` shapes the cosine
+factor **before** adding the floor. This matches the rate formula in the separate
+[SCALE cavity driver](scale-cavity-benchmark.md); it does not change that case's
+network, sampling, correction or training protocol.
+
+Rate logging, failed-update behavior and external-rate guards follow the same
+contract as StepDecay. Research checkpoint format 2 stores the schedule kind,
+horizon, floor ratio, power, initial group rates and actual rate history.
+Changing any of those settings rejects continuation. Existing StepDecay format-2
+and unscheduled format-1 checkpoint identities remain unchanged. Standard resume
+continues the optimizer, schedule and Torch RNG rather than taking an extra decay
+step. A weights-only warm restart requires an explicitly new experiment.
+
+Run the existing custom-PyTorch example with cosine decay:
+
+```sh
+.venv/bin/python -m examples.research_custom --cosine-decay --device cpu --output build/research-cosine-cpu
+.venv/bin/python -m examples.research_custom --cosine-decay --device cuda --output build/research-cosine-cuda
+```
+
+Choose distinct output folders for experiments. `--cosine-decay` and
+`--step-decay` are mutually exclusive and both require the default update;
+`--custom-step` owns its scheduling and persistence. The example's cosine
+horizon is `--steps` (eight by default), with a 5% floor and power one. Its
+[CPU](../assets/benchmarks/research-cosine-cpu-2026-11-14.json) and
+[CUDA](../assets/benchmarks/research-cosine-cuda-2026-11-14.json) reports verify
+exact split continuation, record selected source hashes and finish with a next
+rate of `0.00015` from an initial `0.003`. These eight-update checks establish
+schedule/lifecycle behavior, not solution accuracy. No desktop block or default
+is changed.
 
 ## Shapes, sampling and device
 
@@ -331,7 +396,7 @@ Continuation retains Torch CPU and selected CUDA RNG state and currently require
 the **same device**, compatible PyTorch runtime and reconstructed components.
 Loading replaces those global Torch RNG states. Python/NumPy RNG, external
 mutable closures, external schedulers and arbitrary custom algorithm state are not captured.
-The explicit `StepDecay` schedule above is included in standard continuation.
+The explicit `StepDecay` and `CosineDecay` schedules above are included in standard continuation.
 A custom update hook, stateful loss or custom optimiser class must implement its
 own complete state contract; the standard save operation rejects these cases.
 Research checkpoints are separate from desktop saved models and run archives.

@@ -35,7 +35,7 @@ def signature(trainer):
         measures=trainer.loss_measures,data_fingerprint=trainer.data_fingerprint(),
         device=str(trainer.collocation_point_sample.device))
     if trainer.schedule is not None:
-        value['schedule']=dict(kind='step_decay',every=trainer.schedule.every,gamma=trainer.schedule.gamma,base_lrs=list(trainer._base_lrs))
+        value['schedule']=dict(trainer.schedule.settings(),base_lrs=list(trainer._base_lrs))
         for group,rate in zip(groups,trainer._base_lrs):group['lr']=rate
     # Capture metadata as JSON primitives, never executable objects.
     return json.loads(canonical(value))

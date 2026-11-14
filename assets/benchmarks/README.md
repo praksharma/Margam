@@ -226,3 +226,13 @@ records all 29 selected GPU checks passing, including output-only disabling,
 archive continuation and re-enabled evaluation without optimizer updates.
 See [the validation details](../../docs/validation.md#optional-output-enable-controls-14-november-2026)
 and [the illustrated controls](../../docs/use/results.md#keep-an-output-wired-but-turn-it-off).
+
+
+## Research cosine decay, 14 November 2026
+
+[CPU](research-cosine-cpu-2026-11-14.json) and
+[CUDA](research-cosine-cuda-2026-11-14.json) reports record eight updates of the
+existing custom-network/custom-loss example, exact split checkpoint continuation,
+actual/next rates and selected source hashes. The horizon is eight updates,
+initial rate 0.003, floor ratio 0.05 and power one. These are schedule/API checks,
+not an accuracy comparison. See [the contract](../../docs/research.md#cosine-decay-to-a-fixed-floor).

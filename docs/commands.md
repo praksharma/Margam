@@ -626,3 +626,14 @@ baseline parity, exact Couette physics and fixed/RAR CPU/CUDA continuation.
 Default reference location: sibling `SCALE-PINN/ns-ldc`; use
 `--reference-directory` to change it. No upstream code runs. These are separate
 research checkpoints, not GUI archives. See the [protocol and metric scope](scale-cavity-benchmark.md).
+
+
+Research cosine-decay continuation example (use separate output folders):
+
+```sh
+.venv/bin/python -m examples.research_custom --cosine-decay --device cpu --output build/research-cosine-cpu
+.venv/bin/python -m examples.research_custom --cosine-decay --device cuda --output build/research-cosine-cuda
+.venv/bin/python -m unittest discover -s tests -p 'test_research_cosine.py' -v
+```
+
+The schedule is research-only; see [rate timing and checkpoint rules](research.md#cosine-decay-to-a-fixed-floor).
