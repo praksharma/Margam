@@ -195,7 +195,7 @@ No cross-version or GPU-equivalence guarantee follows from CPU resume tests.
 Prepared CSV/NPZ paths are absolute references, not embedded source arrays. Use the
 mapping preview to select coordinates, optional outward unit normals and values.
 PDE point imports are coordinates only. Off-box normal-dependent BC operators need
-explicit normals. [GeoSampler contract](geosampler-contract.md) describes the planar
+explicit normals. [Jorvik contract](jorvik-contract.md) describes the planar
 bridge and its bounding-box/evaluation limitations.
 
 On Linux, layout and recovery normally live under `~/.local/share/Margam`.

@@ -1,4 +1,4 @@
-"""Adapted from GeoSampler/PyniteGUI; see THIRD_PARTY.md for provenance."""
+"""Adapted from Jorvik/PyniteGUI; see THIRD_PARTY.md for provenance."""
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 

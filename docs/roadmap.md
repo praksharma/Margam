@@ -8,7 +8,7 @@ For current support and limits, use [README](../README.md),
 [components](components.md), [UI implementation](ui-prototype.md), and
 [remaining TODOs](todo.md). The 27 October implementation includes owned graph
 parameters, scalar/steady-u-v-p physics, explicit outputs, model/run persistence,
-checkpoint resume, clipboard/history, recovery, a planar GeoSampler bridge and
+checkpoint resume, clipboard/history, recovery, a planar Jorvik bridge and
 baseline/self-adaptive compact recipes. Current [recorded results](results.md) and
 [validation scope](validation.md) are maintained separately from this design history.
 
@@ -274,15 +274,19 @@ the interpreted data. Keep file translation separate from assigning BC types or
 defining the PDE. Convenient import forms can follow for common layouts; do not
 require the initial UI to infer arbitrary file contents.
 
-### Complex geometry: future GeoSampler route
+### Complex geometry: Jorvik route (original plan)
 
-Use [GeoSampler](https://github.com/praksharma/GeoSampler) for the future complex
+The following records the original plan. The current planar document/NetCDF
+workflow is implemented; see [Jorvik geometry](jorvik.md). Broader geometry
+support remains deferred.
+
+Use [Jorvik](https://github.com/praksharma/Jorvik) for the future complex
 geometry workflow: bring geometry with selectable edges/faces, select and label
 regions, and generate meshless interior and boundary samples. Assign the physics
 in Margam afterward. This is a future integration, not an implemented feature or
 a requirement for simple rectangular problems.
 
-The integration mechanism remains open: importing GeoSampler's labelled exports
+The integration mechanism remains open: importing Jorvik's labelled exports
 is one possible first step; an embedded or connected geometry interface can be
 considered later. Inspect the actual export contract, including normal support,
 before committing to an implementation.
@@ -300,9 +304,9 @@ separate concern.
 
 ### TODO
 
-- [ ] Reuse suitable GeoSampler foundations in stages: theme/dock persistence,
+- [ ] Reuse suitable Jorvik foundations in stages: theme/dock persistence,
   unit-domain sampling functions and catalogue, then region metadata and project
-  lifecycle patterns. See `geosampler-reuse.md` for inspected sources, adaptation
+  lifecycle patterns. See `jorvik-reuse.md` for inspected sources, adaptation
   requirements and provenance. Keep the 3D/WebEngine/CAD stack out of the basic UI.
 - [ ] Provide built-in square/rectangle creation, interior sampling, selectable
   sides, boundary sampling, and point previews without external geometry files.
@@ -310,7 +314,7 @@ separate concern.
   including targets, normal requirements, and corner handling.
 - [ ] Document the prepared-data contract and provide small translation-script
   examples for external datasets.
-- [ ] Add the future GeoSampler route for complex geometry with selectable
+- [ ] Add the future Jorvik route for complex geometry with selectable
   edges/faces and meshless sampling; decide the integration mechanism separately.
 - [ ] Add optional PDE input data, including pointwise forcing, after the initial
   PDE-definition-and-points workflow is established. Define how input values align
@@ -407,7 +411,7 @@ component catalogue rather than separate hard-coded UI inventories.
 
 Margam must supply basic interval/rectangle grid and random sampling directly,
 including bounds/side selection, counts, seed and preview. Advanced CAD sampling,
-face/edge selection and richer region preparation are reserved for GeoSampler.
+face/edge selection and richer region preparation are reserved for Jorvik.
 The current template shares one sampler selection; independent recipes are planned.
 
 Training Monitor, Solution Plot and Reference Comparison are explicit optional
@@ -581,7 +585,7 @@ CSV/NPZ inputs preserve coordinates, order and IDs, independently of training.
 Comparison supplies aligned reference/error arrays to CSV and ParaView outputs;
 output-only edits can reuse trained weights without optimization. Supplied clouds
 use VTU vertex cells and transient PVD frames with explicit physical times.
-Mesh topology, unit/region metadata and direct GeoSampler integration remain future
+Mesh topology, unit/region metadata and direct Jorvik integration remain future
 work. This milestone does not implement the parameter-study GUI or HPC runner.
 
 
@@ -592,7 +596,7 @@ with explicit CSV/NPZ sources. Prepared 2D uses coordinate bounds, user-named se
 and downstream condition assignment, with explicit normals where needed. A
 triangular mixed-BC example exercises training, checkpoint continuation and exact
 supplied-point export. Unknown-domain evaluation requires explicit points. This
-is not direct CAD/mesh import, transient prepared flow or automatic GeoSampler
+is not direct CAD/mesh import, transient prepared flow or automatic Jorvik
 manifest wiring. Existing basic interval/rectangle sampling stays available.
 
 

@@ -29,7 +29,7 @@ Current implementation and recorded evidence, reviewed 28 October 2026. Start wi
 | What is the steady heat problem/reference? | [Heat demo](heat-demo.md) |
 | How do I inspect relative or vector errors? | [Scalar/vector error norms](use/error-norms.md) |
 | How do I export predictions to ParaView? | [Explicit export and playback](paraview-export.md) |
-| How do prepared GeoSampler points enter Margam? | [Planar data contract](geosampler-contract.md) |
+| How do prepared Jorvik points enter Margam? | [Planar data contract](jorvik-contract.md) |
 | What is implemented and what are the limits? | [Component capability index](components.md) |
 
 Review a large workload or a memory error: [Memory and workload](use/resources.md).
@@ -74,7 +74,7 @@ our RAR reference and NVIDIA Modulus for PINN importance sampling/integral loss.
 [Roadmap](roadmap.md) preserves the original discussions; its stage-specific
 “not implemented” notes are historical. [Simulink evidence](simulink-evidence.md)
 distinguishes sourced interactions from Margam choices. [Cleanup record](cleanup.md)
-and [GeoSampler reuse review](geosampler-reuse.md) are dated records, not the current
+and [Jorvik reuse review](jorvik-reuse.md) are dated records, not the current
 capability catalogue. [Third-party attribution](../THIRD_PARTY.md) remains separate.
 
 When adding or changing a method, update its guide, capability row, example,

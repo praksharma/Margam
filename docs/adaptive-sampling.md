@@ -257,7 +257,7 @@ resume. Exported predictions still use their separate evaluation grid.
 ## Current limits
 
 Imported interior point sets are rejected: a bounding box is not proof that
-candidate points lie in an imported geometry. A future GeoSampler candidate source
+candidate points lie in an imported geometry. A future Jorvik candidate source
 must provide admissible locations explicitly. Imported boundary sets remain
 independent, but do not define a candidate-domain geometry.
 

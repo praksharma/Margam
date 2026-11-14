@@ -4,11 +4,18 @@ from pathlib import Path
 import tempfile
 import unittest
 import numpy as np
-from margam.components.geosampler_adapter import prepare_planar_export
+from margam.components.jorvik_adapter import prepare_planar_export
 from margam.components.prepared_data import read_points
 
 
-class GeoSamplerAdapterTests(unittest.TestCase):
+class JorvikAdapterTests(unittest.TestCase):
+    def test_previous_import_and_command_remain_compatible(self):
+        from margam.components.geosampler_adapter import prepare_planar_export as previous
+        from examples.prepare_geosampler_2d import main as previous_main
+        from examples.prepare_jorvik_2d import main
+        self.assertIs(previous,prepare_planar_export)
+        self.assertIs(previous_main,main)
+
     def test_planar_schema_and_rejections(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'source.npz'

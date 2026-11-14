@@ -34,7 +34,7 @@ def sample_box(lower, upper, count, method='grid', seed=7):
 
 
 def structured_unit_points(method,count,dimension,seed):
-    """Adapted from GeoSampler c532cece sampling.py; AGPL-3.0-only.
+    """Adapted from Jorvik c532cece sampling.py; AGPL-3.0-only.
 
     Retains the upstream Hammersley shift and exact-N recursive strata algorithms;
     restricted here to the interval/rectangle contract. See THIRD_PARTY.md.

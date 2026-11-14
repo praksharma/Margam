@@ -1,4 +1,4 @@
-"""GeoSampler-derived exact-count designs stay reproducible in physical bounds."""
+"""Jorvik-derived exact-count designs stay reproducible in physical bounds."""
 import unittest
 from margam.components.sampling import sample_box
 from margam.templates.poisson import PoissonConfig,BoundarySampling,sample_problem

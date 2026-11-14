@@ -63,7 +63,7 @@ contracts; they do not reproduce stiff paper benchmarks or prove convergence.
 The suite covers typed wiring, block insertion, owned parameters, copy/paste,
 undo/redo, compact/expanded recipes, background training, cancellation/teardown,
 explicit outputs/references, retained monitor histories, model/run save/open,
-checkpoint resume, data mappings, CSV, planar GeoSampler and local recovery.
+checkpoint resume, data mappings, CSV, planar Jorvik and local recovery.
 SA's desktop check saves both optimiser states, opens an archive, resumes updates
 and inspects adaptive statistics. [SA workflow test](../tests/test_self_adaptive_ui.py).
 

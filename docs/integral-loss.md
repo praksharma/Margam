@@ -95,7 +95,7 @@ RAR or choose importance sampling for a corrected integral estimate.
 
 Imported interior/boundary sets are also rejected in integral mode: their region
 measures and per-point quadrature cannot be inferred reliably from a bounding box.
-Explicit imported quadrature support belongs to the future GeoSampler data contract.
+Explicit imported quadrature support belongs to the future Jorvik data contract.
 
 ## Save, resume and verification
 

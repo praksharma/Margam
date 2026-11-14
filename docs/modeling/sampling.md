@@ -56,7 +56,7 @@ coordinate order. For NPZ, use the array name, such as `points`.
 
 Boundary imports can additionally map outward unit normals and supported target
 values. Make the coordinate orientation and units consistent with your model.
-The [prepared GeoSampler contract](../geosampler-contract.md) covers the supported
+The [prepared Jorvik contract](../jorvik-contract.md) covers the supported
 planar schema and label selection. It does not import arbitrary CAD or FEM meshes.
 
 ## Training locations are not export locations
@@ -64,8 +64,9 @@ planar schema and label selection. It does not import arbitrary CAD or FEM meshe
 Prediction/export blocks use a separate regular grid by default. Random training
 samples are compatible with VTI export. The separate Evaluation points block
 accepts supplied CSV/NPZ coordinates and IDs; Reference data provides optional
-pointwise reference values. Mesh connectivity and direct GeoSampler integration
-remain [planned work](../todo.md#future-evaluation-and-export-at-supplied-points).
+pointwise reference values. Mesh connectivity and direct Jorvik evaluation-point
+transfer remain [planned work](../todo.md#future-evaluation-and-export-at-supplied-points).
+The existing [Jorvik geometry block](../jorvik.md) supplies planar training samples.
 
 **Next:** [PDEs and boundary conditions](physics.md).
 

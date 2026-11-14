@@ -39,8 +39,8 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
 # Heat study (9 runs); choose a fresh output filename to preserve recorded evidence
 .venv/bin/python -m examples.benchmark_heat_accuracy --output benchmark-results/heat-study-new.json
 
-# Explicit planar GeoSampler preparation: destination directory must be new
-.venv/bin/python -m examples.prepare_geosampler_2d --input /absolute/path/samples.npz --output /absolute/path/new-prepared-directory --axes x,y --labels interior wall
+# Explicit planar Jorvik preparation: destination directory must be new
+.venv/bin/python -m examples.prepare_jorvik_2d --input /absolute/path/samples.npz --output /absolute/path/new-prepared-directory --axes x,y --labels interior wall
 ```
 
 Each example supports `--help`. Baseline benchmark directories include environment,

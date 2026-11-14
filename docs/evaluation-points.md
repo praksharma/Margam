@@ -125,7 +125,7 @@ from spatial coordinates; there is no implicit temporal resampling. Keep the
 companion frame folder beside the PVD and open the PVD for playback in ParaView.
 GUI playback was not exercised for this new supplied-point dataset.
 
-Direct GeoSampler import, original FEM cells/connectivity, region labels and
+Direct Jorvik import, original FEM cells/connectivity, region labels and
 explicit unit metadata remain [future work](todo.md#future-evaluation-and-export-at-supplied-points).
 
 ## Reproduce the checks

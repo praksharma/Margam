@@ -11,7 +11,7 @@ execution is one supported problem root, not arbitrary multi-model simulation.
 
 - [x] Catalogue implemented methods, sampling and optimisation components with
   API/UI support and limitations in components.md.
-- [x] Reuse GeoSampler Hammersley and recursive stratified unit-domain samplers,
+- [x] Reuse Jorvik Hammersley and recursive stratified unit-domain samplers,
   with exact counts, seeded shifts/strata and physical interval/rectangle bounds.
   Existing grid/random sequences are preserved; SciPy-only methods are not exposed.
 - [x] Add built-in intervals, squares and rectangles with grid/random meshless sampling.
@@ -44,12 +44,12 @@ execution is one supported problem root, not arbitrary multi-model simulation.
 - [x] Add bounded model undo/redo for add/move/connect/delete and settings.
 - [x] Connect the baseline engine through background training with progress and cancellation.
 - [x] Add a runnable Poisson visual template and verify the analytical interval solution.
-- [x] Reuse GeoSampler-style Qt layout/settings and per-session lock-file recovery
+- [x] Reuse Jorvik-style Qt layout/settings and per-session lock-file recovery
   patterns. Save core dock layout/theme/library groups; recover unsaved model
   drafts without reopening plot views or loading numerical state.
-- [x] Add an explicit planar GeoSampler schema-v2 NPZ bridge with label/axis
+- [x] Add an explicit planar Jorvik schema-v2 NPZ bridge with label/axis
   selection, source provenance, unit-normal checks and no CAD runtime/viewport.
-- [ ] Deferred: full 3D/non-planar GeoSampler integration and richer region schemas.
+- [ ] Deferred: full 3D/non-planar Jorvik integration and richer region schemas.
 - [x] Validate actual GPU execution after the earlier CPU-only prerequisite was
   resolved. The 12 November CUDA audit passes 20 targeted checks without skips,
   including training, derivatives, continuation, global device selection and
@@ -91,14 +91,14 @@ execution is one supported problem root, not arbitrary multi-model simulation.
   method is distinct from the target region; assigning a BC is a later operation.
 - [x] Keep basic built-in interval/rectangle sampling in Margam: grid and seeded
   uniform random, domain/side selection, point budget or points-per-side, seed,
-  actual count and preview. A simple problem must not require GeoSampler.
+  actual count and preview. A simple problem must not require Jorvik.
 - [x] Let the template interior and each named rectangle side use independent
   sampling recipes, methods, counts and seeds. Intervals retain fixed endpoints. Arbitrary additional sampler
   instances still depend on future graph execution work.
 - [x] Share implemented block status, parameters, compatible ports and limits
   across the library, inspector and Help. Property sampler choices come from the
   implemented sampler catalogue. Keep widgets explicit; no generic plugin registry.
-- [x] Define the GeoSampler ownership/import boundary in geosampler-contract.md;
+- [x] Define the Jorvik ownership/import boundary in jorvik-contract.md;
   keep CAD authoring/selection outside Margam. The planar bridge is implemented.
 - [x] Keep library, ports, conditions, data imports and output requests expressed
   as scalar fields/operators, independent of temperature. Heat remains a preset;
@@ -197,7 +197,7 @@ The first supplied-point milestone is implemented; see the
   CPU/CUDA evidence and actual UI screenshots.
 - [ ] Preserve mesh connectivity and node-versus-cell association when supplied;
   add an explicit topology contract rather than guessing cells from a point cloud.
-- [ ] Add explicit units, boundary/region labels and GeoSampler prepared-data
+- [ ] Add explicit units, boundary/region labels and Jorvik prepared-data
   integration. Coordinates/values currently use the model's units without conversion.
 - [x] Add a Comparison-owned selected-field scalar/vector error report: relative
   L2/max, RMS/mean/max magnitude and discrete L2, explicit zero-reference policies
@@ -355,13 +355,13 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Baseline, hard-BC and LRA integration; fixed BCs and independent output evaluation.
 - [x] Model migration, active-point/weight history checkpointing and exact resume tests.
 - [x] Document formulas, DeepXDE differences, screenshots and CPU workflow evidence.
-- [ ] GeoSampler-provided admissible candidate sets for imported/non-box geometries.
+- [ ] Jorvik-provided admissible candidate sets for imported/non-box geometries.
 - [ ] Define SA-PINN mask and Adam-moment transfer before combining it with moving points.
 - [x] Add sampler-owned retained PDE point inspection for RAR/importance: bounded
   pages, fixed-anchor roles, correction weights and archived runs, without inference
   or sampler mutation. Explicitly choose idle snapshots; safe live-worker transfer
   remains deferred until a workflow needs it.
-- [ ] Revisit XPINN after a practical GeoSampler subdomain/interface sampling workflow exists.
+- [ ] Revisit XPINN after a practical Jorvik subdomain/interface sampling workflow exists.
 
 - [x] Cross-check importance loss correction against NVIDIA Sym's area/density
   convention for equal-weight pools, including non-unit volume and gradients.
@@ -381,7 +381,7 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Correct component sums, importance correction, endpoint/gauge counting measure and method integration.
 - [x] Trainer/compact controls, version migration, measure-aware checkpoint verification and UI tests.
 - [x] Document NVIDIA pointwise-integral distinction, screenshot and non-unit-domain CPU evidence.
-- [ ] Imported quadrature weights and physical measures for GeoSampler point sets.
+- [ ] Imported quadrature weights and physical measures for Jorvik point sets.
 - [x] Add scalar total-flow/flux IntegralConstraint to the research API, separate
   from integrating squared errors. Require fixed explicit physical quadrature,
   preserve operator/parameter gradients and strict continuation identity. Desktop
@@ -435,7 +435,7 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Consider other paper-specific architectures/frequency settings separately;
   the reusable GUI method does not claim their full reproduction.
 - [ ] Add Gray–Scott concentrations and Rayleigh–Bénard temperature/initial-data contracts before their Scale examples. Resolve the omitted buoyancy term in printed equation (26c) against governing equation (25c) and the physical reference before implementation.
-- [ ] GeoSampler-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
+- [ ] Jorvik-compatible boundary/geometry contracts for NACA0012 and three square obstacles; do not substitute a rectangular fluid domain.
 - [ ] Define composition contracts before combining Scale with Expert time windows, adaptive samplers or imported geometry.
 
 
@@ -450,7 +450,7 @@ These are proposed features; current execution still runs one supported problem.
   UI screenshots and [the illustrated guide](training-data.md).
 - [ ] Extend prepared geometry to concrete coupled/transient use cases when their
   point-set, gauge and initial/boundary contracts are specified.
-- [ ] Wire prepared GeoSampler manifests into graphs automatically; preserve mesh
+- [ ] Wire prepared Jorvik manifests into graphs automatically; preserve mesh
   connectivity, units and region metadata through an explicit contract.
 
 
@@ -463,8 +463,9 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Check physical derivatives, trainable projection, checkpoint compatibility,
   recipe/UI persistence and short CPU/CUDA continuation; document architecture differences.
 
-GeoSampler integration is on hold while its author improves it. Resume that work
-only when the user explicitly requests including it here.
+Broader Jorvik integration remains deferred. The supported planar document/NetCDF
+workflow is described in [Jorvik geometry](jorvik.md); resume broader geometry
+work only when explicitly requested.
 
 
 ## Gradient-enhanced PINN

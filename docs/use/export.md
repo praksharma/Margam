@@ -49,7 +49,7 @@ IDs. Add **Reference data** for matching numerical values, connect it to Compari
 then connect Comparison to an export block to include reference/error arrays.
 Supplied steady points use VTU vertex cells; transient points use physical-time
 PVD/VTU frames. See the [illustrated supplied-point guide](../evaluation-points.md).
-Mesh connectivity and direct GeoSampler integration remain future work.
+Mesh connectivity and direct Jorvik integration remain future work.
 
 For [Burgers](../burgers.md), CSV headings are `x,t,u`. ParaView Export writes a
 PVD collection of 1D spatial VTI frames with physical-time stamps; open the PVD

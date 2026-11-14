@@ -87,7 +87,7 @@ interior, boundaries = sample_problem(config)
 # 70 interior; 30 left; 12 top; 16 each on right and bottom.
 ```
 
-These are small-domain samplers; the broader GeoSampler catalogue is not yet imported.
+These are small-domain samplers; the broader Jorvik catalogue is not yet imported.
 
 ## Poisson template
 
@@ -158,7 +158,7 @@ references are unavailable for custom physics. Other vector systems and addition
 arrays remain separate future work. Tests cover manufactured residuals, derivatives,
 normal signs, Robin operators, corner compatibility and actual custom-PDE training.
 
-GeoSampler-derived `hammersley` and `stratified` samplers are also available for
+Jorvik-derived `hammersley` and `stratified` samplers are also available for
 interior and side recipes. Both return exact counts, are seeded and map unit designs
 onto the supplied physical bounds. Hammersley uses a random toroidal shift;
 stratified uses an exact-N equal-volume recursive partition. Grid/random retain

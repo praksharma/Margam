@@ -131,9 +131,9 @@ be reopened/exported without training files. Resuming training requires the
 original numerical coordinates, targets and operator normals. Changing these
 rejects a checkpoint rather than continuing against different data.
 
-## GeoSampler and further work
+## Jorvik and further work
 
-The existing [planar GeoSampler preparation helper](geosampler-contract.md)
+The existing [planar Jorvik preparation helper](jorvik-contract.md)
 converts supported labelled NPZ exports to explicit point/normal arrays. Map those
 prepared files into these blocks; the new named sets avoid pretending CAD labels
 are rectangle sides. Direct CAD loading, automatic manifest-to-graph wiring,

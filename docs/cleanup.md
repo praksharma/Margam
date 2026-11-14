@@ -2,7 +2,7 @@
 
 Historical snapshot of the cleanup stage. The statements below refer to that
 stage; see the [documentation index](README.md) for current capabilities, including
-connected training, checkpoints and the planar GeoSampler bridge.
+connected training, checkpoints and the planar Jorvik bridge.
 
 26 October 2026. Work remains on the current main checkout; dev was not changed.
 
@@ -25,4 +25,4 @@ connected training, checkpoints and the planar GeoSampler bridge.
 
 The current environment has CPU PyTorch. CUDA checks skip; this migration does
 not claim GPU validation. There is no legacy import shim. The UI remains a layout
-prototype, not a connected numerical model. GeoSampler integration is future work.
+prototype, not a connected numerical model. Jorvik integration is future work.

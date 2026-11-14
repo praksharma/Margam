@@ -1,4 +1,4 @@
-"""Local layout preferences and locked draft recovery, inspired by GeoSampler.
+"""Local layout preferences and locked draft recovery, inspired by Jorvik.
 
 Model recovery is separate from saved model files and numerical run archives.
 """

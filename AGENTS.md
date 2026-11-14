@@ -38,7 +38,7 @@
 - The project is a PINN builder across physics, not a heat-transfer-only tool.
   Keep demo-specific assumptions in templates rather than shared UI contracts.
 - Basic interval/rectangle sampling must work directly. Advanced CAD/geometry
-  workflows belong to future GeoSampler integration. Do not add a 3D viewport.
+  workflows belong to future Jorvik integration. Do not add a 3D viewport.
 - Views are optional and owned by their blocks. Do not show global default figure
   panes or assume an analytical solution. Only expose supported context actions.
 - Local sample/geometry previews currently belong to Rectangle blocks only.
@@ -80,12 +80,12 @@
   directory when testing desktop state. Do not overwrite personal layout/recovery
   files during validation. Release test clipboard data before offscreen Qt teardown.
 - Coupled u/v/p results currently use tables/CSV. Preserve the pause on heatmap
-  development. Full 3D/non-planar GeoSampler remains deferred. ParaView export is
+  development. Full 3D/non-planar Jorvik remains deferred. ParaView export is
   opt-in; never infer physical time from training updates. Evaluation points and
   Reference data blocks accept CSV/NPZ independently of training. Preserve exact
   coordinates, row order and integer/text IDs. Align references explicitly without
   interpolation. Supplied clouds export as VTU vertices and physical-time PVD;
-  mesh connectivity, units/region metadata and GeoSampler integration remain deferred.
+  mesh connectivity, units/region metadata and Jorvik integration remain deferred.
 
 - Prepared 2D uses separate Interior data and Boundary data blocks, with coordinate
   bounds for scaling only. Keep free boundary labels and target/operator physics
@@ -154,7 +154,7 @@
   verified planar conormals and immutable owned snapshots. Never assign PDE/BC
   physics from labels or infer mesh topology. Preserve relative owned references,
   Save As isolation, owned-file recovery and the editor lock during save/close.
-  Broader GeoSampler/3D integration remains deferred.
+  Broader Jorvik/3D integration remains deferred.
 - New Scale examples use notebook-specific affine inputs and a trainable sine
   projection in the separate Affine Fourier NN architecture. Preserve physical
   units by default, keep normalization explicit, and do not silently migrate old
@@ -597,3 +597,7 @@
   or imply it changes with edited physics. Preserve the ordinary reference-free
   example, explicit comparison outputs, exact IDs and physical-time VTU/PVD
   frames. Distinguish reference-evaluator validation from trained PINN accuracy.
+
+- Use Jorvik as the current product name in docs and help. Preserve historical
+  upstream source paths/licence references and legacy schema keys; keep old
+  planar-adapter imports/commands working through compatibility aliases.
