@@ -1,0 +1,7 @@
+{
+  "generator": "examples.capture_job_limits",
+  "scope": "Actual local job-time dialog at 300 seconds. State-isolated; no numerical job or model mutation.",
+  "file": "manual-job-time-limit.png",
+  "seconds": 300,
+  "sha256": "27d63a19f4903c043a7f8d4d47fbf9c43243515eec9294f7b05d7ec0bd53070d"
+}

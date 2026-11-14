@@ -27,6 +27,7 @@ from .ports import INPUTS, OUTPUTS, compatible
 from .edit_history import EditCommand
 from .setting_help import HelpFormLayout, show_information
 from .device_settings import DeviceSettings, same_physics
+from .job_limits import JobLimits
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
 from .inverse_actions import InverseActions
@@ -455,7 +456,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,JorvikGeometryActions,QMainWindow):
+class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,JobLimits,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -464,6 +465,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self._history_replaying=False
         self._history_epoch=0
         self.application_device = 'auto'
+        self.job_time_limit_seconds = 0
         self.config = PoissonConfig()
         self.worker = None
         self.loaded_checkpoint = None
@@ -747,6 +749,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.stop_action.triggered.connect(self.cancel_button.click)
         self.resume_action=run.addAction('Resume checkpoint…');self.resume_action.setEnabled(False)
         self.resume_action.triggered.connect(lambda:self.resume_training())
+        self.setup_job_limit_menu()
         self.setup_device_menu()
         help_menu=self.menuBar().addMenu('Help')
         self.manual_action=help_menu.addAction('User manual');self.manual_action.setShortcut('F1')
@@ -1795,7 +1798,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if model is not None and str(model.device)!=self.execution_device():model=None
         self.active_output_ids={r.identifier for r in requests}
         self.refresh_result_status('Evaluating')
-        self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self)
+        self.worker=EvaluationWorker(deepcopy(self.config),requests,model=model,checkpoint=checkpoint,parent=self,wall_time_seconds=self.job_time_limit_seconds)
         self.worker.completed.connect(self.training_completed);self.worker.failed.connect(self.training_failed);self.worker.finished.connect(self.training_finished)
         self.log.appendPlainText('Evaluating requested outputs · trained weights retained · no optimizer updates')
         self.worker.start();self.update_run_actions();return True
@@ -2783,6 +2786,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.recipe_menu.setEnabled(not busy)
         self.open_model_action.setEnabled(not busy);self.save_model_action.setEnabled(not busy);self.save_as_action.setEnabled(not busy)
         self.device_menu.setEnabled(not busy)
+        self.job_time_limit_action.setEnabled(not busy)
         self.recent_models_menu.setEnabled(not busy)
         self.scene.locked=busy
         for node in self.scene.nodes():
@@ -2814,7 +2818,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         self.set_busy(True)
         self.refresh_result_status('Running')
-        self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint)
+        self.worker=TrainingWorker(deepcopy(self.config),requests,parent=self,checkpoint=checkpoint,wall_time_seconds=self.job_time_limit_seconds)
         self.worker.progress.connect(self.training_progress)
         self.worker.scale_progress.connect(self.scale_training_progress)
         self.worker.expert_progress.connect(self.expert_training_progress)

@@ -34,6 +34,26 @@ status and available diagnostics; an OS memory kill is one possible cause, not a
 automatically proven diagnosis. Late force-stop requests also prevent adoption
 of a result still being transferred.
 
+## Apply a job deadline
+
+**Run → Job time limit…** sets a local, application-wide wall-time budget for
+training, continuation and evaluation. Zero means unlimited. A separate timer in
+the supervisor stops an expired numerical child and discards the job; it does not
+wait for an optimizer boundary or adopt an incomplete result/checkpoint. Manual
+force stop and cooperative Stop keep their existing meanings. The
+[illustrated time-limit guide](resources.md#set-an-optional-job-time-limit) covers
+clock scope, saved-run recovery and local preference behavior.
+
+The budget covers the child process lifetime, including startup and result
+preparation. Parent input serialization and result decoding are outside it; an
+already-finished child is not marked expired while its packet is decoded.
+Timers are cancelled/joined on exit, and a timer-launch failure still kills and
+reaps the child. Session/exit checks remain required before accepting results.
+Programmatic transport callers may explicitly pass
+`JobTransport(wall_time_seconds=120)`; this independent transport option accepts
+finite seconds from zero to seven days and defaults to zero. It does not read
+GUI preferences or impose a policy on direct research trainers.
+
 ## What is preserved?
 
 - Device selection remains application-wide. Training, inference and continuation
@@ -113,7 +133,8 @@ Process separation does not reserve RAM/VRAM or enforce a hardware quota. Data
 preparation, archive validation and bounded result/checkpoint transfer still need
 GUI-process RAM. System-wide memory pressure or driver failure can affect more
 than the worker, and termination depends on the operating system/driver. Explicit
-resource policies and representative capacity probes remain planned work.
+OS memory/CPU quotas and representative capacity probes remain planned work;
+the opt-in child wall-time policy is separate from those quotas.
 
 Use [Memory and workload](resources.md) to review the current advisory figures
 before starting a large job. See the [validation records](../validation.md#isolated-desktop-numerical-jobs)

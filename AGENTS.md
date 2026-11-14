@@ -579,3 +579,15 @@
   Use research format 3 with exact chunk-size identity; preserve default formats
   1/2. Full/chunked arithmetic is tolerance-qualified, while same-chunk resume is
   tested exactly. Never auto-size after OOM or infer support for advanced trainers.
+
+- Job time limits are local application preferences, default zero/unlimited,
+  snapped into each isolated train/resume/evaluate transport. Keep physics,
+  model/archive formats, results and undo history unchanged when editing the
+  preference, and lock edits while busy. Limit child launch-to-exit time only;
+  parent packet work and explicit file exports/editors are excluded. On expiry
+  kill/reap and discard the entire job without adopting partial state; retain
+  prior saved files. Cancel/join timers on all paths, including thread-launch
+  failure, and never expire an already-finished child during parent decoding.
+  Never hold the deadline lock across control-pipe writes; broken-pipe cleanup
+  must not mask the primary diagnostic or skip closing other streams. This is not
+  a RAM/VRAM quota or a policy for direct research training loops.

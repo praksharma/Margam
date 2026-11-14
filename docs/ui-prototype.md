@@ -86,6 +86,11 @@ insertion and does not change block coordinates.
 | Actual size | 100% or Ctrl+0 on the canvas |
 | Zoom shortcuts | Ctrl+Plus / Ctrl+Minus on the canvas |
 
+**Run → Job time limit…** is an optional local execution preference. Zero means
+unlimited; expired numerical jobs are stopped and discarded. It covers training,
+continuation and evaluation, with the current limit shown in Run summary. See
+[scope and saved-run recovery](use/resources.md#set-an-optional-job-time-limit).
+
 Selection or inspector resizing does not reset the camera. View → Reset panel
 layout restores dock placement. Navigation remains available during training.
 

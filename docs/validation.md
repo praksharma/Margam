@@ -1417,3 +1417,35 @@ memory peaks and system/driver peaks are not measured. This is a concrete
 allocator/lifecycle experiment, not a capacity or accuracy claim. See
 [the guide](research-microbatch.md). The CUDA manifest includes the new case;
 this pass runs the focused research suite rather than repeating the full audit.
+
+
+## Local numerical-job wall-time limits, 14 November 2026
+
+All 30 related job-limit, isolated-process, resource, device, desktop recovery,
+graph-summary and startup checks passed with real CUDA available and no skips.
+Eight new cases cover an actual short wall-clock deadline during startup,
+validated bounded settings, timer launch failure and cleanup, and successful
+finite/unlimited jobs with identical numerical histories/weights. Separate
+injected deadlines after real CPU/CUDA progress prove that active-job updates
+are discarded and the child is reaped; these fixtures do not pretend that a
+60-second wall-clock wait occurred. Parent Torch RNG remains unchanged.
+
+An already-finished child is not expired during parent packet loading. Timers
+are cancelled and joined on success/failure, and unstarted timers are not joined
+if thread creation fails. Repeated Stop commands to a child that never reads its
+control pipe cannot hold the watchdog lock. This regression exposed a cleanup
+BrokenPipeError that could mask the timeout and leave other streams unclosed;
+cleanup now preserves the timeout diagnostic and closes all streams. Manual force-stop and normal cancellation regressions
+remain green. The native CPU desktop workflow saves a run, expires its
+continuation using a real one-second limit, verifies the saved archive hash is
+unchanged, reopens it and successfully resumes/evaluates with a new budget.
+
+The local preference survives a dedicated temporary desktop session, respects
+busy locks and Cancel, appears in Run summary, and preserves graph definitions,
+undo index and current result identity. UI import still avoids importing Torch.
+The actual policy dialog, active Run menu and simulated-memory summary were
+captured through state-isolated helpers. The
+[illustrated policy](use/resources.md#set-an-optional-job-time-limit) documents
+startup cost, discarded partial state, parent-work exclusions and the remaining
+OS memory/CPU quota work. The CUDA manifest includes the new deadline case;
+this pass runs the relevant suite rather than repeating the complete CUDA audit.

@@ -34,6 +34,9 @@ class DesktopState:
         device=self.settings.value('execution_device','auto')
         if device not in ('auto','cpu','cuda') or device=='cuda' and not w._cuda_available:device='auto'
         w.set_application_device(device,remember=False)
+        try:limit=self.settings.value('job_time_limit_seconds',0,type=int)
+        except (TypeError,ValueError):limit=0
+        if not w.set_job_time_limit(limit,remember=False):w.set_job_time_limit(0,remember=False)
         w.show_grid_action.setChecked(self.settings.value('show_grid',False,type=bool))
         w.snap_grid_action.setChecked(self.settings.value('snap_grid',False,type=bool))
         w.route_wires_action.setChecked(self.settings.value('route_wires',False,type=bool))

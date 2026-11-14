@@ -85,9 +85,9 @@ class EvaluationWorker(QThread):
 class IsolatedJob:
     """A supervisor thread emits Qt signals; all numerical work is a child job."""
     isolated=True
-    def _setup_transport(self):
+    def _setup_transport(self,wall_time_seconds=0):
         from ..execution.transport import JobTransport
-        self.transport=JobTransport();self.child_pid=None
+        self.transport=JobTransport(wall_time_seconds=wall_time_seconds);self.child_pid=None
     def cancel(self):
         self.cancel_event.set();self.transport.cancel()
     def force_stop(self):self.transport.terminate()
@@ -127,10 +127,10 @@ class IsolatedJob:
 
 
 class IsolatedTrainingWorker(IsolatedJob,TrainingWorker):
-    def __init__(self,*args,**kwargs):super().__init__(*args,**kwargs);self._setup_transport()
+    def __init__(self,*args,wall_time_seconds=0,**kwargs):super().__init__(*args,**kwargs);self._setup_transport(wall_time_seconds)
     def run(self):self._run_job('train')
 
 
 class IsolatedEvaluationWorker(IsolatedJob,EvaluationWorker):
-    def __init__(self,*args,**kwargs):super().__init__(*args,**kwargs);self._setup_transport()
+    def __init__(self,*args,wall_time_seconds=0,**kwargs):super().__init__(*args,**kwargs);self._setup_transport(wall_time_seconds)
     def run(self):self._run_job('evaluate')

@@ -6,6 +6,7 @@ from .theme import colors
 
 # 24-unit artwork; no icon font, desktop theme or network dependency.
 PATHS = {
+    'time_limit':'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M12 6v6l4 2',
     'observations':'M4 4h16v16H4z M8 8h1 M14 10h1 M10 16h1 M16 15h1',
     'inverse_pde':'M4 5h16 M7 5v14 M11 12h8 M15 8v8 M4 21h16',
     'inverse_method':'M4 18l5-10 5 7 6-12 M4 4v16h17',

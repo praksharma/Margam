@@ -109,3 +109,12 @@ Capture the output-only enable control in isolated desktop state with:
 ```
 
 The image and manifest go to `assets/screenshots/`; no training is performed.
+
+
+Capture the local numerical job time-limit dialog without running training:
+
+```sh
+.venv/bin/python -m examples.capture_job_limits --overwrite
+```
+
+The state-isolated image/manifest are saved under `assets/screenshots/`.

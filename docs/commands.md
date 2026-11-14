@@ -648,3 +648,14 @@ Pointwise research microbatch experiment (fresh folders required):
 ```
 
 Use CPU instead when desired. See [scope, normalization and allocator evidence](research-microbatch.md).
+
+
+Isolated-job deadline and cleanup checks:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -p 'test_job_limits.py' -v
+.venv/bin/python -m examples.capture_job_limits --overwrite
+```
+
+The desktop preference is under Run → Job time limit. It does not automatically
+apply to direct research scripts; see [the execution policy](use/resources.md#set-an-optional-job-time-limit).

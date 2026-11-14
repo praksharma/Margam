@@ -91,8 +91,41 @@ smaller experiment or change its physics.
 Desktop numerical jobs now use [isolated child processes](isolated-jobs.md), with
 cooperative Stop and an explicit force-stop/discard action. CPU checkpoint/result
 transfer and preparation still need GUI RAM, and system-wide memory pressure or
-driver failure can affect the application. OS/resource budgets and representative
+driver failure can affect the application. OS memory/CPU quotas and general
 capacity probes remain planned work; process separation is not a fit guarantee.
+
+## Set an optional job time limit
+
+Open **Run → Job time limit…** and choose the maximum number of seconds for each
+numerical job. **No limit (0)** is the default; the desktop control accepts up to
+604,800 seconds (seven days). Run summary shows the current choice before training.
+The setting applies to new training, checkpoint continuation and output evaluation,
+on either CPU or GPU.
+
+![The local time-limit dialog with a five-minute budget](../../assets/screenshots/manual-job-time-limit.png)
+
+*Actual dialog at 300 seconds, captured without running a job or changing the
+model. The choice belongs to local desktop preferences.*
+
+The clock covers the numerical process from launch through exit: startup,
+construction/restoration, training or inference, and preparing its result. Startup
+counts, so a short limit can expire before the first update. Preparing inputs,
+validating data or reading returned results in the main window is outside that
+clock, as are explicit CSV/ParaView file writing and external geometry editing.
+
+If the limit expires, Margam stops that numerical process and **discards the
+running job**. Its partial updates/results are not adopted as a new checkpoint.
+Controls become available after the process is reaped, and Messages identifies the
+time limit. Previously saved run files remain unchanged; reopen one and choose a
+suitable budget before continuing. Normal **Stop** still requests cooperative
+cancellation and supported partial-state retention; it must finish before the
+configured deadline to return that state.
+
+Changes are locked while a job or external editor is active. The preference is
+saved locally across sessions, independently of model/run files. Changing it
+preserves model settings, undo history, current results and trained weights.
+It limits elapsed calculation time, not memory, samples, precision or update
+counts. Direct research scripts keep their explicit execution behavior.
 
 ## Pointwise research training chunks
 

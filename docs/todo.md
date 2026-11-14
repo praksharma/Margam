@@ -690,8 +690,11 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [ ] Add an opt-in representative resource probe with isolated model/RNG/state,
   complete update and method-specific work; distinguish measured peaks from
   extrapolated adaptive growth and output costs.
-- [ ] Add explicit configurable resource policies/OS budgets for isolated jobs;
-  memory availability and exceptions alone cannot prevent an OS-level kill.
+- [x] Add an opt-in application-wide child wall-time limit for training, resume
+  and evaluation, with default unlimited, read-only run-summary disclosure,
+  local preferences, guarded edits, discarded expired jobs and verified cleanup.
+- [ ] Add OS-level memory/CPU quotas for isolated jobs; wall-time limits, memory
+  availability and exceptions alone cannot prevent an OS-level memory kill.
 - [x] Bound native pointwise inference to 2,048 device rows, assemble results on
   CPU and preserve coordinates/IDs, physical times, trained precision and state.
   Keep research prediction one-shot by default; record measured CUDA memory.
