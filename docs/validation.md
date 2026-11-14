@@ -1466,3 +1466,41 @@ This is evaluator/software evidence, not trained-shock accuracy. See the
 [evidence record](../assets/benchmarks/burgers-reference-2026-11-14.json) and
 [guide](burgers.md#optional-reference-data-example). CUDA manifest discovery was
 checked after adding this case; the entire CUDA audit was not rerun.
+
+
+## MCP checkpoint continuation (14 November 2026)
+
+`test_automation_resume.py` adds seven focused checks: no-checkpoint behavior,
+strict update counts, session/revision/run identity, pending inspector edits, busy
+locks, metadata-only reads, permission revocation at dispatch, launch rejection,
+cooperative cancellation, native Undo and stale results. CPU checks cover both
+a retained run and a desktop-opened archive; CUDA covers a retained run. The
+2+3-update and uninterrupted 5-update comparisons use independent native workers
+and require exact weights and loss history. This qualifies these concrete small
+baseline cases, not universal bitwise agreement for every architecture/backend.
+
+The existing eight automation cases also pass. The real official-SDK authenticated
+client exercises resume, strict integer schema rejection, replacement job IDs,
+result paging, revocation during an existing connection and token rotation.
+The permissions screenshot is captured with the listener stopped and no token.
+
+An earlier oracle executed uninterrupted training in the parent process. Its
+CUDA PDE loss differed by 2.384185791015625e-7 at one update. A thread-count match
+passed alone but failed in the full suite. The final oracle compares the actual
+independent native worker paths, retaining exact assertions rather than adding
+a tolerance or changing numerical training. The failed parent-process checks are
+not evidence of universal CUDA determinism.
+
+Run:
+
+```bash
+python -m unittest discover -s tests -p 'test_automation_resume.py' -v
+python -m unittest discover -s tests -p 'test_automation.py' -v
+python -m examples.capture_mcp --overwrite
+```
+
+The CUDA audit manifest includes the continuation case; discovery is checked
+separately, without claiming a full audit rerun. Continuation is available only
+for the checkpoint already in the window. Native data/checkpoint validation,
+application device, isolation and job time limits remain authoritative. No file
+loading/export, arbitrary code or graph insertion is added.

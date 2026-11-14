@@ -81,6 +81,10 @@ def build_application(bridge, permissions, token, port, network_event, *, requir
     async def start_training(session_id:str,expected_revision:str) -> dict[str,Any]:
         return await call('start_training',dict(session_id=session_id,expected_revision=expected_revision))
 
+    @server.tool(description=TOOLS['resume_training'][1])
+    async def resume_training(session_id:str,expected_revision:str,run_id:str,additional_steps:StrictInt) -> dict[str,Any]:
+        return await call('resume_training',dict(session_id=session_id,expected_revision=expected_revision,run_id=run_id,additional_steps=additional_steps))
+
     @server.tool(description=TOOLS['training_status'][1], annotations=ToolAnnotations(read_only_hint=True,open_world_hint=False))
     async def training_status(session_id:str,job_id:str) -> dict[str,Any]:
         return await call('training_status',dict(session_id=session_id,job_id=job_id))

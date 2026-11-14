@@ -601,3 +601,11 @@
 - Use Jorvik as the current product name in docs and help. Preserve historical
   upstream source paths/licence references and legacy schema keys; keep old
   planar-adapter imports/commands working through compatibility aliases.
+
+- MCP resume accepts only a checkpoint already retained/open in the window. Require
+  fresh session/revision and a separate ephemeral run ID, since manual training
+  can replace weights without changing graph settings. Read metadata without
+  copying tensors or retaining obsolete checkpoints; reuse native Resume, its
+  undoable total-update change and isolated-worker validation. Track the resulting
+  revision/new job ID, keep Training permission gates and strict integer bounds,
+  and expose no checkpoint file loading or implicit export.

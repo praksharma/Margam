@@ -650,8 +650,11 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   Qt command bridge adapted from PyniteGUI; authentication and token rotation.
 - [x] Model/schema/validation reads, atomic numerical parameter batches with Undo,
   background fresh training, status/cancellation and paginated explicit results.
-- [ ] Consider exclusive MCP editing mode, typed graph insertion/wiring, controlled
-  data import/export and checkpoint continuation when concrete workflows require them.
+- [x] Add explicit MCP continuation of retained or desktop-opened checkpoints:
+  independent run identity, bounded additional updates, existing native resume,
+  new job tracking and CPU/CUDA/client permission/lifecycle checks.
+- [ ] Consider exclusive MCP editing mode, typed graph insertion/wiring and controlled
+  data import/export when concrete workflows require them.
 
 ### Research Python API
 

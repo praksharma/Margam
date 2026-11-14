@@ -175,9 +175,29 @@ class AutomationTests(unittest.TestCase):
                         self.assertFalse(output.is_error,output)
                         page=output.structured_content['data'];self.assertEqual(page['total_rows'],25);self.assertEqual(len(page['rows']),2)
                         self.assertEqual(page['fields'],['u'])
+                        # Continue the retained native checkpoint, identified independently of the graph.
+                        current=await client.call_tool('read_model',{})
+                        data=current.structured_content['data'];resume_args={**identity,'expected_revision':data['revision'],
+                            'run_id':data['continuation']['run_id'],'additional_steps':1}
+                        invalid=await client.call_tool('resume_training',{**resume_args,'additional_steps':True})
+                        self.assertTrue(invalid.is_error)
+                        resumed=await client.call_tool('resume_training',resume_args);self.assertFalse(resumed.is_error,resumed)
+                        new_job=resumed.structured_content['data']['job_id'];self.assertNotEqual(job,new_job)
+                        self.assertTrue(resumed.structured_content['data']['current'])
+                        for _ in range(1000):
+                            status=(await client.call_tool('training_status',{**identity,'job_id':new_job})).structured_content['data']
+                            if not status['running']:break
+                            await asyncio.sleep(.01)
+                        self.assertEqual(status['state'],'Completed',status);self.assertEqual(status['step'],3)
+                        old=await client.call_tool('read_results',{**identity,'job_id':job})
+                        self.assertTrue(old.is_error)
+                        result=await client.call_tool('read_results',{**identity,'job_id':new_job,'offset':0,'limit':1})
+                        self.assertFalse(result.is_error,result);self.assertEqual(result.structured_content['data']['total_rows'],3)
                         # Permission revocation affects both discovery and calls on the existing connection.
                         self.s.permissions.set_group('Training',False)
-                        self.assertNotIn('start_training',{t.name for t in (await client.list_tools()).tools})
+                        hidden={t.name for t in (await client.list_tools()).tools}
+                        self.assertNotIn('start_training',hidden);self.assertNotIn('resume_training',hidden)
+                        self.assertTrue((await client.call_tool('resume_training',resume_args)).is_error)
                         denied=await client.call_tool('start_training',{**identity,'expected_revision':revision})
                         self.assertTrue(denied.is_error)
         with ThreadPoolExecutor(max_workers=1) as pool:

@@ -7,6 +7,7 @@ import json
 from threading import Lock
 from types import SimpleNamespace
 from uuid import uuid4
+from weakref import ref
 from PySide6.QtCore import QObject, Signal, Slot, Qt
 
 TOOLS = {
@@ -15,6 +16,7 @@ TOOLS = {
     'validate_model': ('Model reads', 'Run the existing read-only model execution checks and return actionable issues.'),
     'apply_batch': ('Model edits', 'Change existing block numerical parameters atomically as one Undo entry. Requires session_id and expected_revision. No file or topology edits.'),
     'start_training': ('Training', 'Start fresh background training of the current graph. Returns a job ID; poll training_status. Uses application device and existing explicit output blocks.'),
+    'resume_training': ('Training', 'Continue the retained or desktop-opened checkpoint by additional_steps. Requires a fresh read_model session, revision and continuation run_id. Does not open files; polls and cancellation use the returned new job_id.'),
     'training_status': ('Model reads', 'Read the current MCP job status and progress. Check state and error after running becomes false.'),
     'cancel_training': ('Training', 'Request cancellation of the current identified MCP training job; completion may include partial results.'),
     'read_results': ('Result reads', 'Read paginated data from explicit output blocks or retained loss history of the identified finished MCP job. No prediction or file export is triggered.'),
@@ -58,6 +60,8 @@ class AutomationCommands:
         self.window = window
         self.session_id = uuid4().hex
         self.job = None
+        self._continuation_key = None
+        self._continuation_id = None
 
     def identity(self):
         from .model_document import capture_model
@@ -76,6 +80,31 @@ class AutomationCommands:
             raise AutomationError('stale_revision', 'The model changed. Read it again before editing or training.')
         return identity
 
+    def continuation(self):
+        # Read metadata only: never clone tensor checkpoints just to inspect them.
+        w=self.window
+        model=w.last_run.model if w.last_run is not None else None
+        checkpoint=w.loaded_checkpoint
+        if model is not None:
+            step=model.iter;key=('retained',ref(model),step)
+            summary=model.dsgnar_summary() if hasattr(model,'dsgnar_summary') else {}
+        elif checkpoint is not None:
+            step=checkpoint['iter']
+            # Opening an archive installs a new workspace; weak refs do not retain
+            # an obsolete workspace or checkpoint after a manual replacement.
+            key=('opened',ref(w.project_workspace),id(checkpoint),step)
+            summary=checkpoint.get('dsgnar',{})
+        else:
+            self._continuation_key=self._continuation_id=None
+            return dict(run_id=None,steps=None,available=False,remaining_updates=0,reason='No checkpoint is retained or open.')
+        if key!=self._continuation_key:
+            self._continuation_key=key;self._continuation_id=uuid4().hex
+        reason=('Wait for the current job or editor to finish.' if w.is_running() or w.scene.locked or w.project_workspace.busy else
+                'The checkpoint reached the update limit.' if step>=100000 else
+                'DSGNAR reached its minimum radius.' if summary.get('converged',False) else '')
+        return dict(run_id=self._continuation_id,steps=step,available=not reason,reason=reason,
+                    remaining_updates=max(0,100000-step))
+
     def status(self):
         job = self.job
         if job is None:
@@ -90,8 +119,8 @@ class AutomationCommands:
         from .model_document import capture_model
         w = self.window
         if name == 'read_model':
-            return dict(**self.identity(), model=capture_model(w), busy=w.is_running() or w.scene.locked)
-        mutation = name in ('apply_batch','start_training')
+            return dict(**self.identity(), model=capture_model(w), busy=w.is_running() or w.scene.locked,continuation=self.continuation())
+        mutation = name in ('apply_batch','start_training','resume_training')
         identity = self.guard(arguments, mutation)
         if mutation:
             # Flush a user's pending inspector text before the final revision check.
@@ -124,15 +153,29 @@ class AutomationCommands:
                 w.selection_changed()
             w.push_edit('MCP parameter batch',lambda:apply(True),lambda:apply(False))
             return self.identity()
-        if name == 'start_training':
+        if name in ('start_training','resume_training'):
             if w.is_running() or w.scene.locked or w.project_workspace.busy:
                 raise AutomationError('busy','Wait for the current job or Jorvik editor to finish.')
+            continuation=None
+            if name=='resume_training':
+                continuation=self.continuation()
+                if not continuation['available']:
+                    raise AutomationError('resume_unavailable',continuation['reason'])
+                if arguments.get('run_id')!=continuation['run_id']:
+                    raise AutomationError('stale_checkpoint','The checkpoint changed. Read read_model again before continuing.')
+                additional=arguments.get('additional_steps')
+                if type(additional) is not int or not 1<=additional<=continuation['remaining_updates']:
+                    raise AutomationError('invalid_arguments','Use an integer additional_steps from 1 to the remaining update limit.')
             from .validation_report import check_execution
             check_execution(w)
             if cancelled(): raise AutomationError('request_cancelled','Command cancelled before training.')
-            if not w.start_training(): raise AutomationError('training_rejected','Current model cannot start training.')
-            job = self.job = dict(job_id=uuid4().hex, revision=identity['revision'], running=True,
-                state='Running', step=0, error=None)
+            accepted=w.resume_training(additional) if continuation is not None else w.start_training()
+            if not accepted: raise AutomationError('training_rejected','Current model cannot start or resume training.')
+            # Native continuation updates the requested total as an ordinary undoable
+            # setting change. Track the resulting revision, not the pre-launch one.
+            job = self.job = dict(job_id=uuid4().hex, revision=self.identity()['revision'], running=True,
+                state='Running', step=continuation['steps'] if continuation is not None else 0, error=None,
+                operation=name, resumed_from=continuation['run_id'] if continuation is not None else None)
             worker = w.worker
             self.accepted_worker=worker
             def progress(step, records):

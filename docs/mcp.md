@@ -45,7 +45,7 @@ client or change client configuration files.
 **Model reads** and **Result reads** start enabled. **Model edits** and
 **Training** start disabled. A tool requires both its group and individual
 checkbox. Permission changes apply to discovery and each queued command, even
-on an existing connection. Revoking Training prevents new start/cancel requests;
+on an existing connection. Revoking Training prevents new start/resume/cancel requests;
 it does not stop a job already accepted. Use the native **Stop** button to stop it.
 
 This first version keeps manual editing available while idle. The GUI thread
@@ -99,9 +99,54 @@ Success returns `{ "ok": true, "data": ... }`; tool failures use
 error flag. A stale revision requires a fresh read, not a blind retry. A timed-out
 mutation may already have completed: read state before retrying it.
 
+## Continue a checkpoint already in the window
+
+With **Training** permission enabled, a client can continue a finished or
+cooperatively stopped run, including a run opened through **File → Open saved
+run…**. MCP does not choose or open a checkpoint file.
+
+1. Call `read_model` again. Its `continuation` object contains `available`,
+   `reason`, completed `steps`, `remaining_updates` and an opaque `run_id`.
+   Inspection reads metadata without cloning tensor checkpoint state.
+2. When available, call `resume_training` with the latest session, graph revision,
+   that `run_id` and an explicit additional count:
+
+   ```json
+   {
+     "session_id": "FROM_READ_MODEL",
+     "expected_revision": "FROM_READ_MODEL",
+     "run_id": "FROM_CONTINUATION",
+     "additional_steps": 1000
+   }
+   ```
+
+3. Poll `training_status`, cancel with `cancel_training`, and read losses/outputs
+   with `read_results` using the **new `job_id`**. Earlier job IDs are replaced.
+
+The run ID identifies the retained checkpoint separately from the graph. A manual
+run can replace weights without changing graph settings; an old run ID is then
+rejected. Re-read after any replacement. Run IDs are local session handles, not
+portable filenames or archive identifiers.
+
+Continuation uses the same native checkpoint, optimizer/sampler state, application
+device, isolated process and optional job time limit as desktop Resume. It changes
+the requested total to completed plus additional updates as one normal Undo entry,
+then returns the resulting revision. For DSGNAR the count means additional
+attempts. The total limit is 100,000; boolean/fractional counts are rejected, as
+are unavailable checkpoints and DSGNAR runs stopped at their minimum radius.
+The descriptor is an availability hint; the normal execution/data/checkpoint
+validators remain authoritative. A worker-side restore failure is reported as a
+Failed job, not successful continuation. No file export or view is opened.
+
+A rejected session/revision/run ID, invalid count, busy window, revoked permission
+or request cancelled before launch starts no numerical job. Resume consumes
+Training permission; it does not require Model edits just to adjust the native
+requested total. Undo later restores that total and clears results according to
+the normal desktop settings lifecycle.
+
 ## Results and limits
 
-Only the latest job started by this MCP session is tracked. Manual training or
+Only the latest fresh or resumed job accepted by this MCP session is tracked. Manual training or
 evaluation can replace its results; changed graphs invalidate result reads.
 Status distinguishes graph currency from successful completion. Loss rows are
 native numerical history, not reconstructed monitor curves. Explicit output
@@ -117,13 +162,13 @@ intentionally expose the open graph, including its configured input references,
 to authorized clients. Optional server packages are loaded only when Start is
 pressed; ordinary desktop startup does not import them.
 
-No headless server, project open/save, checkpoint continuation, data import,
+No headless server, project open/save, checkpoint file loading, data import,
 topology editing or file export tools are offered yet. Use the existing desktop
 commands for those workflows. The port is for local clients, not an HPC service.
 
 ## Validation and source
 
-Eight dedicated checks cover atomic rejection/Undo, session/revision guards,
+The original eight dedicated checks cover atomic rejection/Undo, session/revision guards,
 queue stop/revocation/limits, real background training and cancellation, result
 pagination/staleness, the inverse workflow, optional-dependency isolation and
 an official MCP client over authenticated localhost HTTP. The wire test also
@@ -133,3 +178,13 @@ These are lifecycle checks, not numerical accuracy benchmarks.
 Adapted source and pinned upstream revision are recorded in
 [Source attribution](../THIRD_PARTY.md). The protocol implementation is provided
 by the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk).
+
+Seven additional continuation checks cover missing/stale checkpoint IDs, busy
+locks, pending inspector edits, count limits, permission revocation, metadata-only
+reads, cancellation, retained and desktop-opened runs, and exact 2+3 versus 5-update
+CPU/CUDA weights/history using independent native numerical workers. The official-client test also exercises the new tool,
+strict integer schema, new job IDs, paging and live permission revocation.
+An earlier parent-process CUDA oracle differed by 2.38e-7 in one PDE loss
+reduction; matching thread count alone did not reliably remove it. The qualified
+comparison uses independent native workers with the same execution setup, without
+relaxing the exact weight/history assertions. This is workflow correctness, not numerical solution accuracy.
