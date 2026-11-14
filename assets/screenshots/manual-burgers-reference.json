@@ -1,0 +1,10 @@
+{
+  "generator": "examples.burgers_reference_workflow",
+  "scope": "Actual comparison at t=1 after three updates; lifecycle only, not an accurate trained shock.",
+  "device": "cpu",
+  "steps": 3,
+  "rows": 2827,
+  "physical_time": 1.0,
+  "file": "manual-burgers-reference.png",
+  "sha256": "d685520add9ec8cada49d45bf4b5d499046d74ac365fd11101689288b72bf175"
+}

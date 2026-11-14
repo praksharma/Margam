@@ -67,3 +67,14 @@ Independent PyTorch implementation from Webb, Jerad and Cartis,
 [DSGNAR guide](dsgnar.md) records the inspected repository revision, algorithm
 ambiguities, implementation choices and validation scope. No upstream code/data
 is copied; the reference checkout has no declared top-level source licence.
+
+
+## Burgers reference quadrature
+
+The optional [Burgers reference example](burgers.md#optional-reference-data-example)
+uses an independent Cole–Hopf implementation. The setup follows
+[Raissi et al.](https://maziarraissi.github.io/PINNs/); the Gaussian/Hermite integral
+is documented by [Burkardt](https://people.sc.fsu.edu/~jburkardt/py_src/burgers_exact/burgers_exact.html).
+No upstream solver code or arrays were copied into the generated reference CSV.
+Comparison against the already retained MIT-licensed inverse observation fixture
+validates this evaluator, not the short-run PINN accuracy.

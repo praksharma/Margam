@@ -247,3 +247,8 @@ CUDA allocation peak from 36.35 to 17.57 MiB with 256-row chunks. First-update
 measurements include Adam initialization, exclude later checkpoint/output work
 and do not establish steady-state speed or memory capacity. See
 [the full contract and measured table](../../docs/research-microbatch.md).
+
+
+[Burgers reference workflow, 14 November 2026](burgers-reference-2026-11-14.json)
+records independent evaluator validation and CPU/CUDA owned-data/save/resume/export
+checks. Three-plus-two updates are workflow evidence, not shock-accuracy evidence.

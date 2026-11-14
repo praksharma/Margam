@@ -1449,3 +1449,20 @@ captured through state-isolated helpers. The
 startup cost, discarded partial state, parent-work exclusions and the remaining
 OS memory/CPU quota work. The CUDA manifest includes the new deadline case;
 this pass runs the relevant suite rather than repeating the complete CUDA audit.
+
+
+## Optional Burgers reference (14 November 2026)
+
+Six new checks pass, including real CPU and CUDA owned-data/save/archive/resume
+workflows. Existing Burgers numerical (5), desktop (1), predefined-example (3)
+and desktop-startup (1) checks also pass. The independent Cole–Hopf evaluator
+agrees with 2,000 retained author observations to maximum absolute difference
+4.14e-11 and relative L2 difference 2.34e-12; 128/256-node convergence, symmetry,
+initial/wall limits and a differentiable PDE oracle are checked independently.
+
+The short three-plus-two-update workflows preserve all 2,827 IDs/reference rows,
+exact same-device continuation, CSV errors and 11 physical-time VTU/PVD frames.
+This is evaluator/software evidence, not trained-shock accuracy. See the
+[evidence record](../assets/benchmarks/burgers-reference-2026-11-14.json) and
+[guide](burgers.md#optional-reference-data-example). CUDA manifest discovery was
+checked after adding this case; the entire CUDA audit was not rerun.

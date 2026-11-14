@@ -395,7 +395,10 @@ These are proposed features; current execution still runs one supported problem.
 - [x] File → Examples → 1D examples, current networks and baseline/SA/LRA support.
 - [x] Optional x/t/u table and CSV; ParaView block emits physical-time PVD line frames.
 - [x] Model/run persistence, residual/IC/export tests, CPU evidence and screenshots.
-- [ ] Optional benchmark reference dataset/solver validation of the shock profile.
+- [x] Optional benchmark reference dataset/solver validation of the shock profile:
+  independent Cole–Hopf quadrature, author-observation check, explicit owned-data
+  example and CPU/CUDA save/resume/CSV/physical-time PVD checks. This validates
+  the reference and workflow, not trained-paper accuracy; see [Burgers](burgers.md).
 - [ ] Additional transient PDE cases and higher-dimensional space–time domains require explicit use cases.
 
 ## Expert’s Guide recipe (28 October 2026)

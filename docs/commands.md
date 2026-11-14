@@ -659,3 +659,16 @@ Isolated-job deadline and cleanup checks:
 
 The desktop preference is under Run → Job time limit. It does not automatically
 apply to direct research scripts; see [the execution policy](use/resources.md#set-an-optional-job-time-limit).
+
+
+### Optional fixed Burgers reference
+
+```bash
+python -m examples.burgers_reference --output results/burgers-reference
+python -m examples.burgers_reference_workflow --device cpu --output results/burgers-reference-cpu
+python -m examples.burgers_reference_workflow --device cuda --output results/burgers-reference-cuda
+```
+
+Use fresh directories. Add `--capture` to the workflow to capture the optional
+comparison; `--overwrite-capture` explicitly replaces its screenshot. These
+three-plus-two update checks validate behavior, not trained shock accuracy.

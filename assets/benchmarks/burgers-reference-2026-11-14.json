@@ -1,0 +1,118 @@
+{
+  "scope": "Independent fixed Burgers reference evaluation and software workflow checks; no trained-shock accuracy claim.",
+  "reference_validation": {
+    "author_observations": 2000,
+    "max_absolute_difference": 4.139111275947016e-11,
+    "relative_l2_difference": 2.3386347200819015e-12,
+    "quadrature": {
+      "order": 128,
+      "check_order": 256,
+      "max_absolute_difference": 9.992007221626409e-16,
+      "chunk_rows": 512
+    }
+  },
+  "workflows": {
+    "cpu": {
+      "scope": "Explicit Burgers reference workflow, three-plus-two updates; not a trained-accuracy benchmark.",
+      "device": "cpu",
+      "reference_rows": 2827,
+      "physical_times": [
+        0.0,
+        0.1,
+        0.2,
+        0.30000000000000004,
+        0.4,
+        0.5,
+        0.6000000000000001,
+        0.7000000000000001,
+        0.8,
+        0.9,
+        1.0
+      ],
+      "reference_evaluation_only": true,
+      "shared_owned_snapshot": true,
+      "csv_rows": 2827,
+      "pvd_frames": 11,
+      "rows_per_frame": 257,
+      "initial_training_steps": 3,
+      "short_run_error": {
+        "norm": "relative_l2",
+        "value": 1.4831958858406424,
+        "status": "defined",
+        "fields": [
+          "u"
+        ],
+        "rows": 2827,
+        "components": 1,
+        "reduction": "pointwise_euclidean",
+        "relative": true,
+        "zero_reference_policy": "undefined",
+        "reference_zero": false
+      },
+      "reference_sha256": "c072cfe8bb1b42d93cf843393a2e81914950277bf4e9d3adecf1e4814a702657",
+      "final_steps": 5,
+      "exact_resume": true,
+      "source_sha256": {
+        "examples/burgers_reference_workflow.py": "92fd9e3f869bb1ec7442eca5a50ffe3b497707a395aee6130a848dded2cf7b1b",
+        "margam/components/burgers_reference.py": "62fbebf7fc4945c46e995b3318adde16f208be4a861ec16990ba15d498f332fa",
+        "margam/ui/burgers_reference_example.py": "6f70aa9b391eb9d0e18ebf56a2a2b1b6ee6a218fceedce3ed236876fd5356d06",
+        "margam/templates/burgers.py": "f9d090197d441eada4a901346bf786890084c641348dea8e05f15014850433d2"
+      }
+    },
+    "cuda": {
+      "scope": "Explicit Burgers reference workflow, three-plus-two updates; not a trained-accuracy benchmark.",
+      "device": "cuda",
+      "reference_rows": 2827,
+      "physical_times": [
+        0.0,
+        0.1,
+        0.2,
+        0.30000000000000004,
+        0.4,
+        0.5,
+        0.6000000000000001,
+        0.7000000000000001,
+        0.8,
+        0.9,
+        1.0
+      ],
+      "reference_evaluation_only": true,
+      "shared_owned_snapshot": true,
+      "csv_rows": 2827,
+      "pvd_frames": 11,
+      "rows_per_frame": 257,
+      "initial_training_steps": 3,
+      "short_run_error": {
+        "norm": "relative_l2",
+        "value": 1.4831958819842892,
+        "status": "defined",
+        "fields": [
+          "u"
+        ],
+        "rows": 2827,
+        "components": 1,
+        "reduction": "pointwise_euclidean",
+        "relative": true,
+        "zero_reference_policy": "undefined",
+        "reference_zero": false
+      },
+      "reference_sha256": "c072cfe8bb1b42d93cf843393a2e81914950277bf4e9d3adecf1e4814a702657",
+      "final_steps": 5,
+      "exact_resume": true,
+      "source_sha256": {
+        "examples/burgers_reference_workflow.py": "92fd9e3f869bb1ec7442eca5a50ffe3b497707a395aee6130a848dded2cf7b1b",
+        "margam/components/burgers_reference.py": "62fbebf7fc4945c46e995b3318adde16f208be4a861ec16990ba15d498f332fa",
+        "margam/ui/burgers_reference_example.py": "6f70aa9b391eb9d0e18ebf56a2a2b1b6ee6a218fceedce3ed236876fd5356d06",
+        "margam/templates/burgers.py": "f9d090197d441eada4a901346bf786890084c641348dea8e05f15014850433d2"
+      }
+    }
+  },
+  "checks": {
+    "new_reference_cases": 6,
+    "existing_burgers_cases": 5,
+    "existing_burgers_ui_cases": 1,
+    "predefined_examples_cases": 3,
+    "desktop_startup_cases": 1,
+    "cuda_manifest_discovery": 33
+  }
+}

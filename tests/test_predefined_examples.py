@@ -55,8 +55,9 @@ w=Window(state_directory=False)
 assert w.examples_menu.title()=='Examples'
 assert len(w.example_actions)==len(EXAMPLE_PROBLEMS)
 assert w.examples_1d_menu.title()=='1D examples'
-assert len(w.examples_1d_menu.actions())==8
+assert len(w.examples_1d_menu.actions())==9
 assert w.evaluation_example_action in w.examples_1d_menu.actions()
+assert w.burgers_reference_action in w.examples_1d_menu.actions()
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
     expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu

@@ -1,0 +1,48 @@
+{
+  "format": "margam-burgers-reference",
+  "version": 1,
+  "scope": "Independent float64 Cole\u2013Hopf reference for the original Burgers setup; evaluation-only, no training or accuracy claim for a PINN.",
+  "problem": {
+    "equation": "u_t + u*u_x - nu*u_xx = 0",
+    "viscosity": 0.003183098861837907,
+    "x_bounds": [
+      -1.0,
+      1.0
+    ],
+    "t_bounds": [
+      0.0,
+      1.0
+    ],
+    "initial": "-sin(pi*x)",
+    "walls": 0.0
+  },
+  "grid": {
+    "spatial_points": 257,
+    "time_points": 11,
+    "rows": 2827,
+    "order": "physical time first, x increasing within frame",
+    "columns": [
+      "point_id",
+      "x",
+      "t",
+      "u"
+    ]
+  },
+  "quadrature": {
+    "order": 128,
+    "check_order": 256,
+    "max_absolute_difference": 9.992007221626409e-16,
+    "chunk_rows": 512
+  },
+  "source_sha256": {
+    "margam/components/burgers_reference.py": "62fbebf7fc4945c46e995b3318adde16f208be4a861ec16990ba15d498f332fa",
+    "examples/burgers_reference.py": "b6953651cc49c1c5d50b5dcd2aedc95bd70dc7a5c0ad9123346b005201f77ee8"
+  },
+  "numpy": "2.5.2",
+  "csv_sha256": "c072cfe8bb1b42d93cf843393a2e81914950277bf4e9d3adecf1e4814a702657",
+  "references": [
+    "https://maziarraissi.github.io/PINNs/",
+    "https://people.sc.fsu.edu/~jburkardt/py_src/burgers_exact/burgers_exact.html"
+  ],
+  "reuse": "Independent implementation from the Cole\u2013Hopf formula; no upstream solver code or reference arrays copied."
+}

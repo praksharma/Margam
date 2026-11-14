@@ -289,3 +289,10 @@ status. Comparison blocks expose the same function in a read-only report;
 `margam.research.error_norms` exposes it for scripts. Field/metric choices do not
 change training, existing pooled/component metrics, exports or archive schemas.
 See [definitions and limits](use/error-norms.md).
+
+
+## Fixed Burgers reference evaluator
+
+`margam/components/burgers_reference.py` provides an independent bounded float64
+Cole–Hopf evaluator for the original fixed-viscosity case. It is evaluation-only,
+not a generic reference for edited physics. See [Burgers reference workflow](burgers.md#optional-reference-data-example).

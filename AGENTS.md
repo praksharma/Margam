@@ -591,3 +591,9 @@
   Never hold the deadline lock across control-pipe writes; broken-pipe cleanup
   must not mask the primary diagnostic or skip closing other streams. This is not
   a RAM/VRAM quota or a policy for direct research training loops.
+
+- The optional Burgers reference example owns a fixed evaluation-only Cole–Hopf
+  CSV shared by coordinate/reference mappings. Never feed its values into training
+  or imply it changes with edited physics. Preserve the ordinary reference-free
+  example, explicit comparison outputs, exact IDs and physical-time VTU/PVD
+  frames. Distinguish reference-evaluator validation from trained PINN accuracy.

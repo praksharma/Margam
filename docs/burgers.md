@@ -4,7 +4,7 @@ Open **File → Examples → 1D examples → Burgers — 1D + time**.
 This uses the continuous-time viscous Burgers problem presented by
 **Raissi, Perdikaris and Karniadakis** in the original PINN work. The
 [authors' problem description](https://maziarraissi.github.io/PINNs/) is the setup
-reference; no TensorFlow source or reference dataset is copied.
+reference; no TensorFlow solver source is copied.
 
 ```text
 u_t + u*u_x - nu*u_xx = 0
@@ -82,7 +82,7 @@ change exports or run additional inference; see [time-frame selection](use/resul
 
 ![The optional Burgers solution view shows coordinates and predicted values](../assets/screenshots/manual-burgers-results.png)
 
-No Reference or Comparison block is added: the sine initial profile is not a
+In the basic example, no Reference or Comparison block is added: the sine initial profile is not a
 reference solution at later times. No reference/error metric is invented. Users
 can explicitly supply compatible mapped reference values or a valid expression.
 
@@ -113,5 +113,54 @@ finite losses, exact checkpoint continuation and nine correctly timestamped line
 frames. Tests separately check analytic derivatives, nonlinear residual terms,
 viscosity, initial/boundary coordinates, absence of final-time constraints, method
 and sampler combinations, CSV headings and archive/UI behaviour. This is software
-correctness evidence; the shock profile has not been validated against the paper's
-reference data and no paper-accuracy claim is made.
+correctness evidence; the trained shock profile has no paper-accuracy claim. The independent reference
+evaluator is validated separately below.
+
+
+## Optional reference-data example
+
+Open **File → Examples → 1D examples → Burgers with reference data · 1D + time**.
+This keeps the basic example's training problem and adds **Evaluation points**,
+**Reference data** and **Comparison** blocks. Views remain closed until opened.
+The two source blocks share one project-owned CSV snapshot: 257 spatial points
+at each of 11 physical times, with stable text IDs. These values are evaluation
+references, never training observations.
+
+![Optional comparison at physical time 1 after three workflow-check updates; this is not an accurately trained shock](../assets/screenshots/manual-burgers-reference.png)
+
+The fixed reference uses the equation, viscosity, initial condition and bounds
+shown above. **Changing the physics does not regenerate the CSV.** Replace the
+reference explicitly when changing the problem. The note on the example records
+this restriction. The basic Burgers example still supplies no automatic reference.
+
+The evaluator independently implements the Cole–Hopf Gaussian convolution using
+128-node Gauss–Hermite quadrature, with bounded row chunks and normalized positive
+weights. A 256-node check differs by less than 1e-15 on the bundled grid. Initial
+and wall values use their known limits; predicted values are never overwritten.
+See [Burkardt's Burgers exact-solution reference](https://people.sc.fsu.edu/~jburkardt/py_src/burgers_exact/burgers_exact.html)
+for the integral approach and its literature references. No upstream solver code
+or reference arrays were copied to create this CSV.
+
+The evaluator agrees with the 2,000 author-reference observations already retained
+for the inverse example to maximum absolute difference **4.14e-11** and relative
+L2 difference **2.34e-12**. This validates the reference evaluator, **not the trained
+PINN's accuracy**. Initial/wall values, symmetry, an independent differentiable PDE
+residual oracle and quadrature convergence have separate tests.
+
+The Comparison feeds CSV and ParaView Export. CSV includes IDs, predictions,
+reference values and signed errors. Supplied evaluation points export as a PVD
+series of VTU vertex clouds: 11 physical-time frames with 257 points each. Open
+the PVD in ParaView and press Play; no mesh connectivity is inferred.
+
+CPU and CUDA checks use only three updates plus two resumed updates. They check
+owned-data portability, exact same-device continuation, unchanged reference/ID
+alignment and exports; they are not shock-accuracy experiments.
+
+```bash
+python -m examples.burgers_reference --output results/burgers-reference
+python -m examples.burgers_reference_workflow --device cpu --output results/burgers-reference-cpu
+python -m examples.burgers_reference_workflow --device cuda --output results/burgers-reference-cuda
+```
+
+Choose fresh output directories. See the [dataset provenance](../assets/evaluation/burgers-reference/README.md)
+and [workflow evidence](../assets/benchmarks/burgers-reference-2026-11-14.json).

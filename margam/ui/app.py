@@ -28,6 +28,7 @@ from .edit_history import EditCommand
 from .setting_help import HelpFormLayout, show_information
 from .device_settings import DeviceSettings, same_physics
 from .job_limits import JobLimits
+from .burgers_reference_example import BurgersReferenceExample
 from .jorvik_geometry import JorvikGeometryActions
 from .project_workspace import ProjectWorkspace
 from .inverse_actions import InverseActions
@@ -456,7 +457,7 @@ class Canvas(QGraphicsScene):
 
 
 
-class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,JobLimits,JorvikGeometryActions,QMainWindow):
+class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,JobLimits,BurgersReferenceExample,JorvikGeometryActions,QMainWindow):
     def __init__(self,state_directory=None):
         super().__init__()
         self.undo_stack=QUndoStack(self)
@@ -643,6 +644,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
         self.inverse_example_action=self.examples_1d_menu.addAction('Inverse Burgers · 1D + time');self.inverse_example_action.setIcon(icon('inverse_recipe'));self.inverse_example_action.triggered.connect(lambda:self.load_inverse_example() if not self.is_running() and not self.scene.locked and self.confirm_discard() else False)
+        self.burgers_reference_action=self.examples_1d_menu.addAction('Burgers with reference data · 1D + time');self.burgers_reference_action.setIcon(icon('reference_data'));self.burgers_reference_action.triggered.connect(self.request_burgers_reference_example)
         self.evaluation_example_action=self.examples_1d_menu.addAction('Supplied evaluation points · 1D');self.evaluation_example_action.triggered.connect(self.request_evaluation_example)
         self.expert_examples_menu=self.examples_menu.addMenu('Expert PINN examples');self.expert_examples_menu.setIcon(icon('expert_recipe'))
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
