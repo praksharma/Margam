@@ -1586,8 +1586,10 @@ The [curated workflow record](../assets/benchmarks/study-cli-2026-11-15.json)
 contains actual CPU and CUDA runs of two owned-reference Burgers trials, with
 two/three updates each, using the real CLI. Each verifies native archives and
 artifact hashes, 2,827 exported reference/ID rows and eleven exact stored physical
-timestamps. The source identities are checked against current runtime files,
-the producer-driver hash, the frozen input archive and each owned input digest.
+timestamps. The source identities are checked against the recorded source commit, the
+producer-driver hash, the frozen input archive and each owned input digest.
+A later formatting-only cleanup removes an extra trailing blank line; the
+recorded commit preserves the exact source bytes used for these runs.
 The producer uses a state-isolated window; the CLI and numerical children load
 no Qt. Timings include startup/transport and are workflow observations, not pure
 GPU training times or paper/hardware performance claims. No trained shock
