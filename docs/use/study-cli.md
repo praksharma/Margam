@@ -25,6 +25,9 @@ there is no overwrite flag for study results. This protects earlier trials.
 The stored portable Poisson example has twelve trials and 24,000 requested
 updates: inspect its budgets before running the entire grid.
 
+For batch packaging, see [export a study for Slurm](slurm.md). Export creates
+a reviewable bundle; it does not submit a cluster job.
+
 ## Choose device, limit and explicit exports
 
 Saved device and job-time-limit intent apply by default. Overrides are explicit

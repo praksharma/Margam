@@ -659,3 +659,14 @@ archive copy before the normal saved-run/discard workflow. Metadata/hashing runs
 in a cancellable background reader; historical inspection permits different
 recorded code/device versions. This completes read-only local collection, while
 grouped execution, multi-run comparison and Slurm automation remain open.
+
+
+## Single-node Slurm study export (15 November 2026)
+
+The CLI now exports frozen study/job bundles with explicit resource budgets and
+optional one-GPU requests. Generated scripts launch the shared serial runner from
+the submission directory, refuse fresh overwrites and forward explicit grid resume
+or failed retry. Existing native result collection completes the return path.
+Local Bash CPU/CUDA and owned-data/export/GUI checks qualify the launcher; actual
+cluster submission, site allocation policies, preemption, arrays and parallelism
+remain unqualified/deferred. Export never submits or installs software.

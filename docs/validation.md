@@ -1678,3 +1678,35 @@ The screenshot's image, capture-generator and complete runtime-source hashes are
 verified. The browser never ranks these errors or treats a reported completion
 as payload verification. Source/result-folder writes remain restricted to the
 CLI; collection uses a private temporary copy before normal native archive opening.
+
+
+## Slurm study bundle export (15 November 2026)
+
+Eight focused Slurm checks pass, plus the 29 existing CLI/resume/collection checks:
+**37 distinct checks**, including actual CPU and CUDA numerical execution. Export
+and bundle inspection remain Qt/Torch-free, with no numerical allocation or job
+submission. Tests cover explicit resource/device intent, required budget bounds,
+partition/account injection refusal, invalid sources creating no output, fresh
+folder protection, script/study/manifest tampering, symlink refusal, a private
+verified launch snapshot despite late source replacement, explicit failed retry
+and unchanged completed resumes.
+
+Generated scripts pass `bash -n`. Real local Bash runs use an emulated
+`SLURM_SUBMIT_DIR`, a separate spool-script/CWD location and paths containing
+spaces/shell metacharacters. They exercise the existing native serial runner,
+actual CPU/CUDA settings, result collection and fresh-output refusal. The
+owned-reference Burgers case verifies CSV IDs/reference columns, 2,827 rows,
+eleven physical-time PVD frames, retained owned inputs and native GUI archive
+opening without modifying the bundle. Small budgets establish software behavior,
+not trained solution accuracy.
+
+**No real Slurm scheduler was contacted.** Submission/site policies, allocated
+resources, scheduler signals and preemption remain unqualified. CUDA audit
+discovery now finds 39 cases; the full audit was not rerun. The updated guide
+builds and checks 84 rendered manual pages and their local/section/navigation links.
+See [Slurm export](use/slurm.md) for official option references and limitations.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_slurm.py' -v
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_cli test_study_resume test_study_results -v
+```

@@ -28,6 +28,7 @@ behind RAR, PINN importance sampling and integral loss.
 | Replace a network or choose baseline, SA or LRA | [Networks and methods](modeling/networks.md) |
 | Watch training or compare against a supplied reference | [Training and results](use/results.md) |
 | Keep the model or continue a saved training run | [Saving and resuming](use/saving.md) |
+| Export a serial study job for a Slurm cluster | [Slurm export](use/slurm.md) |
 | Browse collected study trials and open a completed run | [Study results](use/study-results.md) |
 | Export predictions for another tool | [CSV and ParaView](use/export.md) |
 | Understand a missing result or validation message | [Troubleshooting](use/troubleshooting.md) |

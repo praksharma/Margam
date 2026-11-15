@@ -646,3 +646,13 @@
   the normal discard/data restoration workflow. Reject stale progress/unsafe paths.
   Cancel/join background readers on browser/window close and ignore stale queued
   thread callbacks; never deserialize numerical archives in metadata readers.
+
+
+- Slurm export is a data-only, no-submission single-node serial bundle. Require
+  explicit CPU/memory/time budgets, sanitize partition/account tokens, freeze
+  study/script hashes and preserve fresh-output refusal. Use SLURM_SUBMIT_DIR,
+  never the batch spool script path; launch only the existing native runner.
+  CPU/GPU intent is explicit. Resume/retry remain opt-in and use original strict
+  provenance. Do not claim actual allocation enforcement, automatic requeue,
+  signal checkpoints, mid-trial recovery or real scheduler validation from local
+  Bash tests. Preserve the existing root environment and never embed local paths.

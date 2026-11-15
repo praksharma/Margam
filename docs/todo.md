@@ -348,7 +348,11 @@ scheduler workflows below remain proposed.
   Interrupted numerical jobs restart fresh; mid-trial checkpoint recovery stays deferred.
 - [ ] Add bounded local CPU/GPU scheduling, cancellation and mid-trial checkpoint-safe resume;
   isolate failures and outputs so one trial cannot overwrite or corrupt another.
-- [ ] Add Slurm sbatch study export/execution and result collection, including
+- [x] Export a single-node serial Slurm bundle with required CPU/memory/time
+  budgets, optional one-GPU/partition/account requests, frozen inputs/script hashes,
+  explicit resume/retry and existing GUI collection. Qualify local Bash CPU/CUDA
+  and owned-data/export/archive workflows without claiming a real scheduler test.
+- [ ] Qualify actual Slurm submission/resource enforcement and extend it with
   explicit resource requests, input/artifact locations, optional job arrays,
   preemption/restart handling and reopening results in the GUI.
 - [ ] Assess Hydra, Optuna and W&B sweep integrations against the study contract.

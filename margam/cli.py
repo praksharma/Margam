@@ -18,10 +18,18 @@ def main(argv=None):
     resume=actions.add_parser('resume',help='Verify completed trials and restart unfinished trials fresh.')
     resume.add_argument('output',help='Existing version-2 study results directory.')
     resume.add_argument('--retry-failed',action='store_true',help='Also restart failed trials; invalid/incompatible trials remain recorded.')
+    batch=actions.add_parser('slurm-export',help='Export a reviewable single-node Slurm bundle; no submission.')
+    batch.add_argument('file');batch.add_argument('--output',required=True)
+    batch.add_argument('--cpus',type=int,required=True);batch.add_argument('--memory-mb',type=int,required=True);batch.add_argument('--minutes',type=int,required=True)
+    batch.add_argument('--gpu',action='store_true');batch.add_argument('--partition');batch.add_argument('--account');batch.add_argument('--export',action='store_true')
     args=parser.parse_args(argv)
     try:
         from .execution.study_runner import inspect as inspect_study,run_study,resume_study
-        if args.action=='inspect':result=inspect_study(args.file);code=0
+        if args.action=='slurm-export':
+            from .slurm import export_job
+            job=export_job(args.file,args.output,cpus=args.cpus,memory_mb=args.memory_mb,minutes=args.minutes,gpu=args.gpu,partition=args.partition,account=args.account,exports=args.export)
+            result=dict(study_id=job['study_id'],resources=job['resources'],submitted=False);code=0
+        elif args.action=='inspect':result=inspect_study(args.file);code=0
         else:
             result=resume_study(args.output,retry_failed=args.retry_failed) if args.action=='resume' else run_study(args.file,args.output,device=args.device,wall_time_seconds=args.wall_time,exports=args.export)
             code=130 if result['state']=='interrupted' else 0 if result['state']=='completed' else 1

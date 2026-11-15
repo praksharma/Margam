@@ -732,3 +732,16 @@ python -m examples.capture_study_results --overwrite
 The capture runs a small real CLI grid with two completed and one invalid trial,
 then records the read-only results browser without changing the current model.
 See [collect study results](use/study-results.md).
+
+
+### Slurm job export
+
+```bash
+.venv/bin/margam-cli study slurm-export my-study.margam-study --output jobs/cpu-study --cpus 4 --memory-mb 8192 --minutes 60
+.venv/bin/margam-cli study slurm-export my-study.margam-study --output jobs/gpu-study --cpus 4 --memory-mb 16384 --minutes 120 --gpu --export
+python -m unittest discover -s tests -p 'test_slurm.py' -v
+```
+
+Copy the bundle, activate an existing cluster environment, change into its directory
+and submit `sbatch job.sbatch` yourself. Export submits nothing. See
+[Slurm setup, resume and collection](use/slurm.md), including local-only validation limits.

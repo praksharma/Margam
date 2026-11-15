@@ -1,6 +1,7 @@
 # Collect a study's results in Margam
 
-After running a [saved study from the CLI](study-cli.md), choose **File → Open
+After running a [saved study from the CLI](study-cli.md) or an
+[exported Slurm job](slurm.md), choose **File → Open
 study results…**, then **Open results folder…**. Select the folder containing
 `summary.json`, `execution.json` and `study.margam-study`. Copy the whole results
 folder back from a remote machine before opening it; no remote connection is
