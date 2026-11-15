@@ -1,19 +1,32 @@
-"""Draft parameter/design-point table; previews never change or execute the model."""
+"""Study table with read-only previews and explicit portable snapshot save/open."""
 import json
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
-    QComboBox,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit)
+    QComboBox,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit,QFileDialog,QMessageBox,QCheckBox,QSpinBox)
 from ..studies import catalogue,preview,MAX_AXES,FIELDS
 from .model_document import capture_model
 
 
 class DesignPoints(QDialog):
     def __init__(self,window):
-        super().__init__(window);self.owner=window;self.setWindowTitle('Parameter study preview');self.resize(1060,760)
-        self.connected=False;self.result=None
+        super().__init__(window);self.owner=window;self.setWindowTitle('Parameter study');self.resize(1060,900)
+        self.connected=False;self.result=None;self.study_path=None
         layout=QVBoxLayout(self)
-        note=QLabel('Choose controls on existing blocks and preview their Cartesian combinations. This draft stays in this window only; saving/export and study execution are not available yet. The model and its results are unchanged.')
+        note=QLabel('Choose controls on existing blocks and preview their combinations. Save a portable study with its base model and input snapshots; opening one replaces the current model and this table. Training and headless study execution are not started here.')
         note.setWordWrap(True);layout.addWidget(note)
+        files_row=QHBoxLayout();layout.addLayout(files_row)
+        button=QPushButton('Open study…');button.clicked.connect(lambda:self.open_study());files_row.addWidget(button)
+        button=QPushButton('Save portable study…');button.clicked.connect(lambda:self.save_study());files_row.addWidget(button)
+        self.include_links=QCheckBox('Include linked inputs');self.include_links.setToolTip('Explicitly copy linked CSV/NPZ/NetCDF inputs into this study. Owned files are always included. Original inputs/model mappings stay unchanged.');files_row.addWidget(self.include_links)
+        files_row.addStretch()
+        self.snapshot=QLabel('No study snapshot saved or opened. Model Save does not save this table.');self.snapshot.setTextFormat(Qt.TextFormat.PlainText);self.snapshot.setWordWrap(True);layout.addWidget(self.snapshot)
+        execution=QHBoxLayout();layout.addLayout(execution);execution.addWidget(QLabel('Future execution device'))
+        self.device=QComboBox()
+        for label,key in [('Automatic','auto'),('CPU','cpu'),('GPU / CUDA','cuda')]:self.device.addItem(label,key)
+        self.device.setCurrentIndex(self.device.findData(window.application_device));execution.addWidget(self.device)
+        execution.addWidget(QLabel('Per-job limit (seconds)'));self.time_limit=QSpinBox();self.time_limit.setRange(0,604800);self.time_limit.setSpecialValueText('Unlimited');self.time_limit.setValue(window.job_time_limit_seconds);execution.addWidget(self.time_limit);execution.addStretch()
+        self.device.setToolTip('Saved execution intent for a future study runner; does not change the open application device. Availability is checked when executing.')
+        self.time_limit.setToolTip('Saved launch-to-exit limit for each future numerical job, 0 for unlimited; not a memory quota. Does not change the application preference.')
         self.axes=QTableWidget(0,3);self.axes.setHorizontalHeaderLabels(['Block · parameter','Mode','Values (JSON)'])
         self.axes.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch)
         self.axes.setColumnWidth(1,120);self.axes.setColumnWidth(2,390);layout.addWidget(self.axes,2)
@@ -32,6 +45,7 @@ class DesignPoints(QDialog):
         self.details=QPlainTextEdit();self.details.setReadOnly(True);layout.addWidget(self.details,1)
         note=QLabel('Budget totals include structurally/numerically valid trials only. Parameter counts allocate no network. Counts are not runtime or peak-memory predictions; datasets, outputs and full execution still need validation. No trials run here.')
         note.setWordWrap(True);layout.addWidget(note)
+        self.device.currentIndexChanged.connect(lambda:self.invalidate());self.time_limit.valueChanged.connect(lambda:self.invalidate())
         close=QPushButton('Close');close.clicked.connect(self.close);layout.addWidget(close)
 
     def watch(self):
@@ -80,6 +94,69 @@ class DesignPoints(QDialog):
         key=json.loads(data)
         from .setting_help import HELP,show_information
         show_information(self,'Study parameter',HELP.get(key[1],'Choose a supported block parameter.')+'\n\nFixed: one JSON value. Candidates: a list of values. Range: [start, stop, step], inclusive when stop is reached; descending ranges are supported. Counts/seeds require integers. Layers use lists such as [[16,16],[32,32]] in Candidates mode. Limits: 8 parameters, 64 values each, 512 total design points. No training or model edit occurs.')
+    def axes_values(self):
+        axes=[]
+        for row in range(self.axes.rowCount()):
+            key=self.axes.cellWidget(row,0).currentData()
+            if key is None:raise ValueError('Choose a supported block parameter.')
+            key=json.loads(key)
+            axes.append(dict(node_id=key[0],parameter=key[1],mode=self.axes.cellWidget(row,1).currentData(),text=self.axes.cellWidget(row,2).text()))
+        return axes
+
+    def save_study(self,path=None,*,include_links=None,overwrite=False):
+        from pathlib import Path
+        from ..study_document import capture,write
+        if self.owner.is_running() or self.owner.scene.locked or self.owner.project_workspace.busy:
+            self.status.setText('Finish the job or close the geometry editor before saving a study.');return False
+        try:
+            study,files=capture(capture_model(self.owner),self.axes_values(),self.owner.project_workspace,
+                execution=dict(device=self.device.currentData(),wall_time_seconds=self.time_limit.value()),
+                include_links=self.include_links.isChecked() if include_links is None else include_links,scene=self.owner.scene)
+            if path is None:
+                path,_=QFileDialog.getSaveFileName(self,'Save portable study',self.study_path or 'study.margam-study','Margam study (*.margam-study)',options=QFileDialog.Option.DontConfirmOverwrite)
+                if not path:return False
+                if not path.endswith('.margam-study'):path+='.margam-study'
+                if Path(path).exists():
+                    if QMessageBox.question(self,'Replace study?','Replace '+Path(path).name+'?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+                    overwrite=True
+            if self.owner.is_running() or self.owner.scene.locked or self.owner.project_workspace.busy:
+                self.status.setText('A job or editor started while saving. Try again when it finishes.');return False
+            write(path,study,files,overwrite=overwrite)
+        except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
+            self.status.setText('Study could not be saved: '+str(error));return False
+        self.study_path=str(Path(path).absolute());self.snapshot.setText('Last saved snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Save again to freeze later model/table changes.')
+        self.status.setText(f"Saved portable study with {len(files)} input snapshots. No training/checkpoint/results were saved or executed.");return True
+
+    def open_study(self,path=None):
+        from pathlib import Path
+        from ..study_document import read,restore
+        if self.owner.is_running() or self.owner.scene.locked or self.owner.project_workspace.busy:
+            self.status.setText('Finish the job or close the geometry editor before opening a study.');return False
+        interactive=path is None
+        if path is None:path,_=QFileDialog.getOpenFileName(self,'Open study — replaces current model and table',self.study_path or '', 'Margam study (*.margam-study)')
+        if not path:return False
+        workspace=None
+        try:
+            study,files=read(path)
+            if interactive and self.axes.rowCount() and QMessageBox.question(self,'Replace study table?','Opening a study replaces this table and the current model. Save the current study first if you need to keep it. Continue?',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return False
+            if not self.owner.confirm_discard():return False
+            if self.owner.is_running() or self.owner.scene.locked or self.owner.project_workspace.busy:
+                self.status.setText('A job or editor started while opening. Try again when it finishes.');return False
+            workspace=restore(files)
+            self.owner.replace_model(study['model'],workspace=workspace)
+        except (OSError,ValueError,TypeError,KeyError,RecursionError,RuntimeError) as error:
+            if workspace is not None:workspace.close()
+            self.status.setText('Study could not be opened: '+str(error));return False
+        self.axes.setRowCount(0)
+        for axis in study['axes']:
+            self.add_axis();row=self.axes.rowCount()-1;combo=self.axes.cellWidget(row,0)
+            combo.setCurrentIndex(combo.findData(json.dumps([axis['node_id'],axis['parameter']])))
+            mode=self.axes.cellWidget(row,1);mode.setCurrentIndex(mode.findData(axis['mode']));self.axes.cellWidget(row,2).setText(axis['text'])
+        self.device.setCurrentIndex(self.device.findData(study['execution']['device']));self.time_limit.setValue(study['execution']['wall_time_seconds'])
+        self.study_path=str(Path(path).absolute());self.include_links.setChecked(False)
+        self.snapshot.setText('Opened snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Private input copies restored; application device/preferences unchanged.')
+        self.invalidate('Study opened. Preview to recheck the restored model and parameter choices. No training was started.');return True
+
     def refresh(self):
         if self.owner.is_running() or self.owner.scene.locked or self.owner.project_workspace.busy:
             self.invalidate('A job/editor is active. Preview after it finishes.');return False

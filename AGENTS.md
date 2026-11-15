@@ -610,11 +610,16 @@
   revision/new job ID, keep Training permission gates and strict integer bounds,
   and expose no checkpoint file loading or implicit export.
 
-- Parameter studies currently provide a session-only bounded Cartesian preview,
-  not saved/executed studies. Resolve actual block IDs/parameters through the
+- Parameter studies support bounded Cartesian preview and version-1 portable
+  save/open, not trial execution. Resolve actual block IDs/parameters through the
   existing decoder/graph/config validators; never retarget deleted IDs. Preserve
-  model, Undo, retained results and RNG; allocate no networks/samples or files.
+  model, Undo, retained results and RNG during preview/save; allocate no networks
+  or samples. File writes are limited to explicit save and private restore.
   Keep invalid trials with reasons and no metric/budget, bound enumeration before
   copying trials, and label update/parameter counts as workload rather than fit
-  or runtime predictions. Preserve the pause on study execution/export until the
-  separate portable/headless contracts are implemented.
+  or runtime predictions. Keep trial execution deferred until the separate shared
+  headless contract is implemented. Portable bundles freeze inputs, graph, axes and execution intent;
+  never implicitly include external links or rewrite accepted-import history.
+  Opening explicitly replaces the graph using a validated private workspace;
+  preserve app preferences. Verify bounded schema/checksum/path/ZIP handling,
+  atomic no-clobber save and stable content/trial identities.

@@ -80,13 +80,8 @@ def config_from_document(document,scene=None):
     return assemble(list(nodes.values()),wires)
 
 
-def preview(document,axes,*,scene=None):
-    """Enumerate bounded Cartesian choices; invalid trials retain a reason, no metric.
-
-    Config validation is structural/numerical preflight, not execution/data/output
-    qualification. This function never constructs networks or samples points.
-    """
-    from .components.resources import architecture_size
+def resolve_axes(document,axes):
+    """Validate and resolve the bounded finite grid without assembling trials."""
     if not isinstance(axes,list) or not 1<=len(axes)<=MAX_AXES:raise ValueError('Choose 1 to 8 parameter rows.')
     available={(row['node_id'],row['parameter']):row for row in catalogue(document)}
     choices=[];seen=set();total=1
@@ -99,6 +94,17 @@ def preview(document,axes,*,scene=None):
         seen.add(key);values=values_for(axis['parameter'],axis['mode'],axis['text']);total*=len(values)
         if total>MAX_TRIALS:raise ValueError('Preview is limited to 512 design points. Reduce candidate lists/ranges.')
         choices.append((available[key],values))
+    return choices,total
+
+
+def preview(document,axes,*,scene=None):
+    """Enumerate bounded Cartesian choices; invalid trials retain a reason, no metric.
+
+    Config validation is structural/numerical preflight, not execution/data/output
+    qualification. This function never constructs networks or samples points.
+    """
+    from .components.resources import architecture_size
+    choices,total=resolve_axes(document,axes)
     trials=[]
     for index,combination in enumerate(itertools.product(*(values for _,values in choices)),1):
         candidate=deepcopy(document);nodes={node['id']:node for node in candidate['nodes']};settings=[]

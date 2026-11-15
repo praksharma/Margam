@@ -743,7 +743,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.check_action.setShortcut('Ctrl+D')
         self.check_action.triggered.connect(self.validate_button.click)
         self.run_summary_action=run.addAction('Run summary…');self.run_summary_action.triggered.connect(self.show_run_summary)
-        self.study_preview_action=run.addAction('Parameter study preview…');self.study_preview_action.setIcon(icon('comparison'));self.study_preview_action.triggered.connect(self.show_design_points)
+        self.study_preview_action=run.addAction('Parameter study…');self.study_preview_action.setIcon(icon('comparison'));self.study_preview_action.triggered.connect(self.show_design_points)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
         self.evaluate_action=run.addAction('Evaluate outputs');self.evaluate_action.triggered.connect(self.evaluate_trained_outputs)

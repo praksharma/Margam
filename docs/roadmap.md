@@ -623,3 +623,14 @@ session-only Cartesian preview of selected block-held numerical controls. It
 shows invalid combinations and update/parameter budgets without changing the
 model or running trials. Portable study export, shared headless execution,
 scheduling, Slurm and collected results remain subsequent milestones.
+
+
+## Portable study milestone (15 November 2026)
+
+The [study table](use/parameter-studies.md) now saves and opens versioned portable
+bundles with the base graph, parameter grid, seeds, explicit output requests,
+execution intent and checksummed owned input snapshots. Linked inputs require
+explicit copying. Private restoration and deterministic content/trial identities
+are validated. This supersedes the earlier session-only limitation. The shared
+headless runner, full per-trial execution preflight, scheduling, Slurm and result
+collection remain open; no study is trained merely by opening the file.

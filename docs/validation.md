@@ -1526,3 +1526,39 @@ checks are run separately. See [the illustrated guide](use/parameter-studies.md)
 This is a session-only draft/preview milestone. No portable study format, trial
 executor, full per-trial data/output qualification, scheduling or HPC workflow
 is claimed. Saving/export and shared headless execution remain open todos.
+
+
+## Portable study snapshots (15 November 2026)
+
+Seven focused study-file cases pass, alongside the five existing preview cases,
+six owned-file/clipboard cases and desktop-startup case (19 relevant checks).
+Coverage includes version/schema/axis validation, deterministic identities and
+trial resolution, explicit linked-file inclusion, unchanged historical
+fingerprint bindings, unchanged current graph/results, input checksums/sizes,
+missing/duplicate/unexpected entries, traversal and symlink rejection, file/count
+budgets, supported compression, atomic replacement failure and no-clobber races.
+Busy/discard guards and failed opens preserve the existing graph/table.
+
+The actual owned-data workflow saves the fixed Burgers reference example, deletes
+its original temporary workspace, opens an independent restored snapshot and
+saves again with the same study identity. Two-update CPU training before/after
+restoration gives exact weights/loss histories and matching coordinates, values,
+references and IDs. This is lifecycle/portability evidence, not trained solution
+accuracy or cross-hardware reproducibility. GPU execution intent is saved/opened
+without changing the app's CPU device or job-limit preferences; this does not
+claim a GPU study execution test.
+
+A fresh process reads/restores/resolves the bundle without importing Qt or Torch.
+Subsequent Burgers numerical preflight imports Torch for existing corner-profile
+checks, while remaining Qt/display-free. Loading a study performs no training,
+prediction, checkpoint restore or external-editor launch.
+
+The [shipped Poisson study](../assets/studies/poisson-grid.margam-study) is verified
+against its capture manifest and expands to twelve valid design points, 24,000
+requested updates and a largest network of 1,185 parameters. The native dialog
+screenshot records the saved file identity. The study contains no trained weights
+or reported accuracy. See [the format contract](study-format.md).
+
+Portable save/open is complete for this milestone; study execution, full per-trial
+data/output qualification, environment/code provenance, scheduling, Slurm and
+collected results remain subsequent tasks.

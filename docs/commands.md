@@ -676,8 +676,8 @@ three-plus-two update checks validate behavior, not trained shock accuracy.
 
 ### Parameter-study preview
 
-Open **Run → Parameter study preview…** for the session-only draft table.
-It previews combinations and budgets without executing or saving a study.
+Open **Run → Parameter study…** to preview combinations and save/open portable
+`.margam-study` bundles. Study execution is not available yet.
 
 ```bash
 python -m unittest discover -s tests -p 'test_study_preview.py' -v
@@ -685,3 +685,16 @@ python -m examples.capture_study_preview --overwrite
 ```
 
 See [the illustrated guide](use/parameter-studies.md).
+
+
+### Portable study files
+
+```bash
+python -m unittest discover -s tests -p 'test_study_document.py' -v
+python -m examples.capture_study_preview --overwrite --study-output results/poisson-grid.margam-study
+```
+
+The second command explicitly writes a new example study and updates the help
+screenshot. Use `--overwrite-study` only to replace that study intentionally.
+The [study file API](study-format.md) reads/resolves trials without a GUI; it
+does not execute them. No `margam-cli` study runner is claimed yet.

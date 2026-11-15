@@ -1,10 +1,14 @@
-# Preview a parameter study
+# Prepare and save a parameter study
 
-Open **Run → Parameter study preview…** to explore combinations before designing
-a larger experiment. This is the first part of the planned laptop/HPC study
-workflow: a draft table and numerical preflight. **It does not run or save a study.**
-The draft stays in this window until the application closes. Close/reopen keeps
-it during that session; model Save and run archives do not include it.
+Open **Run → Parameter study…** to explore combinations, then save the base model,
+parameter choices and input snapshots in a portable **`.margam-study`** file.
+Opening a study restores that model and table in another session or location.
+**Study execution and the HPC runner are still future work.** Nothing trains merely
+because you preview, save or open a study.
+
+Unsaved table edits stay in this window until the application closes. Use
+**Save portable study…** to preserve them; ordinary model Save and run archives
+do not include the study table.
 
 ![Twelve design points from update, learning-rate and network-width choices](../../assets/screenshots/manual-study-preview.png)
 
@@ -35,7 +39,9 @@ steps are rejected. Hidden layers use fixed/candidate lists, not scalar ranges.
 
 The preview takes the **Cartesian product**: three update budgets × two learning
 rates × two networks gives twelve design points. The last parameter row varies
-fastest. These DP numbers identify rows in this preview, not persistent run IDs.
+fastest. The DP numbers identify rows. A saved study also has a full content identity;
+its persistent trial ID combines that identity with the DP number, so moving or
+reopening the file preserves trial identities.
 Limits are **8 parameter rows**, **64 values per parameter** and **512 design
 points**. Oversized products are rejected before trial copies are created.
 
@@ -76,6 +82,57 @@ choose the parameter again. Draft controls can be edited while a job runs, but
 preview waits for jobs and external editors to finish.
 
 **Clear draft** removes table rows only. It does not delete model blocks or files.
-Saving portable studies, applying/running design points, headless CLI/HPC jobs,
+Applying/running design points, headless CLI/HPC jobs,
 result collection, paired/conditional combinations and search integrations remain
 [planned work](../todo.md#future-studies-iterator-blocks-and-laptophpc-sweeps).
+
+
+## Save and reopen the complete study
+
+1. Choose the **Future execution device** and optional **Per-job limit**. These
+   are saved intent for the future runner; they do not change this application's
+   device or time-limit preferences and do not test hardware availability.
+2. Press **Save portable study…**. Project-owned inputs are included automatically.
+   If the model uses linked input files, explicitly check **Include linked inputs**
+   to copy them into the study. Saving otherwise stops with an explanation.
+3. Move the single `.margam-study` file wherever needed. No companion data folder
+   or original input path is needed for its active mappings.
+4. Press **Open study…**. This replaces the current model and study table after
+   the usual discard checks. Each open restores private input copies. Existing
+   saved files and source datasets are not modified; no geometry editor launches.
+5. Press **Preview design points** to recheck combinations against the restored
+   model. Ordinary model edits or data-mapping dialogs can change it afterward;
+   save a new study snapshot to preserve those changes.
+
+Try the [portable 12-design-point Poisson study](../../assets/studies/poisson-grid.margam-study).
+It combines three update budgets, two Adam rates and two hidden-layer choices.
+It contains no trained weights or accuracy results.
+
+The file freezes block settings, seeds, enabled output/evaluation/reference
+requests, choices and data bytes. Only referenced owned files are included;
+unrelated workspace files are omitted. Explicitly copied links become owned
+references **inside the saved study only**. Current model mappings and existing
+accepted-import history remain unchanged. Bundle checksums verify the frozen
+bytes; they do not rewrite an older import baseline. Active input mappings can
+be changed using the normal data dialogs after opening, then saved as a new
+study. Historical import records can still retain their original source paths;
+review those records before sharing a private study publicly.
+
+Study files contain no trained checkpoint, optimizer state, result tables or
+monitor curves. Save those separately using the existing run archive workflow.
+Study save preserves current trained results, Undo history and model settings;
+opening a study deliberately replaces the model and clears its old run state.
+The requested execution intent is restored into the **study controls**, while
+application device/preferences remain unchanged.
+
+Saving creates an atomic snapshot; replacing an existing study requires explicit
+confirmation. Readers validate the schema, identity, input checksums and bounded
+ZIP contents before installing a new workspace. Limits are 64 MiB per input,
+256 MiB total inputs, 256 files and an 8 MiB manifest. Symlinks, path traversal,
+extra/missing entries, encryption and unsupported compression are rejected. These
+are file budgets, not an OS memory quota or a training-fit guarantee.
+
+The [versioned file/API contract](../study-format.md) documents deterministic trial
+resolution and how a future headless runner will consume these files. Full
+per-trial data/output qualification, scheduling, Slurm and result collection are
+still open todos.

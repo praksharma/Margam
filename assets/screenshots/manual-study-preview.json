@@ -1,9 +1,14 @@
 {
   "generator": "examples.capture_study_preview",
-  "scope": "Actual read-only 12-design-point preview; no training, export or persistent study.",
+  "scope": "Actual 12-design-point study table; no training. Portable snapshot written only when --study-output is supplied.",
   "design_points": 12,
   "total_updates": 24000,
   "largest_network_parameters": 1185,
   "file": "manual-study-preview.png",
-  "sha256": "944c2faa28a88f3a4e04832a2ea554d391942617fa89dde600f227a869ab84fd"
+  "sha256": "cd901ded3d61aa5029d8eb92f2d4c51b0de62b6bc918c8158b3bf776749b174a",
+  "study": {
+    "file": "poisson-grid.margam-study",
+    "sha256": "2691d51e301a1a0d2a24097543dc902d3b800e0d33df28a1832f50453866e1a7",
+    "study_id": "044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0"
+  }
 }

@@ -33,10 +33,11 @@ def references(document):
     return result
 
 
-def read_owned(root,name):
+def read_owned(root,name,*,limit=FILE_LIMIT):
     """Read only a regular file, without following links in any path component."""
     if not hasattr(os,'O_NOFOLLOW') or os.open not in os.supports_dir_fd:
-        raise ValueError('Owned-file clipboard copying is unavailable on this platform.')
+        raise ValueError('Secure owned-file copying is unavailable on this platform.')
+    validate_owned_files({name:b''})
     descriptors=[]
     try:
         fd=os.open(root,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW);descriptors.append(fd)
@@ -44,17 +45,17 @@ def read_owned(root,name):
             fd=os.open(part,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=fd);descriptors.append(fd)
         fd=os.open(PurePosixPath(name).name,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=fd);descriptors.append(fd)
         before=os.fstat(fd)
-        if not stat.S_ISREG(before.st_mode) or before.st_size>FILE_LIMIT:raise ValueError('Copy only regular owned files within the 16 MiB clipboard budget.')
-        with os.fdopen(os.dup(fd),'rb') as stream:content=stream.read(FILE_LIMIT+1)
+        if not stat.S_ISREG(before.st_mode) or before.st_size>limit:raise ValueError('Copy only regular owned files within the selected file budget.')
+        with os.fdopen(os.dup(fd),'rb') as stream:content=stream.read(limit+1)
         after=os.fstat(fd)
-        if len(content)>FILE_LIMIT or (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):
-            raise ValueError('Owned file changed while copying, or exceeds the clipboard budget.')
+        if len(content)>limit or (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):
+            raise ValueError('Owned file changed while copying, or exceeds the selected file budget.')
         return content
     finally:
         for fd in reversed(descriptors):os.close(fd)
 
 
-def capture_files(document,workspace,*,locked=False):
+def capture_files(document,workspace,*,locked=False,file_limit=FILE_LIMIT,total_limit=FILE_LIMIT,max_files=128):
     # Make implicit Jorvik documents explicit in the copied declaration only.
     from .jorvik_geometry import document_relative
     if (locked or workspace.busy) and any(node['kind']=='jorvik_geometry' for node in document['nodes']):
@@ -65,7 +66,7 @@ def capture_files(document,workspace,*,locked=False):
         files=node['settings'].get('jorvik_files',{})
         if 'document' not in files and root is not None:
             name=document_relative(node['id'])
-            try:read_owned(root,name)
+            try:read_owned(root,name,limit=file_limit)
             except FileNotFoundError:
                 if node['settings'].get('jorvik'):raise ValueError('The applied geometry document is missing; restore it before copying.')
             else:files=node['settings'].setdefault('jorvik_files',{});files['document']=PREFIX+name
@@ -79,12 +80,12 @@ def capture_files(document,workspace,*,locked=False):
     if root is None:raise ValueError('Project-owned files are missing.')
     files={};total=0
     for name in sorted(names|optional):
-        try:content=read_owned(root,name)
+        try:content=read_owned(root,name,limit=file_limit)
         except FileNotFoundError:
             if name in optional and name not in names:continue
             raise
         total+=len(content)
-        if total>FILE_LIMIT or len(files)>=128:raise ValueError('Owned clipboard files exceed 16 MiB or 128 files; use Save As for larger projects.')
+        if total>total_limit or len(files)>=max_files:raise ValueError('Owned files exceed the selected total byte/file-count budget.')
         files[name]=content
     return files
 

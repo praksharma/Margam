@@ -300,10 +300,15 @@ These are proposed features; current execution still runs one supported problem.
   selected existing block controls, fixed/candidate/range choices and bounded
   Cartesian preview. Show invalid reasons, total requested updates/attempts and
   allocation-free parameter counts without changing the open graph. This first
-  milestone has no persistent study, runtime/memory prediction or execution; see
+  preview has no runtime/memory prediction or execution; see
   [parameter study preview](use/parameter-studies.md).
-- [ ] Export a portable, versioned finite-grid study file with the base model,
-  parameter choices, seeds, explicit evaluation requests and remappable data paths.
+- [x] Save/open portable version-1 finite-grid studies with base graph, choices,
+  seeds, explicit output/evaluation requests, execution intent and checksummed
+  input snapshots. Copied links require explicit consent; opening restores private
+  owned files with normal mapping dialogs available for changes. Include stable
+  study/trial identities, safe bounded atomic IO, native output parity and a
+  [portable example](../assets/studies/poisson-grid.margam-study). Execution remains
+  the next milestone; see [file contract](study-format.md).
 - [ ] Provide the planned `margam-cli` headless runner for the exported file,
   sharing GUI validation/numerical execution and requiring no Qt/display or service.
 - [ ] Make GUI → exported study → HPC/Slurm → collected GUI results the first
