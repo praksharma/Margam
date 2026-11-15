@@ -83,7 +83,7 @@ choose the parameter again. Draft controls can be edited while a job runs, but
 preview waits for jobs and external editors to finish.
 
 **Clear draft** removes table rows only. It does not delete model blocks or files.
-Grouped GUI execution, study resume, result collection, Slurm integration,
+Grouped GUI execution, mid-trial checkpoint recovery, result collection, Slurm integration,
 paired/conditional combinations and search integrations remain
 [planned work](../todo.md#future-studies-iterator-blocks-and-laptophpc-sweeps).
 
@@ -135,5 +135,8 @@ are file budgets, not an OS memory quota or a training-fit guarantee.
 
 The [versioned file/API contract](../study-format.md) documents deterministic trial
 resolution. The [CLI runner](study-cli.md) performs full supported execution/data/output
-preflight for each trial. Grid resume, concurrent scheduling, Slurm and grouped
+preflight for each trial. Mid-trial checkpoint recovery, concurrent scheduling, Slurm and grouped
 result collection are still open todos.
+
+POSIX [grid resume](study-cli.md#continue-the-grid) verifies completed trials and
+restarts unfinished trials fresh, preserving all earlier attempts.

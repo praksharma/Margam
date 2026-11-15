@@ -25,7 +25,8 @@ class JobFailed(RuntimeError):
 
 
 class JobTransport:
-    def __init__(self,*,wall_time_seconds=0):
+    def __init__(self,*,wall_time_seconds=0,lease_fd=None):
+        self.lease_fd=lease_fd
         self.wall_time_seconds=validate_wall_time(wall_time_seconds);self.deadline_exceeded=False
         self._lock=Lock();self.process=None;self.cancelled=False;self.terminated=False;self.pid=None
 
@@ -53,7 +54,7 @@ class JobTransport:
         with TemporaryDirectory(prefix='margam-job-') as directory:
             directory=Path(directory);save_packet(directory/'input.pt',payload)
             if self.terminated:raise JobFailed('Numerical job was force-stopped before launch; no result was adopted.')
-            process=subprocess.Popen([sys.executable,'-m','margam.execution.worker',str(directory)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            process=subprocess.Popen([sys.executable,'-m','margam.execution.worker',str(directory)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**({'pass_fds':(self.lease_fd,)} if self.lease_fd is not None else {}))
             reader=None;reader_started=False;watchdog=None;watchdog_started=False
             tail=deque(maxlen=64)
             complete=False;failure=None;sequence=0

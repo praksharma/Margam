@@ -339,7 +339,10 @@ These are proposed features; current execution still runs one supported problem.
   Keep evaluation data and comparison protocols explicit across trials. The first
   serial runner records native output-reference relative L2 diagnostics; richer
   selectable study objectives and complete environment manifests remain future work.
-- [ ] Add bounded local CPU/GPU scheduling, cancellation and checkpoint-safe resume;
+- [x] Add verified grid resume on POSIX systems, preserve completed artifacts and
+  prior attempts, explicitly retry failed trials and lock concurrent/orphan workers.
+  Interrupted numerical jobs restart fresh; mid-trial checkpoint recovery stays deferred.
+- [ ] Add bounded local CPU/GPU scheduling, cancellation and mid-trial checkpoint-safe resume;
   isolate failures and outputs so one trial cannot overwrite or corrupt another.
 - [ ] Add Slurm sbatch study export/execution and result collection, including
   explicit resource requests, input/artifact locations, optional job arrays,

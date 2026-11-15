@@ -303,7 +303,10 @@ not a generic reference for edited physics. See [Burgers reference workflow](bur
 `margam/execution/graph.py` owns the shared executable-graph/output-request gate.
 Desktop Canvas and the data-only DocumentGraph reuse it; no Qt scene is needed
 for headless preparation. `margam/execution/study_runner.py` orchestrates fresh
-serial trials through the existing isolated worker, while
+serial trials through the existing isolated worker. `study_state.py` verifies
+frozen provenance/published payloads and leases a POSIX results folder for grid
+resume. Interrupted attempts restart fresh; completed files and prior attempts
+remain intact. Meanwhile,
 `margam/components/output_settings.py` and `output_export.py` keep optional output
 flags and explicit export dispatch shared. See [headless studies](use/study-cli.md).
 This does not register research callbacks or serialize arbitrary Python code.

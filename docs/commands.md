@@ -706,12 +706,16 @@ does not execute them by itself. Use `margam-cli study run` for execution.
 .venv/bin/margam-cli study inspect my-study.margam-study
 .venv/bin/margam-cli study run my-study.margam-study --output results/study-cpu --device cpu
 .venv/bin/margam-cli study run my-study.margam-study --output results/study-gpu --device cuda --export
+.venv/bin/margam-cli study resume results/study-cpu
+.venv/bin/margam-cli study resume results/study-cpu --retry-failed
+python -m unittest discover -s tests -p 'test_study_resume.py' -v
 python -m unittest discover -s tests -p 'test_study_cli.py' -v
 python -m examples.study_cli_workflow --device cpu --output build/study-cli-cpu-check
 python -m examples.study_cli_workflow --device cuda --output build/study-cli-gpu-check
 ```
 
-Results directories must be new. `--wall-time SECONDS` overrides the saved per-job
+Fresh runs require new results directories. POSIX grid resume preserves completed
+trials and restarts unfinished attempts with unchanged recorded execution settings. `--wall-time SECONDS` overrides the saved per-job
 limit, including child startup; 0 means unlimited. `--export` writes only enabled
 CSV/ParaView blocks. The module equivalent is `python -m margam.cli study ...`.
 Refresh the existing editable package with `uv pip install --python .venv/bin/python

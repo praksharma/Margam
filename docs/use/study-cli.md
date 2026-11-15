@@ -3,7 +3,8 @@
 Prepare and save a [portable study](parameter-studies.md), then execute its finite
 grid from a terminal. No open Margam window, display or MCP service is required.
 The first runner is **serial**: one isolated native numerical process at a time.
-It starts every trial fresh; it does not resume an existing study-results folder.
+Each numerical attempt starts fresh. On POSIX systems, resume can verify and keep
+completed trials while restarting unfinished ones in the same results folder.
 
 From the repository root and existing environment:
 
@@ -61,6 +62,7 @@ A run folder looks like this:
 ```text
 my-study-run/
   study.margam-study       # exact frozen input archive
+  execution.json          # frozen runtime, code and effective execution settings
   summary.json            # study status, provenance, per-trial outcomes/metrics
   DP0001/
     model.margam.json      # trial definition for inspection
@@ -68,6 +70,7 @@ my-study-run/
     events.jsonl          # native progress and method/sampler events
     trial.json            # status/reason, timings, hashes and export-block mapping
     artifacts/
+      publication.json    # committed provenance and payload checksums
       run.margam-run.pt    # checkpoint, explicit results and owned input snapshots
       output-....csv       # only with --export and the matching block
       output-....pvd       # physical-time ParaView series, when requested
@@ -138,15 +141,56 @@ or incompatible combinations/source abort, **130** for interruption, and **2**
 for command/setup errors. The summary is the authoritative outcome report; inspect
 its trial reasons even when the process exits normally with a report.
 
-Grid-level resume/retry, GUI multi-trial execution/collection, Slurm signal and
-preemption recovery, concurrent scheduling and search integrations remain future
-work. A hard OS/scheduler kill may leave the last recorded state as running;
-previously published artifacts remain intact. Current file/transport budgets and
+### Continue the grid
+
+```bash
+.venv/bin/margam-cli study resume results/my-study-run
+.venv/bin/margam-cli study resume results/my-study-run --retry-failed
+```
+
+Resume requires **version-2 results produced by the current runner**, on a POSIX
+system with process-owned file locking. Older version-1 result folders remain
+readable for inspection and individual native archives still open in the GUI;
+they cannot be resumed as a grid. The portable study bundle format remains version 1.
+
+Before changing a summary or launching any job, resume verifies the frozen study,
+Margam Python sources, recorded runtime/device, completed model/configuration and
+every published artifact checksum. It uses the original effective device, time
+limit and export choice; resume has no override flags. Changed inputs, code,
+runtime, missing/altered artifacts or unsafe paths require a fresh execution.
+This checks the recorded runtime fields, not a complete environment/container image.
+
+- Completed trials are verified and kept without changing their files.
+- Not-started, preparing, running and interrupted trials start a fresh attempt.
+- Failed trials restart only with `--retry-failed`. Invalid/incompatible trials
+  stay recorded; fixing the definition or environment requires a new run.
+- Earlier attempts remain in place. A second attempt uses
+  `DP0002/attempts/0002/`, including its own logs, inspection records and artifacts.
+  The summary records current attempt, previous outcomes and execution sessions.
+- Fully published artifacts can be adopted if an interruption happened before
+  their completion reached the root summary. Partial staging is never a result.
+- A completed grid resume performs verification only: no new jobs or session.
+
+An exclusive `.study.lock` prevents cooperating runners from writing the same
+folder. A numerical child retains that lock if its parent dies, until the child
+exits. Do not remove/replace the lock file to bypass a running process. The empty
+file can remain after exit; its presence alone does not mean the study is locked.
+Do not edit a results folder while it is running. Filesystem locking must work
+on the chosen storage; these records are integrity checks, not signed attestations
+against deliberate replacement of an entire folder.
+
+**This resumes the grid, not the interrupted optimizer step.** The active job's
+partial weights are discarded. Mid-trial checkpoint recovery, GUI multi-trial
+execution/collection, Slurm signals/preemption integration, concurrent scheduling
+and search integrations remain future work. A hard OS/scheduler kill may leave
+the last recorded state as running; resume restarts that trial unless it finds
+a verified completed publication. Previously published artifacts remain intact. Current file/transport budgets and
 isolated failures do not guarantee RAM/VRAM fit or prevent an OS memory kill.
 
 ## Reproduce the software workflow check
 
 ```bash
+python -m unittest discover -s tests -p 'test_study_resume.py' -v
 python -m examples.study_cli_workflow --device cpu --output build/study-cli-cpu-check
 python -m examples.study_cli_workflow --device cuda --output build/study-cli-cuda-check
 ```

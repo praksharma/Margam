@@ -1607,3 +1607,40 @@ The root editable package was refreshed without dependencies to expose
 new environment was created. Study-level
 resume, concurrent scheduling, Slurm/preemption and grouped GUI collection remain
 open. Individual native run archives can be reopened/resumed in the desktop.
+
+
+## Verified study grid resume (15 November 2026)
+
+The version-2 results runner adds POSIX `margam-cli study resume`, preserving
+completed attempts and starting interrupted/not-started attempts fresh. Numerical
+checkpoint recovery remains separate; these checks establish software lifecycle,
+not solution accuracy or Slurm preemption support.
+
+Twelve focused resume checks pass: CPU and real CUDA restart, unchanged completed
+file bytes/mtimes, append-only attempt directories, no-op completed resumes,
+explicit failed retries with invalid combinations retained, frozen execution/code/
+runtime guards, corrupt later artifacts rejected before earlier retries launch,
+symlink/path refusal, concurrent CLI refusal, inherited child lease lifetime,
+reconciliation of committed publications/stale final summaries, real Ctrl-C then
+CLI resume, and interruption before the attempt directory exists. The owned-data
+Burgers check retains its reference snapshot, CSV IDs/reference columns, 2,827
+rows and eleven physical-time PVD frames through resumed attempts.
+
+Together with nine existing CLI checks, seven portable-study checks, five preview
+checks, seven isolated-worker checks and eight job-limit checks, **48 distinct
+focused checks pass**, with no CUDA skips on this host. The CUDA audit manifest
+now discovers 37 cases, including the resume case; the complete audit was not
+rerun in this pass. The updated manual builds and checks 82 rendered pages and
+all their local/navigation/section links.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_study*.py' -v
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_isolated_jobs.py' -v
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_job_limits.py' -v
+```
+
+`execution.json` anchors recorded settings separately from mutable progress.
+Published payload verification uses data-only manifests and hashes; it does not
+load networks or arbitrary checkpoint objects merely to decide what to skip.
+Result-folder integrity checks assume cooperative use of reliable filesystem
+locking, rather than protection against deliberate replacement of all records.

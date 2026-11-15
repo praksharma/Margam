@@ -15,12 +15,15 @@ def main(argv=None):
     run.add_argument('--device',choices=('auto','cpu','cuda'),help='Override saved device intent, recorded in results.')
     run.add_argument('--wall-time',type=float,help='Override saved per-job seconds (0 unlimited, maximum 604800).')
     run.add_argument('--export',action='store_true',help='Write files only for enabled, connected CSV/ParaView Export blocks.')
+    resume=actions.add_parser('resume',help='Verify completed trials and restart unfinished trials fresh.')
+    resume.add_argument('output',help='Existing version-2 study results directory.')
+    resume.add_argument('--retry-failed',action='store_true',help='Also restart failed trials; invalid/incompatible trials remain recorded.')
     args=parser.parse_args(argv)
     try:
-        from .execution.study_runner import inspect as inspect_study,run_study
+        from .execution.study_runner import inspect as inspect_study,run_study,resume_study
         if args.action=='inspect':result=inspect_study(args.file);code=0
         else:
-            result=run_study(args.file,args.output,device=args.device,wall_time_seconds=args.wall_time,exports=args.export)
+            result=resume_study(args.output,retry_failed=args.retry_failed) if args.action=='resume' else run_study(args.file,args.output,device=args.device,wall_time_seconds=args.wall_time,exports=args.export)
             code=130 if result['state']=='interrupted' else 0 if result['state']=='completed' else 1
             result={key:result[key] for key in ('study_id','state','counts')}
         if any(name=='PySide6' or name.startswith('PySide6.') for name in sys.modules):raise RuntimeError('Headless CLI unexpectedly imported Qt.')

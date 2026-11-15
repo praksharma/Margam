@@ -76,6 +76,7 @@ The default `loss_formulation="mean"` preserves previous MSE behaviour. See
 
 The [headless study CLI](use/study-cli.md) consumes the portable native graph/grid
 format. Shared `DocumentGraph`/`prepare_graph` validation and the same isolated
-numerical child preserve desktop semantics. It is a fresh serial runner, not a
-second training implementation or a serializer for custom research callbacks.
+numerical child preserve desktop semantics. Serial grid resume verifies and keeps
+completed trials, restarting unfinished numerical attempts fresh. It shares the
+existing training implementation and does not serialize custom research callbacks.
 Individual outputs/checkpoints use existing native run archives.

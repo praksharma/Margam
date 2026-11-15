@@ -630,5 +630,9 @@
   invalid/incompatible/failed/interrupted trials. Export files only with --export
   and enabled connected export blocks. Source changes prevent uncertain artifact
   publication and abort remaining trials. Ctrl-C reaps/discards the active job and
-  preserves completed artifacts; do not imply grid resume/Slurm preemption support.
+  preserves completed artifacts. POSIX grid resume requires unchanged frozen study,
+  Python sources and recorded runtime/device/settings. Verify all completed payloads
+  before mutation; restart unfinished numerical attempts fresh, keep prior attempts,
+  retry failed trials explicitly and retain the process lease in native children.
+  Do not imply mid-trial checkpoint recovery or Slurm preemption integration.
   Keep CLI/child Qt-free and reuse the native archive/data restoration contract.

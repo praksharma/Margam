@@ -96,3 +96,14 @@ unsupported platforms report unavailable instead of silently following links. No
 This bundle does not include software environments, checkpoints, training logs,
 results, credentials or arbitrary code modules. Historical fingerprint records
 may retain original source paths; inspect private models before publishing them.
+
+
+## Results and grid continuation
+
+The `.margam-study` bundle stays version 1. CLI result folders now use version-2
+`summary.json` records and a separate frozen `execution.json`. Per-trial attempts
+have independent directories and an atomically published `artifacts/publication.json`
+manifest binding trial identity, configuration, code and payload checksums.
+The [CLI guide](use/study-cli.md#continue-the-grid) describes POSIX grid resume,
+explicit failed retries, prior-attempt retention and process leases. This restarts
+unfinished trials fresh; it does not continue their partial optimizer state.

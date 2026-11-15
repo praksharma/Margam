@@ -644,4 +644,7 @@ records per-trial state/reasons, native archives, explicit reference metrics,
 source/runtime/data identity and optional block-owned exports. CPU/CUDA parity,
 owned-data archives, physical-time PVD frames and Ctrl-C cleanup are qualified.
 This supersedes the earlier runner deferral. Grouped GUI execution/collection,
-grid resume, concurrent scheduling, Slurm/preemption and search remain open.
+mid-trial checkpoint recovery, concurrent scheduling, Slurm/preemption and search remain open.
+POSIX grid resume now verifies frozen provenance and completed publications,
+restarts unfinished attempts fresh and retains prior logs/artifacts under an
+exclusive process lease. Failed retries are explicit.

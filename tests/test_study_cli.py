@@ -94,7 +94,7 @@ class StudyCLITests(unittest.TestCase):
         self.assertEqual([float(item.attrib['timestep']) for item in frames],sorted({float(row['t']) for row in rows}))
         self.w.undo_stack.setClean();self.assertTrue(self.w.open_saved_run(archive));self.assertTrue(self.w.resume_training(1));self.wait();self.assertEqual(self.w.result['steps'],3)
         output2=self.root/'no-exports';result=self.cli('study','run',path,'--output',output2);self.assertEqual(result.returncode,0,result.stderr)
-        self.assertEqual(list((output2/'DP0001/artifacts').iterdir()),[output2/'DP0001/artifacts/run.margam-run.pt'])
+        self.assertEqual({p.name for p in (output2/'DP0001/artifacts').iterdir()},{'run.margam-run.pt','publication.json'})
     @unittest.skipUnless(__import__('torch').cuda.is_available(),'CUDA required')
     def test_cuda_cli_matches_native_worker_and_records_device_override(self):
         import torch
