@@ -69,12 +69,14 @@ def read_json(root,name):
     return value
 
 
-def file_identity(root,name):
+def file_identity(root,name,*,check=None):
     path=safe_path(root,name);hasher=hashlib.sha256();size=0
     with os.fdopen(os.open(path,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW),'rb') as stream:
         before=os.fstat(stream.fileno())
         if not stat.S_ISREG(before.st_mode):raise ValueError('Study artifact must be a regular file.')
-        while chunk:=stream.read(1024*1024):size+=len(chunk);hasher.update(chunk)
+        while chunk:=stream.read(1024*1024):
+            if check is not None and check():raise InterruptedError('Study reading cancelled.')
+            size+=len(chunk);hasher.update(chunk)
         after=os.fstat(stream.fileno())
     if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Study file changed during verification.')
     return dict(size=size,sha256=hasher.hexdigest())
@@ -90,7 +92,7 @@ def regular_tree(root,name):
     return result
 
 
-def verify_publication(root,report,study,row):
+def verify_publication(root,report,study,row,*,check=None):
     prefix=row['directory']+'/artifacts/';name=prefix+'publication.json'
     publication=read_json(root,name)
     if set(publication)!={'format','version','study_id','study_archive_sha256','source_sha256','execution','trial'}:raise ValueError('Invalid publication record.')
@@ -107,11 +109,12 @@ def verify_publication(root,report,study,row):
     if not isinstance(artifacts,list) or not 1<=len(artifacts)<=100000:raise ValueError('Invalid artifact manifest.')
     names=set()
     for artifact in artifacts:
+        if check is not None and check():raise InterruptedError('Study reading cancelled.')
         if set(artifact)!={'path','size','sha256'} or artifact['path'] in names or artifact['path']=='publication.json':raise ValueError('Invalid artifact manifest entry.')
         names.add(artifact['path'])
-        if file_identity(root,prefix+artifact['path'])!={key:artifact[key] for key in ('size','sha256')}:raise ValueError('Published artifact checksum changed.')
+        if file_identity(root,prefix+artifact['path'],check=check)!={key:artifact[key] for key in ('size','sha256')}:raise ValueError('Published artifact checksum changed.')
     if 'run.margam-run.pt' not in names or regular_tree(root,row['directory']+'/artifacts')!=names|{'publication.json'}:raise ValueError('Published artifact set differs from its manifest.')
-    digest=file_identity(root,name)['sha256']
+    digest=file_identity(root,name,check=check)['sha256']
     if row['status']=='completed' and (row['publication_sha256']!=digest or row['steps']!=detail['steps'] or row['metrics']!=detail['metrics']):raise ValueError('Completed trial summary differs from its publication.')
     return dict(row,status='completed',stage='complete',reason=None,steps=detail['steps'],metrics=detail['metrics'],publication_sha256=digest)
 

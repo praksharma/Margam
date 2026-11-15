@@ -294,7 +294,8 @@ paused; operational training monitors and basic rectangle previews remain useful
 ## Future studies, iterator blocks and laptop/HPC sweeps
 
 See [study/sweep vision](roadmap.md#future-vision-studies-component-alternatives-and-sweeps).
-These are proposed features; current execution still runs one supported problem.
+The finite-grid CLI now executes supported trials serially; broader search and
+scheduler workflows below remain proposed.
 
 - [x] Add an ANSYS Mechanical-inspired parameter/design-point draft table for
   selected existing block controls, fixed/candidate/range choices and bounded
@@ -333,7 +334,10 @@ These are proposed features; current execution still runs one supported problem.
 - [x] Share the executable graph gate, output requests/export dispatch and isolated
   numerical worker between desktop models and headless study trials. Qualify
   concrete GUI/CLI CPU/CUDA weight/output parity and native archive reopening.
-- [ ] Add grouped study execution/collection controls in the GUI using that entry point.
+- [x] Add read-only GUI collection of version-2 result folders: choices, reported
+  outcomes/reference errors, attempt history and verified native trial opening.
+  Preserve current model/results while browsing and keep file hashing cancellable.
+- [ ] Add grouped study execution controls and multi-run comparison in the GUI using that entry point.
 - [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.
   Keep evaluation data and comparison protocols explicit across trials. The first

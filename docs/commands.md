@@ -720,3 +720,15 @@ limit, including child startup; 0 means unlimited. `--export` writes only enable
 CSV/ParaView blocks. The module equivalent is `python -m margam.cli study ...`.
 Refresh the existing editable package with `uv pip install --python .venv/bin/python
 --no-deps -e .` if the new command is absent. See [CLI states/recovery](use/study-cli.md).
+
+
+### Study result collection capture
+
+```bash
+python -m unittest discover -s tests -p 'test_study_results.py' -v
+python -m examples.capture_study_results --overwrite
+```
+
+The capture runs a small real CLI grid with two completed and one invalid trial,
+then records the read-only results browser without changing the current model.
+See [collect study results](use/study-results.md).

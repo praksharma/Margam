@@ -310,3 +310,10 @@ remain intact. Meanwhile,
 `margam/components/output_settings.py` and `output_export.py` keep optional output
 flags and explicit export dispatch shared. See [headless studies](use/study-cli.md).
 This does not register research callbacks or serialize arbitrary Python code.
+
+
+`margam/study_results.py` provides data-only collection and verified private archive
+copies. `margam/ui/study_results.py` presents reported outcomes in a cancellable
+background reader and uses normal saved-run opening only after explicit selection.
+See [study result collection](use/study-results.md). This does not schedule jobs
+or deserialize checkpoints while browsing metadata.

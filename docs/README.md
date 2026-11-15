@@ -93,4 +93,4 @@ implemented or a regression threshold as a measured benchmark result.
 
 - [SCALE cavity reproduction attempts](scale-cavity-benchmark.md): full-budget research protocol, derivative checks, timing and raw CFD metrics.
 
-For planned multi-run work, start with the [parameter-study preview](use/parameter-studies.md). It saves/opens portable snapshots; the [headless CLI](use/study-cli.md) executes them serially.
+For planned multi-run work, start with the [parameter-study preview](use/parameter-studies.md). It saves/opens portable snapshots; the [headless CLI](use/study-cli.md) executes them serially. The [results browser](use/study-results.md) collects reported outcomes and verifies completed trials before native opening.

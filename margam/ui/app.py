@@ -517,6 +517,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.save_as_action.setShortcut('Ctrl+Shift+S');self.save_as_action.triggered.connect(self.save_model_as)
         self.open_run_action=file_menu.addAction('Open saved run…')
         self.open_run_action.triggered.connect(lambda:self.open_saved_run())
+        self.study_results_action=file_menu.addAction('Open study results…');self.study_results_action.setIcon(icon('comparison'));self.study_results_action.triggered.connect(self.show_study_results)
         self.save_run_action=file_menu.addAction('Save run and checkpoint…')
         self.save_run_action.triggered.connect(lambda:self.save_current_run())
         self.save_run_action.setEnabled(False)
@@ -2678,6 +2679,14 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
         if getattr(self,'dataset_cleanup_dialog',None) is not None:self.dataset_cleanup_dialog.update_buttons()
+        if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.buttons()
+
+    def show_study_results(self):
+        from .study_results import StudyResults
+        dialog=getattr(self,'study_results_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=StudyResults(self);self.study_results_dialog=dialog
+        dialog.show();dialog.raise_();return dialog
 
     def show_design_points(self):
         from .design_points import DesignPoints
@@ -2797,6 +2806,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def closeEvent(self,event):
         if self.is_running():
             self._closing=True;self.cancel_training();event.ignore();return
+        if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.shutdown()
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
         self._labels_closing=True

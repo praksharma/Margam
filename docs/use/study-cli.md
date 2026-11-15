@@ -82,7 +82,9 @@ my-study-run/
 `model.margam.json` and `config.json` are inspection records; they do not have
 standalone companion data folders. **Open `artifacts/run.margam-run.pt` through
 File → Open saved run…** to restore a trial's data, weights and outputs in the GUI.
-Normal desktop checkpoint continuation remains available. Open the root portable
+The [study results browser](study-results.md) lists all reported outcomes and
+verifies selected completed trials before native opening. Normal desktop checkpoint
+continuation remains available. Open the root portable
 study to restore the whole parameter table/base model instead.
 
 Each trial has the same stable ID as its saved definition. A different output

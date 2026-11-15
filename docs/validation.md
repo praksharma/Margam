@@ -1644,3 +1644,37 @@ Published payload verification uses data-only manifests and hashes; it does not
 load networks or arbitrary checkpoint objects merely to decide what to skip.
 Result-folder integrity checks assume cooperative use of reliable filesystem
 locking, rather than protection against deliberate replacement of all records.
+
+
+## Read-only study result collection (15 November 2026)
+
+File → Open study results now reads version-2 CLI result folders without replacing
+the open model. Eight focused checks pass: data-only/headless imports, preserved
+model/Undo/RNG/files, reported choices and failure states, malformed metadata and
+unsafe paths, stale progress, corrupt payload refusal, native discard prompts,
+background cancellation including a finished-but-not-yet-delivered callback,
+window/reader teardown, refreshed failures invalidating old selections, resumed
+second-attempt history, and verified copies surviving removal of the original.
+The real CUDA owned-reference case restores inputs/results on CPU without changing
+the application device preference. Metadata inspection does not require current
+source/runtime equality; selected publication verification remains mandatory.
+
+The related CLI, portable-file, preview, resume and isolated-worker checks pass:
+**48 distinct focused checks** across these suites, with actual CUDA execution and
+no CUDA skips. CUDA audit discovery now finds 38 cases; this pass does not claim a
+new complete audit. The illustrated manual builds and checks 83 rendered pages.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_study*.py' -v
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_isolated_jobs.py' -v
+python -m examples.capture_study_results --overwrite
+```
+
+The [capture](../assets/screenshots/manual-study-results.png) and its
+[manifest](../assets/screenshots/manual-study-results.json) come from a real
+three-trial owned-reference Burgers CLI study: two completed, one invalid. Valid
+trials train for two updates; this is workflow evidence, not accuracy evidence.
+The screenshot's image, capture-generator and complete runtime-source hashes are
+verified. The browser never ranks these errors or treats a reported completion
+as payload verification. Source/result-folder writes remain restricted to the
+CLI; collection uses a private temporary copy before normal native archive opening.

@@ -636,3 +636,13 @@
   retry failed trials explicitly and retain the process lease in native children.
   Do not imply mid-trial checkpoint recovery or Slurm preemption integration.
   Keep CLI/child Qt-free and reuse the native archive/data restoration contract.
+
+
+- Study collection is read-only version-2 metadata inspection, independent of the
+  current source/runtime/device. Label outcomes/errors as reported; do not rank
+  different fields/problems or fabricate missing metrics. Keep model/results/RNG
+  unchanged while browsing. Explicit native opening must verify frozen provenance,
+  selected publication and payloads, then use a verified private archive copy and
+  the normal discard/data restoration workflow. Reject stale progress/unsafe paths.
+  Cancel/join background readers on browser/window close and ignore stale queued
+  thread callbacks; never deserialize numerical archives in metadata readers.

@@ -648,3 +648,14 @@ mid-trial checkpoint recovery, concurrent scheduling, Slurm/preemption and searc
 POSIX grid resume now verifies frozen provenance and completed publications,
 restarts unfinished attempts fresh and retains prior logs/artifacts under an
 exclusive process lease. Failed retries are explicit.
+
+
+## Study result collection (15 November 2026)
+
+File → Open study results reads a returned CLI folder without changing the current
+model. It lists choices, reported statuses/reference diagnostics and attempt
+history. Selected completed trials require publication verification and a private
+archive copy before the normal saved-run/discard workflow. Metadata/hashing runs
+in a cancellable background reader; historical inspection permits different
+recorded code/device versions. This completes read-only local collection, while
+grouped execution, multi-run comparison and Slurm automation remain open.

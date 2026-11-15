@@ -1,0 +1,24 @@
+{
+  "generator": "examples.capture_study_results",
+  "scope": "Actual Qt collection of a real three-trial CLI study; two updates per valid trial, not solution accuracy. Browsing leaves the current model unchanged.",
+  "counts": {
+    "completed": 2,
+    "invalid": 1
+  },
+  "headless": true,
+  "source_sha256": "ef111b5ef20ccdd15f57c138c535639a18c014f139955a475fc182992df1a99a",
+  "study_id": "2b138cbe3842551ebbb5a63170737b433c42ed0874d0922f6b55b9dd535b1f81",
+  "runtime": {
+    "cuda_runtime": "13.0",
+    "gpu": null,
+    "machine": "x86_64",
+    "margam": "1.0.0",
+    "numpy": "2.5.2",
+    "python": "3.14.8",
+    "system": "Linux",
+    "torch": "2.14.1+cu130"
+  },
+  "capture_tool_sha256": "ceba39f854712e3c7e6a5c5f2d064ce4ebd30f46c9fbab87509348408a946161",
+  "file": "manual-study-results.png",
+  "sha256": "0ba8c49d4866a2d5e4d18271773f59fc3cd85f08b8e13b8a921aba1cf3d3a0b7"
+}
