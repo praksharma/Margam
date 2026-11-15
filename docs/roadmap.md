@@ -634,3 +634,14 @@ explicit copying. Private restoration and deterministic content/trial identities
 are validated. This supersedes the earlier session-only limitation. The shared
 headless runner, full per-trial execution preflight, scheduling, Slurm and result
 collection remain open; no study is trained merely by opening the file.
+
+
+## Headless native study runner (15 November 2026)
+
+`margam-cli study inspect/run` now executes a saved grid serially with shared
+desktop graph/data/output validation and isolated native numerical jobs. It
+records per-trial state/reasons, native archives, explicit reference metrics,
+source/runtime/data identity and optional block-owned exports. CPU/CUDA parity,
+owned-data archives, physical-time PVD frames and Ctrl-C cleanup are qualified.
+This supersedes the earlier runner deferral. Grouped GUI execution/collection,
+grid resume, concurrent scheduling, Slurm/preemption and search remain open.

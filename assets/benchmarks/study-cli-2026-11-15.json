@@ -1,0 +1,459 @@
+{
+  "scope": "Native serial CLI software workflow, two/three updates per device; not a trained-accuracy or synchronized performance benchmark.",
+  "source": {
+    "sha256": "d2843a728a09b2ba9d08f4f7193df596266fcaa5048cec392c285c3e4837d5fb",
+    "files": {
+      "margam/__about__.py": "023efb54bd5de4c764bbbb200a029098fb986af3e9007b99b89732e9bca04191",
+      "margam/__init__.py": "f11fa7f8d52a4de7e280fb245d63311f0a4cdf2f755c7f7be5540f9a068e55f0",
+      "margam/backend/__init__.py": "4395ea963c825374c1d68888260a5cb293917f202d477f65e228a78abf4504f3",
+      "margam/backend/utils.py": "2350294f3cec7463e67be77211251574c184850ddda8494379cf56b56bb31bd9",
+      "margam/benchmarking/__init__.py": "84e434cbb1ae7d7765cf5f477ebb58551fe672353e6e1ce77cfaa193d7654098",
+      "margam/benchmarking/metrics.py": "61fb4f6d8585bcec30b5f113b398b57c652fc54f03a69d7937b7982bcfea3057",
+      "margam/benchmarking/runner.py": "e5e42040c29350c043051212f98f38dedeec2500761bed4e5a2888791b13d9cd",
+      "margam/cli.py": "9483b953102a79572c8215780c241df07bcae0b0355e084807006350ab61cfc0",
+      "margam/components/__init__.py": "496b371f86d2c20ad75dbe705fdeb524d02fd564a8352f993a408006fac9f632",
+      "margam/components/adaptive_sampling.py": "946db9c578f928741b418447c9b8480aca4b2f6d929dac8518ffb16107d54138",
+      "margam/components/affine_inputs.py": "f1055fb8b5c3a5645b6244fd942567334566cc487e93462f0d2b33c5efd28341",
+      "margam/components/burgers_reference.py": "62fbebf7fc4945c46e995b3318adde16f208be4a861ec16990ba15d498f332fa",
+      "margam/components/collocation.py": "ca3ba753598527905bc2cc43615c36cd15878c7d521810541987aa86566bdb63",
+      "margam/components/differential.py": "14db388df6eff3187f88592189366e1a3311cd9768cbb7e2d3ad8526f74c9035",
+      "margam/components/dsgnar_config.py": "2212366ead915692131736c121af230d4f9f24943a81b18e705bf6d23d84aa16",
+      "margam/components/dsgnar_state.py": "d55bfa06aefc3a15a88403d66ba6363deb491072a3a943d7e479dca6a8ac7bd5",
+      "margam/components/error_norms.py": "53338cc611cdc3f65a238f05081c9ac5043bf8703a4f48fbc5363239dcf26043",
+      "margam/components/evaluation_data.py": "7754b9b0d0e28f94425564b05b03e475b449827fb5abdc568401387b81da94cf",
+      "margam/components/expert_config.py": "17dbe9fa71934f51d48925da0cf070d3384176b4c44bcc9b5b53398bb2c70631",
+      "margam/components/export.py": "cb8ea74f6ba092a4edd77db20ec81b00ea83659958c533c397e144c89801df7a",
+      "margam/components/expressions.py": "67e9430df9d38bf8d6af5f58a6fa9bd79e10764c5ee54cc677559fc902ef01a6",
+      "margam/components/geosampler_adapter.py": "70c64162aad3fd0743f6c76c5b91c36168689412835d10400a193f29db5f4eca",
+      "margam/components/gpinn_config.py": "69b17dd6ebca37d93ec082ea2a9a29c0952d3186497abd81063879756802cbdc",
+      "margam/components/integral_constraint.py": "05e62bf911da38ca7d788dab2c6664c146aaa06a8d37ba4f21e6838e39e00577",
+      "margam/components/inverse_config.py": "191dd444e8b30f4bd7bf025e395947871fa1f30eb9558c2d0774bb8c4f68a7dc",
+      "margam/components/jorvik_adapter.py": "5f87d71c8e83354b1d9cc4a0e52e307b4f1d448631ae2d9c83b95395b9af8e2a",
+      "margam/components/jorvik_data.py": "9a5c518821252b5f5f613145b538328d4815813aabbf914f353255c001da7145",
+      "margam/components/losses.py": "4488fa5f8d9eb83a66aefb2f3efcf21d9b7d7d83913649b37479340774e98305",
+      "margam/components/network_config.py": "74c6156b6e873c87b3cec7a5887ac3ad99b03fd27a4ccaf9585610d599c8be41",
+      "margam/components/output_export.py": "27748885b89c8fa0ac248f2bebe97c892abd92be9231207bf9ca594932771e00",
+      "margam/components/output_settings.py": "ec11373dbb967b6284e22925ee87a6242af08af34496d0ec37358f2343a23fbd",
+      "margam/components/outputs.py": "84d93919927b2363521c7fb652fb57c9b326e1ddf8562d11298d252e576c3122",
+      "margam/components/paraview_export.py": "2f645fb2d87d31715c37e8e80ad1d54f96c6e752296acabb35909e99f761de8d",
+      "margam/components/point_export.py": "79e6fe6bde90aa6cce6653fbca22a4082c173145534e574263fa0b446149e05c",
+      "margam/components/prediction.py": "94b941cfe791fa8e143b828f2fcfa29eb2c6883d1db2209564f7df384438ad4c",
+      "margam/components/prepared_data.py": "e60c633b919e1403360eb8b8844f74b8e35e5e15d9af295e9ba6f56ae4bb5c2a",
+      "margam/components/problem.py": "c0c8a07e7491400add443c0ddfe17be483cb6b64fd09ee49b222b7c77ebbd3d7",
+      "margam/components/rba_config.py": "625a817f0801df747b1a23626426bb3ec6582371947e3619715a6ee3048cd2e2",
+      "margam/components/resources.py": "11f06abb4e6ac829d2fce48c32757ab09aab9fabb2a8b5ee7c1303747f20c2e6",
+      "margam/components/sampling.py": "d12f19c9014ca3b5a076847d0c794ceb95a65ef746549895808cd5191a6e104c",
+      "margam/components/scale_config.py": "f9981b3717756e88b248bf93ee649f5602ae9e0228b5ee156deac1ff6cc32329",
+      "margam/components/training_data.py": "921ae7ddf49afe7813bd4541699b0a6d68dffb13d9455d8fdfc21e80fe342e40",
+      "margam/execution/__init__.py": "83ebc7c6b53ea88f651433f8683a417c84b8ebd8ecfa7f2a687240d19fb088f9",
+      "margam/execution/codec.py": "182200a22c76194433146a85d894222a7091369f73816004e9dbdd693ccf86e2",
+      "margam/execution/graph.py": "fea1c8da59a0f3d90ff8198f46a265c2cfc2d27700136fc0dc4166d6ce91de73",
+      "margam/execution/retained.py": "55ee0830e5aa734bd2c8fec08c9b2ee6c3d7bdd05d0b87af52100a7472283f3d",
+      "margam/execution/study_runner.py": "4bb7f6c11435a684144572ef3031ba5cee0059976b12a7192b27d9cb67ec01c3",
+      "margam/execution/transport.py": "c0c51ca61f882fd8caa75131430664aa581f11b1758eb90017db88565f918049",
+      "margam/execution/worker.py": "3da6a2f9dd0328bcdb0132346f2d8b1909cc9482fd4785f2fb62e4c868938543",
+      "margam/methods/__init__.py": "3ef6fba32b83cd92086af4af71ac0cbf8c219bcffc079a7d3b47373bd1d18f9f",
+      "margam/methods/dsgnar.py": "19f4500da432610e558bf160c2ce419a442651fa4e89a58f3527f1c0a88f3111",
+      "margam/methods/expert.py": "b2d38ec1a62abd4d242a7fa9f2fdec24ca9acae663fdc28ea54c96a8af9625a9",
+      "margam/methods/gpinn.py": "e4b13bfcfa0b0b2746623297bd5db144618abab9a91822be7b38333ba978a5f3",
+      "margam/methods/hard_dirichlet.py": "7b159001ca52d2c43bd2199ec60d4298e93a53ad95e16a455c11b4b9806a8f72",
+      "margam/methods/inverse_burgers.py": "207cee57a2ba7650a52d14af9559ebc35f6cfb55bf1bb071b16d9161112aeb2a",
+      "margam/methods/learning_rate_annealing.py": "2b88e1e1714b888d051b4f03936c3943fa1c10f0fe5bb41ee8d15df7f66a4f2e",
+      "margam/methods/pinn.py": "ebe2c071e93521262fca6a59343031f7e8f12ed329476ed5c7630787528942fa",
+      "margam/methods/rba.py": "931128af01bc93092d88e0ba5ac48c9fb9eb601613e9ed799f590d9108212173",
+      "margam/methods/scale.py": "72c4725f561962ba53a7240b736992f2a08a7ce4e8d553f5c1062f99861495e9",
+      "margam/methods/self_adaptive.py": "4db71ef9ece5f89f1b51e0c6b3233d4e824e644038f6d4080da87cefd767dc1a",
+      "margam/methods/time_marching.py": "155676129b6bb0193737b44689f9739274398e612139d99df87152643ef76254",
+      "margam/nn/FCNN.py": "956a76b4099d67983d57262ba51eba216adf74e6ca769aac67db5b15ece1016a",
+      "margam/nn/__init__.py": "fdf79793feeb2429a61f163296514f2a0275a9de279d86a1edb00afe49f4d3ac",
+      "margam/nn/affine_fourier.py": "c8b645f366d964c44d0eb575fcda651d5aeee521b35d4f552f99bfa2000dc93a",
+      "margam/nn/base.py": "211f1fab5979b77eb5f874ff7e462466536b6fd8027c617145d2f7b8ed57d5c8",
+      "margam/nn/dgm.py": "693da2f9e32597d168c0ed8564cc5a72b836a94d82b60ffd38e2f5757485f314",
+      "margam/nn/factory.py": "f2f0caf8943cc3ac23155a2222fa3c2538d1e9f837f7f841b4ba1bbcea5d2adf",
+      "margam/nn/fourier.py": "d76a55a98adc328adf3009322c79f03940aea168620d59c1a11c70528035b7b8",
+      "margam/nn/highway.py": "6961068ab52b8aa07a129ed915f07dff5dbc9164a7d10755acef23da8579a1e2",
+      "margam/nn/modified_fourier.py": "dd71000d45c5965b1e91242aa04dc7b0c7f1784a8583d647f288f01e1e65e849",
+      "margam/nn/multiplicative_filter.py": "232fd021cb09d810fb18273bc1d1addaa2987104997d2e5c6bd04f8cc39c4ae9",
+      "margam/nn/multiscale_fourier.py": "cd5cedab74997fa9702796df55a854348a78b011b59097effff47fd8283c7cfd",
+      "margam/nn/pointwise.py": "bd8fff411e7fa673ea4a728d8a92ce4ead69548fa36526ab597ade37f6c2d4d1",
+      "margam/nn/siren.py": "d08b253c2b0461729faa2a8c784cd55dc58084b5cbf4971c030652670ecfb654",
+      "margam/nn/utils.py": "f7df8c5875f321af7fb6cb220b57d420dad33eccf1762bbabf888fe97f7274d0",
+      "margam/nn/weight_factorization.py": "5af3cf2ebcaa734eaa747ece4b264065146937c18ea6a045fcd421dc7ae4a0b2",
+      "margam/recipes/__init__.py": "f223c9aa1b505330ff5ec697ad2120e2db8c03d5bc7c54703ac027f8b23de319",
+      "margam/recipes/baseline.py": "061971e2bb6e77de13a843aa2a20c8c5038bb12843d46076a13f0151c14ae448",
+      "margam/recipes/dsgnar.py": "4ba9b4fc3917f383fef8ed02a7ac59ace0188647691bef8e5521ba8a221c4ebc",
+      "margam/recipes/expert.py": "79704ddfab51f4d0d90f375456d782f981b5aca2a3dd8b7d9ba26ac1f3d0bd1b",
+      "margam/recipes/gradient_enhanced.py": "2322658a50d202bbdb88c0f6a168a7bc908d3cdb7755b4b11a20affe8000e133",
+      "margam/recipes/inverse_burgers.py": "ae8d4cb18c44aeda02717144c4c1d64d348f79412754a1c2dd2514635d499944",
+      "margam/recipes/learning_rate_annealing.py": "d25d7688cb0d72d0f564bc2da9d9fbbf548f14c03115331fdb006e88e4d01c4e",
+      "margam/recipes/residual_attention.py": "f2e77635d2185a5362026bb19aea2f70465f8ea13fb79273a2b441fa86637539",
+      "margam/recipes/scale.py": "6491269c44524964fa2f78e8ce139a06695ffd9e524c3b3ed5f36ecfee234b30",
+      "margam/recipes/self_adaptive.py": "b252c56f0c362f2a148df72d1fe4a3cb82ec1eac910cbdd12daa91c5a5e73ee5",
+      "margam/research/__init__.py": "e5bd1ae3489e3e48cf45983be89aeff6f7e1f5268ee782b44a38420714044148",
+      "margam/research/checkpoint.py": "a2fd13f1401b1519c6d31eda2d5a7f2f46e306cb9fe31a60e28eb89506586890",
+      "margam/research/microbatch.py": "51b868a9d42c35bb822f0884e4622aca10f9c88c33367d093113dd6726c2b956",
+      "margam/research/scale_cavity.py": "4102416e191b2b88e03df696fdc1b285be2466c36bcdd325fbe084284863b92c",
+      "margam/research/schedules.py": "e6b02d038e6bf5501357f7628fb98c14bc0399c3967b0985eed75c972c747c6a",
+      "margam/research/trainer.py": "7bbc977e5516f0213525c7b0d1ab9cc1e5ed9ff83da54491834e28fe57d61449",
+      "margam/studies.py": "035861067669f62fbc2580b6016416be484a7cec204841cc6e28218d8d29ceea",
+      "margam/study_document.py": "b1fd9812e51d8a6ef1bd81c4150ba68fb676e9b1d705bcd100663ed422a411ae",
+      "margam/templates/__init__.py": "e504c995c71dd97e2cbd5241ae09c8e72a903c6653f2ae895fcfa92901c93843",
+      "margam/templates/burgers.py": "f9d090197d441eada4a901346bf786890084c641348dea8e05f15014850433d2",
+      "margam/templates/dsgnar_examples.py": "969c5fec4ba656661693fb41c8f9f4692d602808c41debb66d451af0ac219798",
+      "margam/templates/examples.py": "0bfc4364146d06518309c622661ebbb26829b5c15f488467f59698e533b30a32",
+      "margam/templates/expert_examples.py": "aed8ee5cc94364e2b298bc185455db87118cf42a7f65e166017b481e00326bcd",
+      "margam/templates/gpinn_examples.py": "dcb30cdd290f084206479b28b94ec6920461727a8aa6d7ea98c202904cc5d2a2",
+      "margam/templates/heat.py": "cacdc8e0f9f265a1899ef8e17432951c792627040fb4e89ebbb84a3c931387ef",
+      "margam/templates/incompressible_flow.py": "86cba448ace8d7e6a99241a7ca9f9bc132828a415e7d9c3b3551e9053a93e418",
+      "margam/templates/inverse_burgers.py": "07f2d9c55faf32137e0bc8212ab38dc45a856567814955c43094b435af311cae",
+      "margam/templates/kdv.py": "833f52140e9eb7ef18100c111dc32947db04681f5cb3441ced317f44070c5826",
+      "margam/templates/poisson.py": "91e545e5ac8c53f2fdd2207c4215a8264781149a1a21c40f30bdac9cfbb7e666",
+      "margam/templates/predefined_pdes.py": "188ab740923dafab2eb6dc83644eb9b6255f6183c7ff9213ce18b3bdba6028d0",
+      "margam/templates/prepared_triangle.py": "656c87ab6dfa74a85eed1cf710d3fbbad7a881db7fb1b790cf34865ed59a09f0",
+      "margam/templates/rba_examples.py": "cb5fcf3eb6a680a99a31fc59ee3810a5f737d5f00b10533aa90b152b9366e7df",
+      "margam/templates/scale_examples.py": "df2ef730ca289695e7796bb01f021e16d40913e859fbd06ead96413003c5c198",
+      "margam/templates/wave.py": "eb5672d587f2b2c9bc6d9916a6626613f0c0530df1101126295d73ddc0da38c1",
+      "margam/ui/__init__.py": "1be6f7ed65975a1824223fce40f76b5a180f4a86392f3da85039705bef8c8e39",
+      "margam/ui/__main__.py": "5467ee5fa7f1335cf415e57c59252493a07dade623161a4ec9d819dcd293f843",
+      "margam/ui/app.py": "61be260c3525e8d9b0b2d9231a30d1d88d2833991e3e68f1705c3c14f7aca4b7",
+      "margam/ui/automation_core.py": "fed3b75bfc07a5d9bb6d187285d2d6bdba835c5d16445e5f73e9a6fe2163fea0",
+      "margam/ui/automation_server.py": "67d05d41af8c85c8ae0e12ff74686cf0ddb88f448c0f34984084c2f220b0a544",
+      "margam/ui/automation_transport.py": "16fa22004987d5b04667c130ee9b51a1b2194dff4f2ffabae0ceb3c16a675303",
+      "margam/ui/block_catalogue.py": "baebfa9b8600e9edc2189b67a20a60e7dfca2dce34dcae9495da71c2c932a76b",
+      "margam/ui/block_labels.py": "e0647a526d9e4e8d5f18428c72dfaf57e30b30ef9facebb8ae5168bb6d479504",
+      "margam/ui/block_library.py": "3f6169695408a000044764237086d2e96c8c654b2044fdb3531dba9c65537ef9",
+      "margam/ui/burgers_reference_example.py": "6f70aa9b391eb9d0e18ebf56a2a2b1b6ee6a218fceedce3ed236876fd5356d06",
+      "margam/ui/canvas_tools.py": "eaad339b99285ab86d64654adb6905ae846de6024138f3c49fd7c06514f182d0",
+      "margam/ui/canvas_view.py": "6f6eb89654c19b92313612f81d2cac8be1fec0f7d4ed279ec7c662cba1299228",
+      "margam/ui/clipboard_files.py": "4377f743887b9ef7e480717c61794d7d8f5efb4480fab05c261b075d395597e5",
+      "margam/ui/data_mapping.py": "37fa486cde332024ad6fe6734ac359116c323b85487f6830cc62abf4c88cae6c",
+      "margam/ui/dataset_cleanup.py": "4d2df4356b4f004236ed3d70245d106a1de0f2cece20a7c3937df0e5afb60292",
+      "margam/ui/dataset_cleanup_dialog.py": "d3379dd8095eb5cd04accd1771db56b81dc03e21853526b9e5fc3423a1e5fda5",
+      "margam/ui/dataset_storage.py": "a8ac422a4fb880edc3bad6df76fe55244c97d0c61b94b01f1df45aa9466814a4",
+      "margam/ui/design_points.py": "64ab0cbf40b7af39f2b6749415e1061cbbf1c600dd20724aca91b10e2c3d4ddb",
+      "margam/ui/desktop_state.py": "754bfcf7665531fdcd78f4b3e325f1f4a5ffbf9525973cafdd124200c0ba0043",
+      "margam/ui/device_settings.py": "3364f9f1d00585dec104ccbcd0ccd8ce2b5bbeabfd6d6a9650feb0f0164543aa",
+      "margam/ui/diagram_layout.py": "aee0530f58f5d773a5dcff81633422c2ad997f0220fafdde98eb6f6d96bafa23",
+      "margam/ui/edit_history.py": "e5842ae33dfbe716a3ef903d04e0eb410234913b31ecda413afd14ca130a68e0",
+      "margam/ui/error_norms.py": "dfd3c73e469cd95a31da4286dad30ae30196d098e27c1a11bce0dc6ee02f8715",
+      "margam/ui/evaluation_mapping.py": "5b573eed8b644d52bcf593e895d3b77443755993ced5d057af582c6d373c140b",
+      "margam/ui/graph_explanations.py": "ccd1cec84ccc4bc2ad898b258922b863e3c0f7f6651694790099131d3f49399e",
+      "margam/ui/graph_model.py": "90c692a8d4a8db15e741b1b3f63e561ea24f4712a684eebb3b5fcd296c08503d",
+      "margam/ui/icons.py": "c2b6547322071552c3f212915811ae10f20d0b56d12a6b2bdf72f990058c3784",
+      "margam/ui/inverse_actions.py": "03d8e3d5c9b5c4d06a1c8fc65cf4c70a1e358452d0558663d58e9c18882b3bfe",
+      "margam/ui/job_limits.py": "f102e8e5da176d90201e73a1cbb782af4ffc8dfb275bb712c54888a3d0bc2532",
+      "margam/ui/jorvik_geometry.py": "0220ab352c79b281d665efee5a8e4f41676bbfafbbc881a0c4fd01f9b6974cde",
+      "margam/ui/model_comparison.py": "456d70f9c1d7052fb681821530a29f8bdeaf1b0d11e2cfa8e7b71181a14dbfc8",
+      "margam/ui/model_diff.py": "68423be3be9ee30b71b1ebc4e7062879ac8e87e15fd10c2a6c4fb8c457f0b163",
+      "margam/ui/model_document.py": "938d56a4ee262a5a0aa03527347b9806fa40727213e945b4102ee457dbcbedd1",
+      "margam/ui/model_search.py": "ed6dd09f967312f6b7f96c9835df44d9d3a61cb1d24d60851a4dbb5a37ed1643",
+      "margam/ui/output_views.py": "405eb86438899fa7475b2992a6437aa53765cd8db4b25dd2d1f7f2b7db7b0261",
+      "margam/ui/plots.py": "9ae3ee892a07f2b2fa6656602556d155207525b5b9225569c610250a13023664",
+      "margam/ui/ports.py": "d4074046af25115a7b1d7b7fcf0b59e73fff4da663e1f76de035eaa78a6b0dba",
+      "margam/ui/project_data.py": "3709b33558155b05016244a8a332e269cea0a7f94a889ed90aa51ad93c1ee48f",
+      "margam/ui/project_workspace.py": "e586e64f530c8a3a472ebbcb983c184b0daecee73ca94c49205e02379d3cf9b5",
+      "margam/ui/recent_models.py": "2e132d6f34ceb33c24f3a54c6cd486508456fb10b992ef2c11183b7a8d69509a",
+      "margam/ui/result_freshness.py": "6c29868bb6c1f84e81ad3a4929410111c22abe554fd9da2b16064344246c8aba",
+      "margam/ui/run_document.py": "0292a142ce55fb043dc23afc58489cf38ac17f0da7ebe9d135650dc609e24145",
+      "margam/ui/run_summary.py": "ad075b5232e2209c19ad8d42a09ba8c65b4114a502b5a336e5a12ee70e1b192e",
+      "margam/ui/sample_points.py": "a2863062523a171206f7734b580c2a0bc1597197de20905e036b652e09cf5659",
+      "margam/ui/setting_help.py": "b03ae55ab215810891d1f59119d1354ba22e035f6cddf945d9c92ffe5fd0ed00",
+      "margam/ui/settings_search.py": "472736bcd75a60e330b6613097ab046d3577b61062506202acdadb6bc40fe283",
+      "margam/ui/source_fingerprints.py": "20f493d0d5973ed76ccbca1df27d15c97a75d7e481a15d7bd08aa59e483ac525",
+      "margam/ui/theme.py": "d08dfeff4e2610dd828028a226d08b9ff5735e56717bdd9f06e7cf6021ef6d6e",
+      "margam/ui/training.py": "9f7f34c3c513d3b8b3229a4aadd20594d1c7d5035f7bceb7066196ea1160728a",
+      "margam/ui/validation_report.py": "486121e8a20aaf29978f6f52d27bddcd5469dbe1f982e7d9e6aea61a93489245",
+      "margam/ui/wire_routing.py": "90a2ad4f3520dc291170bc580d200ef69b739366089fe61d41063090cf0fad7c",
+      "margam/utils/__init__.py": "9cc91fa338c5018cb83170927ffe27089ff74d87ec35a90a992c7fff5d21d98b",
+      "margam/utils/differentialoperators.py": "17c3ae05c2efd6978ea5c92f5886bc0f39bdfd449bc879e6952fde7e752cf180"
+    }
+  },
+  "workflows": {
+    "cpu": {
+      "scope": "Real CLI serial owned-data study, two/three updates; software lifecycle only, not trained shock accuracy.",
+      "device": "cpu",
+      "study_id": "fddb592ade4e1eea90244c446b6afe882c3f229f7cc985ef211281013374cbf1",
+      "headless": true,
+      "counts": {
+        "completed": 2
+      },
+      "runtime": {
+        "cuda_runtime": "13.0",
+        "gpu": null,
+        "machine": "x86_64",
+        "margam": "1.0.0",
+        "numpy": "2.5.2",
+        "python": "3.14.8",
+        "system": "Linux",
+        "torch": "2.14.1+cu130"
+      },
+      "source_sha256": "d2843a728a09b2ba9d08f4f7193df596266fcaa5048cec392c285c3e4837d5fb",
+      "workflow_sha256": "cc190f3e1797b9ed4e8d6e1a7c6d6fcc4928e9d4c973375734b4b09c10245302",
+      "study_archive_sha256": "75b2584dc74c34556c60c04c1661268f183c5f1db420a05fbc26b0c0e18151e3",
+      "records": [
+        {
+          "trial_id": "DP0001-fddb592ade4e1eea90244c446b6afe882c3f229f7cc985ef211281013374cbf1",
+          "status": "completed",
+          "steps": 2,
+          "rows": 2827,
+          "frames": 11,
+          "metrics": {
+            "8739d0f0e9f34a1b83fd01e3f5bf6099": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760259786434212,
+              "zero_reference_policy": "undefined"
+            },
+            "9ca584d2583a4c26a751e63dfc21862c": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760259786434212,
+              "zero_reference_policy": "undefined"
+            },
+            "d4ec4be48f0f4feba3b0b97c4fed9439": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760259786434212,
+              "zero_reference_policy": "undefined"
+            }
+          },
+          "timing": {
+            "artifact_seconds": 0.14497162599582225,
+            "numerical_job_seconds": 3.1575941490009427,
+            "preflight_seconds": 0.0365600069926586,
+            "wall_seconds": 3.362501973999315
+          },
+          "artifacts_verified": true
+        },
+        {
+          "trial_id": "DP0002-fddb592ade4e1eea90244c446b6afe882c3f229f7cc985ef211281013374cbf1",
+          "status": "completed",
+          "steps": 3,
+          "rows": 2827,
+          "frames": 11,
+          "metrics": {
+            "8739d0f0e9f34a1b83fd01e3f5bf6099": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2710671694424798,
+              "zero_reference_policy": "undefined"
+            },
+            "9ca584d2583a4c26a751e63dfc21862c": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2710671694424798,
+              "zero_reference_policy": "undefined"
+            },
+            "d4ec4be48f0f4feba3b0b97c4fed9439": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2710671694424798,
+              "zero_reference_policy": "undefined"
+            }
+          },
+          "timing": {
+            "artifact_seconds": 0.12953015899984166,
+            "numerical_job_seconds": 2.9955886519892374,
+            "preflight_seconds": 0.03321543399943039,
+            "wall_seconds": 3.1789539890014566
+          },
+          "artifacts_verified": true
+        }
+      ],
+      "input_sha256": {
+        "datasets/8b49c365892349ebb31c7b9bdc751703/reference.csv": "c072cfe8bb1b42d93cf843393a2e81914950277bf4e9d3adecf1e4814a702657"
+      }
+    },
+    "cuda": {
+      "scope": "Real CLI serial owned-data study, two/three updates; software lifecycle only, not trained shock accuracy.",
+      "device": "cuda",
+      "study_id": "04498ec63343460e076cfdc6cb123929d9ba731d30840944f49fef426f607acc",
+      "headless": true,
+      "counts": {
+        "completed": 2
+      },
+      "runtime": {
+        "cuda_runtime": "13.0",
+        "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "machine": "x86_64",
+        "margam": "1.0.0",
+        "numpy": "2.5.2",
+        "python": "3.14.8",
+        "system": "Linux",
+        "torch": "2.14.1+cu130"
+      },
+      "source_sha256": "d2843a728a09b2ba9d08f4f7193df596266fcaa5048cec392c285c3e4837d5fb",
+      "workflow_sha256": "cc190f3e1797b9ed4e8d6e1a7c6d6fcc4928e9d4c973375734b4b09c10245302",
+      "study_archive_sha256": "774f195cd05d807ab5b775dfcbe6cbbaa4a57ddb6da9fceb423c80defec5a96a",
+      "records": [
+        {
+          "trial_id": "DP0001-04498ec63343460e076cfdc6cb123929d9ba731d30840944f49fef426f607acc",
+          "status": "completed",
+          "steps": 2,
+          "rows": 2827,
+          "frames": 11,
+          "metrics": {
+            "b8b343ab1e6943bebbce07e8b9e250f5": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760260068948597,
+              "zero_reference_policy": "undefined"
+            },
+            "c6bcb1d78e5a4348b97e8bce54e52de2": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760260068948597,
+              "zero_reference_policy": "undefined"
+            },
+            "f4540e0198834386b09d6a3cbb804528": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.2760260068948597,
+              "zero_reference_policy": "undefined"
+            }
+          },
+          "timing": {
+            "artifact_seconds": 0.13945557799888775,
+            "numerical_job_seconds": 2.8942236329894513,
+            "preflight_seconds": 0.05937500699656084,
+            "wall_seconds": 3.117474640996079
+          },
+          "artifacts_verified": true
+        },
+        {
+          "trial_id": "DP0002-04498ec63343460e076cfdc6cb123929d9ba731d30840944f49fef426f607acc",
+          "status": "completed",
+          "steps": 3,
+          "rows": 2827,
+          "frames": 11,
+          "metrics": {
+            "b8b343ab1e6943bebbce07e8b9e250f5": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.271067172614249,
+              "zero_reference_policy": "undefined"
+            },
+            "c6bcb1d78e5a4348b97e8bce54e52de2": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.271067172614249,
+              "zero_reference_policy": "undefined"
+            },
+            "f4540e0198834386b09d6a3cbb804528": {
+              "components": 1,
+              "fields": [
+                "u"
+              ],
+              "norm": "relative_l2",
+              "reduction": "pointwise_euclidean",
+              "reference_zero": false,
+              "relative": true,
+              "rows": 2827,
+              "status": "defined",
+              "value": 1.271067172614249,
+              "zero_reference_policy": "undefined"
+            }
+          },
+          "timing": {
+            "artifact_seconds": 0.15242604400555138,
+            "numerical_job_seconds": 3.230029350001132,
+            "preflight_seconds": 0.050383477995637804,
+            "wall_seconds": 3.458004597996478
+          },
+          "artifacts_verified": true
+        }
+      ],
+      "input_sha256": {
+        "datasets/8947ccb3d0bb4d9e80b01ca1b136c0db/reference.csv": "c072cfe8bb1b42d93cf843393a2e81914950277bf4e9d3adecf1e4814a702657"
+      }
+    }
+  }
+}

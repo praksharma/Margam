@@ -1562,3 +1562,46 @@ or reported accuracy. See [the format contract](study-format.md).
 Portable save/open is complete for this milestone; study execution, full per-trial
 data/output qualification, environment/code provenance, scheduling, Slurm and
 collected results remain subsequent tasks.
+
+
+## Serial headless study runner (15 November 2026)
+
+The nine CLI cases cover real finite-grid execution, shared desktop/headless
+config/request parity across concrete scalar, transient, Expert flow, Scale flow
+and DSGNAR definitions, actual CPU/CUDA native-worker weight/history parity,
+owned-reference coordinates/values/IDs, explicit CSV/physical-time PVD files,
+native archive reopening and desktop continuation. They also check invalid-grid
+continuation, injected numerical/export failures followed by valid trials,
+staging cleanup, source-change rejection, unavailable CUDA without fallback,
+child deadlines, existing-output protection, display-free inspection and a real
+Ctrl-C that reaps the child while retaining completed trials.
+
+The targeted regression set totals **35 passing cases**: CLI 9, existing isolated
+jobs 7, validation report 3, optional-output controls 2, ParaView UI 1, desktop
+startup 1, study files 7 and study previews 5. CUDA cases actually ran on the
+local GPU. Discovery includes the new CUDA CLI case in the 36-case audit manifest;
+the complete audit was not rerun.
+
+The [curated workflow record](../assets/benchmarks/study-cli-2026-11-15.json)
+contains actual CPU and CUDA runs of two owned-reference Burgers trials, with
+two/three updates each, using the real CLI. Each verifies native archives and
+artifact hashes, 2,827 exported reference/ID rows and eleven exact stored physical
+timestamps. The source identities are checked against current runtime files,
+the producer-driver hash, the frozen input archive and each owned input digest.
+The producer uses a state-isolated window; the CLI and numerical children load
+no Qt. Timings include startup/transport and are workflow observations, not pure
+GPU training times or paper/hardware performance claims. No trained shock
+accuracy is established by these short runs.
+
+Graph/output/data preparation and export dispatch are shared with desktop. The
+numerical loop remains the existing isolated native worker. Models/inputs are
+frozen per study; per-trial native archives embed their owned data. Source changes
+abort uncertain publication, invalid/failed/non-running trials have no invented
+objective, and only explicit enabled export blocks write extra field files when
+--export is requested. See [CLI behavior and recovery](use/study-cli.md).
+
+The root editable package was refreshed without dependencies to expose
+`margam-cli`; no Python, Torch or Qt dependency versions were changed, and no
+new environment was created. Study-level
+resume, concurrent scheduling, Slurm/preemption and grouped GUI collection remain
+open. Individual native run archives can be reopened/resumed in the desktop.

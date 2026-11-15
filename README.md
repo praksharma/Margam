@@ -28,6 +28,10 @@ See [installation help](docs/start/install.md) for setup details.
 For plain PyTorch experiments without the GUI, see the [research Python API](docs/research.md).
 Run its example with `.venv/bin/python -m examples.research_custom --device cpu`.
 
+Run a saved study without the GUI with
+`.venv/bin/margam-cli study run study.margam-study --output results/study-run`.
+See [headless studies](docs/use/study-cli.md) for device, exports and result handling.
+
 ## Documentation
 
 - [Illustrated user manual](docs/index.md)

@@ -677,7 +677,7 @@ three-plus-two update checks validate behavior, not trained shock accuracy.
 ### Parameter-study preview
 
 Open **Run → Parameter study…** to preview combinations and save/open portable
-`.margam-study` bundles. Study execution is not available yet.
+`.margam-study` bundles. Execute saved grids with [the headless CLI](use/study-cli.md).
 
 ```bash
 python -m unittest discover -s tests -p 'test_study_preview.py' -v
@@ -697,4 +697,22 @@ python -m examples.capture_study_preview --overwrite --study-output results/pois
 The second command explicitly writes a new example study and updates the help
 screenshot. Use `--overwrite-study` only to replace that study intentionally.
 The [study file API](study-format.md) reads/resolves trials without a GUI; it
-does not execute them. No `margam-cli` study runner is claimed yet.
+does not execute them by itself. Use `margam-cli study run` for execution.
+
+
+### Headless study execution
+
+```bash
+.venv/bin/margam-cli study inspect my-study.margam-study
+.venv/bin/margam-cli study run my-study.margam-study --output results/study-cpu --device cpu
+.venv/bin/margam-cli study run my-study.margam-study --output results/study-gpu --device cuda --export
+python -m unittest discover -s tests -p 'test_study_cli.py' -v
+python -m examples.study_cli_workflow --device cpu --output build/study-cli-cpu-check
+python -m examples.study_cli_workflow --device cuda --output build/study-cli-gpu-check
+```
+
+Results directories must be new. `--wall-time SECONDS` overrides the saved per-job
+limit, including child startup; 0 means unlimited. `--export` writes only enabled
+CSV/ParaView blocks. The module equivalent is `python -m margam.cli study ...`.
+Refresh the existing editable package with `uv pip install --python .venv/bin/python
+--no-deps -e .` if the new command is absent. See [CLI states/recovery](use/study-cli.md).

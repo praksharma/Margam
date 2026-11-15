@@ -3,13 +3,7 @@ from PySide6.QtCore import Qt,QAbstractListModel,QModelIndex
 from .plots import CurvePlot, SolutionView
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem,QComboBox,QHBoxLayout
 
-OUTPUT_KINDS = {'monitor', 'solution', 'comparison', 'export', 'paraview'}
-
-
-def output_enabled(node):
-    value=node.settings.get('enabled',True)
-    if type(value) is not bool:raise ValueError('Output enabled must be boolean.')
-    return value
+from ..components.output_settings import OUTPUT_KINDS,output_enabled
 
 
 class StoredTimesModel(QAbstractListModel):

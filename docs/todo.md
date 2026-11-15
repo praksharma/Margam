@@ -307,10 +307,11 @@ These are proposed features; current execution still runs one supported problem.
   input snapshots. Copied links require explicit consent; opening restores private
   owned files with normal mapping dialogs available for changes. Include stable
   study/trial identities, safe bounded atomic IO, native output parity and a
-  [portable example](../assets/studies/poisson-grid.margam-study). Execution remains
-  the next milestone; see [file contract](study-format.md).
-- [ ] Provide the planned `margam-cli` headless runner for the exported file,
-  sharing GUI validation/numerical execution and requiring no Qt/display or service.
+  [portable example](../assets/studies/poisson-grid.margam-study); see [file contract](study-format.md).
+- [x] Provide `margam-cli study inspect/run` for saved grids, with shared native
+  graph/output/data validation and isolated numerical jobs, no Qt/display/service,
+  serial fresh trials, CPU/CUDA intent/overrides, wall limits, opt-in block exports,
+  native archives, failure isolation and Ctrl-C cleanup. See [CLI guide](use/study-cli.md).
 - [ ] Make GUI → exported study → HPC/Slurm → collected GUI results the first
   complete study workflow; deterministic grid execution precedes optional search tools.
 - [ ] Use that workflow for later paper-accuracy reproduction: fixed independent
@@ -321,15 +322,23 @@ These are proposed features; current execution still runs one supported problem.
 - [ ] Design iterator/alternative blocks for concrete existing components. Make
   Cartesian, paired and conditional combination rules explicit; preview trial
   counts and budgets before running.
-- [ ] Preflight each trial's component/parameter/data compatibility. Record skipped
+- [x] Preflight native finite-grid graph/configuration/required-data/output
+  contracts per trial; record invalid, explicit-device incompatible, failed,
+  interrupted, completed and not-started outcomes with reasons and no fake metrics.
+- [ ] Extend compatibility preflight to future component alternatives/conditional
+  search. Record skipped
   combinations and reasons in a dedicated study output; continue valid trials.
   Distinguish incompatible, invalid, failed, interrupted, pruned and completed
   outcomes. Never fabricate objective values for non-running combinations.
-- [ ] Add a shared GUI-independent execution entry point, so identical study/model
-  definitions run from the laptop GUI or a headless command on an HPC node.
-- [ ] Persist stable trial IDs, full resolved settings, seeds, code/data provenance,
+- [x] Share the executable graph gate, output requests/export dispatch and isolated
+  numerical worker between desktop models and headless study trials. Qualify
+  concrete GUI/CLI CPU/CUDA weight/output parity and native archive reopening.
+- [ ] Add grouped study execution/collection controls in the GUI using that entry point.
+- [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.
-  Keep evaluation data and comparison protocols explicit across trials.
+  Keep evaluation data and comparison protocols explicit across trials. The first
+  serial runner records native output-reference relative L2 diagnostics; richer
+  selectable study objectives and complete environment manifests remain future work.
 - [ ] Add bounded local CPU/GPU scheduling, cancellation and checkpoint-safe resume;
   isolate failures and outputs so one trial cannot overwrite or corrupt another.
 - [ ] Add Slurm sbatch study export/execution and result collection, including

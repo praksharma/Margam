@@ -3,8 +3,9 @@
 Open **Run → Parameter study…** to explore combinations, then save the base model,
 parameter choices and input snapshots in a portable **`.margam-study`** file.
 Opening a study restores that model and table in another session or location.
-**Study execution and the HPC runner are still future work.** Nothing trains merely
-because you preview, save or open a study.
+**The [headless CLI](study-cli.md) now executes saved finite grids serially.**
+Nothing trains merely because you preview, save or open a study. Grouped GUI
+execution, scheduling and collected study results remain future work.
 
 Unsaved table edits stay in this window until the application closes. Use
 **Save portable study…** to preserve them; ordinary model Save and run archives
@@ -82,16 +83,16 @@ choose the parameter again. Draft controls can be edited while a job runs, but
 preview waits for jobs and external editors to finish.
 
 **Clear draft** removes table rows only. It does not delete model blocks or files.
-Applying/running design points, headless CLI/HPC jobs,
-result collection, paired/conditional combinations and search integrations remain
+Grouped GUI execution, study resume, result collection, Slurm integration,
+paired/conditional combinations and search integrations remain
 [planned work](../todo.md#future-studies-iterator-blocks-and-laptophpc-sweeps).
 
 
 ## Save and reopen the complete study
 
 1. Choose the **Future execution device** and optional **Per-job limit**. These
-   are saved intent for the future runner; they do not change this application's
-   device or time-limit preferences and do not test hardware availability.
+   are saved intent for the headless runner; they do not change this application's
+   device or time-limit preferences and do not test hardware availability. Execution checks it.
 2. Press **Save portable study…**. Project-owned inputs are included automatically.
    If the model uses linked input files, explicitly check **Include linked inputs**
    to copy them into the study. Saving otherwise stops with an explanation.
@@ -133,6 +134,6 @@ extra/missing entries, encryption and unsupported compression are rejected. Thes
 are file budgets, not an OS memory quota or a training-fit guarantee.
 
 The [versioned file/API contract](../study-format.md) documents deterministic trial
-resolution and how a future headless runner will consume these files. Full
-per-trial data/output qualification, scheduling, Slurm and result collection are
-still open todos.
+resolution. The [CLI runner](study-cli.md) performs full supported execution/data/output
+preflight for each trial. Grid resume, concurrent scheduling, Slurm and grouped
+result collection are still open todos.

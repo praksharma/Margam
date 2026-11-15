@@ -252,3 +252,9 @@ and do not establish steady-state speed or memory capacity. See
 [Burgers reference workflow, 14 November 2026](burgers-reference-2026-11-14.json)
 records independent evaluator validation and CPU/CUDA owned-data/save/resume/export
 checks. Three-plus-two updates are workflow evidence, not shock-accuracy evidence.
+
+
+[Headless study CLI, 15 November 2026](study-cli-2026-11-15.json) records real
+CPU/CUDA two-trial owned-reference runs, input/source identities and verified
+CSV/physical-time ParaView/native-archive artifacts. Two/three updates establish
+workflow correctness, not trained solution accuracy or synchronized performance.

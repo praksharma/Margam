@@ -611,15 +611,24 @@
   and expose no checkpoint file loading or implicit export.
 
 - Parameter studies support bounded Cartesian preview and version-1 portable
-  save/open, not trial execution. Resolve actual block IDs/parameters through the
+  save/open and serial fresh execution through `margam-cli`. Resolve actual block IDs/parameters through the
   existing decoder/graph/config validators; never retarget deleted IDs. Preserve
   model, Undo, retained results and RNG during preview/save; allocate no networks
   or samples. File writes are limited to explicit save and private restore.
   Keep invalid trials with reasons and no metric/budget, bound enumeration before
   copying trials, and label update/parameter counts as workload rather than fit
-  or runtime predictions. Keep trial execution deferred until the separate shared
-  headless contract is implemented. Portable bundles freeze inputs, graph, axes and execution intent;
+  or runtime predictions. Use the shared executable graph/output gate and native
+  isolated child for CLI trials; do not introduce a second training loop. Portable bundles freeze inputs, graph, axes and execution intent;
   never implicitly include external links or rewrite accepted-import history.
   Opening explicitly replaces the graph using a validated private workspace;
   preserve app preferences. Verify bounded schema/checksum/path/ZIP handling,
   atomic no-clobber save and stable content/trial identities.
+
+- CLI studies require fresh output folders, stable definition/trial identities and
+  actual resolved settings/source/runtime/input provenance. Overrides are explicit.
+  Stage native archives/requested exports before publication; no fake metrics on
+  invalid/incompatible/failed/interrupted trials. Export files only with --export
+  and enabled connected export blocks. Source changes prevent uncertain artifact
+  publication and abort remaining trials. Ctrl-C reaps/discards the active job and
+  preserves completed artifacts; do not imply grid resume/Slurm preemption support.
+  Keep CLI/child Qt-free and reuse the native archive/data restoration contract.

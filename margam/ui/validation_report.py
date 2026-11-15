@@ -22,14 +22,8 @@ class ValidationIssue:
 
 def check_execution(window):
     """Run the supported execution gate without changing editor state."""
-    config=window.scene.compile_config();config.validate()
-    if config.method=='inverse_burgers':
-        from ..components.inverse_config import read_observations
-        read_observations(config)
-    if config.shape=='Prepared2D':
-        from ..components.training_data import read_training_sets
-        read_training_sets(config)
-    requests=window.scene.output_requests(config)
+    from ..execution.graph import prepare_graph
+    config,requests=prepare_graph(window.scene)
     return config,len(requests)
 
 

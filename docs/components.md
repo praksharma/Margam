@@ -296,3 +296,14 @@ See [definitions and limits](use/error-norms.md).
 `margam/components/burgers_reference.py` provides an independent bounded float64
 Cole–Hopf evaluator for the original fixed-viscosity case. It is evaluation-only,
 not a generic reference for edited physics. See [Burgers reference workflow](burgers.md#optional-reference-data-example).
+
+
+## Shared native execution and headless studies
+
+`margam/execution/graph.py` owns the shared executable-graph/output-request gate.
+Desktop Canvas and the data-only DocumentGraph reuse it; no Qt scene is needed
+for headless preparation. `margam/execution/study_runner.py` orchestrates fresh
+serial trials through the existing isolated worker, while
+`margam/components/output_settings.py` and `output_export.py` keep optional output
+flags and explicit export dispatch shared. See [headless studies](use/study-cli.md).
+This does not register research callbacks or serialize arbitrary Python code.

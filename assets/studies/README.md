@@ -7,8 +7,8 @@ It requests 24,000 updates in total; its largest network has 1,185 parameters.
 No reference data, trained weights, results or paper-accuracy claim is included.
 
 Open it using Run → Parameter study… → Open study…. Opening replaces the current
-model and table after normal discard prompts. Preview/save/open works; study
-execution and HPC scheduling remain future work.
+model and table after normal discard prompts. Preview/save/open works; the [headless CLI](../../docs/use/study-cli.md) executes
+the finite grid serially. HPC scheduling and grid resume remain future work.
 
 The [capture manifest](../screenshots/manual-study-preview.json) records the
 file hash and study identity. ZIP timestamps may differ on regeneration; study

@@ -1,7 +1,8 @@
 # Portable finite-grid study format
 
 Version 1 `.margam-study` files are data-only ZIP bundles. This is the serialization
-and deterministic trial-resolution milestone; there is no study executor yet.
+and deterministic trial-resolution contract; the [serial CLI runner](use/study-cli.md)
+now consumes it through the shared native execution gate.
 See [the illustrated workflow](use/parameter-studies.md).
 
 ## Contents and identity
@@ -62,15 +63,16 @@ finally:
 model payloads. Numerical configuration validation may import Torch for existing
 physics checks, such as coordinate-dependent corner targets. It still requires
 no Qt/display or GUI service. This example does not train, predict or export.
-A future executor must resolve device intent and apply the normal full execution,
-data/output and checkpoint contracts rather than trusting preflight alone.
+The CLI resolves device intent and applies the normal full execution/data/output
+contracts rather than trusting preview alone. It records effective overrides and
+runtime provenance separately from the saved definition identity.
 
 Expansion reuses `margam.studies.resolve_axes`: 1–8 actual block-held controls,
 1–64 values each, at most 512 Cartesian trials, last axis varying fastest.
 `trial_model` preserves the base model and returns a fresh graph with that trial's
 choices. The stable ID is `DP0001-<full-study-sha256>` for index zero. Invalid
 numerical combinations remain part of the grid and need explicit invalid/skipped
-reporting by the future executor; no objective values are fabricated.
+reporting by the executor; no objective values are fabricated.
 
 ## IO and restoration limits
 
