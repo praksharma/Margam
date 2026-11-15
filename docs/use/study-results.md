@@ -47,5 +47,6 @@ appear. You can continue the loaded checkpoint through the existing Resume actio
 Reading and hashing run in the background. **Cancel reading** or closing the
 browser stops the read without changing the model or result folder. Opening is
 disabled during a training job or geometry edit and checked again before model
-replacement. This browser is read-only: grouped execution, multi-run plotting and
-Slurm submission/collection automation remain separate TODOs.
+replacement. Compare two explicit native archives through [View → Compare saved predictions](compare-runs.md).
+This browser is read-only: grouped execution, history overlays, multi-run plotting
+and Slurm submission/collection automation remain separate TODOs.

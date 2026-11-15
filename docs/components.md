@@ -317,3 +317,10 @@ copies. `margam/ui/study_results.py` presents reported outcomes in a cancellable
 background reader and uses normal saved-run opening only after explicit selection.
 See [study result collection](use/study-results.md). This does not schedule jobs
 or deserialize checkpoints while browsing metadata.
+
+
+`margam/run_comparison.py` reads bounded native prediction snapshots and computes
+exact-row, per-field differences using existing discrete error norms.
+`margam/ui/run_comparison.py` provides the explicit comparison dialog. Native
+`load_run_payload` validates restricted CPU data without constructing/restoring a
+network; `load_run` retains its full checkpoint-restoration behavior.

@@ -162,13 +162,19 @@ def save_run(path,data):
         if temporary is not None and os.path.exists(temporary):os.unlink(temporary)
 
 
-def load_run(path):
+def load_run_payload(path):
+    """Validate a restricted CPU payload without constructing/restoring a network."""
     import torch
     require(Path(path).stat().st_size<=LIMIT,'Run exceeds 256 MiB.')
     with zipfile.ZipFile(path) as archive:
         require(sum(entry.file_size for entry in archive.infolist())<=LIMIT,'Expanded run exceeds 256 MiB.')
     data=torch.load(path,map_location='cpu',weights_only=True)
-    config=validate_run(data)
+    return data,validate_run(data)
+
+
+def load_run(path):
+    data,config=load_run_payload(path)
+    import torch
     if data['checkpoint'] is not None and config.method in ('expert','scale','dsgnar'):
         from copy import deepcopy
         from ..templates.poisson import build_pinn

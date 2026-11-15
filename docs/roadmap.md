@@ -670,3 +670,12 @@ or failed retry. Existing native result collection completes the return path.
 Local Bash CPU/CUDA and owned-data/export/GUI checks qualify the launcher; actual
 cluster submission, site allocation policies, preemption, arrays and parallelism
 remain unqualified/deferred. Export never submits or installs software.
+
+
+## Explicit saved-prediction comparison (15 November 2026)
+
+Two saved native outputs can now be compared without replacing the current model.
+Coordinate/field/typed-ID order must match exactly. Differences use A as their
+relative denominator; own-reference errors stay separate and are never ranked.
+CPU snapshot inspection preserves RNG and constructs no network. History overlays,
+automatic study ranking and multi-run plots remain separate future work.

@@ -1,0 +1,12 @@
+{
+  "generator": "examples.capture_run_comparison",
+  "scope": "Real CPU CLI study and saved-prediction comparison, two/three updates; software workflow, not solution accuracy.",
+  "source_sha256": "9f1e5019c656d93eeb715f03ac7e70f41dacbdbb58d8c4e60bed6edeff034e2a",
+  "capture_tool_sha256": "65ff78f09d20cb57e431829ec688d9fae5fad8d4f35a0b4dcea28769ca4618a6",
+  "rows": 2827,
+  "preview_rows": 200,
+  "identical_reference_values": true,
+  "current_model_preserved": true,
+  "file": "manual-run-comparison.png",
+  "sha256": "83c1b29e3eb79884b52da8a6b01adae03e07fe6567248e9c6c71892ab92ba769"
+}

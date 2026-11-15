@@ -596,6 +596,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.project_data_action.triggered.connect(self.show_project_data)
         self.cleanup_datasets_action=self.view_menu.addAction('Clean up unused imports…')
         self.cleanup_datasets_action.setIcon(icon('delete'));self.cleanup_datasets_action.triggered.connect(self.show_dataset_cleanup)
+        self.compare_runs_action=self.view_menu.addAction('Compare saved predictions…');self.compare_runs_action.setIcon(icon('comparison'));self.compare_runs_action.triggered.connect(self.show_run_comparison)
         self.compare_models_action=self.view_menu.addAction('Compare model definitions…')
         self.compare_models_action.setIcon(icon('comparison'));self.compare_models_action.triggered.connect(self.show_model_comparison)
         for action,shortcuts in [(self.zoom_in_action,['Ctrl++','Ctrl+=']),(self.zoom_out_action,['Ctrl+-']),(self.actual_size_action,['Ctrl+0'])]:
@@ -960,6 +961,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if node is None:return False
         self.scene.clearSelection();node.setSelected(True);self.view.centerOn(node)
         self.properties_dock.show();return True
+
+    def show_run_comparison(self):
+        from .run_comparison import RunComparison
+        dialog=getattr(self,'run_comparison_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=RunComparison(self);self.run_comparison_dialog=dialog
+        dialog.show();dialog.raise_();return dialog
 
     def show_model_comparison(self):
         from .model_comparison import ModelComparison
@@ -2807,6 +2815,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if self.is_running():
             self._closing=True;self.cancel_training();event.ignore();return
         if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.shutdown()
+        if getattr(self,'run_comparison_dialog',None) is not None:self.run_comparison_dialog.shutdown()
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
         self._labels_closing=True

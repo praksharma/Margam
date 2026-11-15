@@ -745,3 +745,14 @@ python -m unittest discover -s tests -p 'test_slurm.py' -v
 Copy the bundle, activate an existing cluster environment, change into its directory
 and submit `sbatch job.sbatch` yourself. Export submits nothing. See
 [Slurm setup, resume and collection](use/slurm.md), including local-only validation limits.
+
+
+### Saved prediction comparison
+
+```bash
+python -m unittest discover -s tests -p 'test_run_comparison.py' -v
+python -m examples.capture_run_comparison --overwrite
+```
+
+The capture runs a tiny owned-reference CLI study, then compares its saved
+predictions without changing the open model. See [comparison semantics](use/compare-runs.md).

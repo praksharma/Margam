@@ -337,7 +337,10 @@ scheduler workflows below remain proposed.
 - [x] Add read-only GUI collection of version-2 result folders: choices, reported
   outcomes/reference errors, attempt history and verified native trial opening.
   Preserve current model/results while browsing and keep file hashing cancellable.
-- [ ] Add grouped study execution controls and multi-run comparison in the GUI using that entry point.
+- [x] Add explicit two-run saved-prediction comparison: exact row/field/typed-ID
+  alignment, per-field differences and separate own-reference errors, bounded
+  preview and cancellable CPU payload inspection without network restoration.
+- [ ] Add grouped study execution controls, history overlays and further multi-run comparison in the GUI using that entry point.
 - [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.
   Keep evaluation data and comparison protocols explicit across trials. The first

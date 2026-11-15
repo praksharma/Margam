@@ -1710,3 +1710,33 @@ See [Slurm export](use/slurm.md) for official option references and limitations.
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_slurm.py' -v
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_cli test_study_resume test_study_results -v
 ```
+
+
+## Saved-prediction comparison (15 November 2026)
+
+Seven new checks pass for exact-row, per-field saved prediction comparison. Tests
+cover independently calculated scalar/vector differences, separate own-reference
+errors, zero denominators, overflow, all-row diagnostics with a 200-row preview,
+coordinate/field/typed-ID mismatch refusal, high-integer coordinate distinctions,
+corrupt/symlink/cancelled reads, CPU/CUDA RNG preservation, unchanged archive bytes,
+no network construction, current model/Undo/results preservation and safe reader
+shutdown/reopening. Real CPU and CUDA owned-reference Burgers archives supply
+2,827 aligned rows; comparison inspection retains no checkpoint/owned-file payload.
+
+The existing native loader still restores checkpoints through its normal path.
+Twenty-three related checks pass for native archives, existing error norms,
+Expert/Scale/DSGNAR CPU/CUDA archive continuation and study-result collection:
+**30 distinct focused checks**, with no CUDA skips on this host. CUDA audit
+discovery now selects 40 cases; the complete audit was not rerun. The illustrated
+manual builds and checks 85 rendered pages and their local/navigation/section links.
+
+The [real UI capture](../assets/screenshots/manual-run-comparison.png) and
+[manifest](../assets/screenshots/manual-run-comparison.json) come from a tiny
+CPU CLI study with two/three updates. The screenshot, generator and runtime-source
+hashes match the maintained files. This proves software workflow, not solution
+accuracy; prediction differences and distinct reference protocols are never ranked.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_run_comparison.py' -v
+python -m examples.capture_run_comparison --overwrite
+```

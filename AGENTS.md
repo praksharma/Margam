@@ -656,3 +656,14 @@
   provenance. Do not claim actual allocation enforcement, automatic requeue,
   signal checkpoints, mid-trial recovery or real scheduler validation from local
   Bash tests. Preserve the existing root environment and never embed local paths.
+
+
+- Saved-prediction comparison is explicit and read-only. Require exact coordinate,
+  field and typed-ID order; preserve duplicate rows and physical times. Do not
+  interpolate, rank or infer units/physics equivalence. Use per-field differences
+  with A as relative denominator and separate saved-reference errors; retain
+  undefined/overflow states. Metrics cover all rows, previews at most 200.
+  Read stable bounded private CPU snapshots without network/optimizer restoration,
+  preserve CPU/CUDA RNG/model/results/history, and cancel/join readers on close.
+  Keep native full archive restoration unchanged; container inspection is not a
+  claim that an optimizer checkpoint has been qualified for continuation.
