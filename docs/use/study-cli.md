@@ -6,6 +6,8 @@ The first runner is **serial**: one isolated native numerical process at a time.
 Each numerical attempt starts fresh. On POSIX systems, resume can verify and keep
 completed trials while restarting unfinished ones in the same results folder.
 
+For desktop controls using this same runner, see [Run saved study](run-study.md).
+
 From the repository root and existing environment:
 
 ```bash

@@ -667,3 +667,15 @@
   preserve CPU/CUDA RNG/model/results/history, and cancel/join readers on close.
   Keep native full archive restoration unchanged; container inspection is not a
   claim that an optimizer checkpoint has been qualified for continuation.
+
+
+- Local GUI studies launch the existing CLI with a reviewed private input copy;
+  never create another numerical executor. Preserve model/Undo/retained results/RNG
+  and application preferences; block overlapping jobs/editors using existing busy
+  guards. Resume binds reviewed execution metadata under the results lease and
+  uses recorded settings. Stop interrupts the CLI; force-stop targets only its
+  newly owned POSIX session/group, never PIDs read from files. An owner pipe must
+  stop jobs after GUI loss. Bound progress/log reads, join review threads and clean
+  controller-owned temporary files after execution. Hiding controls leaves a job
+  running; main-window close stops it before the normal discard check. Do not
+  imply parallel scheduling, OS quotas or mid-trial checkpoint recovery.

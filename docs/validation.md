@@ -1740,3 +1740,40 @@ accuracy; prediction differences and distinct reference protocols are never rank
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_run_comparison.py' -v
 python -m examples.capture_run_comparison --overwrite
 ```
+
+
+## Desktop-controlled serial studies (15 November 2026)
+
+Ten new GUI lifecycle checks pass: reviewed private input copies despite later
+source-file replacement, real serial CPU/CUDA execution, unchanged current model/
+Undo/results/retained weights and CPU RNG, application busy/device guards, invalid
+trial isolation, strict reviewed execution identity, real Stop followed by resume,
+preserved completed archives, hidden/reopened controls, cancelled/failed reviews
+and safe window-close/discard behavior. Repeated Stop requests send only one
+interrupt, including a stop requested before launch. Force-stop targets a newly owned process
+group containing an actual numerical child; its lock releases and controller-owned
+temporary data is removed. Killing an independent GUI-parent process interrupts
+the CLI, reaps the numerical child and releases the results lease.
+
+The 29 existing CLI/resume/collection checks and 22 automation-resume/job-limit/
+isolated-worker checks also pass: **61 distinct focused checks**, with actual CUDA
+execution and no CUDA skips. Default CLI/resume cases were rerun after adding the
+opt-in owner pipe. CUDA audit discovery now selects 41 cases; the complete audit
+was not rerun. The illustrated manual builds and checks 86 rendered pages.
+
+[The real GUI capture](../assets/screenshots/manual-study-execution.png) and
+[manifest](../assets/screenshots/manual-study-execution.json) come from a two-trial
+owned-reference Burgers study launched through the new controls. Native archives,
+explicit exports, frozen study hash and model/Undo/RNG preservation are verified.
+Screenshot, capture-generator and runtime-source hashes match maintained files.
+Two/three updates establish lifecycle behavior rather than numerical accuracy.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_study_execution.py' -v
+python -m examples.capture_study_execution --output build/study-execution-check --overwrite
+```
+
+This is POSIX serial execution through the existing numerical worker, not a new
+trainer, parallel resource scheduler, OS quota or mid-trial checkpoint mechanism.
+Force-stopped/crashed attempts can retain stale progress; completed publications
+remain subject to native verification before continuation/opening.

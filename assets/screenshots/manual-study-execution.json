@@ -1,0 +1,14 @@
+{
+  "generator": "examples.capture_study_execution",
+  "scope": "Actual GUI-controlled headless CPU CLI study, two/three updates with owned reference inputs and explicit exports; software workflow, not accuracy.",
+  "source_sha256": "107866f5193a89ff4e219314f6fd59aa2e10debce3fc60d492ed411c425cde8d",
+  "capture_tool_sha256": "28f10133c3c49b693d562032a0f539f206a1a08e47f22bf62e2fded65859bed5",
+  "headless": true,
+  "counts": {
+    "completed": 2
+  },
+  "current_model_preserved": true,
+  "parent_rng_preserved": true,
+  "file": "manual-study-execution.png",
+  "sha256": "a9b0a678091be29bbb768cd0ff769212b20b899aa1d2eafb215757d863925bea"
+}

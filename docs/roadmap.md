@@ -679,3 +679,12 @@ Coordinate/field/typed-ID order must match exactly. Differences use A as their
 relative denominator; own-reference errors stay separate and are never ranked.
 CPU snapshot inspection preserves RNG and constructs no network. History overlays,
 automatic study ranking and multi-run plots remain separate future work.
+
+
+## Reviewed desktop study execution (15 November 2026)
+
+Run → Run saved study now controls one serial CLI study on POSIX systems. Review
+freezes inputs; explicit overrides, progress, Stop, owned-group force-stop, strict
+resume and result collection preserve the current canvas/results. An owner pipe
+cleans up numerical work after GUI loss. This is local serial execution, not a
+parallel resource scheduler or partial-checkpoint recovery mechanism.

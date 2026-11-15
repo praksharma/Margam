@@ -18,7 +18,7 @@ from .. import study_document as sd
 from ..studies import resolve_axes
 from .graph import DocumentGraph,prepare_graph
 from .transport import JobTransport,JobFailed,validate_wall_time
-from .study_state import lease,attempt_directory,read_json,verify_resume,execution_record
+from .study_state import lease,attempt_directory,read_json,verify_resume,execution_record,file_identity
 
 
 def timestamp():return datetime.now(timezone.utc).isoformat()
@@ -228,11 +228,12 @@ def _execute_grid(output,report,study,files,selected,lease_fd,*,kind='run',recov
     return report
 
 
-def resume_study(output,*,retry_failed=False):
+def resume_study(output,*,retry_failed=False,expected_execution_sha256=None):
     """Continue a frozen grid; unfinished trials restart with fresh numerical state."""
     if type(retry_failed) is not bool:raise ValueError('Retry failed must be boolean.')
     output=Path(output).absolute()
     with lease(output) as lease_fd:
+        if expected_execution_sha256 is not None and file_identity(output,'execution.json')['sha256']!=expected_execution_sha256:raise ValueError('Execution settings changed since review; review the results folder again.')
         report=read_json(output,'summary.json')
         report,study,files,selected,recovered=verify_resume(output,report,retry_failed=retry_failed)
         stale_final_state=report['state']=='running' or (all(row['status']=='completed' for row in report['trials']) and report['state']!='completed')

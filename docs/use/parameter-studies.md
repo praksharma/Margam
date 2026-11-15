@@ -140,3 +140,6 @@ result collection are still open todos.
 
 POSIX [grid resume](study-cli.md#continue-the-grid) verifies completed trials and
 restarts unfinished trials fresh, preserving all earlier attempts.
+
+Use [Run → Run saved study](run-study.md) for reviewed local serial execution.
+It uses the frozen saved definition and preserves the open canvas/results.

@@ -17,13 +17,18 @@ def main(argv=None):
     run.add_argument('--export',action='store_true',help='Write files only for enabled, connected CSV/ParaView Export blocks.')
     resume=actions.add_parser('resume',help='Verify completed trials and restart unfinished trials fresh.')
     resume.add_argument('output',help='Existing version-2 study results directory.')
+    resume.add_argument('--expected-execution-sha256',help='Reject execution metadata changed after an explicit launcher review.')
     resume.add_argument('--retry-failed',action='store_true',help='Also restart failed trials; invalid/incompatible trials remain recorded.')
     batch=actions.add_parser('slurm-export',help='Export a reviewable single-node Slurm bundle; no submission.')
     batch.add_argument('file');batch.add_argument('--output',required=True)
     batch.add_argument('--cpus',type=int,required=True);batch.add_argument('--memory-mb',type=int,required=True);batch.add_argument('--minutes',type=int,required=True)
     batch.add_argument('--gpu',action='store_true');batch.add_argument('--partition');batch.add_argument('--account');batch.add_argument('--export',action='store_true')
-    args=parser.parse_args(argv)
+    for owned in (run,resume):owned.add_argument('--watch-owner-stdin',action='store_true',help=argparse.SUPPRESS)
+    args=parser.parse_args(argv);owner_watch=None
     try:
+        if getattr(args,'watch_owner_stdin',False):
+            from .execution.owner_watch import watch_owner_stdin
+            owner_watch=watch_owner_stdin()
         from .execution.study_runner import inspect as inspect_study,run_study,resume_study
         if args.action=='slurm-export':
             from .slurm import export_job
@@ -31,7 +36,7 @@ def main(argv=None):
             result=dict(study_id=job['study_id'],resources=job['resources'],submitted=False);code=0
         elif args.action=='inspect':result=inspect_study(args.file);code=0
         else:
-            result=resume_study(args.output,retry_failed=args.retry_failed) if args.action=='resume' else run_study(args.file,args.output,device=args.device,wall_time_seconds=args.wall_time,exports=args.export)
+            result=resume_study(args.output,retry_failed=args.retry_failed,expected_execution_sha256=args.expected_execution_sha256) if args.action=='resume' else run_study(args.file,args.output,device=args.device,wall_time_seconds=args.wall_time,exports=args.export)
             code=130 if result['state']=='interrupted' else 0 if result['state']=='completed' else 1
             result={key:result[key] for key in ('study_id','state','counts')}
         if any(name=='PySide6' or name.startswith('PySide6.') for name in sys.modules):raise RuntimeError('Headless CLI unexpectedly imported Qt.')
@@ -40,6 +45,8 @@ def main(argv=None):
         print('Interrupted before the study could finish recording.',file=sys.stderr);return 130
     except (OSError,ValueError,TypeError,KeyError,RuntimeError,ImportError) as error:
         print('Study command failed: '+str(error),file=sys.stderr);return 2
+    finally:
+        if owner_watch is not None:owner_watch.set()
 
 
 if __name__=='__main__':raise SystemExit(main())

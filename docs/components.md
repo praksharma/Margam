@@ -324,3 +324,10 @@ exact-row, per-field differences using existing discrete error norms.
 `margam/ui/run_comparison.py` provides the explicit comparison dialog. Native
 `load_run_payload` validates restricted CPU data without constructing/restoring a
 network; `load_run` retains its full checkpoint-restoration behavior.
+
+
+`margam/ui/study_execution.py` reviews private study copies and controls the same
+headless CLI through a dedicated POSIX process group. Existing busy guards protect
+the current canvas/results. `margam/execution/owner_watch.py` supplies the opt-in
+owner pipe and isolated-session fallback after GUI loss. Resume can bind a reviewed
+`execution.json` digest under its existing results lease.

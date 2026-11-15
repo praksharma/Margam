@@ -631,6 +631,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.check_action.setShortcut('Ctrl+D')
         self.check_action.triggered.connect(self.validate_button.click)
         self.run_summary_action=run.addAction('Run summary…');self.run_summary_action.triggered.connect(self.show_run_summary)
+        self.study_execution_action=run.addAction('Run saved study…');self.study_execution_action.setIcon(icon('play'));self.study_execution_action.triggered.connect(self.show_study_execution)
         self.study_preview_action=run.addAction('Parameter study…');self.study_preview_action.setIcon(icon('comparison'));self.study_preview_action.triggered.connect(self.show_design_points)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
@@ -891,7 +892,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def update_run_actions(self):
         if not hasattr(self,'save_run_action'):return
         locked=self.is_running() or self.scene.locked
-        if hasattr(self,'force_stop_action'):self.force_stop_action.setEnabled(self.worker is not None and hasattr(self.worker,'force_stop'))
+        if hasattr(self,'force_stop_action'):self.force_stop_action.setEnabled((self.worker is not None and hasattr(self.worker,'force_stop')) or bool(getattr(getattr(self,'study_execution_dialog',None),'active',False)))
         self.open_run_action.setEnabled(not locked)
         self.save_run_action.setEnabled(not locked and self.result is not None)
         self.resume_action.setEnabled(not locked and (self.loaded_checkpoint is not None or self.last_run is not None and self.last_run.model is not None))
@@ -1654,7 +1655,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if not self.is_running():self.scene.delete_selection()
 
     def is_running(self):
-        return self.worker is not None
+        return self.worker is not None or bool(getattr(getattr(self,'study_execution_dialog',None),'active',False))
 
     def preserve_evaluation_weights(self):
         model=self.last_run.model if self.last_run is not None and self.last_run.model is not None else None
@@ -2683,11 +2684,18 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.run_action.setEnabled(not busy);self.check_action.setEnabled(not busy)
         self.evaluate_action.setEnabled(not busy)
         self.stop_action.setEnabled(busy)
-        self.force_stop_action.setEnabled(busy and self.worker is not None and hasattr(self.worker,'force_stop'))
+        self.force_stop_action.setEnabled(busy and ((self.worker is not None and hasattr(self.worker,'force_stop')) or bool(getattr(getattr(self,'study_execution_dialog',None),'active',False))))
         self.update_history_actions();self.update_clipboard_actions();self.update_run_actions();self.update_layout_actions()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.update_buttons()
         if getattr(self,'dataset_cleanup_dialog',None) is not None:self.dataset_cleanup_dialog.update_buttons()
         if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.buttons()
+
+    def show_study_execution(self):
+        from .study_execution import StudyExecution
+        dialog=getattr(self,'study_execution_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=StudyExecution(self);self.study_execution_dialog=dialog
+        dialog.show();dialog.raise_();return dialog
 
     def show_study_results(self):
         from .study_results import StudyResults
@@ -2790,11 +2798,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if self._closing:QTimer.singleShot(0,self.close)
 
     def cancel_training(self):
+        if bool(getattr(getattr(self,'study_execution_dialog',None),'active',False)):self.study_execution_dialog.stop();return
         if self.worker is not None:
             self.worker.cancel();self.cancel_button.setEnabled(False)
             self.statusBar().showMessage('Stopping after the current update batch… Use Run → Force stop numerical process to discard an unresponsive job.')
 
     def force_stop_training(self):
+        if bool(getattr(getattr(self,'study_execution_dialog',None),'active',False)):self.study_execution_dialog.stop(force=True);return
         if self.worker is not None and self.result is None and hasattr(self.worker,'force_stop'):
             self.worker.force_stop();self.cancel_button.setEnabled(False)
             self.statusBar().showMessage('Force-stopping numerical process · running job will be discarded')
@@ -2814,6 +2824,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def closeEvent(self,event):
         if self.is_running():
             self._closing=True;self.cancel_training();event.ignore();return
+        if getattr(self,'study_execution_dialog',None) is not None:self.study_execution_dialog.shutdown_review()
         if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.shutdown()
         if getattr(self,'run_comparison_dialog',None) is not None:self.run_comparison_dialog.shutdown()
         if not self.confirm_discard():

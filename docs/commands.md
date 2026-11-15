@@ -756,3 +756,15 @@ python -m examples.capture_run_comparison --overwrite
 
 The capture runs a tiny owned-reference CLI study, then compares its saved
 predictions without changing the open model. See [comparison semantics](use/compare-runs.md).
+
+
+### Desktop-controlled study workflow
+
+```bash
+python -m unittest discover -s tests -p 'test_study_execution.py' -v
+python -m examples.capture_study_execution --output build/study-execution-check --overwrite
+```
+
+The capture requires a fresh workflow folder. It launches two real CLI trials from
+**Run → Run saved study**, verifies native owned-data archives/exports and captures
+the completed controls. See [desktop study execution](use/run-study.md).
