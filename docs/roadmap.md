@@ -723,3 +723,12 @@ The study-results browser exports a UTF-8 CSV of its displayed metadata snapshot
 including every trial and reference output, exact choices/reasons/attempt history
 and recorded provenance. Missing metrics remain absent. Export is explicit,
 atomic and no-clobber; it neither opens numerical payloads nor ranks results.
+
+
+### Paired study rows — 16 November 2026
+
+Parameter studies can pair matching candidate/range positions, broadcasting single
+values. This complements Cartesian expansion without changing old study files.
+Version 3 freezes the paired mode and network options in study identity. Native
+execution, resume, Slurm bundles and collection resolve the same ordered rows;
+conditional rules and component/topology alternatives remain separate work.

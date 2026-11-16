@@ -139,7 +139,7 @@ def verify_resume(root,report,*,retry_failed):
     validate_wall_time(execution['wall_time_seconds'])
     device,_,versions=runtime(execution['requested_device'])
     if device!=execution['device'] or versions!=report['runtime']:raise ValueError('Recorded runtime/device changed; use a fresh results directory.')
-    _,total=resolve_axes(study['model'],study['axes']);rows=report['trials']
+    _,total=resolve_axes(study['model'],study['axes'],study.get('combination','cartesian'));rows=report['trials']
     if not isinstance(rows,list) or len(rows)!=total or not isinstance(report['sessions'],list) or not 1<=len(report['sessions'])<=4096:raise ValueError('Invalid study trial/session records.')
     if len(report['sessions'])==4096:raise ValueError('Study session budget reached; use a fresh results directory.')
     if report['state'] not in {'running','completed','interrupted','aborted','finished_with_errors'}:raise ValueError('Invalid study execution state.')

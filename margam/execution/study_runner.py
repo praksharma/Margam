@@ -71,7 +71,7 @@ def snapshot(source,destination):
 
 
 def inspect(path):
-    study,files=sd.read(path);_,total=resolve_axes(study['model'],study['axes'])
+    study,files=sd.read(path);_,total=resolve_axes(study['model'],study['axes'],study.get('combination','cartesian'))
     return dict(study_id=study['study_id'],trials=total,inputs=len(files),input_bytes=sum(map(len,files.values())),execution=study['execution'])
 
 
@@ -99,7 +99,7 @@ def run_study(path,output,*,device=None,wall_time_seconds=None,exports=False):
     if output.exists() or output.is_symlink():raise FileExistsError('Choose a fresh output directory. Existing study results are never overwritten.')
     with TemporaryDirectory(prefix='margam-study-source-') as directory:
         frozen=Path(directory)/'study.margam-study';archive_sha=snapshot(path,frozen)
-        study,files=sd.read(frozen);_,total=resolve_axes(study['model'],study['axes'])
+        study,files=sd.read(frozen);_,total=resolve_axes(study['model'],study['axes'],study.get('combination','cartesian'))
         intent=study['execution'];requested=device or intent['device'];limit=intent['wall_time_seconds'] if wall_time_seconds is None else wall_time_seconds
         effective,incompatible,versions=runtime(requested);identity=source_identity()
         output.mkdir(mode=0o700,parents=True,exist_ok=False);shutil.copyfile(frozen,output/'study.margam-study')

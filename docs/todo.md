@@ -325,9 +325,11 @@ scheduler workflows below remain proposed.
   and existing compatibility checks. Preserve version-1 numeric study identities.
 - [ ] Extend alternatives to configured PINN recipes/trainers/optimizers and
   topology changes with inspectable per-trial configurations and typed port contracts.
-- [ ] Design iterator/alternative blocks for concrete existing components. Make
-  Cartesian, paired and conditional combination rules explicit; preview trial
-  counts and budgets before running.
+- [x] Add explicit paired parameter lists alongside Cartesian grids: matching
+  lengths with singleton broadcast, bounded shared resolution, version-3 mode
+  identity, GUI preview/save/open and native CLI/resume/Slurm/collection support.
+- [ ] Design iterator/alternative blocks and conditional combination rules for
+  concrete existing components; preview counts and budgets before running.
 - [x] Preflight native finite-grid graph/configuration/required-data/output
   contracts per trial; record invalid, explicit-device incompatible, failed,
   interrupted, completed and not-started outcomes with reasons and no fake metrics.

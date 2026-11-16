@@ -33,7 +33,7 @@ def collect(root,*,check=None):
     if file_identity(root,'study.margam-study',check=check)['sha256']!=report['study_archive_sha256']:raise ValueError('Frozen study checksum changed.')
     study,_=sd.read(safe_path(root,'study.margam-study'));cancelled(check)
     if study['study_id']!=report['study_id'] or study['execution']!=report['saved_execution']:raise ValueError('Study identity differs from the results.')
-    _,total=resolve_axes(study['model'],study['axes']);rows=report['trials']
+    _,total=resolve_axes(study['model'],study['axes'],study.get('combination','cartesian'));rows=report['trials']
     if not isinstance(rows,list) or len(rows)!=total:raise ValueError('Study trial count differs.')
     if report['state'] not in {'running','completed','interrupted','aborted','finished_with_errors'}:raise ValueError('Invalid study state.')
     if report['counts']!=dict(Counter(row['status'] for row in rows)):raise ValueError('Study status counts differ.')

@@ -1,4 +1,4 @@
-"""Bounded finite-grid design-point previews; no execution, sampling or file writes."""
+"""Bounded Cartesian/paired design-point previews; no execution, sampling or file writes."""
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import itertools
@@ -32,7 +32,7 @@ def catalogue(document):
     return sorted(rows,key=lambda row:(row['title'],row['node_id'],row['parameter']))
 
 
-def values_for(parameter,mode,text):
+def values_for(parameter,mode,text,*,allow_duplicates=False):
     if not isinstance(parameter,str) or not isinstance(mode,str) or parameter not in FIELDS or mode not in ('fixed','candidates','range'):raise ValueError('Choose a supported parameter and mode.')
     if not isinstance(text,str) or len(text)>4096:raise ValueError('Keep each value specification within 4096 characters.')
     def finite(value):
@@ -46,7 +46,7 @@ def values_for(parameter,mode,text):
         if mode=='range':raise ValueError('Network architecture uses Fixed/Candidates, not numeric ranges.')
         values=[value] if mode=='fixed' else value
         if not isinstance(values,list) or not 1<=len(values)<=MAX_VALUES or any(not isinstance(kind,str) or kind not in NETWORK_NAMES for kind in values):raise ValueError('Choose supported architecture keys: '+', '.join(NETWORK_NAMES))
-        if len(set(values))!=len(values):raise ValueError('Remove duplicate architecture choices.')
+        if not allow_duplicates and len(set(values))!=len(values):raise ValueError('Remove duplicate architecture choices.')
         return list(values)
     if mode=='range':
         if parameter=='layers':raise ValueError('Use fixed/candidate lists of hidden widths; ranges are scalar only.')
@@ -72,7 +72,7 @@ def values_for(parameter,mode,text):
         if not valid:raise ValueError('Use integer values for counts/seeds, finite numeric coefficients, and lists of integers for hidden layers. Only network seed can be null.')
     if parameter not in INTEGER and parameter!='layers':values=[float(item) for item in values]
     normalized=[json.dumps(item,sort_keys=True,allow_nan=False) for item in values]
-    if len(set(normalized))!=len(normalized):raise ValueError('Remove duplicate candidate values.')
+    if not allow_duplicates and len(set(normalized))!=len(normalized):raise ValueError('Remove duplicate candidate values.')
     return deepcopy(values)
 
 
@@ -88,8 +88,9 @@ def config_from_document(document,scene=None):
     return assemble(list(nodes.values()),wires)
 
 
-def resolve_axes(document,axes):
+def resolve_axes(document,axes,combination='cartesian'):
     """Validate and resolve the bounded finite grid without assembling trials."""
+    if combination not in ('cartesian','paired'):raise ValueError('Choose Cartesian or paired combinations.')
     if not isinstance(axes,list) or not 1<=len(axes)<=MAX_AXES:raise ValueError('Choose 1 to 8 parameter rows.')
     available={(row['node_id'],row['parameter']):row for row in catalogue(document)}
     choices=[];seen=set();total=1
@@ -99,16 +100,27 @@ def resolve_axes(document,axes):
         key=(axis['node_id'],axis['parameter'])
         if key not in available:raise ValueError('A chosen block/parameter no longer exists or is not supported. Choose it again.')
         if key in seen:raise ValueError('Each block parameter can appear only once.')
-        seen.add(key);values=values_for(axis['parameter'],axis['mode'],axis['text']);total*=len(values)
-        if total>MAX_TRIALS:raise ValueError('Preview is limited to 512 design points. Reduce candidate lists/ranges.')
+        seen.add(key);values=values_for(axis['parameter'],axis['mode'],axis['text'],allow_duplicates=combination=='paired');total*=len(values)
+        if combination=='cartesian' and total>MAX_TRIALS:raise ValueError('Preview is limited to 512 design points. Reduce candidate lists/ranges.')
         choices.append((available[key],values))
+    if combination=='paired':
+        lengths={len(values) for _,values in choices if len(values)>1}
+        if len(lengths)>1:raise ValueError('Paired candidate/range lists must have matching lengths; single values repeat across rows.')
+        total=max((len(values) for _,values in choices),default=1)
     return choices,total
 
 
-def architecture_defaults(document,axes,existing=None):
+def combinations(choices,mode='cartesian'):
+    if mode=='cartesian':return itertools.product(*(values for _,values in choices))
+    if mode!='paired':raise ValueError('Choose Cartesian or paired combinations.')
+    count=max((len(values) for _,values in choices),default=1)
+    return (tuple(values[0] if len(values)==1 else values[index] for _,values in choices) for index in range(count))
+
+
+def architecture_defaults(document,axes,existing=None,combination='cartesian'):
     """Freeze only the families actually selected, preserving opened snapshots."""
     from .components.network_config import network_options
-    choices,_=resolve_axes(document,axes);result={}
+    choices,_=resolve_axes(document,axes,combination);result={}
     for axis,values in choices:
         if axis['parameter']!='network_type':continue
         for kind in values:
@@ -135,18 +147,18 @@ def apply_choices(document,choices,combination,*,network_defaults=None):
     return candidate,selected,networks
 
 
-def preview(document,axes,*,scene=None,network_defaults=None):
-    """Enumerate bounded Cartesian choices; invalid trials retain a reason, no metric.
+def preview(document,axes,*,scene=None,network_defaults=None,combination='cartesian'):
+    """Enumerate bounded Cartesian/paired choices; invalid trials retain a reason, no metric.
 
     Config validation is structural/numerical preflight, not execution/data/output
     qualification. This function never constructs networks or samples points.
     """
     from .components.resources import architecture_size
-    choices,total=resolve_axes(document,axes)
-    defaults=architecture_defaults(document,axes,network_defaults)
+    choices,total=resolve_axes(document,axes,combination)
+    defaults=architecture_defaults(document,axes,network_defaults,combination)
     trials=[]
-    for index,combination in enumerate(itertools.product(*(values for _,values in choices)),1):
-        candidate,settings,networks=apply_choices(document,choices,combination,network_defaults=defaults)
+    for index,values in enumerate(combinations(choices,combination),1):
+        candidate,settings,networks=apply_choices(document,choices,values,network_defaults=defaults)
         row=dict(design_point=f'DP{index:04d}',choices=settings,status='Invalid',reason='',updates=None,parameters=None,networks=networks)
         try:
             config=config_from_document(candidate,scene);config.validate()

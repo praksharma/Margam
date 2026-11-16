@@ -715,3 +715,14 @@
   formulas. Publish atomically with no-clobber and a bounded size; never rank
   trials, infer compatibility or imply payload verification. Disable export while
   reading or after a failed refresh, without changing model/results/RNG.
+
+
+- Paired studies use version 3 with `combination="paired"` and a complete selected
+  family-default map (empty without architecture axes). Equal-length non-singleton
+  lists pair by position; singletons repeat. Repeated values/rows are explicit
+  paired trials; keep Cartesian duplicate rejection. Reject mismatches instead of zip
+  truncation. Share combination resolution across preview/native trials and use
+  the same total in run/resume/collection. Preserve Cartesian v1/v2 bytes and trial
+  identities. Invalid pairs retain row numbers and reasons. Bound paired grids to
+  64 rows/8 axes without applying a Cartesian-product limit; conditional/topology
+  alternatives remain deferred.

@@ -1869,3 +1869,32 @@ exports all three CSV rows and checks their reported statuses and metadata scope
 This is workflow evidence, not trained-solution accuracy or payload verification
 by CSV export. Source, generator and image hashes are checked against maintained
 files.
+
+
+## Paired finite-grid studies (16 November 2026)
+
+Seven new paired-study checks and 20 existing preview, portable-definition and
+network-alternative checks pass: **27 distinct checks**, including real CPU/CUDA
+paired execution, native opening and unchanged completed-study resume. Coverage
+includes singleton broadcasting, exact positional order, Cartesian-versus-paired
+counts, repeated paired entries with Cartesian duplicate rejection,
+mismatched-length rejection, 64-row pairing beyond the Cartesian product
+budget, invalid-row identity, numeric-only and architecture version-3 bundles,
+strict mode/schema validation, frozen defaults under a changed library default,
+GUI open/save/preview and model/Undo/RNG preservation.
+
+The desktop launcher executes a saved paired study through the real headless
+CLI; GUI collection and metadata CSV export retain its two ordered rows. A
+version-3 Slurm bundle runs through the existing local runner with completed
+and invalid outcomes. These are local workflow checks, not scheduler allocation
+qualification or numerical-accuracy evidence.
+
+The [actual paired preview](../assets/screenshots/manual-study-paired.png) and
+[manifest](../assets/screenshots/manual-study-paired.json) show two paired network/
+width rows, one valid and one invalid. No training occurs in this capture.
+Source, generator and image hashes match maintained files; the model and parent
+RNG remain unchanged. The manual checks 88 rendered pages. CUDA audit discovery
+selects 44 cases; the full audit was not rerun.
+
+The 53 related CLI, resume, collection, Slurm, desktop-execution and CSV checks
+also pass: **80 distinct focused checks** in total, without CUDA skips on this host.

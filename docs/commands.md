@@ -807,3 +807,11 @@ Study metadata CSV export and illustrated collection:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_csv test_study_results -v
 python -m examples.capture_study_results --overwrite
 ```
+
+
+Paired study checks and illustrated preview:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_paired test_study_preview test_study_document test_study_networks -v
+python -m examples.capture_study_paired --overwrite
+```

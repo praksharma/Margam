@@ -21,6 +21,8 @@ class DesignPoints(QDialog):
         self.include_links=QCheckBox('Include linked inputs');self.include_links.setToolTip('Explicitly copy linked CSV/NPZ/NetCDF inputs into this study. Owned files are always included. Original inputs/model mappings stay unchanged.');files_row.addWidget(self.include_links)
         files_row.addStretch()
         self.snapshot=QLabel('No study snapshot saved or opened. Model Save does not save this table.');self.snapshot.setTextFormat(Qt.TextFormat.PlainText);self.snapshot.setWordWrap(True);layout.addWidget(self.snapshot)
+        grouping=QHBoxLayout();layout.addLayout(grouping);grouping.addWidget(QLabel('Combine parameter lists'))
+        self.combination=QComboBox();self.combination.addItem('Cartesian · all combinations','cartesian');self.combination.addItem('Paired · matching rows','paired');self.combination.setToolTip('Paired lists must have matching lengths. A single value repeats across rows; there is no truncation or conditional filtering.');grouping.addWidget(self.combination);grouping.addStretch()
         execution=QHBoxLayout();layout.addLayout(execution);execution.addWidget(QLabel('Future execution device'))
         self.device=QComboBox()
         for label,key in [('Automatic','auto'),('CPU','cpu'),('GPU / CUDA','cuda')]:self.device.addItem(label,key)
@@ -46,6 +48,7 @@ class DesignPoints(QDialog):
         self.details=QPlainTextEdit();self.details.setReadOnly(True);layout.addWidget(self.details,1)
         note=QLabel('Budget totals include structurally/numerically valid trials only. Parameter counts allocate no network. Counts are not runtime or peak-memory predictions; datasets, outputs and full execution still need validation. No trials run here.')
         note.setWordWrap(True);layout.addWidget(note)
+        self.combination.currentIndexChanged.connect(lambda:self.invalidate())
         self.device.currentIndexChanged.connect(lambda:self.invalidate());self.time_limit.valueChanged.connect(lambda:self.invalidate())
         close=QPushButton('Close');close.clicked.connect(self.close);layout.addWidget(close)
 
@@ -119,7 +122,7 @@ class DesignPoints(QDialog):
         try:
             study,files=capture(capture_model(self.owner),self.axes_values(),self.owner.project_workspace,
                 execution=dict(device=self.device.currentData(),wall_time_seconds=self.time_limit.value()),
-                include_links=self.include_links.isChecked() if include_links is None else include_links,scene=self.owner.scene,network_defaults=self.network_defaults)
+                include_links=self.include_links.isChecked() if include_links is None else include_links,scene=self.owner.scene,network_defaults=self.network_defaults,combination=self.combination.currentData())
             if path is None:
                 path,_=QFileDialog.getSaveFileName(self,'Save portable study',self.study_path or 'study.margam-study','Margam study (*.margam-study)',options=QFileDialog.Option.DontConfirmOverwrite)
                 if not path:return False
@@ -133,6 +136,7 @@ class DesignPoints(QDialog):
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             self.status.setText('Study could not be saved: '+str(error));return False
         self.network_defaults=deepcopy(study.get('network_defaults'))
+        self.combination.setCurrentIndex(self.combination.findData(study.get('combination','cartesian')))
         self.study_path=str(Path(path).absolute());self.snapshot.setText('Last saved snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Save again to freeze later model/table changes.')
         self.status.setText(f"Saved portable study with {len(files)} input snapshots. No training/checkpoint/results were saved or executed.");return True
 
@@ -163,6 +167,7 @@ class DesignPoints(QDialog):
             mode=self.axes.cellWidget(row,1);mode.setCurrentIndex(mode.findData(axis['mode']));self.axes.cellWidget(row,2).setText(axis['text'])
         self.device.setCurrentIndex(self.device.findData(study['execution']['device']));self.time_limit.setValue(study['execution']['wall_time_seconds'])
         self.network_defaults=deepcopy(study.get('network_defaults'))
+        self.combination.setCurrentIndex(self.combination.findData(study.get('combination','cartesian')))
         self.study_path=str(Path(path).absolute());self.include_links.setChecked(False)
         self.snapshot.setText('Opened snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Private input copies restored; application device/preferences unchanged.')
         self.invalidate('Study opened. Preview to recheck the restored model and parameter choices. No training was started.');return True
@@ -176,7 +181,7 @@ class DesignPoints(QDialog):
             if key is None:self.invalidate('No supported block parameter is available.');return False
             key=json.loads(key)
             axes.append(dict(node_id=key[0],parameter=key[1],mode=self.axes.cellWidget(row,1).currentData(),text=self.axes.cellWidget(row,2).text()))
-        try:result=preview(capture_model(self.owner),axes,scene=self.owner.scene,network_defaults=self.network_defaults)
+        try:result=preview(capture_model(self.owner),axes,scene=self.owner.scene,network_defaults=self.network_defaults,combination=self.combination.currentData())
         except (ValueError,TypeError,KeyError,OSError) as error:self.invalidate(str(error));return False
         self.result=result;self.table.setRowCount(len(result['trials']))
         for index,trial in enumerate(result['trials']):

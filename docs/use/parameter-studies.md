@@ -41,6 +41,32 @@ integers. `null` is allowed only for network seed, retaining its normal fallback
 to the sampling seed. Boolean values, duplicate candidates and zero/wrong-direction
 steps are rejected. Hidden layers use fixed/candidate lists, not scalar ranges.
 
+## Choose how lists combine
+
+The combination selector defaults to **Cartesian · all combinations**. Choose
+**Paired · matching rows** to keep candidate lists aligned by position.
+For example, `["fcnn","siren"]` and
+`[[16,16],[32,32]]` produce just two paired trials: FCNN with 16/16 and SIREN
+with 32/32. Cartesian mode produces four.
+
+![Paired network and width choices with an invalid DGM row](../../assets/screenshots/manual-study-paired.png)
+
+Every list with more than one value must have the **same length** in paired mode.
+A single value repeats across all rows, including a Fixed parameter. Ranges pair
+in their generated order; descending ranges remain descending. There is no silent
+truncation, sorting, conditional filtering or removal of incompatible rows.
+Repeated values and repeated complete rows are allowed in paired mode and keep
+separate trial IDs; Cartesian mode still rejects duplicate axis values.
+A mismatched length rejects the draft; an invalid configured trial remains in
+the preview/results with its original number and reason.
+
+Paired studies support up to 8 axes and 64 rows and save as study format 3.
+The mode is part of study identity and survives opening, GUI/CLI execution,
+Slurm export, results collection and resume. Older Margam readers reject these
+files; update the cluster checkout before running them. Existing Cartesian
+version-1/2 files and their identities stay unchanged. Conditional combinations
+and iterator blocks remain future work.
+
 The preview takes the **Cartesian product**: three update budgets × two learning
 rates × two networks gives twelve design points. The last parameter row varies
 fastest. The DP numbers identify rows. A saved study also has a full content identity;

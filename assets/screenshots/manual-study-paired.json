@@ -1,0 +1,14 @@
+{
+  "generator": "examples.capture_study_paired",
+  "scope": "Actual two-row paired architecture/width preview: one structurally valid and one invalid. Version-3 study saved; no training or accuracy claim.",
+  "source_sha256": "9fdcc8ff717e61f5caaa9e0654b9634ef390ae0d6387f3b6449a2e4a746821a8",
+  "capture_tool_sha256": "6e1824e69aff7467574ddf5cf0571f5e4d278265048781a56651fdd167770cdc",
+  "study_version": 3,
+  "total": 2,
+  "valid": 1,
+  "invalid": 1,
+  "current_model_preserved": true,
+  "parent_rng_preserved": true,
+  "file": "manual-study-paired.png",
+  "sha256": "1c5e631c83a9f06dc0baeeb5ceba153f7e191a8ba923a58338469f2749711f57"
+}

@@ -26,7 +26,7 @@ SIREN, Fourier or affine-input settings leaking into another architecture.
 Layer widths and network seed stay shared unless you sweep them separately.
 
 For a new draft the snapshots start from current library defaults. Preview details
-show the actual resolved options. Saving a study freezes them in its version-2
+show the actual resolved options. Saving a study freezes them in its version-2/3
 manifest. Reopening, previewing, executing and resaving that study preserves those
 values even if library default values later change. **Clear draft** removes the
 saved family snapshots as well as its parameter rows; newly added choices then use
@@ -55,9 +55,12 @@ Use the [results browser](study-results.md) to inspect outcomes and verify/open 
 completed trial. Different families can have different parameter counts and costs;
 equal widths/update counts are not equal compute or accuracy protocols.
 
-Numeric-only studies remain **version 1**, with their previous identities and
-custom base options unchanged. Architecture studies use **version 2**; older
+Cartesian numeric-only studies remain **version 1**, with their previous identities and
+custom base options unchanged. Cartesian architecture studies use **version 2**; older
 readers reject this version rather than ignoring its frozen settings. See the
 [format contract](../study-format.md). Source/runtime compatibility checks for resume
 remain unchanged. Configured recipe/trainer/optimizer/topology alternatives are
 separate future work.
+
+[Paired mode](parameter-studies.md#choose-how-lists-combine) instead matches list
+positions and uses version 3, with the same frozen family-option policy.

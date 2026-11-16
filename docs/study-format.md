@@ -1,6 +1,6 @@
 # Portable finite-grid study format
 
-Version 1/2 `.margam-study` files are data-only ZIP bundles. This is the serialization
+Version 1/2/3 `.margam-study` files are data-only ZIP bundles. This is the serialization
 and deterministic trial-resolution contract; the [serial CLI runner](use/study-cli.md)
 now consumes it through the shared native execution gate.
 See [the illustrated workflow](use/parameter-studies.md).
@@ -8,11 +8,12 @@ See [the illustrated workflow](use/parameter-studies.md).
 ## Contents and identity
 
 `study.json` has these exact base fields; version 2 additionally requires
-`network_defaults`, described below:
+`network_defaults`, described below. Version 3 requires both `network_defaults`
+and `combination`:
 
 | Field | Meaning |
 | --- | --- |
-| `format`, `version` | `margam-study`, integer `1` or `2` |
+| `format`, `version` | `margam-study`, integer `1`, `2` or `3` |
 | `model` | Current versioned Margam graph, including explicit output blocks |
 | `axes` | Ordered parameter rows: block ID, parameter, mode, original JSON text |
 | `execution` | Device intent `auto`/`cpu`/`cuda`, wall-time seconds 0–604800 |
@@ -50,7 +51,7 @@ It is included in study identity. Materialization applies these literal options,
 including when a candidate equals the base family; base custom options are not
 implicitly carried across. Preview and execution share this application rule.
 
-Numeric-only studies remain version 1 and retain their identities. Version 1 cannot
+Cartesian numeric-only studies remain version 1 and retain their identities. Version 1 cannot
 contain architecture axes; version 2 requires them. Unknown/missing option fields,
 undeclared families and malformed maps are rejected. Changed library default values
 do not replace saved values; future unsupported option schemas must fail explicitly
@@ -120,11 +121,30 @@ may retain original source paths; inspect private models before publishing them.
 
 ## Results and grid continuation
 
-Study bundles use version 1 for numeric-only grids and version 2 for frozen
-network-family alternatives. CLI result folders independently use version-2
+Study bundles use version 1 for Cartesian numeric-only grids, version 2 for
+Cartesian frozen network-family alternatives, and version 3 for paired lists. CLI result folders independently use version-2
 `summary.json` records and a separate frozen `execution.json`. Per-trial attempts
 have independent directories and an atomically published `artifacts/publication.json`
 manifest binding trial identity, configuration, code and payload checksums.
 The [CLI guide](use/study-cli.md#continue-the-grid) describes POSIX grid resume,
 explicit failed retries, prior-attempt retention and process leases. This restarts
 unfinished trials fresh; it does not continue their partial optimizer state.
+
+
+## Paired studies (version 3)
+
+Version 3 adds `combination: "paired"` and requires `network_defaults` (empty
+when no network-family axis exists). Only this exact mode is accepted in version
+3; Cartesian studies continue to use version 1 or 2. All these fields participate
+in the content hash. Missing/unknown fields or modes are rejected.
+
+Resolve each axis using the existing Fixed/Candidates/Range rules. All lists
+longer than one must have the same length. Trial i takes element i from each such
+list and repeats each singleton value. The total is the longest list, at most 64,
+without computing or imposing the Cartesian product limit on paired grids.
+The shared combination resolver feeds preview and native trial materialization;
+runner, resume and collection use the same total and retain invalid row indices.
+Repeated axis values and complete rows are explicit separate paired trials;
+Cartesian duplicate-value rejection is unchanged. No conditional skipping or
+topology changes are implied. Frozen family defaults
+follow the version-2 policy. Version-1/2 serialization and identities are unchanged.
