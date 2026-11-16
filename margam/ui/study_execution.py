@@ -58,6 +58,7 @@ class StudyProcess(QThread):
                     elif not self.interrupt_sent:process.send_signal(signal.SIGINT);self.interrupt_sent=True
                 except ProcessLookupError:pass
     def report(self):
+        if self.output is None:return
         try:self.progress.emit(reported_progress(self.output))
         except (OSError,ValueError,KeyError,TypeError):pass
     def run(self):

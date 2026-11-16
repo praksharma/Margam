@@ -1951,3 +1951,31 @@ window-transfer qualification remain explicit TODOs.
 The 24 related isolated-worker, deadline and CLI checks also pass: **31 distinct
 focused checks** in total, including actual CUDA execution with no skips on this
 host. No real memory exhaustion was induced.
+
+
+## Reviewed desktop resource probes (16 November 2026)
+
+Seven new desktop checks plus seven native-probe, ten study-controller and eight
+study-collection checks pass: **32 focused checks**, including real CPU/CUDA probes and actual GUI-owner
+loss. The selected saved study is frozen at review; replacing its original file
+does not alter the probe. A real existing canvas result/checkpoint, graph/Undo
+and CPU/CUDA RNG remain unchanged. The global CUDA preference overrides a saved
+CPU intent without changing the file or preference.
+
+Checks cover invalid reviews, setting/device changes, failed reader/thread start,
+empty-message allocation errors in the shared reader,
+failed CLI and malformed-report rejection, cancelled finished readers/stale
+callbacks, busy/device guards, Stop and Force stop, hide/reopen, main-close
+followed by the normal discard prompt, and owner-pipe interruption/reaping of the
+probe's numerical child. The existing serial study controller still passes.
+
+The [actual dialog capture](../assets/screenshots/manual-resource-probe.png) and
+[manifest](../assets/screenshots/manual-resource-probe.json) execute two CPU
+updates of the shipped portable study and verify source bytes, model/Undo/RNG
+and absence of adopted results. Source, generator and image hashes match
+maintained files. These measurements do not qualify full-run memory fit, later
+adaptive/output costs, multi-window transfer or solution accuracy.
+
+The manual checks 89 rendered pages and their local links. CUDA audit discovery
+selects 47 cases; the full audit was not rerun. No real memory exhaustion was
+induced; allocation failure is injected.

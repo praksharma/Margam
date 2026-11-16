@@ -12,7 +12,7 @@ class Reader(QThread):
     def __init__(self,operation,parent):super().__init__(parent);self.operation=operation;self.value=None;self.error=None;self.abort_requested=False
     def run(self):
         try:self.value=self.operation(lambda:self.abort_requested or self.isInterruptionRequested())
-        except Exception as error:self.error=str(error)
+        except Exception as error:self.error=str(error) or type(error).__name__
 
 
 class StudyResults(QDialog):

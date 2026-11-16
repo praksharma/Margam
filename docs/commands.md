@@ -834,3 +834,11 @@ python -m examples.profile_resource_probe --devices cpu cuda --output build/reso
 ```
 
 See [the probe scope and exclusions](use/resource-probe.md).
+
+
+Reviewed desktop resource-probe checks and real UI capture:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_resource_probe_ui test_resource_probe test_study_execution test_study_results -v
+python -m examples.capture_resource_probe --overwrite
+```

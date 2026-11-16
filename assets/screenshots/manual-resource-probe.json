@@ -1,0 +1,58 @@
+{
+  "generator": "examples.capture_resource_probe",
+  "scope": "Actual desktop-reviewed CPU probe of two native updates; measured child scope only, not fit or solution accuracy. No trained result adopted.",
+  "source_sha256": "2bfa7868e2037979ff2c480a936a84c993cb5d5e3fb87df512c2f4a62617562f",
+  "generator_sha256": "5a90650f1ada2aebc5ab79b2ceb12323ed61783ab1341477ac2ca53eb044bff8",
+  "current_model_preserved": true,
+  "parent_rng_preserved": true,
+  "study_unchanged": true,
+  "report": {
+    "format": "margam-resource-probe",
+    "version": 1,
+    "method": "PINN",
+    "device": "cpu",
+    "dtype": "float32",
+    "requested_updates": 2,
+    "completed_updates": 2,
+    "converged": false,
+    "build_and_train_seconds": 0.7072445709782187,
+    "process_peak_rss_bytes": 876126208,
+    "cuda_peak_allocated_bytes": null,
+    "cuda_peak_reserved_bytes": null,
+    "initial_pde_rows": 128,
+    "final_pde_rows": 128,
+    "observed_sampling_events": 0,
+    "scope": "Fresh disposable model; complete native updates/attempts at the original schedule horizon. CPU RSS is the whole child-process high-water mark, including imports; CUDA peaks cover model construction and training allocator use after context initialization.",
+    "excluded": [
+      "output evaluation and exports",
+      "checkpoint capture and transfer",
+      "later adaptive growth or schedules not reached",
+      "other processes and CUDA driver/context memory"
+    ],
+    "runtime": {
+      "python": "3.14.8",
+      "torch": "2.14.1+cu130",
+      "cuda": "13.0"
+    },
+    "capacity_prediction": false,
+    "checkpoint_retained": false,
+    "study_id": "044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+    "trial_id": "DP0001-044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+    "study_archive_sha256": "2691d51e301a1a0d2a24097543dc902d3b800e0d33df28a1832f50453866e1a7",
+    "source_sha256": "2bfa7868e2037979ff2c480a936a84c993cb5d5e3fb87df512c2f4a62617562f",
+    "numerical_job_seconds": 3.229748899990227,
+    "requested_output_count": 0,
+    "requested_device": "cpu",
+    "wall_time_seconds": 60.0,
+    "configured_updates": 1000,
+    "configured_method": "baseline",
+    "network_type": "fcnn",
+    "layers": [
+      16,
+      16
+    ],
+    "adaptive_sampling": {}
+  },
+  "file": "manual-resource-probe.png",
+  "sha256": "0279a01fd758f530ef7a3bba7dd176ea0f08af1187e4cf2711830b68510abde4"
+}

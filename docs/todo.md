@@ -749,8 +749,11 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   complete native updates/attempts, measured process RSS and CUDA allocator peaks,
   original schedules, method-specific work, observed adaptive events, source guards
   and no retained checkpoint/output. State output/later-growth exclusions explicitly.
-- [ ] Add reviewed desktop resource-probe controls and qualify Expert multi-window
-  teacher-transfer peaks; the current probe is CLI/API and single-window only.
+- [x] Add reviewed desktop resource-probe controls using the existing owned CLI
+  process: frozen saved inputs, global device, explicit budget/limit, measured
+  report, Stop/Force stop, owner-loss cleanup and preserved current results/RNG.
+- [ ] Qualify Expert multi-window resource probes and teacher-transfer peaks;
+  the current native probe remains single-window only.
 - [x] Add an opt-in application-wide child wall-time limit for training, resume
   and evaluation, with default unlimited, read-only run-summary disclosure,
   local preferences, guarded edits, discarded expired jobs and verified cleanup.

@@ -750,3 +750,12 @@ worker. They execute complete method updates at the original schedule horizon,
 measure process RSS/CUDA allocator peaks and discard weights. Output and later
 adaptive costs remain explicit exclusions rather than extrapolated predictions.
 Desktop controls and multi-window teacher-transfer qualification remain open.
+
+
+### Reviewed desktop resource probes — 16 November 2026
+
+Run → Resource probe now reviews one saved design point, freezes its inputs and
+executes the disposable CLI probe under the application device selection. It
+reuses the owned-process/owner-pipe lifecycle and preserves canvas results.
+Measured memory and timing remain distinct from fit predictions, later growth and
+outputs. Expert multi-window peak qualification remains open.

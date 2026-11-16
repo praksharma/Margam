@@ -27,7 +27,7 @@ def main(argv=None):
     probe.add_argument('file');probe.add_argument('--trial',type=int,default=1,help='One-based design point.')
     probe.add_argument('--updates',type=int,default=1,help='Complete updates/attempts, 1–1000, within the original training budget.')
     probe.add_argument('--device',choices=('auto','cpu','cuda'));probe.add_argument('--wall-time',type=float,default=60,help='Isolated child limit in seconds; default 60, 0 unlimited.')
-    for owned in (run,resume):owned.add_argument('--watch-owner-stdin',action='store_true',help=argparse.SUPPRESS)
+    for owned in (run,resume,probe):owned.add_argument('--watch-owner-stdin',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args(argv);owner_watch=None
     try:
         if getattr(args,'watch_owner_stdin',False):

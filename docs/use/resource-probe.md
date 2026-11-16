@@ -13,7 +13,7 @@ Use a study with one Fixed parameter if you only need one configuration. `--tria
 is the **one-based design-point number**; paired and Cartesian studies use their
 saved ordering. The command prints JSON and creates no results folder, run
 archive or export files. It never adopts the probe's weights into the application.
-There is currently no desktop probe button.
+For desktop controls, use **Run → Resource probe…** as described below.
 
 Choose `--device cuda` for CUDA, or `auto` for availability-based selection. If
 omitted, the saved study's device intent applies. Explicit CUDA never silently
@@ -25,6 +25,38 @@ For scripts, the same operation returns a plain report dictionary:
 from margam.execution.probe import probe_study
 report = probe_study("my-study.margam-study", trial=1, updates=2, device="cpu")
 ```
+
+## Run from the desktop
+
+Choose **Run → Resource probe…**, browse to a saved `.margam-study`, choose the
+one-based design point and probe update/attempt budget, then press **Review**.
+Review validates that selected trial and freezes a private copy of its saved
+inputs. It does not build a network. The current canvas is not used.
+
+![Reviewed desktop resource probe with measured child memory](../../assets/screenshots/manual-resource-probe.png)
+
+Press **Run disposable probe** to execute the reviewed copy. Changes to the
+original file after Review do not replace that snapshot. Editing a field clears
+the review and previous report. The desktop uses the **application device
+preference**, overriding the saved study intent; changing that preference after
+Review requires another review. It does not change the saved file or preference.
+
+The dialog's explicit probe time limit defaults to 60 seconds, with 0 unlimited.
+It does not edit the application job-limit preference. The measured report shows
+RAM/CUDA peaks, actual work, timing and exclusions, with the complete JSON below.
+No trained model or output is adopted, and no results folder is created.
+
+**Stop / discard** or **Run → Stop** rejects the measurement. **Force stop /
+discard** targets only the newly owned probe process group. Closing the dialog
+hides it while the probe runs; reopen the same controls from Run. Closing the
+main window stops the probe before the normal unsaved-model check. If the GUI
+process is lost, the existing owner-pipe guard interrupts its CLI and numerical
+child. Desktop supervision currently requires POSIX; the CLI/API remains separate.
+While active, the probe locks conflicting training, editing and device changes.
+Your current model, Undo history, results, weights and CPU/CUDA RNG stay intact.
+
+*The screenshot measures two CPU updates from the shipped study. It demonstrates
+workflow and measurement scope, not solution accuracy or a full-run memory fit.*
 
 ## What runs
 

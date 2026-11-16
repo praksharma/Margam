@@ -354,3 +354,10 @@ RSS and CUDA allocator peaks, observed row/sampler counts and source/runtime
 provenance; no checkpoint/output payload is retained. See
 [resource probe](use/resource-probe.md) for excluded costs and current single-window
 scope.
+
+
+Desktop resource-probe controls live in `margam.ui.resource_probe`. They freeze
+and validate one saved trial, then reuse `StudyProcess` to launch the existing
+probe CLI with owner-pipe monitoring. No second numerical executor is introduced.
+The probe is part of the application's busy/Stop/Force-stop/close lifecycle; its
+report remains separate from retained PINN results and checkpoints.

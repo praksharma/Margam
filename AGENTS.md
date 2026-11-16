@@ -744,3 +744,13 @@
   later growth/outputs. Preserve inputs/model/RNG, source guards and transport
   timeout/cancellation; publish no measurement after failure/cancel/source change.
   Reject Expert multi-window probes until teacher-transfer peaks are qualified.
+
+
+- Desktop resource probes review an immutable saved-study trial, not the canvas.
+  Reuse StudyProcess and the probe CLI, including owner-stdin monitoring; allocate
+  no network during review. Use the application device preference, require new
+  review after settings/device changes, and keep the explicit probe limit local.
+  Include the probe in shared busy/Stop/Force-stop/main-close handling; hiding its
+  controls leaves it running. Discard reports after stop/failure/mismatched
+  provenance. Release frozen copies/readers and preserve current weights/results/
+  model/Undo/RNG; never adopt probe numerical state or write a results folder.

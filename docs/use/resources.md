@@ -10,7 +10,7 @@ and output requests. Refresh after edits or when available memory changes.
 an advisory warning. Network/workload figures come from the real graph. No
 training, memory-exhaustion test or capacity measurement was performed.*
 
-For actual construction/update measurements, use the opt-in
+For actual construction/update measurements, choose **Run → Resource probe…** or use the CLI/API
 [disposable resource probe](resource-probe.md). It complements this allocation-free
 summary and does not predict the full training peak.
 
