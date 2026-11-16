@@ -726,3 +726,11 @@
   identities. Invalid pairs retain row numbers and reasons. Bound paired grids to
   64 rows/8 axes without applying a Cartesian-product limit; conditional/topology
   alternatives remain deferred.
+
+
+- History overlays accept two–eight explicit archive/monitor selections. Reuse
+  retained_curve and the restricted CPU snapshot reader, preserve every run's
+  original indices/gaps and raw/weighted semantics, and bound plot/preview. Slot
+  changes invalidate the overlay and are blocked during reads. Removing the last
+  slot releases its snapshot; close clears all retained runs and joins the reader.
+  Keep two-run prediction comparison unchanged and never rank objectives.

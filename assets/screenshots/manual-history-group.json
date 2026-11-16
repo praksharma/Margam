@@ -1,0 +1,24 @@
+{
+  "generator": "examples.capture_history_group",
+  "scope": "Real CPU CLI runs with 30/45/60 updates and only 25 retained monitor records each. Overlay preserves 6–30, 21–45 and 36–60 indices; software history semantics, not accuracy.",
+  "source_sha256": "2900d6ade6b0a5c40ed488ae2dd29df39bfaf029b265783b6e54d4de3f3be905",
+  "capture_tool_sha256": "aeb1378b70ac15bfb2b0bd709f069c0d9842d8826878ed89a602825d4e2f0cff",
+  "retained_ranges": [
+    [
+      6,
+      30
+    ],
+    [
+      21,
+      45
+    ],
+    [
+      36,
+      60
+    ]
+  ],
+  "current_model_preserved": true,
+  "parent_rng_preserved": true,
+  "file": "manual-history-group.png",
+  "sha256": "533cafc4fc23c7c8f314bc9dc0ddd3c6e315c0dc4783a3b93b7e4f94fa5a1cb6"
+}

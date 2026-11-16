@@ -732,3 +732,12 @@ values. This complements Cartesian expansion without changing old study files.
 Version 3 freezes the paired mode and network options in study identity. Native
 execution, resume, Slurm bundles and collection resolve the same ordered rows;
 conditional rules and component/topology alternatives remain separate work.
+
+
+### Multi-run monitor overlays — 16 November 2026
+
+Saved-history comparison now accepts two to eight explicit archive/monitor
+selections. Added rows retain independent update ranges, raw/weighted semantics
+and gaps. Removing the last row releases its snapshot and invalidates the overlay.
+The existing cancellable restricted CPU reader is reused; current model/results
+remain unchanged. This adds no automatic ranking or parallel study scheduling.

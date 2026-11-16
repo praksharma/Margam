@@ -88,6 +88,6 @@ class RunComparison(QDialog):
             worker.value=None;worker.deleteLater();self.worker=None
         self.buttons()
     def closeEvent(self,event):
-        self.shutdown();self.runs=[None,None]
-        for index,combo in enumerate(self.choices):combo.clear();self.labels[index].setText(('A' if index==0 else 'B')+': choose a saved run')
+        self.shutdown();self.runs=[None]*len(self.choices)
+        for index,combo in enumerate(self.choices):combo.clear();self.labels[index].setText(chr(65+index)+': choose a saved run')
         self.invalidate();super().closeEvent(event)

@@ -1898,3 +1898,24 @@ selects 44 cases; the full audit was not rerun.
 
 The 53 related CLI, resume, collection, Slurm, desktop-execution and CSV checks
 also pass: **80 distinct focused checks** in total, without CUDA skips on this host.
+
+
+## Two–eight saved-history overlays (16 November 2026)
+
+Six new group-overlay checks and 15 existing history/prediction comparison checks
+pass: **21 focused checks**, including real CPU and CUDA saved-run inspection.
+Coverage includes two-run mathematical parity, three explicit snapshots, eight
+curves, sparse indices, missing terms, zero/negative log values, extreme-value
+rendering, union preview bounds, per-run provenance, add/remove limits, required
+monitor choices, busy guards, failed reads, cancellation after a reader finishes,
+stale queued callbacks and parent-window shutdown releasing retained snapshots.
+Current model/Undo/files and CPU/CUDA RNG remain unchanged. No network or optimizer
+is restored by comparison; checkpoint histories are never substituted.
+
+The [real three-run capture](../assets/screenshots/manual-history-group.png) and
+[manifest](../assets/screenshots/manual-history-group.json) use CPU CLI Burgers
+trials of 30, 45 and 60 updates, with 25 monitor records retained each. Their ranges
+remain **6–30**, **21–45** and **36–60**. This demonstrates history semantics, not
+solution accuracy or equal compute cost. Source, generator and image hashes match
+maintained files. CUDA audit discovery selects 45 cases; the full audit was not
+rerun.

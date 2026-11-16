@@ -815,3 +815,11 @@ Paired study checks and illustrated preview:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_paired test_study_preview test_study_document test_study_networks -v
 python -m examples.capture_study_paired --overwrite
 ```
+
+
+Multi-run retained-history checks and illustrated capture:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_history_group test_history_comparison test_run_comparison -v
+python -m examples.capture_history_group --overwrite
+```

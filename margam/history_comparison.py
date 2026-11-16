@@ -58,3 +58,17 @@ def compare_histories(left,left_monitor,right,right_monitor,key,*,logarithmic=Tr
     return dict(key=key,label=curve_label(key),a=a,b=b,logarithmic=logarithmic,configuration_differences=changed,
         preview=[(step,av.get(step),bv.get(step)) for step in indices[:200]],preview_total=len(indices),
         scope='Recorded updates/attempts, not physical time. Losses/objectives across methods or settings are not automatically comparable. No rescaling, interpolation, ranking or missing-history reconstruction.')
+
+
+def compare_history_group(selections,key,*,logarithmic=True):
+    """Overlay two to eight explicit (run, monitor) snapshots without alignment."""
+    if not 2<=len(selections)<=8:raise ValueError('Choose between two and eight saved monitor runs.')
+    available={term for run,identifier in selections for _,row in run['monitors'][identifier] for term in row}
+    if key not in available:raise ValueError('Choose a term present in at least one selected monitor.')
+    series=[retained_curve(run['monitors'][identifier],key,logarithmic) for run,identifier in selections]
+    values=[dict(curve['values']) for curve in series];indices=sorted({step for curve in values for step in curve})
+    baseline=selections[0][0]['config']
+    changed=sorted({name for run,_ in selections[1:] for name in baseline.keys()|run['config'].keys() if baseline.get(name)!=run['config'].get(name)})
+    return dict(key=key,label=curve_label(key),series=series,a=series[0],b=series[1],logarithmic=logarithmic,configuration_differences=changed,
+        preview=[(step,*(curve.get(step) for curve in values)) for step in indices[:200]],preview_total=len(indices),
+        scope='Recorded updates/attempts, not physical time. Losses/objectives across methods or settings are not automatically comparable. No rescaling, interpolation, ranking or missing-history reconstruction.')
