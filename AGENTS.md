@@ -688,3 +688,13 @@
   Keep raw/weighted/total semantics distinct, bound rendering and preview, preserve
   model/results/RNG and the shared restricted CPU-reader lifecycle. Do not rank
   objectives or infer physical time/accuracy from training-update indices.
+
+
+- Network-family study axes are concrete pointwise `network_type` string choices,
+  Fixed/Candidates only. Explicit choices reset base custom options, including the
+  base family, using complete frozen family snapshots. Share `apply_choices` between
+  preview and native trials. Version 2 protects selected-family defaults in study
+  identity; preserve them on open/preview/resave and reset with Clear draft. Reject
+  incomplete/unknown schemas instead of reinterpreting them. Numeric-only version-1
+  studies keep their identities/custom options. Retain invalid trial reasons with
+  no fake budget/metric; do not imply recipe/topology or neural-operator alternatives.

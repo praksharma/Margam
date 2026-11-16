@@ -1,17 +1,18 @@
 # Portable finite-grid study format
 
-Version 1 `.margam-study` files are data-only ZIP bundles. This is the serialization
+Version 1/2 `.margam-study` files are data-only ZIP bundles. This is the serialization
 and deterministic trial-resolution contract; the [serial CLI runner](use/study-cli.md)
 now consumes it through the shared native execution gate.
 See [the illustrated workflow](use/parameter-studies.md).
 
 ## Contents and identity
 
-`study.json` has exactly these fields:
+`study.json` has these exact base fields; version 2 additionally requires
+`network_defaults`, described below:
 
 | Field | Meaning |
 | --- | --- |
-| `format`, `version` | `margam-study`, integer `1` |
+| `format`, `version` | `margam-study`, integer `1` or `2` |
 | `model` | Current versioned Margam graph, including explicit output blocks |
 | `axes` | Ordered parameter rows: block ID, parameter, mode, original JSON text |
 | `execution` | Device intent `auto`/`cpu`/`cuda`, wall-time seconds 0–604800 |
@@ -39,6 +40,25 @@ non-finite values and normalizes tuples to JSON arrays. ZIP timestamps/compressi
 metadata are outside study identity. Changing any manifest content or input bytes
 changes the identity. Equivalent-looking edits are not semantically deduplicated.
 Checksums detect corruption, not authorship or a trusted numerical solution.
+
+## Frozen network alternatives (version 2)
+
+A `network_type` axis uses Fixed/Candidates string keys from the pointwise network
+catalogue, never numeric ranges. Version 2 freezes `network_defaults` as a map of
+exactly the selected families to complete, schema-validated option dictionaries.
+It is included in study identity. Materialization applies these literal options,
+including when a candidate equals the base family; base custom options are not
+implicitly carried across. Preview and execution share this application rule.
+
+Numeric-only studies remain version 1 and retain their identities. Version 1 cannot
+contain architecture axes; version 2 requires them. Unknown/missing option fields,
+undeclared families and malformed maps are rejected. Changed library default values
+do not replace saved values; future unsupported option schemas must fail explicitly
+rather than silently changing an experiment. Model/input/software compatibility
+and runtime provenance remain necessary for reproduction.
+
+See [the architecture workflow](use/study-networks.md). Configured PINN recipe or
+arbitrary graph alternatives are not encoded by this field.
 
 ## Deterministic expansion without execution
 
@@ -100,7 +120,8 @@ may retain original source paths; inspect private models before publishing them.
 
 ## Results and grid continuation
 
-The `.margam-study` bundle stays version 1. CLI result folders now use version-2
+Study bundles use version 1 for numeric-only grids and version 2 for frozen
+network-family alternatives. CLI result folders independently use version-2
 `summary.json` records and a separate frozen `execution.json`. Per-trial attempts
 have independent directories and an atomically published `artifacts/publication.json`
 manifest binding trial identity, configuration, code and payload checksums.

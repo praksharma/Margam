@@ -82,9 +82,10 @@ against the current graph. Removed/replaced block IDs are not silently retargete
 choose the parameter again. Draft controls can be edited while a job runs, but
 preview waits for jobs and external editors to finish.
 
-**Clear draft** removes table rows only. It does not delete model blocks or files.
-Grouped GUI execution, mid-trial checkpoint recovery, result collection, Slurm integration,
-paired/conditional combinations and search integrations remain
+**Clear draft** removes rows and any opened/saved architecture-default snapshots.
+It does not delete model blocks or files.
+Parallel scheduling, mid-trial checkpoint recovery, paired/conditional combinations
+and search integrations remain
 [planned work](../todo.md#future-studies-iterator-blocks-and-laptophpc-sweeps).
 
 
@@ -143,3 +144,6 @@ restarts unfinished trials fresh, preserving all earlier attempts.
 
 Use [Run → Run saved study](run-study.md) for reviewed local serial execution.
 It uses the frozen saved definition and preserves the open canvas/results.
+
+For categorical network-family choices and frozen option snapshots, see
+[Network alternatives in studies](study-networks.md).

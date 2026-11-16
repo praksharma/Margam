@@ -158,7 +158,8 @@ its trial reasons even when the process exits normally with a report.
 Resume requires **version-2 results produced by the current runner**, on a POSIX
 system with process-owned file locking. Older version-1 result folders remain
 readable for inspection and individual native archives still open in the GUI;
-they cannot be resumed as a grid. The portable study bundle format remains version 1.
+they cannot be resumed as a grid. Portable definitions independently use version 1 for numeric grids or
+version 2 for [frozen network alternatives](study-networks.md).
 
 Before changing a summary or launching any job, resume verifies the frozen study,
 Margam Python sources, recorded runtime/device, completed model/configuration and

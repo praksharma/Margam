@@ -9,7 +9,7 @@ from pathlib import Path,PurePosixPath
 import stat
 import tempfile
 import zipfile
-from .studies import resolve_axes,config_from_document
+from .studies import resolve_axes,config_from_document,apply_choices,architecture_defaults
 
 FILE_LIMIT=64*1024*1024
 TOTAL_LIMIT=256*1024*1024
@@ -49,9 +49,16 @@ def validate(study):
     from .ui.clipboard_files import references
     from .ui.run_document import validate_owned_files
     keys={'format','version','model','axes','execution','files','study_id'}
-    if not isinstance(study,dict) or set(study)!=keys or study['format']!='margam-study' or type(study['version']) is not int or study['version']!=1:raise ValueError('Unsupported study format/version.')
+    if not isinstance(study,dict) or type(study.get('version')) is not int or study['version'] not in (1,2) or set(study)!=(keys|{'network_defaults'} if study['version']==2 else keys) or study['format']!='margam-study':raise ValueError('Unsupported study format/version.')
     if len(canonical(study))>MANIFEST_LIMIT:raise ValueError('Study manifest exceeds 8 MiB.')
     decode_document(study['model']);resolve_axes(study['model'],study['axes'])
+    if study['version']==2 and not isinstance(study['network_defaults'],dict):raise ValueError('Frozen network defaults must be a family map.')
+    families=architecture_defaults(study['model'],study['axes'],study.get('network_defaults'))
+    if families:
+        if study['version']!=2 or not isinstance(study['network_defaults'],dict) or set(study['network_defaults'])!=set(families):raise ValueError('Architecture studies require version 2 with frozen family defaults.')
+        from .components.network_config import OPTION_SCHEMAS
+        if any(not isinstance(options,dict) or set(options)!=set(OPTION_SCHEMAS[kind]) for kind,options in study['network_defaults'].items()):raise ValueError('Frozen network defaults must include every supported option.')
+    elif study['version']!=1:raise ValueError('Version 2 is reserved for explicit network-family studies.')
     if linked_paths(study['model']):raise ValueError('A portable study cannot contain active linked inputs.')
     execution=study['execution']
     if not isinstance(execution,dict) or set(execution)!={'device','wall_time_seconds'} or execution['device'] not in ('auto','cpu','cuda') or type(execution['wall_time_seconds']) is not int or not 0<=execution['wall_time_seconds']<=604800:raise ValueError('Invalid study execution settings.')
@@ -71,7 +78,7 @@ def validate(study):
     return study
 
 
-def capture(model,axes,workspace,*,execution,include_links=False,scene=None):
+def capture(model,axes,workspace,*,execution,include_links=False,scene=None,network_defaults=None):
     """Freeze current inputs in an independent declaration; never edit the source."""
     from .ui.clipboard_files import capture_files,read_owned
     if type(include_links) is not bool:raise ValueError('Include linked inputs must be explicitly True or False.')
@@ -97,6 +104,8 @@ def capture(model,axes,workspace,*,execution,include_links=False,scene=None):
     model=rewrite_links(model,replacements)
     study=dict(format='margam-study',version=1,model=model,axes=deepcopy(axes),execution=deepcopy(execution),
         files={name:dict(size=len(content),sha256=digest(content)) for name,content in sorted(files.items())})
+    defaults=architecture_defaults(model,axes,network_defaults)
+    if defaults:study.update(version=2,network_defaults=defaults)
     study=json.loads(canonical(study)) # One JSON-normal form, including cached tuple fields.
     study['study_id']=digest(canonical(study));validate(study)
     return study,files
@@ -161,6 +170,5 @@ def trial_model(study,index):
     validate(study);choices,total=resolve_axes(study['model'],study['axes'])
     if type(index) is not int or not 0<=index<total:raise ValueError('Trial index is outside this study.')
     values=next(itertools.islice(itertools.product(*(values for _,values in choices)),index,None))
-    model=deepcopy(study['model']);nodes={node['id']:node for node in model['nodes']}
-    for (axis,_),value in zip(choices,values):nodes[axis['node_id']]['settings']['parameters'][axis['parameter']]=deepcopy(value)
+    model,_,_=apply_choices(study['model'],choices,values,network_defaults=study.get('network_defaults'))
     return f"DP{index+1:04d}-{study['study_id']}",model

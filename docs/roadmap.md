@@ -696,3 +696,13 @@ Two explicitly saved Training Monitor histories can now be overlaid using their
 original update indices. Raw/weighted terms, legacy gaps and log-scale omissions
 remain explicit. Checkpoint history is never substituted, and objectives are not
 ranked. Parallel scheduling and broader multi-run analysis remain separate work.
+
+
+## Concrete network-family studies (16 November 2026)
+
+Network families can now be crossed with widths and existing numeric axes. Explicit
+family choices use complete default-option snapshots, including the base family;
+version-2 bundles freeze those values for portable/historical reconstruction.
+Version-1 numeric studies remain unchanged. Existing validators record incompatible
+width combinations; actual CPU/CUDA, archive/resume and batch/GUI paths are qualified.
+Configured recipe/trainer/optimizer/topology alternatives remain separate work.

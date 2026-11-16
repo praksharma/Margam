@@ -16,7 +16,7 @@ MODULES=('test_pinn.py','test_benchmarking.py','test_boundary_weights.py',
     'test_expert.py','test_expert_extensions.py','test_scale.py','test_gpinn.py',
     'test_rba.py','test_inverse_burgers.py','test_research.py',
     'test_research_schedules.py','test_research_cosine.py','test_research_microbatch.py','test_integral_constraints.py','test_resources.py','test_dsgnar.py','test_dsgnar_profile.py','test_dsgnar_ui.py','test_isolated_jobs.py','test_sample_points.py','test_application_device.py',
-    'test_dataset_storage.py','test_prediction_batches.py','test_fixed_importance_pool.py','test_gradient_importance.py','test_gpinn_flow.py','test_scale_cavity_benchmark.py','test_output_controls.py','test_job_limits.py','test_burgers_reference.py','test_automation_resume.py','test_study_cli.py','test_study_resume.py','test_study_results.py','test_slurm.py','test_run_comparison.py','test_study_execution.py','test_history_comparison.py')
+    'test_dataset_storage.py','test_prediction_batches.py','test_fixed_importance_pool.py','test_gradient_importance.py','test_gpinn_flow.py','test_scale_cavity_benchmark.py','test_output_controls.py','test_job_limits.py','test_burgers_reference.py','test_automation_resume.py','test_study_cli.py','test_study_resume.py','test_study_results.py','test_slurm.py','test_run_comparison.py','test_study_execution.py','test_history_comparison.py','test_study_networks.py')
 EXPLICIT={'test_application_device.ApplicationDeviceTests.test_training_inference_and_resume_follow_selection'}
 # This case deliberately mocks GPU unavailability; it belongs to CPU UI coverage.
 EXCLUDED={'test_application_device.ApplicationDeviceTests.test_unavailable_gpu_and_running_lock'}

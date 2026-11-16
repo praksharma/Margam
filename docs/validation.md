@@ -1805,3 +1805,31 @@ These small runs demonstrate history semantics, not solution accuracy.
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_history_comparison.py' -v
 python -m examples.capture_history_comparison --overwrite
 ```
+
+
+## Network-family parameter studies (16 November 2026)
+
+Eight new checks and 59 related study, resume, results, Slurm and GUI checks pass:
+**67 distinct focused checks**, including real CPU and CUDA FCNN, Fourier and
+SIREN runs with native archive opening and completed-study resume. Invalid DGM
+width combinations retain their reasons while valid trials continue. Compact and
+expanded network controls use the same materialization rules.
+
+Version-2 studies freeze complete selected-family options. Tests change the live
+SIREN default after saving and verify that opening, previewing, resaving and
+publication verification preserve the saved value. Numeric-only version-1 studies
+retain their existing identities and custom network options. Both GUI execution
+and the local Slurm bundle runner accept architecture studies. These short runs
+qualify software behavior, not numerical accuracy or real scheduler execution.
+
+The [actual preview screenshot](../assets/screenshots/manual-study-networks.png)
+and [manifest](../assets/screenshots/manual-study-networks.json) show four
+architecture/width combinations, three valid and one invalid, without training.
+Source, generator and image hashes match maintained files; the model and parent
+RNG remain unchanged. CUDA audit discovery selects 43 cases; the full audit was
+not rerun. The manual checks 88 rendered pages and their local links.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_study_networks.py' -v
+python -m examples.capture_study_networks --overwrite
+```

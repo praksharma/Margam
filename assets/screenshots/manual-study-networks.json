@@ -1,0 +1,14 @@
+{
+  "generator": "examples.capture_study_networks",
+  "scope": "Actual four-trial architecture/width preview: three structurally valid and one invalid. Version-2 frozen-default study saved; no training or accuracy claim.",
+  "source_sha256": "e8a531bf7f7fce5705c54a0d7eb5add48e3f32d47c79be3df605757d8f590ef6",
+  "capture_tool_sha256": "3f82e7842310389b4bd6f7ffeaf83f0c1341cf77eedfee109a80fe69d55b4847",
+  "study_version": 2,
+  "total": 4,
+  "valid": 3,
+  "invalid": 1,
+  "current_model_preserved": true,
+  "parent_rng_preserved": true,
+  "file": "manual-study-networks.png",
+  "sha256": "559fbaf7ba56f29a24dee5926b97df06c835bc4ecc3d2b5dc8d29e8c51d68aa4"
+}

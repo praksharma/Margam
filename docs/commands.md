@@ -780,3 +780,14 @@ python -m examples.capture_history_comparison --overwrite
 The capture runs 30/45 CPU updates with monitor retention limited to 25 records,
 then verifies the original retained indices, current model and RNG. See
 [history semantics](use/compare-histories.md).
+
+
+### Network alternatives in studies
+
+```bash
+python -m unittest discover -s tests -p 'test_study_networks.py' -v
+python -m examples.capture_study_networks --overwrite
+```
+
+The capture previews four architecture/width combinations and saves a temporary
+version-2 study with frozen defaults; it does not train. See [network studies](use/study-networks.md).

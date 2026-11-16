@@ -338,3 +338,9 @@ same stable native snapshot reader as prediction comparison. It splits curves at
 missing updates/terms and nonpositive log values. `margam/ui/history_comparison.py`
 adds the explicit two-run overlay with bounded rendering and exact-value preview.
 It never falls back to checkpoint history or constructs/restores a network.
+
+
+Study `network_type` axes use the existing pointwise catalogue and default schemas.
+`studies.apply_choices` is shared by preview and native trial materialization.
+Architecture studies store complete family-option snapshots in bundle version 2;
+numeric-only bundle version 1 is unchanged. See [network alternatives](use/study-networks.md).

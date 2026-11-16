@@ -1,5 +1,6 @@
 """Study table with read-only previews and explicit portable snapshot save/open."""
 import json
+from copy import deepcopy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
     QComboBox,QLineEdit,QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit,QFileDialog,QMessageBox,QCheckBox,QSpinBox)
@@ -10,7 +11,7 @@ from .model_document import capture_model
 class DesignPoints(QDialog):
     def __init__(self,window):
         super().__init__(window);self.owner=window;self.setWindowTitle('Parameter study');self.resize(1060,900)
-        self.connected=False;self.result=None;self.study_path=None
+        self.connected=False;self.result=None;self.study_path=None;self.network_defaults=None
         layout=QVBoxLayout(self)
         note=QLabel('Choose controls on existing blocks and preview their combinations. Save a portable study with its base model and input snapshots; opening one replaces the current model and this table. Training and headless study execution are not started here.')
         note.setWordWrap(True);layout.addWidget(note)
@@ -33,7 +34,7 @@ class DesignPoints(QDialog):
         row=QHBoxLayout();layout.addLayout(row)
         self.add=QPushButton('Add parameter');self.add.clicked.connect(self.add_axis);row.addWidget(self.add)
         remove=QPushButton('Remove selected');remove.clicked.connect(self.remove_axis);row.addWidget(remove)
-        clear=QPushButton('Clear draft');clear.clicked.connect(lambda:(self.axes.setRowCount(0),self.invalidate()));row.addWidget(clear)
+        clear=QPushButton('Clear draft');clear.clicked.connect(self.clear_draft);row.addWidget(clear)
         help_button=QPushButton('Parameter help…');help_button.clicked.connect(self.parameter_help);row.addWidget(help_button)
         row.addStretch();button=QPushButton('Preview design points');button.clicked.connect(self.refresh);row.addWidget(button)
         self.status=QLabel('Add a parameter. Fixed uses one JSON value; Candidates uses a list; Range uses [start, stop, step].')
@@ -58,6 +59,9 @@ class DesignPoints(QDialog):
     def model_changed(self,*args):self.invalidate('Canvas/model changed. Preview again to use the current graph.')
     def invalidate(self,message='Draft changed. Preview again.'):
         self.result=None;self.table.setRowCount(0);self.details.clear();self.status.setText(message);self.add.setEnabled(self.axes.rowCount()<MAX_AXES)
+    def clear_draft(self):
+        self.network_defaults=None;self.axes.setRowCount(0);self.invalidate()
+
     def available(self):return catalogue(capture_model(self.owner))
     def fill_options(self,combo,selected=None):
         combo.blockSignals(True);combo.clear()
@@ -75,11 +79,13 @@ class DesignPoints(QDialog):
             if combo.itemData(i) not in selected:combo.setCurrentIndex(i);break
         mode=QComboBox()
         for label,key in [('Fixed','fixed'),('Candidates','candidates'),('Range','range')]:mode.addItem(label,key)
-        text=QLineEdit();text.setMaxLength(4096);text.setPlaceholderText('e.g. [1000,2000] in Candidates mode')
+        text=QLineEdit();text.setMaxLength(4096);text.setPlaceholderText('JSON candidates: [1000,2000] or ["fcnn","siren"]')
         self.axes.setCellWidget(row,0,combo);self.axes.setCellWidget(row,1,mode);self.axes.setCellWidget(row,2,text)
         def use_current():
             item=next((item for item in self.available() if json.dumps([item['node_id'],item['parameter']])==combo.currentData()),None)
-            if item is not None:text.setText(json.dumps(item['value']));mode.setCurrentIndex(0)
+            if item is not None:
+                mode.model().item(mode.findData('range')).setEnabled(item['parameter']!='network_type')
+                text.setText(json.dumps(item['value']));mode.setCurrentIndex(0)
             self.invalidate()
         combo.currentIndexChanged.connect(use_current);mode.currentIndexChanged.connect(lambda:self.invalidate());text.textChanged.connect(lambda:self.invalidate())
         use_current();self.axes.setCurrentCell(row,0);self.invalidate()
@@ -93,7 +99,9 @@ class DesignPoints(QDialog):
         if data is None:return
         key=json.loads(data)
         from .setting_help import HELP,show_information
-        show_information(self,'Study parameter',HELP.get(key[1],'Choose a supported block parameter.')+'\n\nFixed: one JSON value. Candidates: a list of values. Range: [start, stop, step], inclusive when stop is reached; descending ranges are supported. Counts/seeds require integers. Layers use lists such as [[16,16],[32,32]] in Candidates mode. Limits: 8 parameters, 64 values each, 512 total design points. No training or model edit occurs.')
+        from ..components.network_config import NETWORK_NAMES
+        architecture_help='Architecture choices use JSON keys: '+', '.join(NETWORK_NAMES)+'. Fixed or Candidates only. Every selected family uses its defaults, even the original family; shared layer widths/seed stay unless separately swept. No custom per-family options or recipe/topology alternatives are implied. '
+        show_information(self,'Study parameter',(architecture_help if key[1]=='network_type' else '')+HELP.get(key[1],'Choose a supported block parameter.')+'\n\nFixed: one JSON value. Candidates: a list of values. Range: [start, stop, step], inclusive when stop is reached; descending ranges are supported. Counts/seeds require integers. Layers use lists such as [[16,16],[32,32]] in Candidates mode. Limits: 8 parameters, 64 values each, 512 total design points. No training or model edit occurs.')
     def axes_values(self):
         axes=[]
         for row in range(self.axes.rowCount()):
@@ -111,7 +119,7 @@ class DesignPoints(QDialog):
         try:
             study,files=capture(capture_model(self.owner),self.axes_values(),self.owner.project_workspace,
                 execution=dict(device=self.device.currentData(),wall_time_seconds=self.time_limit.value()),
-                include_links=self.include_links.isChecked() if include_links is None else include_links,scene=self.owner.scene)
+                include_links=self.include_links.isChecked() if include_links is None else include_links,scene=self.owner.scene,network_defaults=self.network_defaults)
             if path is None:
                 path,_=QFileDialog.getSaveFileName(self,'Save portable study',self.study_path or 'study.margam-study','Margam study (*.margam-study)',options=QFileDialog.Option.DontConfirmOverwrite)
                 if not path:return False
@@ -124,6 +132,7 @@ class DesignPoints(QDialog):
             write(path,study,files,overwrite=overwrite)
         except (OSError,ValueError,TypeError,KeyError,RecursionError) as error:
             self.status.setText('Study could not be saved: '+str(error));return False
+        self.network_defaults=deepcopy(study.get('network_defaults'))
         self.study_path=str(Path(path).absolute());self.snapshot.setText('Last saved snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Save again to freeze later model/table changes.')
         self.status.setText(f"Saved portable study with {len(files)} input snapshots. No training/checkpoint/results were saved or executed.");return True
 
@@ -153,6 +162,7 @@ class DesignPoints(QDialog):
             combo.setCurrentIndex(combo.findData(json.dumps([axis['node_id'],axis['parameter']])))
             mode=self.axes.cellWidget(row,1);mode.setCurrentIndex(mode.findData(axis['mode']));self.axes.cellWidget(row,2).setText(axis['text'])
         self.device.setCurrentIndex(self.device.findData(study['execution']['device']));self.time_limit.setValue(study['execution']['wall_time_seconds'])
+        self.network_defaults=deepcopy(study.get('network_defaults'))
         self.study_path=str(Path(path).absolute());self.include_links.setChecked(False)
         self.snapshot.setText('Opened snapshot: '+Path(path).name+' · '+study['study_id'][:16]+'. Private input copies restored; application device/preferences unchanged.')
         self.invalidate('Study opened. Preview to recheck the restored model and parameter choices. No training was started.');return True
@@ -166,7 +176,7 @@ class DesignPoints(QDialog):
             if key is None:self.invalidate('No supported block parameter is available.');return False
             key=json.loads(key)
             axes.append(dict(node_id=key[0],parameter=key[1],mode=self.axes.cellWidget(row,1).currentData(),text=self.axes.cellWidget(row,2).text()))
-        try:result=preview(capture_model(self.owner),axes,scene=self.owner.scene)
+        try:result=preview(capture_model(self.owner),axes,scene=self.owner.scene,network_defaults=self.network_defaults)
         except (ValueError,TypeError,KeyError,OSError) as error:self.invalidate(str(error));return False
         self.result=result;self.table.setRowCount(len(result['trials']))
         for index,trial in enumerate(result['trials']):
@@ -182,5 +192,8 @@ class DesignPoints(QDialog):
         trial=self.result['trials'][row]
         lines=[trial['design_point']+' · '+trial['status']]
         lines += [FIELDS[item['parameter']]+' ['+item['node_id'][:8]+']: '+json.dumps(item['value']) for item in trial['choices']]
+        if trial.get('networks'):
+            lines.append('Architecture axes select family defaults, including the base family; custom options are not carried across.')
+            for network in trial['networks']:lines.append(network['architecture']+' resolved options: '+json.dumps(network['options'],sort_keys=True))
         if trial['reason']:lines.append('Reason: '+trial['reason'])
         self.details.setPlainText('\n'.join(lines))

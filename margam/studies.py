@@ -12,7 +12,8 @@ MAX_TRIALS=512
 FIELDS={'points':'Interior sample budget','boundary_points':'Default boundary sample budget',
         'seed':'Sampling seed','network_seed':'Network seed','layers':'Hidden layers',
         'iterations':'Training updates / attempts','lr':'Adam learning rate',
-        'pde_weight':'PDE loss coefficient','boundary_weight':'Boundary loss coefficient'}
+        'pde_weight':'PDE loss coefficient','boundary_weight':'Boundary loss coefficient',
+        'network_type':'Network architecture (family defaults)'}
 INTEGER={'points','boundary_points','seed','network_seed','iterations'}
 
 
@@ -40,6 +41,13 @@ def values_for(parameter,mode,text):
     def reject(value):raise ValueError('Use finite JSON numbers, not '+value+'.')
     try:value=json.loads(text,parse_constant=reject)
     except (json.JSONDecodeError,RecursionError) as error:raise ValueError('Enter JSON values, for example [1000,2000] or [0.001,0.003,0.001].') from error
+    if parameter=='network_type':
+        from .components.network_config import NETWORK_NAMES
+        if mode=='range':raise ValueError('Network architecture uses Fixed/Candidates, not numeric ranges.')
+        values=[value] if mode=='fixed' else value
+        if not isinstance(values,list) or not 1<=len(values)<=MAX_VALUES or any(not isinstance(kind,str) or kind not in NETWORK_NAMES for kind in values):raise ValueError('Choose supported architecture keys: '+', '.join(NETWORK_NAMES))
+        if len(set(values))!=len(values):raise ValueError('Remove duplicate architecture choices.')
+        return list(values)
     if mode=='range':
         if parameter=='layers':raise ValueError('Use fixed/candidate lists of hidden widths; ranges are scalar only.')
         if not isinstance(value,list) or len(value)!=3 or any(not finite(item) for item in value):
@@ -97,7 +105,37 @@ def resolve_axes(document,axes):
     return choices,total
 
 
-def preview(document,axes,*,scene=None):
+def architecture_defaults(document,axes,existing=None):
+    """Freeze only the families actually selected, preserving opened snapshots."""
+    from .components.network_config import network_options
+    choices,_=resolve_axes(document,axes);result={}
+    for axis,values in choices:
+        if axis['parameter']!='network_type':continue
+        for kind in values:
+            options=deepcopy(existing[kind]) if existing is not None and kind in existing else network_options(kind,{})
+            network_options(kind,options) # Validate without replacing frozen values.
+            result[kind]=options
+    return result
+
+
+def apply_choices(document,choices,combination,*,network_defaults=None):
+    """One materialization rule shared by preview and portable/native execution.
+
+    An explicit family axis always selects that family's defaults, even when it
+    equals the base family. Without this axis, custom base options are untouched.
+    """
+    from .components.network_config import network_options
+    candidate=deepcopy(document);nodes={node['id']:node for node in candidate['nodes']};selected=[];networks=[]
+    for (axis,_),value in zip(choices,combination):
+        parameters=nodes[axis['node_id']]['settings']['parameters'];parameters[axis['parameter']]=deepcopy(value)
+        selected.append(dict(node_id=axis['node_id'],parameter=axis['parameter'],value=deepcopy(value)))
+        if axis['parameter']=='network_type':
+            parameters['network_options']=deepcopy(network_defaults[value]) if network_defaults is not None and value in network_defaults else network_options(value,{})
+            networks.append(dict(node_id=axis['node_id'],architecture=value,options=deepcopy(parameters['network_options'])))
+    return candidate,selected,networks
+
+
+def preview(document,axes,*,scene=None,network_defaults=None):
     """Enumerate bounded Cartesian choices; invalid trials retain a reason, no metric.
 
     Config validation is structural/numerical preflight, not execution/data/output
@@ -105,13 +143,11 @@ def preview(document,axes,*,scene=None):
     """
     from .components.resources import architecture_size
     choices,total=resolve_axes(document,axes)
+    defaults=architecture_defaults(document,axes,network_defaults)
     trials=[]
     for index,combination in enumerate(itertools.product(*(values for _,values in choices)),1):
-        candidate=deepcopy(document);nodes={node['id']:node for node in candidate['nodes']};settings=[]
-        for (axis,_),value in zip(choices,combination):
-            nodes[axis['node_id']]['settings']['parameters'][axis['parameter']]=deepcopy(value)
-            settings.append(dict(node_id=axis['node_id'],parameter=axis['parameter'],value=deepcopy(value)))
-        row=dict(design_point=f'DP{index:04d}',choices=settings,status='Invalid',reason='',updates=None,parameters=None)
+        candidate,settings,networks=apply_choices(document,choices,combination,network_defaults=defaults)
+        row=dict(design_point=f'DP{index:04d}',choices=settings,status='Invalid',reason='',updates=None,parameters=None,networks=networks)
         try:
             config=config_from_document(candidate,scene);config.validate()
             count=architecture_size(config)['parameters']

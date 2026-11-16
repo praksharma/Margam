@@ -28,6 +28,7 @@ behind RAR, PINN importance sampling and integral loss.
 | Replace a network or choose baseline, SA or LRA | [Networks and methods](modeling/networks.md) |
 | Watch training or compare against a supplied reference | [Training and results](use/results.md) |
 | Keep the model or continue a saved training run | [Saving and resuming](use/saving.md) |
+| Sweep pointwise network families with frozen defaults | [Network alternatives](use/study-networks.md) |
 | Run a saved study locally from the GUI | [Run saved study](use/run-study.md) |
 | Export a serial study job for a Slurm cluster | [Slurm export](use/slurm.md) |
 | Overlay explicitly recorded training histories | [Compare histories](use/compare-histories.md) |

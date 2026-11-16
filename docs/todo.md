@@ -318,8 +318,11 @@ scheduler workflows below remain proposed.
 - [ ] Use that workflow for later paper-accuracy reproduction: fixed independent
   evaluation data/reference, selected error norms, repeated seeds, budgets,
   hardware/runtime and separate physical residual/corrected-loss/error columns.
-- [ ] Define a saved study containing alternative PINN recipes/components and
-  parameter choices, with inspectable resolved configurations for every trial.
+- [x] Add concrete network-family alternatives with complete frozen defaults in
+  version-2 studies, shared preview/trial resolution, compact/expanded ownership
+  and existing compatibility checks. Preserve version-1 numeric study identities.
+- [ ] Extend alternatives to configured PINN recipes/trainers/optimizers and
+  topology changes with inspectable per-trial configurations and typed port contracts.
 - [ ] Design iterator/alternative blocks for concrete existing components. Make
   Cartesian, paired and conditional combination rules explicit; preview trial
   counts and budgets before running.
