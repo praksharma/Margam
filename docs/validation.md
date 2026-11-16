@@ -1979,3 +1979,28 @@ adaptive/output costs, multi-window transfer or solution accuracy.
 The manual checks 89 rendered pages and their local links. CUDA audit discovery
 selects 47 cases; the full audit was not rerun. No real memory exhaustion was
 induced; allocation failure is injected.
+
+
+## Two–eight saved prediction comparisons (16 November 2026)
+
+Seven new group checks and 21 existing prediction/history checks pass:
+**28 focused checks**, including real CPU/CUDA archive inspection. Independent
+vector examples verify per-field B−A/C−A arithmetic through the existing pair
+oracle, A denominators, missing/own references, exact duplicate rows and typed
+IDs. Later coordinate/field/ID mismatches reject the whole group and name run C.
+Eight-run bounds, all-row metrics beyond the 200-row preview, zero denominators,
+overflow and cancellation between pairs are checked.
+
+Desktop checks cover three snapshots, asynchronous group math, busy Add/Remove
+guards, return to the unchanged two-run view, failed thread start, mismatch
+reporting, cancellation after computation finishes, stale callbacks and parent
+shutdown releasing snapshots. CPU/CUDA RNG, current model/Undo and archive bytes
+stay unchanged. Shared slot/cleanup changes retain existing history-overlay tests.
+
+The [actual three-run capture](../assets/screenshots/manual-prediction-group.png)
+and [manifest](../assets/screenshots/manual-prediction-group.json) use CPU CLI
+Burgers trials with two, three and five updates. B and C compare separately with
+A over all 2,827 matching rows, with 200 preview rows and explicit own-reference
+errors. This is workflow/arithmetic evidence, not trained solution accuracy.
+Source, generator and image hashes match maintained files. CUDA audit discovery
+selects 48 cases; the full audit was not rerun.

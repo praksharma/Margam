@@ -759,3 +759,13 @@ executes the disposable CLI probe under the application device selection. It
 reuses the owned-process/owner-pipe lifecycle and preserves canvas results.
 Measured memory and timing remain distinct from fit predictions, later growth and
 outputs. Expert multi-window peak qualification remains open.
+
+
+### Multi-run prediction differences — 16 November 2026
+
+Saved-prediction comparison accepts two to eight explicit archive/output
+selections against baseline A. It retains exact row/field/typed-ID matching,
+separate own-reference errors, per-field differences and bounded previews.
+Group calculations use the cancellable CPU reader; any incompatible run rejects
+the whole group. Shared run-slot and snapshot cleanup also serve monitor overlays.
+No automatic ranking, interpolation or scientific-equivalence claim is introduced.

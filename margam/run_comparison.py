@@ -79,3 +79,31 @@ def compare_predictions(left,left_id,right,right_id):
     return dict(rows=len(points),fields=fields,diagnostics=diagnostics,headers=headers,preview=preview,configuration_differences=changed,
         identical_reference_values=references[0] is not None and references[1] is not None and a['reference']==b['reference'],
         scope='Prediction differences are not accuracy claims. Relative difference uses A as denominator. Own reference errors are separate; no unit or physics equivalence is inferred.')
+
+
+def compare_prediction_group(selections,*,check=None):
+    """Compare two–eight explicit outputs against A using the exact-row contract."""
+    if not 2<=len(selections)<=8:raise ValueError('Choose between two and eight saved prediction runs.')
+    left,left_id=selections[0];comparisons=[]
+    for index,(right,right_id) in enumerate(selections[1:],1):
+        check_cancel(check)
+        try:value=compare_predictions(left,left_id,right,right_id)
+        except (ValueError,KeyError,TypeError) as error:raise ValueError(f'Run {chr(65+index)} versus A: {error}') from error
+        comparisons.append(dict(run=chr(65+index),**value))
+    check_cancel(check)
+    first=comparisons[0];prefix=len(left['coordinates'])+(left['outputs'][left_id].get('point_ids') is not None);headers=first['headers'][:prefix]
+    for field in first['fields']:
+        headers.append(field+' · A')
+        for item in comparisons:headers.extend([field+' · '+item['run'],field+' · '+item['run']+'−A'])
+    preview=[]
+    for i in range(len(first['preview'])):
+        row=first['preview'][i][:prefix]
+        for column in range(len(first['fields'])):
+            start=prefix+3*column;row.append(first['preview'][i][start])
+            for item in comparisons:row.extend(item['preview'][i][start+1:start+3])
+        preview.append(row)
+    return dict(rows=first['rows'],fields=first['fields'],headers=headers,preview=preview,comparisons=comparisons,
+        diagnostics=[dict(run=item['run'],**record) for item in comparisons for record in item['diagnostics']],
+        configuration_differences=sorted({key for item in comparisons for key in item['configuration_differences']}),
+        identical_reference_values=all(item['identical_reference_values'] for item in comparisons),
+        scope='Every run is compared separately with A on identical ordered coordinates, fields and typed IDs. Relative differences use A as denominator; own-reference errors remain separate. No interpolation, rescaling, automatic ranking or unit/physics equivalence is inferred.')

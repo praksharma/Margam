@@ -977,7 +977,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         from .run_comparison import RunComparison
         dialog=getattr(self,'run_comparison_dialog',None)
         if dialog is None or not isValid(dialog):
-            dialog=RunComparison(self);self.run_comparison_dialog=dialog
+            dialog=RunComparison(self,extra_runs=True);self.run_comparison_dialog=dialog
         dialog.show();dialog.raise_();return dialog
 
     def show_model_comparison(self):

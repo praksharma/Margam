@@ -842,3 +842,11 @@ Reviewed desktop resource-probe checks and real UI capture:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_resource_probe_ui test_resource_probe test_study_execution test_study_results -v
 python -m examples.capture_resource_probe --overwrite
 ```
+
+
+Multi-run saved-prediction checks and illustrated capture:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_prediction_group test_run_comparison test_history_group test_history_comparison -v
+python -m examples.capture_prediction_group --overwrite
+```

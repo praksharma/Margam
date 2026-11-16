@@ -83,7 +83,7 @@ appear. You can continue the loaded checkpoint through the existing Resume actio
 Reading and hashing run in the background. **Cancel reading** or closing the
 browser stops the read without changing the model or result folder. Opening is
 disabled during a training job or geometry edit and checked again before model
-replacement. Compare two explicit native archives through [View → Compare saved predictions](compare-runs.md).
+replacement. Compare two–eight explicit native archives against A through [View → Compare saved predictions](compare-runs.md).
 For recorded curves use [saved training-history overlays](compare-histories.md).
 This browser is read-only: further grouped execution and multi-run plotting
 and Slurm submission/collection automation remain separate TODOs.

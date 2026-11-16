@@ -754,3 +754,14 @@
   controls leaves it running. Discard reports after stop/failure/mismatched
   provenance. Release frozen copies/readers and preserve current weights/results/
   model/Undo/RNG; never adopt probe numerical state or write a results folder.
+
+
+- Prediction groups contain two–eight explicit archive/output selections against
+  baseline A. Reuse compare_predictions for every pair with its exact coordinate,
+  field, duplicate-row and typed-ID contract; reject the whole group on any later
+  mismatch, naming the run. Preserve separate own-reference diagnostics and A
+  denominators, never rank or infer unit/physics equivalence. Group math runs in
+  the shared CPU reader with cancellation between pairs and bounded previews;
+  discard cancelled/failed results. Share concrete run-slot widgets with history
+  overlays, release snapshots/reader closures on main-window/dialog close, and
+  preserve current model/results/Undo/RNG without network/optimizer restoration.

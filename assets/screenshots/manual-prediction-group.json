@@ -1,0 +1,14 @@
+{
+  "generator": "examples.capture_prediction_group",
+  "scope": "Real CPU CLI study and three saved-prediction selections, two/three/five updates. B and C compare separately with A; software workflow, not solution accuracy.",
+  "source_sha256": "f2b0111bcdc02a563dd1bd4f23abb572daea3950c428eadf0894338414c979c2",
+  "capture_tool_sha256": "e913192649172486838215c2b57c5333600d9dbaed4fcded57e526b4c8551891",
+  "rows": 2827,
+  "preview_rows": 200,
+  "runs": 3,
+  "parent_rng_preserved": true,
+  "identical_reference_values": true,
+  "current_model_preserved": true,
+  "file": "manual-prediction-group.png",
+  "sha256": "3c350ec0d8c444da98656a263f601fb3e61c71c9dc6cb17f3c6f318139517ce5"
+}

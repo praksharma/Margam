@@ -3,7 +3,7 @@ import math
 from PySide6.QtCore import Qt,QRectF,QPointF
 from PySide6.QtGui import QPainter,QPainterPath,QPen,QColor
 from PySide6.QtWidgets import QComboBox,QCheckBox,QLabel,QTableWidgetItem,QWidget,QPushButton,QHBoxLayout
-from .run_comparison import RunComparison
+from .run_comparison import RunComparison,append_run_slot,remove_run_slot
 from .study_results import Reader
 from .theme import colors
 from ..history_comparison import read_histories,available_curves,curve_label,compare_histories,compare_history_group
@@ -59,26 +59,11 @@ class HistoryComparison(RunComparison):
         self.add_run=QPushButton('Add run');self.add_run.clicked.connect(self.add_slot);controls.addWidget(self.add_run)
         self.remove_run=QPushButton('Remove last run');self.remove_run.clicked.connect(self.remove_slot);controls.addWidget(self.remove_run)
         self.file_rows=[];self.buttons();self.resize(1120,900)
-    def shutdown(self):
-        super().shutdown()
-        self.runs=[None]*len(self.choices)
-        for index,combo in enumerate(self.choices):
-            combo.clear();self.labels[index].setText(chr(65+index)+': choose a saved run')
-        self.refresh_terms();self.invalidate()
+    def shutdown(self):super().shutdown();self.refresh_terms()
 
-    def add_slot(self):
-        if self.worker is not None or len(self.runs)>=8:return False
-        index=len(self.runs);letter=chr(65+index);self.runs.append(None)
-        row=QHBoxLayout();label=QLabel(letter+': choose a saved run');label.setTextFormat(Qt.TextFormat.PlainText);row.addWidget(label,1);self.labels.append(label)
-        button=QPushButton('Choose run '+letter+'…');button.setIcon(self.choose_buttons[0].icon());button.clicked.connect(lambda checked=False,i=index:self.choose_file(i));row.addWidget(button);self.choose_buttons.append(button)
-        combo=QComboBox();combo.setMinimumWidth(240);combo.currentIndexChanged.connect(self.invalidate);combo.currentIndexChanged.connect(lambda *_:self.refresh_terms());row.addWidget(combo);self.choices.append(combo)
-        self.layout().insertLayout(1+index,row);self.file_rows.append(row);self.invalidate();self.refresh_terms();return True
-    def remove_slot(self):
-        if self.worker is not None or len(self.runs)<=2:return False
-        row=self.file_rows.pop()
-        while row.count():row.takeAt(0).widget().deleteLater()
-        self.layout().removeItem(row);row.deleteLater()
-        self.runs.pop();self.labels.pop();self.choose_buttons.pop();self.choices.pop();self.invalidate();self.refresh_terms();return True
+    def slots_changed(self,*_):self.invalidate();self.refresh_terms()
+    def add_slot(self):return append_run_slot(self,self.slots_changed)
+    def remove_slot(self):return remove_run_slot(self,self.slots_changed)
 
     def invalidate(self,*_):
         super().invalidate()

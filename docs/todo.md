@@ -359,8 +359,12 @@ scheduler workflows below remain proposed.
 - [x] Extend saved Training Monitor overlays to two–eight explicit archives, with
   per-run monitor selection, bounded rendering/preview, preserved gaps and
   original indices, and shared cancellable CPU-reader lifecycle.
-- [ ] Add parallel study scheduling and further prediction/metric multi-run
-  comparison in the GUI using that entry point.
+- [x] Compare two–eight saved prediction outputs against explicit baseline A,
+  with exact coordinate/field/typed-ID checks, per-run/per-field differences and
+  separate own-reference errors. Bound preview and run group math in the shared
+  cancellable CPU reader; retain no partial result when any run mismatches.
+- [ ] Add parallel study scheduling and further selectable study-objective
+  aggregation/comparison using the existing study entry point.
 - [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.
   Keep evaluation data and comparison protocols explicit across trials. The first
