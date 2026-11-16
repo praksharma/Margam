@@ -1,8 +1,8 @@
 {
   "generator": "examples.capture_resource_probe",
   "scope": "Actual desktop-reviewed CPU probe of two native updates; measured child scope only, not fit or solution accuracy. No trained result adopted.",
-  "source_sha256": "2bfa7868e2037979ff2c480a936a84c993cb5d5e3fb87df512c2f4a62617562f",
-  "generator_sha256": "5a90650f1ada2aebc5ab79b2ceb12323ed61783ab1341477ac2ca53eb044bff8",
+  "source_sha256": "88f600f21c37131d3af50aaef15ea1c1409604b607cd99fba8d5cec0ba5fb4f0",
+  "generator_sha256": "788d109eff77f58268ef136a9531774e2532559129778fefea99896570c0b0ac",
   "current_model_preserved": true,
   "parent_rng_preserved": true,
   "study_unchanged": true,
@@ -15,8 +15,8 @@
     "requested_updates": 2,
     "completed_updates": 2,
     "converged": false,
-    "build_and_train_seconds": 0.7072445709782187,
-    "process_peak_rss_bytes": 876126208,
+    "build_and_train_seconds": 0.9520410379918758,
+    "process_peak_rss_bytes": 876240896,
     "cuda_peak_allocated_bytes": null,
     "cuda_peak_reserved_bytes": null,
     "initial_pde_rows": 128,
@@ -39,8 +39,8 @@
     "study_id": "044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
     "trial_id": "DP0001-044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
     "study_archive_sha256": "2691d51e301a1a0d2a24097543dc902d3b800e0d33df28a1832f50453866e1a7",
-    "source_sha256": "2bfa7868e2037979ff2c480a936a84c993cb5d5e3fb87df512c2f4a62617562f",
-    "numerical_job_seconds": 3.229748899990227,
+    "source_sha256": "88f600f21c37131d3af50aaef15ea1c1409604b607cd99fba8d5cec0ba5fb4f0",
+    "numerical_job_seconds": 3.843986195017351,
     "requested_output_count": 0,
     "requested_device": "cpu",
     "wall_time_seconds": 60.0,
@@ -54,5 +54,5 @@
     "adaptive_sampling": {}
   },
   "file": "manual-resource-probe.png",
-  "sha256": "0279a01fd758f530ef7a3bba7dd176ea0f08af1187e4cf2711830b68510abde4"
+  "sha256": "cc03a1589efed42aaf0ca49dc41025a58fa3eea0dd6578e290acf5ded3698bc1"
 }

@@ -29,6 +29,7 @@ def main():
             assert predicate(),dialog.status.text()
         assert dialog.review();wait(lambda:dialog.reader is None);assert dialog.prepared is not None,dialog.status.text()
         assert dialog.start();wait(lambda:not dialog.active);assert dialog.result is not None,dialog.text.toPlainText();assert dialog.result['completed_updates']==2
+        assert dialog.copy_report() and json.loads(app.clipboard().text())==dialog.result
         assert source.read_bytes()==original and model==capture_model(window) and undo==window.undo_stack.index() and torch.equal(rng,torch.get_rng_state()) and window.result is None and not window.scene.locked
         for _ in range(4):app.processEvents()
         for cls in (QLabel,QLineEdit,QPlainTextEdit):

@@ -44,6 +44,10 @@ Review requires another review. It does not change the saved file or preference.
 The dialog's explicit probe time limit defaults to 60 seconds, with 0 unlimited.
 It does not edit the application job-limit preference. The measured report shows
 RAM/CUDA peaks, actual work, timing and exclusions, with the complete JSON below.
+Use **Copy JSON report** to copy a completed measurement to the clipboard. It
+copies only the report dictionary, without the surrounding explanatory text.
+The button is unavailable during review/running and after a failed or discarded
+probe. Nothing is copied automatically.
 No trained model or output is adopted, and no results folder is created.
 
 **Stop / discard** or **Run → Stop** rejects the measurement. **Force stop /

@@ -3,7 +3,7 @@ import json
 import os
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QFormLayout,QHBoxLayout,QLabel,QLineEdit,
-    QPushButton,QSpinBox,QPlainTextEdit,QFileDialog,QProgressBar)
+    QPushButton,QSpinBox,QPlainTextEdit,QFileDialog,QProgressBar,QApplication)
 from .study_results import Reader
 from .study_execution import StudyProcess,prepare_review
 from .icons import icon
@@ -61,7 +61,9 @@ class ResourceProbe(QDialog):
         self.progress=QProgressBar();self.progress.setRange(0,1);layout.addWidget(self.progress)
         self.status=QLabel('Choose a saved study and Review. CPU RAM includes imports; CUDA allocator peaks exclude driver/context memory. Outputs and later growth are not predicted.');self.status.setTextFormat(Qt.TextFormat.PlainText);self.status.setWordWrap(True);layout.addWidget(self.status)
         self.text=QPlainTextEdit();self.text.setReadOnly(True);self.text.setMaximumBlockCount(1000);layout.addWidget(self.text)
-        close=QPushButton('Close');close.clicked.connect(self.close);layout.addWidget(close)
+        row=QHBoxLayout();layout.addLayout(row)
+        self.copy_button=QPushButton('Copy JSON report');self.copy_button.setIcon(icon('copy'));self.copy_button.clicked.connect(self.copy_report);row.addWidget(self.copy_button)
+        close=QPushButton('Close');close.clicked.connect(self.close);row.addWidget(close)
         for control in (self.source,self.trial,self.updates,self.limit):
             (control.textChanged if isinstance(control,QLineEdit) else control.valueChanged).connect(self.invalidate)
         self.buttons()
@@ -76,9 +78,14 @@ class ResourceProbe(QDialog):
     def buttons(self):
         busy=self.active or self.reader is not None;other=self.owner.is_running() and not self.active
         for control in (self.source,self.trial,self.updates,self.limit,self.browse):control.setEnabled(not busy)
+        self.copy_button.setEnabled(not busy and self.result is not None)
         self.device.setText(self.owner.application_device+' · uses the application preference; changing it requires a new review')
         self.review_button.setEnabled(not busy and not other);self.start_button.setEnabled(not busy and not other and self.prepared is not None)
         self.stop_button.setEnabled(self.active and self.worker is not None and not self.worker.stop_requested);self.force_button.setEnabled(self.active)
+    def copy_report(self):
+        if self.active or self.reader is not None or self.result is None:return False
+        QApplication.clipboard().setText(json.dumps(self.result,indent=2,allow_nan=False));return True
+
     def choose_source(self):
         path,_=QFileDialog.getOpenFileName(self,'Choose saved study','','Margam study (*.margam-study)')
         if path:self.source.setText(path)

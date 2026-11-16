@@ -756,6 +756,8 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [x] Add reviewed desktop resource-probe controls using the existing owned CLI
   process: frozen saved inputs, global device, explicit budget/limit, measured
   report, Stop/Force stop, owner-loss cleanup and preserved current results/RNG.
+- [x] Add explicit Copy JSON report to completed desktop resource probes; disable
+  it during review/running and after invalidation or failure.
 - [ ] Qualify Expert multi-window resource probes and teacher-transfer peaks;
   the current native probe remains single-window only.
 - [x] Add an opt-in application-wide child wall-time limit for training, resume
