@@ -1,0 +1,102 @@
+{
+  "generator": "examples.profile_resource_probe",
+  "generator_sha256": "0e7a7017c64566feeadc2a1dabd1020afc530f77cbb7cf3bd86491bac84d947c",
+  "fixture": "assets/studies/poisson-grid.margam-study",
+  "scope": "Actual disposable native updates, not a fit prediction, performance benchmark or solution-accuracy claim. No checkpoint/output retained.",
+  "measurements": [
+    {
+      "format": "margam-resource-probe",
+      "version": 1,
+      "method": "PINN",
+      "device": "cpu",
+      "dtype": "float32",
+      "requested_updates": 2,
+      "completed_updates": 2,
+      "converged": false,
+      "build_and_train_seconds": 0.6539462299842853,
+      "process_peak_rss_bytes": 875855872,
+      "cuda_peak_allocated_bytes": null,
+      "cuda_peak_reserved_bytes": null,
+      "initial_pde_rows": 128,
+      "final_pde_rows": 128,
+      "observed_sampling_events": 0,
+      "scope": "Fresh disposable model; complete native updates/attempts at the original schedule horizon. CPU RSS is the whole child-process high-water mark, including imports; CUDA peaks cover model construction and training allocator use after context initialization.",
+      "excluded": [
+        "output evaluation and exports",
+        "checkpoint capture and transfer",
+        "later adaptive growth or schedules not reached",
+        "other processes and CUDA driver/context memory"
+      ],
+      "runtime": {
+        "python": "3.14.8",
+        "torch": "2.14.1+cu130",
+        "cuda": "13.0"
+      },
+      "capacity_prediction": false,
+      "checkpoint_retained": false,
+      "study_id": "044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+      "trial_id": "DP0001-044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+      "study_archive_sha256": "2691d51e301a1a0d2a24097543dc902d3b800e0d33df28a1832f50453866e1a7",
+      "source_sha256": "1a6b65f889450eed922ff9cc2a8ecf3c17a231382dc277660c5a3d18e031e3bd",
+      "numerical_job_seconds": 3.4221492630022112,
+      "requested_output_count": 0,
+      "requested_device": "cpu",
+      "wall_time_seconds": 60.0,
+      "configured_updates": 1000,
+      "configured_method": "baseline",
+      "network_type": "fcnn",
+      "layers": [
+        16,
+        16
+      ],
+      "adaptive_sampling": {}
+    },
+    {
+      "format": "margam-resource-probe",
+      "version": 1,
+      "method": "PINN",
+      "device": "cuda",
+      "dtype": "float32",
+      "requested_updates": 2,
+      "completed_updates": 2,
+      "converged": false,
+      "build_and_train_seconds": 0.8366797469789162,
+      "process_peak_rss_bytes": 1316655104,
+      "cuda_peak_allocated_bytes": 17328640,
+      "cuda_peak_reserved_bytes": 23068672,
+      "initial_pde_rows": 128,
+      "final_pde_rows": 128,
+      "observed_sampling_events": 0,
+      "scope": "Fresh disposable model; complete native updates/attempts at the original schedule horizon. CPU RSS is the whole child-process high-water mark, including imports; CUDA peaks cover model construction and training allocator use after context initialization.",
+      "excluded": [
+        "output evaluation and exports",
+        "checkpoint capture and transfer",
+        "later adaptive growth or schedules not reached",
+        "other processes and CUDA driver/context memory"
+      ],
+      "runtime": {
+        "python": "3.14.8",
+        "torch": "2.14.1+cu130",
+        "cuda": "13.0"
+      },
+      "capacity_prediction": false,
+      "checkpoint_retained": false,
+      "study_id": "044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+      "trial_id": "DP0001-044db745cce0f1260e26ab4b5b8eff06e48cb87ba3d84c4aaf0d44de8b42aee0",
+      "study_archive_sha256": "2691d51e301a1a0d2a24097543dc902d3b800e0d33df28a1832f50453866e1a7",
+      "source_sha256": "1a6b65f889450eed922ff9cc2a8ecf3c17a231382dc277660c5a3d18e031e3bd",
+      "numerical_job_seconds": 2.522423341026297,
+      "requested_output_count": 0,
+      "requested_device": "cuda",
+      "wall_time_seconds": 60.0,
+      "configured_updates": 1000,
+      "configured_method": "baseline",
+      "network_type": "fcnn",
+      "layers": [
+        16,
+        16
+      ],
+      "adaptive_sampling": {}
+    }
+  ]
+}

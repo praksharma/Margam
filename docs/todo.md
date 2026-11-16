@@ -745,9 +745,12 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   bounded IPC and CPU retained-state handles. Preserve device selection, progress,
   output ownership and strict continuation; add cooperative Stop, explicit force
   stop/discard, parent-death cleanup and native-exit recovery.
-- [ ] Add an opt-in representative resource probe with isolated model/RNG/state,
-  complete update and method-specific work; distinguish measured peaks from
-  extrapolated adaptive growth and output costs.
+- [x] Add an opt-in CLI/API disposable resource probe for saved study trials:
+  complete native updates/attempts, measured process RSS and CUDA allocator peaks,
+  original schedules, method-specific work, observed adaptive events, source guards
+  and no retained checkpoint/output. State output/later-growth exclusions explicitly.
+- [ ] Add reviewed desktop resource-probe controls and qualify Expert multi-window
+  teacher-transfer peaks; the current probe is CLI/API and single-window only.
 - [x] Add an opt-in application-wide child wall-time limit for training, resume
   and evaluation, with default unlimited, read-only run-summary disclosure,
   local preferences, guarded edits, discarded expired jobs and verified cleanup.

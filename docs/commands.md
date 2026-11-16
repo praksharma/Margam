@@ -823,3 +823,14 @@ Multi-run retained-history checks and illustrated capture:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_history_group test_history_comparison test_run_comparison -v
 python -m examples.capture_history_group --overwrite
 ```
+
+
+Disposable native resource probes (no trained state retained):
+
+```bash
+.venv/bin/margam-cli study probe my-study.margam-study --trial 1 --updates 2 --device cpu --wall-time 60
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_resource_probe test_isolated_jobs test_job_limits test_study_cli -v
+python -m examples.profile_resource_probe --devices cpu cuda --output build/resource-probe.json
+```
+
+See [the probe scope and exclusions](use/resource-probe.md).

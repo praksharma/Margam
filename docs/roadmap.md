@@ -741,3 +741,12 @@ selections. Added rows retain independent update ranges, raw/weighted semantics
 and gaps. Removing the last row releases its snapshot and invalidates the overlay.
 The existing cancellable restricted CPU reader is reused; current model/results
 remain unchanged. This adds no automatic ranking or parallel study scheduling.
+
+
+### Disposable resource measurements — 16 November 2026
+
+Saved study trials can run opt-in CLI/API probes through the native isolated
+worker. They execute complete method updates at the original schedule horizon,
+measure process RSS/CUDA allocator peaks and discard weights. Output and later
+adaptive costs remain explicit exclusions rather than extrapolated predictions.
+Desktop controls and multi-window teacher-transfer qualification remain open.

@@ -734,3 +734,13 @@
   changes invalidate the overlay and are blocked during reads. Removing the last
   slot releases its snapshot; close clears all retained runs and joins the reader.
   Keep two-run prediction comparison unchanged and never rank objectives.
+
+
+- Resource probes use the native isolated worker's training loop with an explicit
+  1–1000-update/attempt stop budget; preserve the original configured schedule
+  horizon. Never restore/adopt a checkpoint or evaluate outputs. Measure fresh
+  construction/update CUDA allocator peaks and whole-process CPU RSS with their
+  distinct scopes. Count only observed residual-sampler events and never extrapolate
+  later growth/outputs. Preserve inputs/model/RNG, source guards and transport
+  timeout/cancellation; publish no measurement after failure/cancel/source change.
+  Reject Expert multi-window probes until teacher-transfer peaks are qualified.

@@ -1919,3 +1919,35 @@ remain **6–30**, **21–45** and **36–60**. This demonstrates history semant
 solution accuracy or equal compute cost. Source, generator and image hashes match
 maintained files. CUDA audit discovery selects 45 cases; the full audit was not
 rerun.
+
+
+## Disposable native resource probes (16 November 2026)
+
+Seven probe checks pass for real CPU/CUDA measurements, saved trial selection,
+unchanged configured schedule horizon, original model/Undo/RNG/input bytes,
+primitive-only reports without checkpoint/output retention, actual native
+method-specific updates and adaptive work. The CPU method matrix covers baseline,
+SA, LRA, Expert, Scale, gPINN, RBA and DSGNAR with their valid native recipes.
+Scheduled RAR growth and importance scoring are observed explicitly.
+
+Bounds, invalid trial/device choices, unsupported multi-window probes, attempted
+checkpoint restore, cancellation, wall-time expiry, injected job failure and
+runtime-source changes reject measurements. Required output/data validation runs
+without evaluating or exporting those outputs. Existing train/evaluate/predict
+operations retain their numerical and lifecycle checks.
+
+[Recorded CPU/CUDA reports](../assets/benchmarks/resource-probes.json) come from
+`examples.profile_resource_probe`, using two complete updates of trial 1 of the
+shipped Poisson study, with 128 PDE rows and the original 1,000-update horizon.
+Generator, fixture and runtime-source hashes match maintained files. CPU RSS is
+a whole-child high-water mark; CUDA peaks cover construction/observed training
+allocator use, excluding driver/context memory. No later adaptive, output or
+checkpoint cost is extrapolated and no capacity/accuracy claim is made.
+
+The illustrated manual builds/checks 89 pages. CUDA audit discovery selects
+46 cases; the full audit was not rerun. Desktop probe controls and Expert
+window-transfer qualification remain explicit TODOs.
+
+The 24 related isolated-worker, deadline and CLI checks also pass: **31 distinct
+focused checks** in total, including actual CUDA execution with no skips on this
+host. No real memory exhaustion was induced.

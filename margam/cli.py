@@ -23,6 +23,10 @@ def main(argv=None):
     batch.add_argument('file');batch.add_argument('--output',required=True)
     batch.add_argument('--cpus',type=int,required=True);batch.add_argument('--memory-mb',type=int,required=True);batch.add_argument('--minutes',type=int,required=True)
     batch.add_argument('--gpu',action='store_true');batch.add_argument('--partition');batch.add_argument('--account');batch.add_argument('--export',action='store_true')
+    probe=actions.add_parser('probe',help='Measure disposable complete native updates; no trained state or fit prediction.')
+    probe.add_argument('file');probe.add_argument('--trial',type=int,default=1,help='One-based design point.')
+    probe.add_argument('--updates',type=int,default=1,help='Complete updates/attempts, 1–1000, within the original training budget.')
+    probe.add_argument('--device',choices=('auto','cpu','cuda'));probe.add_argument('--wall-time',type=float,default=60,help='Isolated child limit in seconds; default 60, 0 unlimited.')
     for owned in (run,resume):owned.add_argument('--watch-owner-stdin',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args(argv);owner_watch=None
     try:
@@ -30,7 +34,10 @@ def main(argv=None):
             from .execution.owner_watch import watch_owner_stdin
             owner_watch=watch_owner_stdin()
         from .execution.study_runner import inspect as inspect_study,run_study,resume_study
-        if args.action=='slurm-export':
+        if args.action=='probe':
+            from .execution.probe import probe_study
+            result=probe_study(args.file,trial=args.trial,updates=args.updates,device=args.device,wall_time_seconds=args.wall_time);code=0
+        elif args.action=='slurm-export':
             from .slurm import export_job
             job=export_job(args.file,args.output,cpus=args.cpus,memory_mb=args.memory_mb,minutes=args.minutes,gpu=args.gpu,partition=args.partition,account=args.account,exports=args.export)
             result=dict(study_id=job['study_id'],resources=job['resources'],submitted=False);code=0

@@ -344,3 +344,13 @@ Study `network_type` axes use the existing pointwise catalogue and default schem
 `studies.apply_choices` is shared by preview and native trial materialization.
 Architecture studies store complete family-option snapshots in bundle version 2;
 numeric-only bundle version 1 is unchanged. See [network alternatives](use/study-networks.md).
+
+
+The opt-in `margam.execution.probe.probe_study` API and
+`margam-cli study probe` select a saved native design point, restore its private
+owned inputs and execute disposable complete updates using the existing isolated
+worker. The original schedule horizon stays unchanged. Reports contain process
+RSS and CUDA allocator peaks, observed row/sampler counts and source/runtime
+provenance; no checkpoint/output payload is retained. See
+[resource probe](use/resource-probe.md) for excluded costs and current single-window
+scope.

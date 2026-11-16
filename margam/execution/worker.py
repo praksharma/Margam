@@ -9,7 +9,7 @@ from .codec import load_packet,save_packet,decode_config,decode_request,cpu_tree
 
 def main():
     directory=Path(sys.argv[1]);job=load_packet(directory/'input.pt')
-    if job.get('format')!='margam-job' or job.get('version')!=1 or job.get('operation') not in ('train','evaluate','predict'):
+    if job.get('format')!='margam-job' or job.get('version')!=1 or job.get('operation') not in ('train','evaluate','predict','probe'):
         raise ValueError('Invalid numerical job.')
     identifier=job['id'];cancelled=Event();finished=Event();sequence=0
     def emit(kind,**values):
@@ -47,21 +47,36 @@ def main():
         config=decode_config(job['config']);operation=job['operation']
         requests=[decode_request(item,config) for item in job['requests']]
         emit('ready',pid=os.getpid())
-        if operation=='train':
-            model=build_pinn(config)
+        probe=operation=='probe';measurement=None
+        if probe:
+            from .probe import validate_probe,begin_measurement,finish_measurement
+            validate_probe(config,job.get('probe_updates'))
+            if job['checkpoint'] is not None or requests:raise ValueError('Probes cannot restore checkpoints or evaluate outputs.')
+            stage='resource measurement';measurement=begin_measurement(config)
+        if operation in ('train','probe'):
+            stage='model construction';model=build_pinn(config)
+            initial_rows=len(model.collocation_point_sample) if probe else None
+            target=job['probe_updates'] if probe else config.iterations
             if job['checkpoint'] is not None:
                 stage='checkpoint restore';model.load_training_state(job['checkpoint'])
             stage='training update'
-            while model.iter<config.iterations and not cancelled.is_set() and not getattr(model,'converged',False):
+            while model.iter<target and not cancelled.is_set() and not getattr(model,'converged',False):
                 previous=model.iter;controller=getattr(model,'sampling_controller',None)
                 events=len(controller.history) if controller is not None else 0
-                model.train(min(25,config.iterations-model.iter),display_every=0)
+                model.train(min(25,target-model.iter),display_every=0)
                 emit('progress',step=model.iter,records=model.loss_history[previous:])
                 for name,event in (('scale_summary','scale'),('expert_summary','expert')):
                     if hasattr(model,name):emit(event,summary=getattr(model,name)())
                 if controller is not None:
                     for event in controller.history[events:]:emit('sampling',event=event)
                 if getattr(model,'converged',False):break
+            if probe:
+                if cancelled.is_set():raise InterruptedError('Resource probe cancelled; no measurement published.')
+                stage='probe measurement';result=finish_measurement(measurement,model,target,initial_rows)
+                if cancelled.is_set():raise InterruptedError('Resource probe cancelled; no measurement published.')
+                if any(name=='PySide6' or name.startswith('PySide6.') for name in sys.modules):raise RuntimeError('Numerical child unexpectedly imported Qt.')
+                save_packet(directory/'output.pt',dict(format='margam-job-result',version=1,id=identifier,pid=os.getpid(),checkpoint=None,result=result,metadata={},headless=True))
+                emit('complete');return 0
             stage='checkpoint capture';checkpoint=cpu_tree(model.training_state())
         else:
             stage='checkpoint restore';checkpoint=job['checkpoint'];model=prediction_model(config,checkpoint)
