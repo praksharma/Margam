@@ -31,6 +31,42 @@ output. Undefined zero-reference errors retain their explicit status. Details
 include the selected fields and row count. Margam does not rank trials or assume
 that errors from different fields, units, coordinates or problems are comparable.
 
+## Export the reported table
+
+Press **Export table CSV…** and choose a new filename. Every design point is
+exported in original order, including failed, invalid and unfinished trials.
+The export includes **all** recorded reference outputs, regardless of which one
+the table's error selector currently displays. Existing files and symlinks are
+refused; choose another name. The results folder itself is unchanged.
+
+This exports the **displayed metadata snapshot**. It does not refresh progress,
+load archives, verify payload hashes or rank trials. Each row records the study
+identity, snapshot summary checksum, reported study/trial status, attempt number,
+actual completed steps, device and recorded source/runtime. Empty steps and
+metric values mean absent or undefined, never an invented zero. Refresh before
+exporting if you want newer progress. Export is disabled during reading and after
+a failed refresh.
+
+CSV format version 1 uses one row per trial:
+
+| Columns | Meaning |
+| --- | --- |
+| `csv_version`, `metadata_scope` | Version 1; `reported_snapshot_payloads_unverified` |
+| `study_id`, `summary_sha256`, `study_state` | Frozen study and displayed progress identity/status |
+| `design_point`, `trial_id`, `reported_status`, `attempt`, `actual_steps` | Original trial identity and outcome |
+| `choices_json`, `reason_json`, `attempt_history_json` | Exact choices, reason and previous attempt metadata as JSON |
+| `device`, `requested_device`, `source_sha256`, `runtime_json` | Recorded execution provenance; runtime text is JSON |
+| `metric:<output-id>:value` | Reported relative L2, or empty |
+| `metric:<output-id>:status_json`, `norm`, `fields_json`, `rows` | Diagnostic status, norm, fields and row count under the same prefix |
+
+Arbitrary text cells use JSON, retaining quotes/newlines and preventing text from
+becoming spreadsheet formulas. Decode `*_json` cells with a JSON reader to recover
+their original values. Missing diagnostics have empty cells; an explicitly
+undefined diagnostic retains its JSON status and fields with an empty value.
+A zero value remains `0`, distinct from missing. Files use UTF-8 with a header,
+standard CSV quoting and a 32 MiB export limit. No physical compatibility, units
+or accuracy are inferred from matching columns.
+
 ## Open one completed trial
 
 Select a completed row and choose **Verify and open completed trial**. Margam

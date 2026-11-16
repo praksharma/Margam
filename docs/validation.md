@@ -1850,3 +1850,22 @@ The [actual exporter capture](../assets/screenshots/manual-slurm-export.png) and
 bundle with explicit resource settings, without training or submission. The
 source, generator and image hashes match maintained files. These checks do not
 qualify a real Slurm scheduler, allocation enforcement or numerical accuracy.
+
+
+## Study outcome CSV snapshots (16 November 2026)
+
+Three new export checks and eight existing study-collection checks pass:
+**11 focused checks**, including actual CPU/CUDA collection and native reopening.
+CSV checks cover every displayed trial and all reference output columns, explicit
+undefined/absent values, exact JSON choices and quoted/newline/formula-like text,
+metadata identity, no payload reads or implicit refresh, unchanged model/Undo/RNG
+and result-folder files, cancellation, busy/failed-refresh guards, atomic
+no-clobber including symlinks, and temporary-file cleanup after publication failure.
+
+The refreshed [real collection screenshot](../assets/screenshots/manual-study-results.png)
+and [manifest](../assets/screenshots/manual-study-results.json) use a three-trial
+CLI Burgers study. Two trials complete two updates and one is invalid. The capture
+exports all three CSV rows and checks their reported statuses and metadata scope.
+This is workflow evidence, not trained-solution accuracy or payload verification
+by CSV export. Source, generator and image hashes are checked against maintained
+files.

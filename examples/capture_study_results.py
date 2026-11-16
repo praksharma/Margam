@@ -1,5 +1,6 @@
 """Capture a real read-only study collection after small CLI trials; no accuracy claim."""
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -38,6 +39,10 @@ def main():
             assert dialog.collection is not None,dialog.status.text()
             assert dialog.collection['report']['counts']=={'completed':2,'invalid':1}
             assert before==capture_model(window) and index==window.undo_stack.index() and window.result is None
+            target=directory/'study-results.csv';assert dialog.export_table(target),dialog.status.text()
+            with target.open(newline='') as stream:exported=list(csv.DictReader(stream))
+            assert len(exported)==3 and [r['reported_status'] for r in exported]==['completed','invalid','completed']
+            assert all(r['metadata_scope']=='reported_snapshot_payloads_unverified' for r in exported)
             dialog.details.setMaximumHeight(210)
             for _ in range(4):app.processEvents()
             for cls in (QLabel,QLineEdit,QPlainTextEdit):
@@ -49,7 +54,7 @@ def main():
             assert dialog.grab().save(str(image))
             report=dialog.collection['report']
             evidence=dict(generator='examples.capture_study_results',scope='Actual Qt collection of a real three-trial CLI study; two updates per valid trial, not solution accuracy. Browsing leaves the current model unchanged.',
-                counts=report['counts'],headless=report['headless'],source_sha256=report['source']['sha256'],study_id=report['study_id'],
+                csv_rows=len(exported),csv_sha256=hashlib.sha256(target.read_bytes()).hexdigest(),counts=report['counts'],headless=report['headless'],source_sha256=report['source']['sha256'],study_id=report['study_id'],
                 runtime=report['runtime'],capture_tool_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 file=image.name,sha256=hashlib.sha256(image.read_bytes()).hexdigest())
             text=json.dumps(evidence,indent=2)+'\n';validate_public_text(text,'Study collection capture evidence');manifest.write_text(text);dialog.close()

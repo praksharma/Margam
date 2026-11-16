@@ -1,13 +1,15 @@
 {
   "generator": "examples.capture_study_results",
   "scope": "Actual Qt collection of a real three-trial CLI study; two updates per valid trial, not solution accuracy. Browsing leaves the current model unchanged.",
+  "csv_rows": 3,
+  "csv_sha256": "8e61f837ce47e62fe0059631028d7b67087943afaa5a1702e3ecd23f93370a25",
   "counts": {
     "completed": 2,
     "invalid": 1
   },
   "headless": true,
-  "source_sha256": "ef111b5ef20ccdd15f57c138c535639a18c014f139955a475fc182992df1a99a",
-  "study_id": "2b138cbe3842551ebbb5a63170737b433c42ed0874d0922f6b55b9dd535b1f81",
+  "source_sha256": "961ba2111a86fb7ad668a7d47262011497be48860ac871776791f8f90544ff43",
+  "study_id": "4716acfa641b250167cfd25adac873727f8f9aa6f481bc968339104e787fb332",
   "runtime": {
     "cuda_runtime": "13.0",
     "gpu": null,
@@ -18,7 +20,7 @@
     "system": "Linux",
     "torch": "2.14.1+cu130"
   },
-  "capture_tool_sha256": "ceba39f854712e3c7e6a5c5f2d064ce4ebd30f46c9fbab87509348408a946161",
+  "capture_tool_sha256": "61ebf790567919d16f64732c646a0fdd86dcc3af4ac93361ad834c7dc1ea19a6",
   "file": "manual-study-results.png",
-  "sha256": "0ba8c49d4866a2d5e4d18271773f59fc3cd85f08b8e13b8a921aba1cf3d3a0b7"
+  "sha256": "e77df5b2195490b52abefcd53a7c22c6e480f097a9f6b43eeec2102cdb0edab3"
 }

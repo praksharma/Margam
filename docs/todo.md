@@ -351,6 +351,9 @@ scheduler workflows below remain proposed.
 - [x] Overlay two saved Training Monitor histories with original update indices,
   retained gaps, distinct raw/weighted terms, exact-value preview and explicit
   nonpositive-log handling. Never substitute checkpoint history or rank objectives.
+- [x] Export the collected metadata snapshot as an atomic no-clobber CSV: all
+  trials/output diagnostics, explicit absent/undefined values, choices, reasons,
+  attempt history and provenance. No implicit refresh, payload loading or ranking.
 - [ ] Add parallel study scheduling and further multi-run comparison in the GUI using that entry point.
 - [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.

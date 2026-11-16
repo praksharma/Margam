@@ -715,3 +715,11 @@ Users select a saved study, a fresh destination and explicit resource budgets;
 no job is submitted and the current project stays unchanged. The documented
 round trip ends with File → Open study results. Local CPU/CUDA execution is
 qualified; real cluster submission, arrays and preemption remain future work.
+
+
+### Portable study outcome tables — 16 November 2026
+
+The study-results browser exports a UTF-8 CSV of its displayed metadata snapshot,
+including every trial and reference output, exact choices/reasons/attempt history
+and recorded provenance. Missing metrics remain absent. Export is explicit,
+atomic and no-clobber; it neither opens numerical payloads nor ranks results.

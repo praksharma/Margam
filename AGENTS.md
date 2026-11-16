@@ -706,3 +706,12 @@
   preserve model/Undo/results/device/RNG. Export never submits, launches training
   or installs packages. Keep local Bash qualification distinct from real cluster
   submission and allocation enforcement.
+
+
+- Study table CSV exports the collected metadata snapshot, not fresh disk state
+  or numerical payloads. Include all trials and all output diagnostics, preserve
+  absent/undefined versus zero, choices, reasons, attempts and snapshot provenance.
+  Encode arbitrary text as JSON cells to preserve content without spreadsheet
+  formulas. Publish atomically with no-clobber and a bounded size; never rank
+  trials, infer compatibility or imply payload verification. Disable export while
+  reading or after a failed refresh, without changing model/results/RNG.

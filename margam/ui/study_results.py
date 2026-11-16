@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt,QThread
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFileDialog,
     QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit,QComboBox)
-from ..study_results import collect,prepare_open
+from ..study_results import collect,prepare_open,export_csv
 from .icons import icon
 
 
@@ -34,12 +34,14 @@ class StudyResults(QDialog):
         self.status=QLabel('Choose the directory containing summary.json and study.margam-study.');self.status.setTextFormat(Qt.TextFormat.PlainText);self.status.setWordWrap(True);layout.addWidget(self.status)
         row=QHBoxLayout();layout.addLayout(row)
         self.open_button=QPushButton('Verify and open completed trial');self.open_button.setIcon(icon('open'));self.open_button.clicked.connect(self.open_selected);row.addWidget(self.open_button)
+        self.export_button=QPushButton('Export table CSV…');self.export_button.setIcon(icon('export'));self.export_button.clicked.connect(lambda:self.export_table());row.addWidget(self.export_button)
         self.cancel=QPushButton('Cancel reading');self.cancel.clicked.connect(self.cancel_reading);row.addWidget(self.cancel);row.addStretch()
         close=QPushButton('Close');close.clicked.connect(self.close);row.addWidget(close);self.buttons()
 
     def buttons(self):
         busy=self.worker is not None;index=self.table.currentRow()
         self.browse.setEnabled(not busy);self.refresh_button.setEnabled(not busy and self.root is not None);self.cancel.setEnabled(busy)
+        self.export_button.setEnabled(not busy and self.collection is not None)
         completed=self.collection is not None and 0<=index<len(self.collection['records']) and self.collection['records'][index]['row']['status']=='completed'
         self.open_button.setEnabled(not busy and completed and not self.owner.is_running() and not self.owner.scene.locked and not self.owner.project_workspace.busy)
 
@@ -132,6 +134,17 @@ class StudyResults(QDialog):
         if not self.open_button.isEnabled():return False
         collection=self.collection;index=self.table.currentRow()
         return self.start_read(lambda check:prepare_open(collection,index,check=check),'open')
+
+    def export_table(self,path=None):
+        if self.worker is not None or self.collection is None:return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(self,'Export reported study snapshot to a new CSV','study-results.csv','CSV (*.csv)',options=QFileDialog.Option.DontConfirmOverwrite)
+        if not path:return False
+        try:count=export_csv(self.collection,path)
+        except (OSError,ValueError,TypeError,KeyError) as error:
+            self.status.setText('CSV export failed: '+str(error));return False
+        self.status.setText(f'Exported {count} trials from the displayed metadata snapshot. All reference outputs included; payloads unverified. Refresh explicitly for newer progress. Existing files are never overwritten.')
+        return True
 
     def cancel_reading(self):
         if self.worker is not None:self.worker.abort_requested=True;self.worker.requestInterruption();self.status.setText('Cancelling study reading…')

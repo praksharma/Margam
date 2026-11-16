@@ -799,3 +799,11 @@ Desktop Slurm export validation and illustrated capture (no cluster submission):
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_slurm_export_ui test_slurm -v
 python -m examples.capture_slurm_export --overwrite
 ```
+
+
+Study metadata CSV export and illustrated collection:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_study_csv test_study_results -v
+python -m examples.capture_study_results --overwrite
+```

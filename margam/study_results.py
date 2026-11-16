@@ -95,3 +95,40 @@ def prepare_open(collection,index,*,check=None):
         if file_identity(root,row['directory']+'/artifacts/publication.json',check=check)['sha256']!=row['publication_sha256']:raise ValueError('Publication changed during the verified copy.')
         cancelled(check);return temporary,target
     except BaseException:temporary.cleanup();raise
+
+
+def export_csv(collection,path):
+    """Export the collected metadata snapshot; no payload reads, ranking or refresh.
+
+    Arbitrary text is JSON-encoded in cells, preserving it without spreadsheet
+    formula interpretation. Empty metric cells mean absent, never zero.
+    """
+    import csv
+    import io
+    import json
+    from tempfile import NamedTemporaryFile
+    report=collection['report'];records=collection['records']
+    identifiers=sorted({key for record in records for key in (record['row']['metrics'] or {})})
+    fields=['csv_version','metadata_scope','study_id','summary_sha256','study_state','design_point','trial_id','reported_status','attempt','actual_steps','choices_json','reason_json','attempt_history_json','device','requested_device','source_sha256','runtime_json']
+    for key in identifiers:fields.extend(f'metric:{key}:{name}' for name in ('value','status_json','norm','fields_json','rows'))
+    def encode(value):return json.dumps(value,ensure_ascii=False,sort_keys=True,allow_nan=False,separators=(',',':'))
+    stream=io.StringIO(newline='');writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader()
+    for index,record in enumerate(records):
+        row=record['row'];execution=report['effective_execution']
+        result=dict(csv_version=1,metadata_scope='reported_snapshot_payloads_unverified',study_id=report['study_id'],summary_sha256=collection['summary_sha256'],study_state=report['state'],design_point=f'DP{index+1:04d}',trial_id=row['trial_id'],reported_status=row['status'],attempt=row['attempt'],actual_steps='' if row['steps'] is None else row['steps'],choices_json=encode(record['choices']),reason_json=encode(row['reason']),attempt_history_json=encode(row['history']),device=execution['device'],requested_device=execution['requested_device'],source_sha256=report['source']['sha256'],runtime_json=encode(report['runtime']))
+        for key,metric in (row['metrics'] or {}).items():
+            for name in ('value','norm','rows'):result[f'metric:{key}:{name}']='' if metric[name] is None else metric[name]
+            result[f'metric:{key}:status_json']=encode(metric['status'])
+            result[f'metric:{key}:fields_json']=encode(metric['fields'])
+        writer.writerow(result)
+        if stream.tell()>32*1024*1024:raise ValueError('Study CSV exceeds the 32 MiB export budget.')
+    content=stream.getvalue().encode('utf-8')
+    if len(content)>32*1024*1024:raise ValueError('Study CSV exceeds the 32 MiB export budget.')
+    path=Path(path).absolute();temporary=None
+    try:
+        with NamedTemporaryFile(prefix='.margam-study-csv-',dir=path.parent,delete=False) as output:
+            temporary=Path(output.name);output.write(content);output.flush();os.fsync(output.fileno())
+        os.link(temporary,path) # Atomic no-clobber; existing files/symlinks remain intact.
+    finally:
+        if temporary is not None:temporary.unlink(missing_ok=True)
+    return len(records)
