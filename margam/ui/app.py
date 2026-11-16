@@ -634,6 +634,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.run_summary_action=run.addAction('Run summary…');self.run_summary_action.triggered.connect(self.show_run_summary)
         self.study_execution_action=run.addAction('Run saved study…');self.study_execution_action.setIcon(icon('play'));self.study_execution_action.triggered.connect(self.show_study_execution)
         self.study_preview_action=run.addAction('Parameter study…');self.study_preview_action.setIcon(icon('comparison'));self.study_preview_action.triggered.connect(self.show_design_points)
+        self.slurm_export_action=run.addAction('Export study for Slurm…');self.slurm_export_action.setIcon(icon('export'));self.slurm_export_action.triggered.connect(self.show_slurm_export)
         self.run_action=run.addAction('Train PINN')
         self.run_action.setShortcut('F5');self.run_action.triggered.connect(self.train_button.click)
         self.evaluate_action=run.addAction('Evaluate outputs');self.evaluate_action.triggered.connect(self.evaluate_trained_outputs)
@@ -2710,6 +2711,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         dialog=getattr(self,'study_results_dialog',None)
         if dialog is None or not isValid(dialog):
             dialog=StudyResults(self);self.study_results_dialog=dialog
+        dialog.show();dialog.raise_();return dialog
+
+    def show_slurm_export(self):
+        from .slurm_export import SlurmExport
+        dialog=getattr(self,'slurm_export_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=SlurmExport(self);self.slurm_export_dialog=dialog
         dialog.show();dialog.raise_();return dialog
 
     def show_design_points(self):

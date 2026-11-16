@@ -791,3 +791,11 @@ python -m examples.capture_study_networks --overwrite
 
 The capture previews four architecture/width combinations and saves a temporary
 version-2 study with frozen defaults; it does not train. See [network studies](use/study-networks.md).
+
+
+Desktop Slurm export validation and illustrated capture (no cluster submission):
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_slurm_export_ui test_slurm -v
+python -m examples.capture_slurm_export --overwrite
+```

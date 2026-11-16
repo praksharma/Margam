@@ -1,0 +1,10 @@
+{
+  "generator": "examples.capture_slurm_export",
+  "scope": "Real desktop data-only export; no training or cluster submission.",
+  "source_sha256": "8ac532626dc369c0490b92659369bcc670c89e482e43ede6d65b126f1731bda9",
+  "capture_tool_sha256": "59eb340f7e3cc0a32357b00423a6ccbf04091025c393c757910c84ce255a4fc2",
+  "file": "manual-slurm-export.png",
+  "sha256": "a95ca415e6002afdf32cbd9f02a7b89d416fd4aaa8250f024791ea19de0da962",
+  "current_model_preserved": true,
+  "parent_rng_preserved": true
+}

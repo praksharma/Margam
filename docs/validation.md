@@ -1833,3 +1833,20 @@ not rerun. The manual checks 88 rendered pages and their local links.
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_study_networks.py' -v
 python -m examples.capture_study_networks --overwrite
 ```
+
+
+## Desktop Slurm export (16 November 2026)
+
+Three new desktop checks and eight existing Slurm checks pass: **11 focused
+checks**, including actual CPU and CUDA bundle execution on this host. Desktop
+coverage verifies required budgets, invalid site tokens, missing inputs, refusal
+to overwrite existing folders, frozen saved-file use after canvas edits, no
+process launch during export, unchanged model/Undo/RNG and dialog reuse.
+A desktop-exported CPU bundle runs through local Bash and the native CLI, then
+its completed archive opens through verified study collection.
+
+The [actual exporter capture](../assets/screenshots/manual-slurm-export.png) and
+[manifest](../assets/screenshots/manual-slurm-export.json) verify a data-only
+bundle with explicit resource settings, without training or submission. The
+source, generator and image hashes match maintained files. These checks do not
+qualify a real Slurm scheduler, allocation enforcement or numerical accuracy.

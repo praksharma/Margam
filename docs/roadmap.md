@@ -706,3 +706,12 @@ version-2 bundles freeze those values for portable/historical reconstruction.
 Version-1 numeric studies remain unchanged. Existing validators record incompatible
 width combinations; actual CPU/CUDA, archive/resume and batch/GUI paths are qualified.
 Configured recipe/trainer/optimizer/topology alternatives remain separate work.
+
+
+### Desktop cluster-study handoff — 16 November 2026
+
+Run → Export study for Slurm now exposes the existing data-only bundle writer.
+Users select a saved study, a fresh destination and explicit resource budgets;
+no job is submitted and the current project stays unchanged. The documented
+round trip ends with File → Open study results. Local CPU/CUDA execution is
+qualified; real cluster submission, arrays and preemption remain future work.

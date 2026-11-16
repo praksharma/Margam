@@ -313,8 +313,10 @@ scheduler workflows below remain proposed.
   graph/output/data validation and isolated numerical jobs, no Qt/display/service,
   serial fresh trials, CPU/CUDA intent/overrides, wall limits, opt-in block exports,
   native archives, failure isolation and Ctrl-C cleanup. See [CLI guide](use/study-cli.md).
-- [ ] Make GUI → exported study → HPC/Slurm → collected GUI results the first
-  complete study workflow; deterministic grid execution precedes optional search tools.
+- [x] Provide GUI → saved study → desktop Slurm export → collected GUI results,
+  using explicit resource budgets and the existing serial bundle writer. Qualify
+  local Bash execution/native reopening; actual cluster submission and allocation
+  enforcement remain the separate open qualification below.
 - [ ] Use that workflow for later paper-accuracy reproduction: fixed independent
   evaluation data/reference, selected error norms, repeated seeds, budgets,
   hardware/runtime and separate physical residual/corrected-loss/error columns.

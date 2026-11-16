@@ -1,7 +1,23 @@
 # Export a study for Slurm
 
-Save a [portable study](parameter-studies.md) in Margam, then export a single-node
-serial job bundle from the repository environment:
+Save a [portable study](parameter-studies.md), then choose **Run → Export study
+for Slurm…**. Select that saved file and a **new bundle folder**, enter CPUs,
+memory in MiB and total batch minutes, and press **Export bundle**. The three
+budgets start unset and must be entered explicitly.
+
+![Desktop export of a saved study with explicit cluster budgets](../../assets/screenshots/manual-slurm-export.png)
+
+The exporter uses the saved file, including its frozen network-family options and
+input snapshots. It does not save your current canvas or parameter draft. Save
+those changes first if you want them included. Export preserves the open model,
+Undo history, results and application device preference.
+
+Check **Request one GPU and execute on CUDA** only for a GPU allocation. Leave it
+unchecked to force CPU execution. Optional partition/account fields accept single
+site-specific tokens; the output-files checkbox enables only the existing,
+connected export blocks. Native run archives are always retained on completion.
+
+You can also export the same bundle from the repository environment:
 
 ```bash
 .venv/bin/margam-cli study slurm-export my-study.margam-study \

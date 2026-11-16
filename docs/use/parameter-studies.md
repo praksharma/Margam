@@ -4,8 +4,11 @@ Open **Run → Parameter study…** to explore combinations, then save the base 
 parameter choices and input snapshots in a portable **`.margam-study`** file.
 Opening a study restores that model and table in another session or location.
 **The [headless CLI](study-cli.md) now executes saved finite grids serially.**
-Nothing trains merely because you preview, save or open a study. Grouped GUI
-execution, scheduling and collected study results remain future work.
+Nothing trains merely because you preview, save or open a study. Use
+[Run saved study](run-study.md) for local serial execution, or
+[Export study for Slurm](slurm.md) to prepare a cluster job. Browse returned
+folders with [Open study results](study-results.md). Parallel scheduling remains
+future work.
 
 Unsaved table edits stay in this window until the application closes. Use
 **Save portable study…** to preserve them; ordinary model Save and run archives

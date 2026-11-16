@@ -698,3 +698,11 @@
   incomplete/unknown schemas instead of reinterpreting them. Numeric-only version-1
   studies keep their identities/custom options. Retain invalid trial reasons with
   no fake budget/metric; do not imply recipe/topology or neural-operator alternatives.
+
+
+- Desktop Slurm export consumes an explicitly selected saved study, never the
+  current canvas or unsaved study draft. Reuse the data-only export_job writer,
+  require explicit nonzero resource budgets and a fresh output directory, and
+  preserve model/Undo/results/device/RNG. Export never submits, launches training
+  or installs packages. Keep local Bash qualification distinct from real cluster
+  submission and allocation enforcement.
