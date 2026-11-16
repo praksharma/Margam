@@ -73,18 +73,68 @@ The probe is fresh training, not checkpoint continuation. It uses the native CLI
 float32 default; DSGNAR's explicit precision setting still applies. The report
 records the actual dtype, rather than assuming the dtype of an open checkpoint.
 
-`--updates` defaults to 1, accepts 1–1000 and cannot exceed the trial's configured
-budget. One update includes derivative evaluation, loss, backward work and the
+`--updates` defaults to 1. Single-window probes accept up to 1,000 updates;
+Expert multi-window probes accept up to 100,000. Both are bounded by the trial's
+original configured training budget. The larger bound lets a probe reach a
+native handoff after a default 1,000-update window without skipping updates. One update includes derivative evaluation, loss, backward work and the
 method's normal update. Adam state, SA masks and Scale's previous network are
 constructed by the native method. Scheduled balancing, NTK work and residual
 sampling occur **only if the probe reaches their configured schedule**. Increase
 the explicit probe budget to include later work; the command never shifts a
 schedule forward to make a short probe appear representative.
 
-Single-window native methods are supported through their existing validators.
-Multiple Expert time windows are explicitly rejected: teacher-transfer and later
-window peaks have not been qualified. Invalid/incompatible trials fail without
-printing a measurement. No random replacement of missing imported points occurs.
+Native methods use their existing validators. Expert multi-window probes also
+measure reached teacher transfers, as described below. Invalid/incompatible trials
+fail without printing a measurement. No random replacement of missing imported points occurs.
+
+## Measure Expert time-window handoffs
+
+Configure an Expert transient example's **Time windows** and **Updates per
+window**, then save a study. A Fixed network-seed axis provides one design point
+when the ordinary training-budget axis is unavailable for marching examples.
+Review and run that saved trial through the same desktop controls or CLI.
+
+![Actual CUDA probe with separate window and teacher-transfer phases](../../assets/screenshots/manual-window-resource-probe.png)
+
+The phase table appears for multi-window reports. The screenshot runs **9 of 12
+configured updates**, with three windows of four updates. It reaches both
+handoffs and performs one update in window 3. The measured state remains separate
+from the current canvas; Copy JSON report includes the complete phase list.
+
+| Phase | Included work |
+| --- | --- |
+| Construction | First-window model, samples and optimizer construction, after CUDA context initialization |
+| Window training | Complete native updates, including causal weighting and scheduled gradient/NTK balancing when reached |
+| Teacher transfer | Native completed-window CPU snapshot, frozen teacher and used device copies, next-window model construction, parameter transfer and optimizer/EMA/decay reset |
+
+**A handoff occurs before the next window's first update.** Stopping at update
+1,000 of a 1,000-update first window measures no transfer. Use at least 1,001
+updates to reach it, within the original trial budget. The report marks an
+unperformed next transfer as pending. It never fast-forwards training, evaluates
+a synthetic teacher or changes the original schedule to make a short probe
+appear representative. A shorter configured total budget can still stop before
+all planned windows; both the original horizon and window schedule are reported.
+
+CUDA overall peaks are the **maximum of the phase peaks**, not their sum. Each
+phase includes memory already live at its start, including earlier teachers and
+allocator pools. Start/end/peak byte counters remain in JSON. CPU RSS is a
+**cumulative process high-water mark** including imports; table differences are
+not phase-local RAM costs. Teacher counts and retained device-copy counts make
+working-state growth explicit.
+
+The profiler synchronizes phase boundaries. Synchronization/bookkeeping overhead
+is included and can change overlap and allocator reuse compared with an
+uninstrumented run. These are measurements of the profiled execution; they do
+not guarantee the original execution's peak or speed. Internal window snapshots
+are included in handoff cost. Final run-archive capture/transfer, outputs, exports
+and unobserved later windows remain excluded. The child discards its working
+teachers, optimizers and snapshots when it exits.
+
+Single-window reports retain format version 1. Expert multi-window reports use
+version 2, with up to 32 windows and 64 ordered phases. The desktop handles both;
+the [report contract](../resource-probe-format.md) describes the validation rules.
+Failures identify the active window/phase when available and publish no partial
+measurement.
 
 ## Read measured values
 
@@ -136,3 +186,18 @@ use two complete updates of the shipped Poisson study. They demonstrate measured
 scope and isolation, not solution accuracy, a hardware speed comparison or a
 universal fit threshold. Omit `cuda` on a CPU-only environment. Existing evidence
 files are refused unless `--overwrite` is explicitly supplied.
+
+
+For the repeatable scalar/coupled window audit:
+
+```bash
+.venv/bin/python -m examples.profile_window_resources \
+  --devices cpu cuda --output build/window-resource-probes.json
+```
+
+The [recorded audit](../../assets/benchmarks/expert-window-resources.json) contains
+Burgers and the self-contained cylinder-startup variation, each on CPU and CUDA:
+three 16-update windows, 48 updates and two reached transfers per case. Full
+settings, source-file hashes, runtime and each phase are retained. Failures receive
+explicit status and no measurement. These small settings qualify workflow and
+accounting, rather than paper accuracy, a capacity threshold or hardware speed.

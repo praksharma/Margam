@@ -25,7 +25,7 @@ def main(argv=None):
     batch.add_argument('--gpu',action='store_true');batch.add_argument('--partition');batch.add_argument('--account');batch.add_argument('--export',action='store_true')
     probe=actions.add_parser('probe',help='Measure disposable complete native updates; no trained state or fit prediction.')
     probe.add_argument('file');probe.add_argument('--trial',type=int,default=1,help='One-based design point.')
-    probe.add_argument('--updates',type=int,default=1,help='Complete updates/attempts, 1–1000, within the original training budget.')
+    probe.add_argument('--updates',type=int,default=1,help='Complete updates/attempts within the original budget: up to 1000 for single-window or 100000 for Expert time marching.')
     probe.add_argument('--device',choices=('auto','cpu','cuda'));probe.add_argument('--wall-time',type=float,default=60,help='Isolated child limit in seconds; default 60, 0 unlimited.')
     for owned in (run,resume,probe):owned.add_argument('--watch-owner-stdin',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args(argv);owner_watch=None

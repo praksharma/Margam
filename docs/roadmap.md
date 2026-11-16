@@ -769,3 +769,14 @@ separate own-reference errors, per-field differences and bounded previews.
 Group calculations use the cancellable CPU reader; any incompatible run rejects
 the whole group. Shared run-slot and snapshot cleanup also serve monitor overlays.
 No automatic ranking, interpolation or scientific-equivalence claim is introduced.
+
+
+### Expert window resource qualification — 16 November 2026
+
+Multi-window probes now observe the real native teacher handoff rather than
+rejecting marching configurations. Version-2 reports separate construction,
+window training and transfers, retain teacher/device-copy counts and use maximum
+CUDA peaks plus cumulative RSS. The GUI shows/copies all phases, including the
+32-window limit. CPU/CUDA checkpoint-state and prediction parity preserve the
+underlying method. Cold Burgers and cylinder-startup audits record all settings
+and phases without claiming paper accuracy, speed or an uninstrumented memory fit.

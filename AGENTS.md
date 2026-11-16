@@ -737,13 +737,20 @@
 
 
 - Resource probes use the native isolated worker's training loop with an explicit
-  1–1000-update/attempt stop budget; preserve the original configured schedule
+  bounded update/attempt stop budget; preserve the original configured schedule
   horizon. Never restore/adopt a checkpoint or evaluate outputs. Measure fresh
   construction/update CUDA allocator peaks and whole-process CPU RSS with their
   distinct scopes. Count only observed residual-sampler events and never extrapolate
   later growth/outputs. Preserve inputs/model/RNG, source guards and transport
   timeout/cancellation; publish no measurement after failure/cancel/source change.
-  Reject Expert multi-window probes until teacher-transfer peaks are qualified.
+  Expert multi-window probes use version 2: the runtime-only transition observer
+  wraps the unchanged native handoff, with exact CPU/CUDA state parity. Keep
+  construction/training/transfer phases ordered and bounded to 64. Include
+  internal window snapshots and retained teacher device copies, aggregate CUDA
+  peaks by maximum, and label RSS cumulative. Never sum phase peaks or imply
+  synchronization leaves overlap/allocator reuse unchanged. A boundary-only stop
+  does not claim a transfer; preserve pending status and original horizon. The
+  update cap is 1000 single-window or 100000 marching, bounded by that horizon.
 
 
 - Desktop resource probes review an immutable saved-study trial, not the canvas.

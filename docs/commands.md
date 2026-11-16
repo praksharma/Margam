@@ -850,3 +850,15 @@ Multi-run saved-prediction checks and illustrated capture:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_prediction_group test_run_comparison test_history_group test_history_comparison -v
 python -m examples.capture_prediction_group --overwrite
 ```
+
+
+Expert multi-window probe qualification and reproducible phase audit:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=tests python -m unittest test_window_resource_probe test_resource_probe test_resource_probe_ui test_expert_extensions test_expert test_isolated_jobs test_job_limits test_study_execution -v
+python -m examples.profile_window_resources --devices cpu cuda --output build/window-resource-probes.json
+QT_QPA_PLATFORM=offscreen python -m examples.capture_window_resource_probe --device cuda --overwrite
+```
+
+The audit uses cold isolated processes, records all requested case/device outcomes
+and refuses an existing output unless `--overwrite` is explicit.

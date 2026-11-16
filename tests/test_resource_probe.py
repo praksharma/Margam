@@ -65,8 +65,6 @@ class ResourceProbeTests(unittest.TestCase):
         c=PoissonConfig(shape='Interval',device='cpu',points=6,layers=(4,),iterations=2)
         for updates in (0,True,1001,3):
             with self.assertRaises(ValueError):validate_probe(c,updates)
-        c.method='expert';c.expert_settings['windows']=2
-        with self.assertRaisesRegex(ValueError,'single Expert'):validate_probe(c,1)
         c.method='baseline';payload=self.payload(c);payload['checkpoint']={}
         with self.assertRaisesRegex(JobFailed,'cannot restore'):JobTransport().run(payload)
         c.iterations=1000;transport=JobTransport();cancelled=[]

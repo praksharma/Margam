@@ -41,6 +41,7 @@ class TimeMarchingPINN:
         config.validate()
         if config.method!='expert' or not config.is_time_dependent or config.expert_settings['windows']<2:raise ValueError('Time marching requires Expert training and multiple transient windows.')
         self.config=deepcopy(config);self.completed=[];self.teachers=[]
+        self._transition_observer=None # Trusted disposable instrumentation; never checkpointed.
         self.count=config.expert_settings['windows'];self.window_steps=config.expert_settings['window_steps']
         lower,upper=config.bounds;self.start=lower[-1];self.end=upper[-1]
         self.edges=[self.start+(self.end-self.start)*i/self.count for i in range(self.count+1)]
@@ -70,6 +71,10 @@ class TimeMarchingPINN:
     def outputs_ready(self):return len(self.completed)==self.count-1 and self.active.iter>0
 
     def _advance(self):
+        if self._transition_observer is None:return self._advance_window()
+        with self._transition_observer(self):return self._advance_window()
+
+    def _advance_window(self):
         state=cpu_state(self.active.training_state())
         # A transient velocity/pressure problem transfers velocity, not pressure ICs.
         components=2 if self.config.pde_preset=='expert_cylinder' else len(self.config.field_names)

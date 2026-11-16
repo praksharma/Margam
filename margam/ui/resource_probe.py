@@ -3,7 +3,7 @@ import json
 import os
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QFormLayout,QHBoxLayout,QLabel,QLineEdit,
-    QPushButton,QSpinBox,QPlainTextEdit,QFileDialog,QProgressBar,QApplication)
+    QPushButton,QSpinBox,QPlainTextEdit,QFileDialog,QProgressBar,QApplication,QTableWidget,QTableWidgetItem,QHeaderView)
 from .study_results import Reader
 from .study_execution import StudyProcess,prepare_review
 from .icons import icon
@@ -21,6 +21,7 @@ def prepare_probe(source,trial,updates,device,limit,check):
         value['intent']=(source,trial,updates,device,limit)
         value['trial_id']=identifier
         value['description']=dict(method=config.method,physics=config.pde_preset or config.physics,network=config.network_type,layers=list(config.layers),configured_updates=config.iterations,requested_outputs=len(requests))
+        if config.method=='expert' and config.expert_settings['windows']>1:value['description'].update(windows=config.expert_settings['windows'],updates_per_window=config.expert_settings['window_steps'],reachable_transfers=min(config.expert_settings['windows']-1,(updates-1)//config.expert_settings['window_steps']))
         return value
     except BaseException:value['temporary'].cleanup();raise
     finally:
@@ -36,7 +37,7 @@ def report_text(value):
         'CUDA reserved peak: '+memory(value['cuda_peak_reserved_bytes']),
         f"Construction + updates: {value['build_and_train_seconds']:.3f} s; transport/startup wall: {value['numerical_job_seconds']:.3f} s",
         f"PDE rows: {value['initial_pde_rows']} → {value['final_pde_rows']}; residual sampler events observed: {value['observed_sampling_events']}",
-        f"Output requests not evaluated: {value['requested_output_count']}",'',value['scope'],'Excluded: '+', '.join(value['excluded']),
+        f"Output requests not evaluated: {value['requested_output_count']}",'',value['scope'],'Excluded: '+', '.join(value['excluded']),value.get('peak_aggregation',''),
         '', 'Measured scope only; no full-run fit prediction. No weights, checkpoint or numerical outputs retained.','',json.dumps(value,indent=2,allow_nan=False)])
 
 
@@ -49,7 +50,7 @@ class ResourceProbe(QDialog):
         self.source=QLineEdit();self.source.setPlaceholderText('Saved .margam-study file');self.browse=QPushButton('Browse…');self.browse.setIcon(icon('open'));self.browse.clicked.connect(self.choose_source)
         row=QHBoxLayout();row.addWidget(self.source);row.addWidget(self.browse);form.addRow('Saved study',row)
         self.trial=QSpinBox();self.trial.setRange(1,512);self.trial.setToolTip('One-based design-point number in the saved Cartesian or paired study.');form.addRow('Design point',self.trial)
-        self.updates=QSpinBox();self.updates.setRange(1,1000);self.updates.setToolTip('Complete updates/attempts, within the original horizon. Later balancing or sampling is measured only if this budget reaches it.');form.addRow('Probe updates / attempts',self.updates)
+        self.updates=QSpinBox();self.updates.setRange(1,100000);self.updates.setToolTip('Complete updates/attempts within the original horizon: up to 1000 single-window, 100000 Expert multi-window. Later balancing or sampling is measured only if this budget reaches it.');form.addRow('Probe updates / attempts',self.updates)
         self.limit=QSpinBox();self.limit.setRange(0,604800);self.limit.setValue(60);self.limit.setSpecialValueText('Unlimited');self.limit.setToolTip('Explicit probe child launch-to-exit seconds. Default 60; 0 unlimited. This does not change the application job-limit preference.');form.addRow('Probe time limit (seconds)',self.limit)
         self.device=QLabel();form.addRow('Application device',self.device)
         self.review_text=QPlainTextEdit();self.review_text.setReadOnly(True);self.review_text.setMaximumHeight(140);layout.addWidget(self.review_text)
@@ -60,7 +61,9 @@ class ResourceProbe(QDialog):
         self.force_button=QPushButton('Force stop / discard');self.force_button.clicked.connect(lambda:self.stop(force=True));row.addWidget(self.force_button)
         self.progress=QProgressBar();self.progress.setRange(0,1);layout.addWidget(self.progress)
         self.status=QLabel('Choose a saved study and Review. CPU RAM includes imports; CUDA allocator peaks exclude driver/context memory. Outputs and later growth are not predicted.');self.status.setTextFormat(Qt.TextFormat.PlainText);self.status.setWordWrap(True);layout.addWidget(self.status)
-        self.text=QPlainTextEdit();self.text.setReadOnly(True);self.text.setMaximumBlockCount(1000);layout.addWidget(self.text)
+        self.phases=QTableWidget(0,8);self.phases.setHorizontalHeaderLabels(['Phase','Window','Updates','Seconds','RAM high-water MiB','CUDA allocated MiB','CUDA reserved MiB','Teachers / device copies']);self.phases.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.phases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch);self.phases.setMaximumHeight(240);self.phases.hide();layout.addWidget(self.phases)
+        self.phase_scope=QLabel('CUDA overall = maximum phase peak; each phase includes earlier live state. RAM is cumulative process high-water, not per-phase memory.');self.phase_scope.setWordWrap(True);self.phase_scope.hide();layout.addWidget(self.phase_scope)
+        self.text=QPlainTextEdit();self.text.setReadOnly(True);self.text.setMaximumBlockCount(3000);layout.addWidget(self.text)
         row=QHBoxLayout();layout.addLayout(row)
         self.copy_button=QPushButton('Copy JSON report');self.copy_button.setIcon(icon('copy'));self.copy_button.clicked.connect(self.copy_report);row.addWidget(self.copy_button)
         close=QPushButton('Close');close.clicked.connect(self.close);row.addWidget(close)
@@ -74,7 +77,7 @@ class ResourceProbe(QDialog):
         self.prepared=None
     def invalidate(self,*_):
         if self.active or self.reader is not None:return
-        self.release_review();self.result=None;self.review_text.clear();self.text.clear();self.buttons()
+        self.release_review();self.result=None;self.review_text.clear();self.text.clear();self.phases.setRowCount(0);self.phases.hide();self.phase_scope.hide();self.buttons()
     def buttons(self):
         busy=self.active or self.reader is not None;other=self.owner.is_running() and not self.active
         for control in (self.source,self.trial,self.updates,self.limit,self.browse):control.setEnabled(not busy)
@@ -122,7 +125,7 @@ class ResourceProbe(QDialog):
         if self.prepared['intent']!=self.intent():self.invalidate();self.status.setText('Settings or application device changed. Review again.');return False
         _,trial,updates,device,limit=self.prepared['intent']
         args=['study','probe',str(self.prepared['path']),'--trial',str(trial),'--updates',str(updates),'--device',device,'--wall-time',str(limit)]
-        self.active=True;self.result=None;self.worker=StudyProcess(args,None,self);self.worker.finished.connect(self.execution_finished);self.text.clear();self.progress.setRange(0,0)
+        self.active=True;self.result=None;self.worker=StudyProcess(args,None,self,tail_limit=262144);self.worker.finished.connect(self.execution_finished);self.text.clear();self.progress.setRange(0,0)
         self.status.setText('Disposable probe running. Stop discards the measurement.');self.owner.set_busy(True);self.buttons()
         try:self.worker.start()
         except Exception as error:
@@ -136,13 +139,29 @@ class ResourceProbe(QDialog):
             if worker.stop_requested:raise ValueError('Probe stopped; measurement discarded.')
             if worker.error or worker.returncode!=0:raise ValueError(worker.error or worker.tail.decode('utf-8',errors='replace') or 'Probe process failed.')
             value=json.loads(worker.tail.decode('utf-8'))
-            if not isinstance(value,dict) or value.get('format')!='margam-resource-probe' or type(value.get('version')) is not int or value.get('version')!=1 or value.get('trial_id')!=self.prepared['trial_id'] or value.get('checkpoint_retained') is not False or value.get('capacity_prediction') is not False:raise ValueError('Invalid probe report; no measurement adopted.')
+            if not isinstance(value,dict) or value.get('format')!='margam-resource-probe' or type(value.get('version')) is not int or value.get('version') not in (1,2) or value.get('trial_id')!=self.prepared['trial_id'] or value.get('checkpoint_retained') is not False or value.get('capacity_prediction') is not False:raise ValueError('Invalid probe report; no measurement adopted.')
             intent=self.prepared['intent']
             if value['study_archive_sha256']!=self.prepared['archive_sha256'] or value['requested_updates']!=intent[2] or value['requested_device']!=intent[3] or type(value['completed_updates']) is not int or not 0<=value['completed_updates']<=intent[2]:raise ValueError('Probe report differs from the reviewed inputs/budget.')
-            text=report_text(value);self.result=value;self.text.setPlainText(text);self.status.setText('Measured disposable work only. Canvas results preserved; no weights or numerical outputs retained.')
+            if value['version']==2:
+                from ..execution.probe_report import validate_window_report
+                validate_window_report(value)
+                if value['configured_windows']!=self.prepared['description'].get('windows') or value['updates_per_window']!=self.prepared['description'].get('updates_per_window'):raise ValueError('Probe windows differ from review.')
+            elif 'windows' in self.prepared['description']:raise ValueError('Missing window phase measurements.')
+            text=report_text(value);self.display_phases(value);self.result=value;self.text.setPlainText(text);self.status.setText('Measured disposable work only. Canvas results preserved; no weights or numerical outputs retained.')
         except (ValueError,TypeError,KeyError,UnicodeError) as error:self.text.setPlainText(str(error)[-65536:]);self.status.setText('No measurement retained. See diagnostic below.')
         self.progress.setRange(0,1);self.progress.setValue(1 if self.result is not None else 0);worker.deleteLater();self.release_review();self.owner.set_busy(False);self.buttons()
         if self.owner._closing:QTimer.singleShot(0,self.owner.close)
+    def display_phases(self,value):
+        self.phases.setRowCount(0);self.phases.setVisible(value['version']==2);self.phase_scope.setVisible(value['version']==2)
+        if value['version']!=2:return
+        for i,phase in enumerate(value['phases']):
+            self.phases.insertRow(i)
+            def mib(number):return '—' if number is None else f'{number/1024**2:.3f}'
+            window=str(phase['window']) if phase['kind']!='teacher_transfer' else f"{phase['window']-1} → {phase['window']}"
+            cells=[phase['kind'].replace('_',' '),window,f"{phase['start_update']} → {phase['end_update']}",f"{phase['duration_seconds']:.4f}",mib(phase['process_peak_rss_bytes']),mib(phase['cuda_peak_allocated_bytes']),mib(phase['cuda_peak_reserved_bytes']),f"{phase['teacher_count']} / {phase['cached_teacher_copies']}"]
+            for column,cell in enumerate(cells):self.phases.setItem(i,column,QTableWidgetItem(cell))
+        self.phases.setMinimumHeight(180);self.resize(max(self.width(),1120),max(self.height(),920))
+
     def stop(self,checked=False,*,force=False):
         if self.worker is not None:self.worker.request_stop(force);self.owner.cancel_button.setEnabled(False);self.status.setText('Stopping owned probe processes; measurement will be discarded.');self.buttons()
     def shutdown_review(self):

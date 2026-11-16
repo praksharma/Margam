@@ -2004,3 +2004,46 @@ A over all 2,827 matching rows, with 200 preview rows and explicit own-reference
 errors. This is workflow/arithmetic evidence, not trained solution accuracy.
 Source, generator and image hashes match maintained files. CUDA audit discovery
 selects 48 cases; the full audit was not rerun.
+
+
+## Expert multi-window resource probes (16 November 2026)
+
+**72 distinct focused checks pass**: 13 new window-probe checks plus 59 existing
+native probe, GUI probe, Expert/NTK/time-marching, isolated-worker, deadline and
+study-controller checks. The 70-case combined run passes, as do the added
+maximum-window CUDA/GUI cases; the final 13-case window suite and ten GUI checks
+are rerun after report/schema/display refinements. There are no CUDA skips on
+this host.
+
+The independent ordinary-versus-profiled control compares every checkpoint
+field exactly: network/buffers, Adam, fresh samples/targets, balancing and loss
+histories, frozen teachers, fingerprints, piecewise predictions and CPU/CUDA RNG.
+It covers scalar Burgers and coupled cylinder flow with both gradient and NTK
+balancing. Numerical state parity does not imply unchanged CUDA overlap,
+allocator reuse or profiling wall time.
+
+Coverage includes stops before/at/after both boundaries, pending unperformed
+transfers, preserved original/final-window budgets, one-based physical-time
+intervals, resident teacher caches, cumulative RSS, non-additive CUDA maximum
+aggregation, strict typed/finiteness/schema checks, failed handoffs, cancellation
+and no retained checkpoint/output payload. The maximum 32-window CPU/CUDA cases
+produce 64 phases and 31 teachers; the CUDA case retains 31 device copies. The
+maximum report reaches the GUI and clipboard with its header/full JSON intact.
+Existing canvas weights/results, model/Undo and parent RNG remain unchanged.
+
+[Four cold-process resource audits](../assets/benchmarks/expert-window-resources.json)
+cover Burgers and the explicitly self-contained cylinder-startup variation on
+CPU/CUDA. Each completes all 48 updates, three 16-update windows and two native
+transfers with NTK balancing. All four outcomes are completed; no measurements
+are invented for failed outcomes. Full settings, source-file hashes and child
+runtime/hardware are retained. These small configurations demonstrate resource
+accounting, not paper accuracy, a full-run fit guarantee or a hardware speed
+comparison.
+
+The [actual CUDA desktop capture](../assets/screenshots/manual-window-resource-probe.png)
+and [manifest](../assets/screenshots/manual-window-resource-probe.json) execute
+nine of twelve configured updates and display both transfers, including frozen
+working snapshots and teacher device copies. Source/generator/image and archive
+identities match; the model, source file and parent RNG stay unchanged.
+The manual checks 90 rendered pages. CUDA audit discovery selects 52 cases; the
+complete audit was not rerun. No real memory exhaustion was induced.

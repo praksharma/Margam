@@ -352,8 +352,7 @@ owned inputs and execute disposable complete updates using the existing isolated
 worker. The original schedule horizon stays unchanged. Reports contain process
 RSS and CUDA allocator peaks, observed row/sampler counts and source/runtime
 provenance; no checkpoint/output payload is retained. See
-[resource probe](use/resource-probe.md) for excluded costs and current single-window
-scope.
+[resource probe](use/resource-probe.md) for excluded costs and measured scope.
 
 
 Desktop resource-probe controls live in `margam.ui.resource_probe`. They freeze
@@ -361,3 +360,11 @@ and validate one saved trial, then reuse `StudyProcess` to launch the existing
 probe CLI with owner-pipe monitoring. No second numerical executor is introduced.
 The probe is part of the application's busy/Stop/Force-stop/close lifecycle; its
 report remains separate from retained PINN results and checkpoints.
+
+
+Expert time-marching probes use `WindowMeasurement` and the trusted runtime-only
+`TimeMarchingPINN._transition_observer` hook. The native handoff body is shared
+with ordinary training and neither hook nor phase records enter solver
+checkpoints. Version-2 phase reports are validated by the Torch/Qt-free
+`margam.execution.probe_report`; single-window reports remain version 1. See
+[report format and measurement scopes](resource-probe-format.md).

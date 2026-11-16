@@ -46,8 +46,9 @@ def reported_progress(output):
 
 class StudyProcess(QThread):
     progress=Signal(object)
-    def __init__(self,args,output,parent=None):
-        super().__init__(parent);self.args=args;self.output=output;self.process=None;self.returncode=None;self.error=None;self.tail=b'';self.stop_requested=False;self.force_requested=False;self.interrupt_sent=False;self.guard=Lock();self.temp_root=None
+    def __init__(self,args,output,parent=None,*,tail_limit=65536):
+        if type(tail_limit) is not int or not 1<=tail_limit<=262144:raise ValueError('CLI capture budget must be from 1 to 262144 bytes.')
+        super().__init__(parent);self.tail_limit=tail_limit;self.args=args;self.output=output;self.process=None;self.returncode=None;self.error=None;self.tail=b'';self.stop_requested=False;self.force_requested=False;self.interrupt_sent=False;self.guard=Lock();self.temp_root=None
     def request_stop(self,force=False):
         with self.guard:
             self.stop_requested=True;self.force_requested|=force
@@ -74,7 +75,7 @@ class StudyProcess(QThread):
                 ready,_,_=select.select([process.stdout],[],[],.2)
                 if ready:
                     chunk=os.read(process.stdout.fileno(),8192)
-                    if chunk:self.tail=(self.tail+chunk)[-65536:]
+                    if chunk:self.tail=(self.tail+chunk)[-self.tail_limit:]
                     elif process.poll() is not None:break
                 if time.monotonic()>=deadline:self.report();deadline=time.monotonic()+1.
                 if process.poll() is not None and not ready:break

@@ -35,7 +35,7 @@ def main():
                     command=json.loads(line)
                     if command==dict(job=identifier,kind='cancel'):cancelled.set()
                 except (ValueError,UnicodeError):cancelled.set()
-    Thread(target=control,daemon=True).start();stage='model construction'
+    Thread(target=control,daemon=True).start();stage='model construction';measurement=None
     try:
         import torch
         from ..templates.poisson import build_pinn
@@ -56,6 +56,7 @@ def main():
         if operation in ('train','probe'):
             stage='model construction';model=build_pinn(config)
             initial_rows=len(model.collocation_point_sample) if probe else None
+            if probe and 'windows' in measurement:measurement['windows'].attach(model)
             target=job['probe_updates'] if probe else config.iterations
             if job['checkpoint'] is not None:
                 stage='checkpoint restore';model.load_training_state(job['checkpoint'])
@@ -105,6 +106,7 @@ def main():
         return 0
     except Exception as error:
         from ..components.resources import worker_failure
+        if isinstance(measurement,dict) and 'windows' in measurement:stage=measurement['windows'].failure_stage(stage)
         emit('failed',message=worker_failure(error,stage,job['config'].get('device','unknown')))
         return 1
     finally:finished.set()
