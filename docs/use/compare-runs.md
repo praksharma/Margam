@@ -60,6 +60,6 @@ Snapshots stay fixed if the original archive later changes: choose it again to
 refresh. Failed or cancelled reads clear the affected side and invalidate the old
 comparison. Closing the dialog releases its snapshots and joins any reader.
 
-This first comparison covers two saved prediction outputs. History overlays,
-automatic study ranking, comparison-data export and multi-run plotting remain
+This first comparison covers two saved prediction outputs. For retained loss curves use [Compare saved training histories](compare-histories.md).
+Automatic study ranking, comparison-data export and further multi-run plotting remain
 separate work. It adds no default plots or heatmaps.

@@ -1777,3 +1777,31 @@ This is POSIX serial execution through the existing numerical worker, not a new
 trainer, parallel resource scheduler, OS quota or mid-trial checkpoint mechanism.
 Force-stopped/crashed attempts can retain stale progress; completed publications
 remain subject to native verification before continuation/opening.
+
+
+## Saved monitor-history overlays (16 November 2026)
+
+Eight new checks pass for original update indices, retained gaps, legacy missing
+weighted contributions, no zero padding/checkpoint substitution, log-zero handling,
+all-record series with bounded preview, stable monitor identities, extreme-value
+rendering, failed reads, cancellation after a reader has finished, parent-window
+shutdown and unchanged model/Undo/files/CPU/CUDA RNG. Real CPU and CUDA archives
+are inspected without constructing a network or retaining checkpoint/output data.
+
+The 24 related prediction-comparison, native-run, error-norm and study-collection
+checks also pass: **32 distinct focused checks**, with no CUDA skips on this host.
+CUDA audit discovery now selects 42 cases; the complete audit was not rerun.
+The illustrated manual builds and checks 87 rendered pages and their links.
+
+The [real UI capture](../assets/screenshots/manual-history-comparison.png) and
+[manifest](../assets/screenshots/manual-history-comparison.json) use two CPU CLI
+Burgers trials with 30/45 updates and a configured 25-record retention limit.
+They verify retained ranges **6–30** and **21–45**, rather than taking all checkpoint
+records or renumbering either curve. Screenshot, generator and runtime-source
+hashes match maintained files. The current model and parent RNG remain unchanged.
+These small runs demonstrate history semantics, not solution accuracy.
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -p 'test_history_comparison.py' -v
+python -m examples.capture_history_comparison --overwrite
+```

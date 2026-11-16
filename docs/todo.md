@@ -343,7 +343,10 @@ scheduler workflows below remain proposed.
 - [x] Add reviewed local serial study execution through the existing CLI, with
   frozen input copies, explicit overrides, Stop/owned-group force-stop, strict
   resume identity, parent-loss cleanup and current canvas/results preservation.
-- [ ] Add parallel study scheduling, history overlays and further multi-run comparison in the GUI using that entry point.
+- [x] Overlay two saved Training Monitor histories with original update indices,
+  retained gaps, distinct raw/weighted terms, exact-value preview and explicit
+  nonpositive-log handling. Never substitute checkpoint history or rank objectives.
+- [ ] Add parallel study scheduling and further multi-run comparison in the GUI using that entry point.
 - [x] Persist stable trial IDs, full resolved settings, seeds, Python-code/data provenance,
   resource settings, status/reason, logs, requested metrics, exports and checkpoints.
   Keep evaluation data and comparison protocols explicit across trials. The first

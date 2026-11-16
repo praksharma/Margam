@@ -768,3 +768,15 @@ python -m examples.capture_study_execution --output build/study-execution-check 
 The capture requires a fresh workflow folder. It launches two real CLI trials from
 **Run → Run saved study**, verifies native owned-data archives/exports and captures
 the completed controls. See [desktop study execution](use/run-study.md).
+
+
+### Saved training-history overlays
+
+```bash
+python -m unittest discover -s tests -p 'test_history_comparison.py' -v
+python -m examples.capture_history_comparison --overwrite
+```
+
+The capture runs 30/45 CPU updates with monitor retention limited to 25 records,
+then verifies the original retained indices, current model and RNG. See
+[history semantics](use/compare-histories.md).

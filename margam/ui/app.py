@@ -596,6 +596,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.project_data_action.triggered.connect(self.show_project_data)
         self.cleanup_datasets_action=self.view_menu.addAction('Clean up unused imports…')
         self.cleanup_datasets_action.setIcon(icon('delete'));self.cleanup_datasets_action.triggered.connect(self.show_dataset_cleanup)
+        self.compare_histories_action=self.view_menu.addAction('Compare saved training histories…');self.compare_histories_action.setIcon(icon('comparison'));self.compare_histories_action.triggered.connect(self.show_history_comparison)
         self.compare_runs_action=self.view_menu.addAction('Compare saved predictions…');self.compare_runs_action.setIcon(icon('comparison'));self.compare_runs_action.triggered.connect(self.show_run_comparison)
         self.compare_models_action=self.view_menu.addAction('Compare model definitions…')
         self.compare_models_action.setIcon(icon('comparison'));self.compare_models_action.triggered.connect(self.show_model_comparison)
@@ -962,6 +963,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if node is None:return False
         self.scene.clearSelection();node.setSelected(True);self.view.centerOn(node)
         self.properties_dock.show();return True
+
+    def show_history_comparison(self):
+        from .history_comparison import HistoryComparison
+        dialog=getattr(self,'history_comparison_dialog',None)
+        if dialog is None or not isValid(dialog):
+            dialog=HistoryComparison(self);self.history_comparison_dialog=dialog
+        dialog.show();dialog.raise_();return dialog
 
     def show_run_comparison(self):
         from .run_comparison import RunComparison
@@ -2827,6 +2835,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if getattr(self,'study_execution_dialog',None) is not None:self.study_execution_dialog.shutdown_review()
         if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.shutdown()
         if getattr(self,'run_comparison_dialog',None) is not None:self.run_comparison_dialog.shutdown()
+        if getattr(self,'history_comparison_dialog',None) is not None:self.history_comparison_dialog.shutdown()
         if not self.confirm_discard():
             self._closing=False;event.ignore();return
         self._labels_closing=True

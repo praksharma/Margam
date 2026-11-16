@@ -30,6 +30,7 @@ behind RAR, PINN importance sampling and integral loss.
 | Keep the model or continue a saved training run | [Saving and resuming](use/saving.md) |
 | Run a saved study locally from the GUI | [Run saved study](use/run-study.md) |
 | Export a serial study job for a Slurm cluster | [Slurm export](use/slurm.md) |
+| Overlay explicitly recorded training histories | [Compare histories](use/compare-histories.md) |
 | Compare two saved prediction outputs | [Compare saved predictions](use/compare-runs.md) |
 | Browse collected study trials and open a completed run | [Study results](use/study-results.md) |
 | Export predictions for another tool | [CSV and ParaView](use/export.md) |

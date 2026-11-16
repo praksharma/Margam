@@ -679,3 +679,12 @@
   controller-owned temporary files after execution. Hiding controls leaves a job
   running; main-window close stops it before the normal discard check. Do not
   imply parallel scheduling, OS quotas or mid-trial checkpoint recovery.
+
+
+- History overlays use explicitly saved Training Monitor records only; never
+  substitute checkpoint history, renumber retained indices or reconstruct old
+  weighted contributions from current coefficients. Split lines at absent updates,
+  missing terms and nonpositive log values; retain exact values in the preview.
+  Keep raw/weighted/total semantics distinct, bound rendering and preview, preserve
+  model/results/RNG and the shared restricted CPU-reader lifecycle. Do not rank
+  objectives or infer physical time/accuracy from training-update indices.

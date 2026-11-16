@@ -688,3 +688,11 @@ freezes inputs; explicit overrides, progress, Stop, owned-group force-stop, stri
 resume and result collection preserve the current canvas/results. An owner pipe
 cleans up numerical work after GUI loss. This is local serial execution, not a
 parallel resource scheduler or partial-checkpoint recovery mechanism.
+
+
+## Saved monitor-history overlays (16 November 2026)
+
+Two explicitly saved Training Monitor histories can now be overlaid using their
+original update indices. Raw/weighted terms, legacy gaps and log-scale omissions
+remain explicit. Checkpoint history is never substituted, and objectives are not
+ranked. Parallel scheduling and broader multi-run analysis remain separate work.

@@ -331,3 +331,10 @@ headless CLI through a dedicated POSIX process group. Existing busy guards prote
 the current canvas/results. `margam/execution/owner_watch.py` supplies the opt-in
 owner pipe and isolated-session fallback after GUI loss. Resume can bind a reviewed
 `execution.json` digest under its existing results lease.
+
+
+`margam/history_comparison.py` reads explicitly saved monitor records through the
+same stable native snapshot reader as prediction comparison. It splits curves at
+missing updates/terms and nonpositive log values. `margam/ui/history_comparison.py`
+adds the explicit two-run overlay with bounded rendering and exact-value preview.
+It never falls back to checkpoint history or constructs/restores a network.

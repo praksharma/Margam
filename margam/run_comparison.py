@@ -13,8 +13,8 @@ def check_cancel(check):
     if check is not None and check():raise InterruptedError('Run comparison cancelled.')
 
 
-def read_predictions(path,*,check=None):
-    """Copy a bounded stable archive, validate CPU payload, retain no checkpoint."""
+def _read_snapshot(path,*,check=None):
+    """Copy a bounded stable archive and validate its restricted CPU payload."""
     from .ui.run_document import LIMIT,load_run_payload
     from .execution.study_state import safe_path
     path=Path(path).absolute();safe_path(path.parent,path.name);check_cancel(check)
@@ -30,9 +30,15 @@ def read_predictions(path,*,check=None):
             after=os.fstat(source.fileno())
             if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Archive changed while reading.')
         check_cancel(check);data,config=load_run_payload(frozen);check_cancel(check)
-        titles={node['id']:node['title'] for node in data['model']['nodes']}
-        return dict(name=path.name,sha256=hasher.hexdigest(),coordinates=list(config.coordinate_names),config=asdict(config),
-            outputs=data['result']['outputs'],titles=titles,steps=data['result']['steps'],cancelled=data['result']['cancelled'],device=data['result']['device'])
+        return data,config,hasher.hexdigest()
+
+
+def read_predictions(path,*,check=None):
+    """Retain explicit prediction data only; never restore a network."""
+    data,config,digest=_read_snapshot(path,check=check)
+    titles={node['id']:node['title'] for node in data['model']['nodes']}
+    return dict(name=Path(path).name,sha256=digest,coordinates=list(config.coordinate_names),config=asdict(config),
+        outputs=data['result']['outputs'],titles=titles,steps=data['result']['steps'],cancelled=data['result']['cancelled'],device=data['result']['device'])
 
 
 def compare_predictions(left,left_id,right,right_id):
