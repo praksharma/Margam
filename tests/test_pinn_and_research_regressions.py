@@ -123,6 +123,22 @@ class PINNAndResearchRegressionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ams_target.load_training_state(ams_state)
 
+        # DSGNAR uses trust-region updates (optimiser.state == {}), so iter > 0 must load cleanly,
+        # whereas non-empty Adam state on DSGNAR or empty Adam state on trained PINN must fail
+        dsg_cfg = PoissonConfig(shape='Interval', method='dsgnar', points=6, boundary_points=2, layers=(4,), device='cpu')
+        dsg_cfg.dsgnar_settings['sketch_size'] = 4
+        dsg_model = build_pinn(dsg_cfg)
+        dsg_model.train(1, 0)
+        dsg_state = dsg_model.training_state()
+        self.assertEqual(dsg_state['iter'], 1)
+        self.assertEqual(dsg_state['optimiser']['state'], {})
+        dsg_restored = build_pinn(dsg_cfg).load_training_state(dsg_state)
+        self.assertEqual(dsg_restored.iter, 1)
+        bad_empty_adam = deepcopy(good_state)
+        bad_empty_adam['optimiser']['state'] = {}
+        with self.assertRaises(ValueError):
+            target.load_training_state(bad_empty_adam)
+
         # Script-level checkpoints beyond 100000 steps must load cleanly
         long_state = deepcopy(good_state)
         long_state['iter'] = 100001

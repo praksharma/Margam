@@ -17,6 +17,8 @@ class PINN:
 
     Seed before constructing the network and compiling for reproducibility.
     """
+    uses_adam_updates = True
+
     def __init__(self, problem, network, *, weights=None, loss_formulation="mean"):
         self.problem = problem
         self.network = network
@@ -280,7 +282,10 @@ class PINN:
         parameters=[p for group in self.optimiser.param_groups for p in group['params']]
         if len(ids)!=len(parameters) or len(ids)!=len(set(ids)) or not set(opt_state['state'])<=set(ids):
             raise ValueError('Invalid optimiser parameter mapping.')
-        if (steps==0 and opt_state['state']) or (steps>0 and not opt_state['state']):
+        if not self.uses_adam_updates:
+            if opt_state['state']:
+                raise ValueError('Invalid optimiser checkpoint state.')
+        elif (steps==0 and opt_state['state']) or (steps>0 and not opt_state['state']):
             raise ValueError('Invalid optimiser checkpoint state.')
         expected_params=dict(zip(ids,parameters))
         amsgrad={key:bool(group.get('amsgrad',False)) for group in groups for key in group['params']}

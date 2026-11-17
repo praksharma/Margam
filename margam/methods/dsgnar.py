@@ -177,6 +177,8 @@ def next_ratio(history,settings,current):
 
 class DSGNARPINN(PINN):
     """Fixed-point least-squares trainer; train budget counts attempted steps."""
+    uses_adam_updates = False
+
     def __init__(self,problem,network,*,weights=None,settings=None,configuration=None):
         super().__init__(problem,network,weights=weights)
         self.configuration=deepcopy(configuration or {})
