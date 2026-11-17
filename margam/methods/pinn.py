@@ -217,13 +217,9 @@ class PINN:
 
     def data_fingerprint(self):
         if self.sampling_controller is not None:return self.sampling_controller.initial_fingerprint
-        def canonical_target(source,points,fallback):
-            if not callable(source):return fallback.detach().cpu()
-            try:return torch.as_tensor(source(points.detach().cpu()),dtype=self.dtype,device='cpu').detach()
-            except RuntimeError:return fallback.detach().cpu()
         digest=hashlib.sha256()
-        arrays=[self.collocation_point_sample,canonical_target(self.problem.residual_target,self.collocation_point_sample,self.collocation_point_labels)]
-        for condition,points,target in self._constraints:arrays.extend((points,canonical_target(condition.target,points,target)))
+        arrays=[self.collocation_point_sample,self.collocation_point_labels]
+        for _,points,target in self._constraints:arrays.extend((points,target))
         for value in arrays:
             value=value.detach().cpu().contiguous()
             digest.update(str((tuple(value.shape),str(value.dtype))).encode())
@@ -284,9 +280,13 @@ class PINN:
         parameters=[p for group in self.optimiser.param_groups for p in group['params']]
         if len(ids)!=len(parameters) or len(ids)!=len(set(ids)) or not set(opt_state['state'])<=set(ids):
             raise ValueError('Invalid optimiser parameter mapping.')
+        if (steps==0 and opt_state['state']) or (steps>0 and not opt_state['state']):
+            raise ValueError('Invalid optimiser checkpoint state.')
         expected_params=dict(zip(ids,parameters))
+        amsgrad={key:bool(group.get('amsgrad',False)) for group in groups for key in group['params']}
         for key,values in opt_state['state'].items():
-            if not isinstance(values,dict):
+            required={'step','exp_avg','exp_avg_sq'}|({'max_exp_avg_sq'} if amsgrad[key] else set())
+            if not isinstance(values,dict) or set(values)!=required:
                 raise ValueError('Invalid optimiser checkpoint tensor.')
             parameter=expected_params[key]
             for name,value in values.items():

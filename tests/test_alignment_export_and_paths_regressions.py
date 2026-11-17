@@ -62,6 +62,47 @@ class AlignmentExportAndPathRegressionTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 reference_values(src, dup_eval, components=1)
 
+            # Unambiguous point cloud where 1D axis projections have consecutive steps < 1e-9
+            # but every 2D pair differs by >= 1.5e-9 > 1e-9 in at least one coordinate
+            perm_pts = np.vstack((
+                np.column_stack((
+                    np.arange(5) * 0.75e-9,
+                    np.array([0, 2, 4, 1, 3]) * 0.75e-9,
+                )),
+                [[1.0, 1.0]],
+            ))
+            perm_vals = [[float(i + 1)] for i in range(len(perm_pts))]
+            perm_ref = PointData(
+                points=perm_pts[::-1].tolist(),
+                point_ids=None,
+                values=perm_vals[::-1],
+                provenance={'kind': 'supplied', 'source_name': 'perm.csv', 'sha256': '0' * 64},
+            )
+            aligned_perm = align_reference(perm_ref, perm_pts.tolist(), None, cfg)
+            np.testing.assert_allclose(aligned_perm, np.array(perm_vals))
+
+            perm_csv = Path(tmp) / 'perm.csv'
+            perm_lines = ['x,y,u']
+            for (rx, ry), (val,) in zip(perm_pts[::-1].tolist(), perm_vals[::-1]):
+                perm_lines.append(f'{rx:.17g},{ry:.17g},{val:.17g}')
+            perm_csv.write_text('\n'.join(perm_lines) + '\n')
+            perm_src = {'path': str(perm_csv), 'coordinates': 'x,y', 'normals': '', 'values': 'u'}
+            self.assertEqual(reference_values(perm_src, perm_pts.tolist(), components=1), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+
+            # Genuinely ambiguous points within 1e-9 in BOTH coordinates must still be rejected
+            ambig_pts = np.vstack((
+                [[0.0, 0.0], [0.5e-9, 0.5e-9]],
+                [[1.0, 1.0]],
+            ))
+            ambig_ref = PointData(
+                points=ambig_pts.tolist(),
+                point_ids=None,
+                values=[[1.0], [2.0], [3.0]],
+                provenance={'kind': 'supplied', 'source_name': 'ambig.csv', 'sha256': '0' * 64},
+            )
+            with self.assertRaises(ValueError):
+                align_reference(ambig_ref, ambig_pts.tolist(), None, cfg)
+
     def test_vti_grid_jitter_and_pvd_companion_cleanup(self):
         # 3x3 regular grid with 1e-14 coordinate representation noise along x=0.5
         pts = []

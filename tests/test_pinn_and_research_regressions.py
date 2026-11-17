@@ -94,6 +94,35 @@ class PINNAndResearchRegressionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             target.load_training_state(bad_neg)
 
+        # Missing required per-parameter Adam fields (e.g., exp_avg_sq or max_exp_avg_sq) must be rejected
+        # before overwriting live network or optimizer state
+        for missing_field in ('step', 'exp_avg', 'exp_avg_sq'):
+            bad_missing = deepcopy(good_state)
+            del bad_missing['optimiser']['state'][first_key][missing_field]
+            with self.assertRaises(ValueError):
+                target.load_training_state(bad_missing)
+            self.assertEqual(target.iter, live_iter)
+            for k, v in live_before.items():
+                torch.testing.assert_close(target.network.state_dict()[k], v, rtol=0, atol=0)
+
+        # AMSGrad enabled requires max_exp_avg_sq in baseline PINN too
+        ams_model = PINN(problem, deepcopy(net)).compile(
+            lr=1e-3,
+            device='cpu',
+            optimiser=lambda params, lr: torch.optim.Adam(params, lr=lr, amsgrad=True),
+        )
+        ams_model.train(1, display_every=0)
+        ams_state = ams_model.training_state()
+        ams_first = next(iter(ams_state['optimiser']['state']))
+        del ams_state['optimiser']['state'][ams_first]['max_exp_avg_sq']
+        ams_target = PINN(problem, deepcopy(net)).compile(
+            lr=1e-3,
+            device='cpu',
+            optimiser=lambda params, lr: torch.optim.Adam(params, lr=lr, amsgrad=True),
+        )
+        with self.assertRaises(ValueError):
+            ams_target.load_training_state(ams_state)
+
         # Script-level checkpoints beyond 100000 steps must load cleanly
         long_state = deepcopy(good_state)
         long_state['iter'] = 100001
@@ -102,6 +131,35 @@ class PINNAndResearchRegressionTests(unittest.TestCase):
         restored = PINN(problem, deepcopy(net)).compile(lr=1e-3, device='cpu')
         restored.load_training_state(long_state)
         self.assertEqual(restored.iter, 100001)
+
+        # Checkpoint fingerprints must hash the frozen retained targets, not re-run callbacks
+        captured_val = [0.0]
+        x_pts = torch.linspace(0.1, 0.9, 6)[:, None]
+        bc_pts = torch.tensor([[0.0], [1.0]])
+        mut_prob = PINNProblem(
+            lambda pts, u: u,
+            x_pts,
+            [PointConstraint('bc', bc_pts, lambda pts: torch.full_like(pts, captured_val[0]))],
+        )
+        model_a = PINN(mut_prob, deepcopy(net)).compile(lr=1e-3, device='cpu')
+        model_a.train(1, display_every=0)
+        captured_val[0] = 1.0
+        state_a = model_a.training_state()
+        model_b = PINN(mut_prob, deepcopy(net)).compile(lr=1e-3, device='cpu')
+        with self.assertRaises(ValueError):
+            model_b.load_training_state(state_a)
+
+        # A torch.rand_like target evaluated once at compile must accept its own checkpoint
+        rand_prob = PINNProblem(
+            lambda pts, u: u,
+            x_pts,
+            [PointConstraint('bc', bc_pts, lambda pts: torch.rand_like(pts))],
+        )
+        rand_model = PINN(rand_prob, deepcopy(net)).compile(lr=1e-3, device='cpu')
+        rand_model.train(1, display_every=0)
+        rand_state = rand_model.training_state()
+        rand_model.load_training_state(rand_state)
+        self.assertEqual(rand_model.iter, 1)
 
     def test_transcendental_targets_canonicalize_across_devices(self):
         # Verify callable target receives CPU tensor even when compiled on CUDA (if available)
