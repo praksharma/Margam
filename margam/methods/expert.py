@@ -94,6 +94,7 @@ class ExpertPINN(PINN):
 
     def compute_losses(self):
         samples=self.loss_samples()
+        self._active_samples=samples
         terms={name:self._term(*sample) for name,sample in samples.items()}
         # Fresh samples are stored in temporal-stratum order, keeping each (x,t) pair intact.
         if not self.sample_config.is_time_dependent:return terms
@@ -130,22 +131,23 @@ class ExpertPINN(PINN):
             trace+=sum(g.detach().double().square().sum().item() for g in gradients if g is not None)
         return trace*count/take
 
-    def _ntk_traces(self):
+    def _ntk_traces(self,samples=None):
         parameters=tuple(p for p in self.network.parameters() if p.requires_grad)
         traces=dict.fromkeys(self.coefficients,0.)
-        for index,(name,(values,_,_)) in enumerate(self.loss_samples().items()):
+        active=self.loss_samples() if samples is None else samples
+        for index,(name,(values,_,_)) in enumerate(active.items()):
             group=name if name in ('pde','initial') else 'boundary'
             traces[group]+=self.ntk_trace(values,parameters,self.options['ntk_points'],(self.sample_config.seed+104729*self.iter+7919*index)%2**31)
         return traces
 
-    def _balanced(self,groups):
+    def _balanced(self,groups,samples=None):
         parameters=tuple(p for p in self.network.parameters() if p.requires_grad)
         norms={}
         for name,loss in (groups.items() if self.options['balance_mode']=='gradient' else []):
             gradients=torch.autograd.grad(loss,parameters,retain_graph=True,allow_unused=True) if loss.requires_grad else (None,)*len(parameters)
             if any(g is not None and not torch.isfinite(g).all() for g in gradients):raise FloatingPointError('Non-finite Expert PINN gradient norm; no update was taken.')
             norms[name]=math.sqrt(sum(g.detach().double().square().sum().item() for g in gradients if g is not None))
-        if self.options['balance_mode']=='ntk':norms=self._ntk_traces()
+        if self.options['balance_mode']=='ntk':norms=self._ntk_traces(samples)
         reference=sum(norms.values());next_weights={};targets={}
         for name,old in self.coefficients.items():
             target=None if norms[name]<=self.options['gradient_floor'] else min(reference/norms[name],self.options['weight_cap'])
@@ -160,10 +162,11 @@ class ExpertPINN(PINN):
         for _ in range(iterations):
             self._fresh_samples(self.iter)
             self.optimiser.zero_grad(set_to_none=True)
-            terms=self.compute_losses();groups=self._groups(terms)
+            self._active_samples=None
+            terms=self.compute_losses();samples=self._active_samples;self._active_samples=None;groups=self._groups(terms)
             if any(not torch.isfinite(value).item() for value in groups.values()):raise FloatingPointError('Non-finite Expert PINN loss; no update was taken.')
             weights=self.coefficients;event=None
-            if (self.iter+1)%self.options['balance_every']==0:weights,event=self._balanced(groups)
+            if (self.iter+1)%self.options['balance_every']==0:weights,event=self._balanced(groups,samples)
             total=sum(groups[name]*weights[name] for name in groups)
             if not torch.isfinite(total).item():raise FloatingPointError('Non-finite Expert PINN objective; no update was taken.')
             total.backward()
@@ -184,7 +187,7 @@ class ExpertPINN(PINN):
 
     def training_state(self):
         state=super().training_state()
-        state['expert']=deepcopy(dict(settings=self.expert_signature,coefficients=self.coefficients,history=self.balance_history))
+        state['expert']=deepcopy(dict(settings=self.expert_signature,coefficients=self.coefficients,history=self.balance_history,minimum_causal_weight=self._causal_min))
         return state
 
     def load_training_state(self,state):
@@ -201,7 +204,10 @@ class ExpertPINN(PINN):
                 for key in ('t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time','scale_settings','gpinn_weights','rba_settings','pde_points','bc_weights','inverse_settings'):configuration.setdefault(key,defaults[key])
             saved=configuration.get('expert_settings')
             if isinstance(saved,dict):payload['settings']['configuration']['expert_settings']={**expert_defaults(),**saved}
-        if not isinstance(payload,dict) or set(payload)!={'settings','coefficients','history'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')
+        if not isinstance(payload,dict) or not {'settings','coefficients','history'}<=set(payload)<={'settings','coefficients','history','minimum_causal_weight'} or payload['settings']!=self.expert_signature:raise ValueError('Expert PINN checkpoint settings differ.')
+        causal_min=payload.get('minimum_causal_weight',1.)
+        if type(causal_min) not in (int,float) or not math.isfinite(causal_min) or not 0.<=causal_min<=1.:
+            raise ValueError('Invalid Expert PINN minimum causal weight.')
         steps=state.get('iter');history=payload['history'];names=set(self.coefficients)
         if type(steps) is not int or not 0<=steps<=100000 or not isinstance(history,list) or len(history)!=steps//self.options['balance_every']:raise ValueError('Expert PINN balance history phase differs.')
         previous=dict.fromkeys(names,1.)
@@ -226,5 +232,6 @@ class ExpertPINN(PINN):
             for group,rate in zip(self.optimiser.param_groups,rates):group['lr']=rate
             raise
         self.coefficients=deepcopy(payload['coefficients']);self.balance_history=deepcopy(history)
+        self._causal_min=float(causal_min)
         self._fresh_samples(max(steps-1,0))
         return self

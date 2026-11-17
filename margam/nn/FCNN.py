@@ -15,7 +15,9 @@ class FullyConnected(BaseNetwork):
 
         # Validate the types of the attributes
         if not isinstance(layer_size, list):
-            raise TypeError("The 'layer_size' attribute must be an list.")
+            raise TypeError("The 'layer_size' attribute must be a list.")
+        if len(layer_size) < 2 or any(type(v) is not int or v <= 0 for v in layer_size):
+            raise ValueError("layer_size must contain at least input and output positive integer widths.")
         if not isinstance(activation, str):
             raise TypeError("The 'activation' attribute must be a string.")
         if not isinstance(initialiser, str):
@@ -76,12 +78,12 @@ class FullyConnected(BaseNetwork):
 
 
 
-class TestNetwork(BaseNetwork, torch.nn.Module):
+class TestNetwork(BaseNetwork):
     """
     Test network for debugging.
     """
     def __init__(self):
         super().__init__()
 
-    def forward(self):
+    def forward(self, *args):
         print(f"Forward pass of {self.__class__.__name__} module.")

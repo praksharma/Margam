@@ -64,6 +64,7 @@ class PINN:
             points = self._points(condition.points)
             self._constraints.append((condition, points, self._target(condition.target, points)))
         weighted_loss({name: torch.zeros((), device=self.device) for name in names}, self.weights)
+        self._configured_weights = {name: float(self.weights.get(name, 1.0)) for name in sorted(names)}
         factory = choose_optimiser(optimiser_string) if optimiser is None else optimiser
         self.optimiser = factory(parameters, lr=lr)
         if isinstance(self.optimiser, torch.optim.LBFGS):
@@ -82,7 +83,17 @@ class PINN:
         return points.detach().clone()
 
     def _target(self, source, points):
-        target = source(points) if callable(source) else source
+        if callable(source):
+            from .time_marching import InitialTeacher
+            if isinstance(source, InitialTeacher):
+                target = source(points)
+            else:
+                try:
+                    target = source(points.detach().cpu())
+                except RuntimeError:
+                    target = source(points)
+        else:
+            target = source
         return torch.as_tensor(target, device=self.device, dtype=self.dtype).detach().clone()
 
     def _aligned(self, values, target, rows):
@@ -105,17 +116,23 @@ class PINN:
         residual=self.problem.residual(points,self.network(points))
         return {'pde':(residual,self.collocation_point_labels,len(points))}
 
-    def loss_samples(self):
-        """Shared fresh derivative graphs and shape data for each physical term."""
+    def constraint_samples(self):
         self._require_compiled()
-        points = self.collocation_point_sample.detach().requires_grad_(True)
-        terms=self.pde_samples(points)
+        terms = {}
         for condition, sample, target in self._constraints:
             points = sample.detach().requires_grad_(condition.operator is not None)
             values = self.network(points)
             if condition.operator is not None:
                 values = condition.operator(points, values)
             terms[condition.name] = (values, target, len(points))
+        return terms
+
+    def loss_samples(self):
+        """Shared fresh derivative graphs and shape data for each physical term."""
+        self._require_compiled()
+        points = self.collocation_point_sample.detach().requires_grad_(True)
+        terms=self.pde_samples(points)
+        terms.update(self.constraint_samples())
         return terms
 
     def loss_scale(self,name):
@@ -183,6 +200,9 @@ class PINN:
     def update(self, terms, total):
         """Perform the gradient update; override for a different update algorithm."""
         total.backward()
+        if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in self.network.parameters()):
+            self.optimiser.zero_grad(set_to_none=True)
+            raise FloatingPointError("Non-finite PINN gradient; no optimiser step was taken.")
         self.optimiser.step()
 
     def training_step(self):
@@ -197,9 +217,13 @@ class PINN:
 
     def data_fingerprint(self):
         if self.sampling_controller is not None:return self.sampling_controller.initial_fingerprint
+        def canonical_target(source,points,fallback):
+            if not callable(source):return fallback.detach().cpu()
+            try:return torch.as_tensor(source(points.detach().cpu()),dtype=self.dtype,device='cpu').detach()
+            except RuntimeError:return fallback.detach().cpu()
         digest=hashlib.sha256()
-        arrays=[self.collocation_point_sample,self.collocation_point_labels]
-        for _,points,target in self._constraints:arrays.extend((points,target))
+        arrays=[self.collocation_point_sample,canonical_target(self.problem.residual_target,self.collocation_point_sample,self.collocation_point_labels)]
+        for condition,points,target in self._constraints:arrays.extend((points,canonical_target(condition.target,points,target)))
         for value in arrays:
             value=value.detach().cpu().contiguous()
             digest.update(str((tuple(value.shape),str(value.dtype))).encode())
@@ -212,7 +236,8 @@ class PINN:
         self._require_compiled()
         if not isinstance(self.optimiser,torch.optim.Adam):raise ValueError('Checkpoints currently support the baseline Adam recipe only.')
         state={'network':self.network.state_dict(),'optimiser':self.optimiser.state_dict(),
-               'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history}
+               'data_fingerprint':self.data_fingerprint(),'iter':self.iter,'loss_history':self.loss_history,'training_history':self.training_history,
+               'weights':self._configured_weights}
         if self.loss_formulation!='mean':state['loss_formulation']=dict(mode=self.loss_formulation,measures=self.loss_measures)
         if self.sampling_controller is not None:state['sampling']=self.sampling_controller.state(self)
         if hasattr(self.network,'_margam_spec'):state['network_spec']=self.network._margam_spec
@@ -221,8 +246,15 @@ class PINN:
     def load_training_state(self,state):
         self._require_compiled()
         fields={'network','optimiser','data_fingerprint','iter','loss_history','training_history'}
-        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec','sampling','loss_formulation'}:
+        if not isinstance(state,dict) or not fields<=set(state)<=fields|{'network_spec','sampling','loss_formulation','weights'}:
             raise ValueError('Invalid baseline checkpoint.')
+        if 'weights' in state:
+            weights=state['weights']
+            if not isinstance(weights,dict) or set(weights)!=set(self._configured_weights) or any(
+                type(v) not in (int,float) or not math.isfinite(v) or float(v)!=self._configured_weights[k]
+                for k,v in weights.items()
+            ):
+                raise ValueError('Checkpoint objective weights differ from the current recipe.')
         expected_loss=None if self.loss_formulation=='mean' else dict(mode=self.loss_formulation,measures=self.loss_measures)
         if state.get('loss_formulation')!=expected_loss:raise ValueError('Checkpoint loss formulation/measures differ from this recipe.')
         if ('sampling' in state)!=(self.sampling_controller is not None):raise ValueError('Checkpoint adaptive sampler differs from this recipe.')
@@ -235,22 +267,53 @@ class PINN:
         elif expected_spec is not None and (expected_spec['type']!='fcnn' or expected_spec['options']):
             raise ValueError('This architecture requires a network settings checkpoint.')
         steps=state['iter']
-        if type(steps) is not int or not 0<=steps<=100000 or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
+        if type(steps) is not int or steps<0 or not isinstance(state['loss_history'],list) or not isinstance(state['training_history'],list) or len(state['loss_history'])!=steps or len(state['training_history'])!=steps:
             raise ValueError('Checkpoint history does not match its step count.')
         sampling=self.sampling_controller.validate_state(self,state['sampling'],steps) if self.sampling_controller is not None else None
         expected=self.network.state_dict()
-        if set(state['network'])!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[key].shape or value.dtype!=expected[key].dtype or not torch.isfinite(value).all() for key,value in state['network'].items()):
+        if not isinstance(state['network'],dict) or set(state['network'])!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[key].shape or value.dtype!=expected[key].dtype or not torch.isfinite(value).all() for key,value in state['network'].items()):
             raise ValueError('Checkpoint network does not match the configured architecture/dtype.')
-        groups=state['optimiser'].get('param_groups',[])
+        opt_state=state['optimiser']
+        if not isinstance(opt_state,dict) or set(opt_state)!={'state','param_groups'} or not isinstance(opt_state['state'],dict):
+            raise ValueError('Invalid optimiser checkpoint state.')
+        groups=opt_state.get('param_groups',[])
         expected_groups=self.optimiser.state_dict()['param_groups']
-        if len(groups)!=len(expected_groups) or any(set(group)!=set(expected_group) or any(group[key]!=expected_group[key] for key in group if key!='params') for group,expected_group in zip(groups,expected_groups)):
+        if not isinstance(groups,list) or len(groups)!=len(expected_groups) or any(not isinstance(group,dict) or set(group)!=set(expected_group) or any(group[key]!=expected_group[key] for key in group if key!='params') for group,expected_group in zip(groups,expected_groups)):
             raise ValueError('Checkpoint optimiser settings do not match the recipe.')
-        self.network.load_state_dict(state['network'])
-        self.optimiser.load_state_dict(state['optimiser'])
-        for parameter,values in self.optimiser.state.items():
+        ids=[key for group in groups for key in group['params']]
+        parameters=[p for group in self.optimiser.param_groups for p in group['params']]
+        if len(ids)!=len(parameters) or len(ids)!=len(set(ids)) or not set(opt_state['state'])<=set(ids):
+            raise ValueError('Invalid optimiser parameter mapping.')
+        expected_params=dict(zip(ids,parameters))
+        for key,values in opt_state['state'].items():
+            if not isinstance(values,dict):
+                raise ValueError('Invalid optimiser checkpoint tensor.')
+            parameter=expected_params[key]
             for name,value in values.items():
-                if isinstance(value,torch.Tensor) and (not torch.isfinite(value).all() or (name!='step' and value.shape!=parameter.shape)):
+                if isinstance(value,torch.Tensor):
+                    if not torch.isfinite(value).all().item():
+                        raise ValueError('Invalid optimiser checkpoint tensor.')
+                    if name=='step':
+                        if value.numel()!=1 or not float(value.item()).is_integer() or value.item()<0:
+                            raise ValueError('Invalid optimiser checkpoint tensor.')
+                    else:
+                        if value.shape!=parameter.shape or value.dtype!=parameter.dtype:
+                            raise ValueError('Invalid optimiser checkpoint tensor.')
+                        if name in ('exp_avg_sq','max_exp_avg_sq') and (value<0).any().item():
+                            raise ValueError('Invalid optimiser checkpoint tensor.')
+                elif name=='step' and type(value) in (int,float) and math.isfinite(value) and float(value).is_integer() and value>=0:
+                    continue
+                else:
                     raise ValueError('Invalid optimiser checkpoint tensor.')
+        old_network=deepcopy(self.network.state_dict())
+        old_optimiser=deepcopy(self.optimiser.state_dict())
+        try:
+            self.network.load_state_dict(state['network'])
+            self.optimiser.load_state_dict(deepcopy(opt_state))
+        except Exception:
+            self.network.load_state_dict(old_network)
+            self.optimiser.load_state_dict(old_optimiser)
+            raise
         if sampling is not None:
             self.collocation_point_sample,self.sampling_controller.weights,self.sampling_controller.history=sampling
             self.collocation_point_labels=self._target(self.problem.residual_target,self.collocation_point_sample)

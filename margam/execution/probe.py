@@ -3,10 +3,14 @@ import time
 from contextlib import contextmanager
 
 
-def is_windowed(config):return config.method=='expert' and config.expert_settings['windows']>1
+def is_windowed(config):return config.method=='expert' and config.is_time_dependent and config.expert_settings['windows']>1
 
 
-def probe_limit(config):return min(config.iterations,100000 if is_windowed(config) else 1000)
+def _effective_updates(config):
+    return max(config.iterations,config.expert_settings['windows']*config.expert_settings['window_steps']) if is_windowed(config) else config.iterations
+
+
+def probe_limit(config):return min(_effective_updates(config),100000 if is_windowed(config) else 1000)
 
 
 def validate_probe(config,updates):
@@ -147,6 +151,6 @@ def probe_study(path,*,trial=1,updates=1,device=None,wall_time_seconds=60):
                 validate_window_report(result)
                 if result['configured_windows']!=config.expert_settings['windows'] or result['updates_per_window']!=config.expert_settings['window_steps']:raise ValueError('Probe window schedule differs from the selected trial.')
             elif result.get('version')!=1:raise ValueError('Unexpected single-window probe version.')
-            result.update(study_id=study['study_id'],trial_id=trial_id,study_archive_sha256=archive_sha,source_sha256=identity['sha256'],numerical_job_seconds=elapsed,requested_output_count=len(requests),requested_device=device or study['execution']['device'],wall_time_seconds=transport.wall_time_seconds,configured_updates=config.iterations,configured_method=config.method,network_type=config.network_type,layers=list(config.layers),adaptive_sampling=config.adaptive_sampling)
+            result.update(study_id=study['study_id'],trial_id=trial_id,study_archive_sha256=archive_sha,source_sha256=identity['sha256'],numerical_job_seconds=elapsed,requested_output_count=len(requests),requested_device=device or study['execution']['device'],wall_time_seconds=transport.wall_time_seconds,configured_updates=_effective_updates(config),configured_method=config.method,network_type=config.network_type,layers=list(config.layers),adaptive_sampling=config.adaptive_sampling)
             return result
         finally:workspace.close()

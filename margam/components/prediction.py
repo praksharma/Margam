@@ -3,17 +3,29 @@ from copy import deepcopy
 import torch
 
 
+def _fork_devices():
+    return tuple(range(torch.cuda.device_count())) if torch.cuda.is_available() else ()
+
+
 class CheckpointPredictor:
     def __init__(self,config,checkpoint):
+        import json
         from ..nn.factory import build_network
         self.checkpoint=deepcopy(checkpoint);self.iter=checkpoint['iter']
         self.device=torch.device('cuda' if config.device=='auto' and torch.cuda.is_available() else 'cpu' if config.device=='auto' else config.device)
-        self.network=build_network(config)
-        if config.method=='hard_dirichlet':
-            from ..methods.hard_dirichlet import BoxDirichletNetwork
-            self.network=BoxDirichletNetwork(self.network,*config.bounds,config.bc_values['left'])
+        with torch.random.fork_rng(devices=_fork_devices()):
+            self.network=build_network(config)
+            if config.method=='hard_dirichlet':
+                from ..methods.hard_dirichlet import BoxDirichletNetwork
+                self.network=BoxDirichletNetwork(self.network,*config.bounds,config.bc_values['left'])
         expected=self.network.state_dict();weights=checkpoint.get('network',{})
-        if checkpoint.get('network_spec',getattr(self.network,'_margam_spec',None))!=getattr(self.network,'_margam_spec',None):raise ValueError('Prediction checkpoint architecture differs.')
+        expected_spec=getattr(self.network,'_margam_spec',None)
+        if 'network_spec' in checkpoint:
+            try:matches=json.dumps(checkpoint['network_spec'],sort_keys=True,allow_nan=False)==json.dumps(expected_spec,sort_keys=True,allow_nan=False)
+            except (TypeError,ValueError):matches=False
+            if not matches:raise ValueError('Prediction checkpoint architecture differs.')
+        elif expected_spec is not None and (expected_spec.get('type')!='fcnn' or expected_spec.get('options')):
+            raise ValueError('Prediction checkpoint architecture differs.')
         if set(weights)!=set(expected) or any(not isinstance(value,torch.Tensor) or value.shape!=expected[name].shape or value.dtype!=expected[name].dtype or not torch.isfinite(value).all() for name,value in weights.items()):raise ValueError('Prediction checkpoint weights are invalid.')
         self.network.load_state_dict(weights);self.network.to(self.device).eval();self.dtype=next(self.network.parameters()).dtype
 
@@ -28,7 +40,8 @@ class CheckpointPredictor:
 def prediction_model(config,checkpoint):
     if config.method=='expert' and config.expert_settings['windows']>1:
         from ..templates.poisson import build_pinn
-        model=build_pinn(config);model.load_training_state(checkpoint);return model
+        with torch.random.fork_rng(devices=_fork_devices()):
+            model=build_pinn(config);model.load_training_state(checkpoint);return model
     return CheckpointPredictor(config,checkpoint)
 
 

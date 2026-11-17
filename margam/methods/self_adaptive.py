@@ -68,7 +68,7 @@ class SelfAdaptivePINN(PINN):
         return self.training_history
 
     def adaptive_summary(self):
-        return {name:dict(minimum=w.detach().min().item(),mean=w.detach().mean().item(),maximum=w.detach().max().item()) for name,w in self.adaptive_weights.items()}
+        return {name:dict(minimum=c.min().item(),mean=c.mean().item(),maximum=c.max().item()) for name,w in self.adaptive_weights.items() if (c:=w.detach().cpu()) is not None}
 
     def training_state(self):
         state=super().training_state()

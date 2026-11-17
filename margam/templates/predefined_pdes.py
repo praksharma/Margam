@@ -38,7 +38,7 @@ def resolve_predefined(config):
         config.pde_expression='' if config.pde_forcing.strip()=='0' else 'laplace(u)+c+'+forcing
     elif config.pde_preset=='helmholtz':config.pde_expression='laplace(u)+c*u-'+forcing
     elif config.pde_preset=='reaction_diffusion':config.pde_expression='-laplace(u)+c*u-'+forcing
-    elif config.pde_preset=='advection_diffusion_1d':config.pde_expression='c*D(u,x)-('+repr(config.viscosity)+')*D(D(u,x),x)-'+forcing
+    elif config.pde_preset=='advection_diffusion_1d':config.pde_expression='c*D(u,x)-nu*D(D(u,x),x)-'+forcing
     else:
         config.physics='incompressible_2d';config.flow_residuals=FLOW_RESIDUALS;config.pde_expression=''
     return config
@@ -46,9 +46,10 @@ def resolve_predefined(config):
 
 def validate_predefined(config):
     from ..components.expressions import Expression
+    if config.pde_preset not in PREDEFINED_PDES:raise ValueError('Choose an implemented predefined PDE.')
     preset=PREDEFINED_PDES[config.pde_preset]
     if config.shape not in preset.shapes:raise ValueError(preset.label+' supports '+', '.join(preset.shapes)+'.')
-    if preset.forcing:Expression(config.pde_forcing,len(config.bounds[0]),target=True)
+    if preset.forcing:Expression(config.pde_forcing,len(config.bounds[0]),target=True,coordinates=config.coordinate_names)
     if config.pde_preset=='advection_diffusion_1d' and config.viscosity<=0:raise ValueError('Advection–diffusion requires positive diffusivity ν.')
 
     if config.pde_preset=='burgers_1d' and (not math.isfinite(config.viscosity) or config.viscosity<=0):raise ValueError('Burgers requires positive finite viscosity ν.')

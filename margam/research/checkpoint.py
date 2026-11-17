@@ -9,7 +9,7 @@ def canonical(value):
     return json.dumps(value,sort_keys=True,allow_nan=False)
 
 
-def signature(trainer):
+def signature(trainer, *, check_schedule=True):
     trainer._require_compiled()
     from .trainer import Trainer
     if trainer.checkpoint_id is None:
@@ -25,7 +25,8 @@ def signature(trainer):
         raise NotImplementedError('Stateful loss modules require their own checkpoint implementation.')
     if any(not isinstance(value,torch.Tensor) for value in trainer.network.state_dict().values()):
         raise NotImplementedError('Research checkpoints require a tensor-only network state_dict.')
-    trainer.check_schedule()
+    if check_schedule:
+        trainer.check_schedule()
     groups=[{k:v for k,v in group.items() if k!='params'} for group in trainer.optimizer.state_dict()['param_groups']]
     value=dict(checkpoint_id=trainer.checkpoint_id,
         trainer_class=type(trainer).__module__+'.'+type(trainer).__qualname__,
@@ -80,10 +81,15 @@ def validate_optimizer(trainer,state,steps):
     parameters=[p for group in trainer.optimizer.param_groups for p in group['params']]
     require(len(ids)==len(set(ids)) and isinstance(state['state'],dict) and set(state['state'])<=set(ids),'Invalid optimizer parameter IDs.')
     expected=dict(zip(ids,parameters));is_sgd=type(trainer.optimizer) is torch.optim.SGD
+    amsgrad={key:bool(group.get('amsgrad',False)) for group in groups for key in group['params']}
+    has_momentum={key:bool(group.get('momentum',0)) for group in groups for key in group['params']}
     for key,values in state['state'].items():
         require(isinstance(values,dict),'Invalid optimizer parameter state.')
-        allowed={'momentum_buffer'} if is_sgd else {'step','exp_avg','exp_avg_sq','max_exp_avg_sq'}
-        required={'momentum_buffer'} if is_sgd else {'step','exp_avg','exp_avg_sq'}
+        if is_sgd:
+            required=allowed={'momentum_buffer'} if has_momentum[key] else set()
+        else:
+            required={'step','exp_avg','exp_avg_sq',*(('max_exp_avg_sq',) if amsgrad[key] else ())}
+            allowed=required
         require(required<=set(values)<=allowed,'Invalid optimizer state fields.')
         for name,value in values.items():
             require(isinstance(value,torch.Tensor) and torch.isfinite(value).all().item(),'Non-finite or invalid optimizer tensor.')
@@ -91,10 +97,12 @@ def validate_optimizer(trainer,state,steps):
                 require(value.numel()==1 and float(value.item()).is_integer() and 0<=value.item()<=steps,'Invalid optimizer step count.')
             else:
                 require(value.shape==expected[key].shape and value.dtype==expected[key].dtype,'Optimizer tensor shape/dtype mismatch.')
+                if name in ('exp_avg_sq','max_exp_avg_sq'):
+                    require(not (value<0).any().item(),'Negative second-moment optimizer tensor.')
 
 
 def restore(trainer,state):
-    expected_signature=signature(trainer)
+    expected_signature=signature(trainer,check_schedule=False)
     keys={'format','version','signature','network','optimizer','iter','loss_history','training_history','rng'}
     require(isinstance(state,dict) and set(state)==keys and state['format']=='margam-research-training' and type(state['version']) is int and state['version']==checkpoint_version(trainer),'Invalid research checkpoint.')
     require(canonical(state['signature'])==canonical(expected_signature),'Research checkpoint identity, data, objective, device or optimizer settings differ.')
@@ -122,8 +130,14 @@ def restore(trainer,state):
         require(value is None if expected is None else isinstance(value,torch.Tensor) and value.dtype==torch.uint8 and value.shape==expected.shape,'RNG state differs from the configured device.')
     # Roll back even if a native module/optimizer rejects an otherwise valid state.
     old_network=deepcopy(trainer.network.state_dict());old_optimizer=deepcopy(trainer.optimizer.state_dict())
+    opt_copy=deepcopy(state['optimizer'])
+    if trainer.device.type=='cuda':
+        device_step_keys={key for group in opt_copy['param_groups'] if group.get('fused') or group.get('capturable') for key in group['params']}
+        for key in device_step_keys:
+            if key in opt_copy['state'] and 'step' in opt_copy['state'][key]:
+                opt_copy['state'][key]['step']=opt_copy['state'][key]['step'].to(trainer.device)
     try:
-        trainer.network.load_state_dict(network);trainer.optimizer.load_state_dict(deepcopy(state['optimizer']));set_rng(trainer,rng)
+        trainer.network.load_state_dict(network);trainer.optimizer.load_state_dict(opt_copy);set_rng(trainer,rng)
     except Exception:
         trainer.network.load_state_dict(old_network);trainer.optimizer.load_state_dict(old_optimizer);set_rng(trainer,current_rng)
         raise

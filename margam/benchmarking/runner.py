@@ -85,7 +85,7 @@ def _snapshot(case):
     for index, condition in enumerate(problem.constraints):
         points = _points(condition.points)
         target = _target(condition.target, points)
-        constraints.append(PointConstraint(condition.name, points, target, condition.operator))
+        constraints.append(PointConstraint(condition.name, points, condition.target if callable(condition.target) else target, condition.operator, measure=condition.measure))
         arrays[f"constraint_{index}_points"] = points
         arrays[f"constraint_{index}_target"] = target
         names.append(condition.name)
@@ -98,7 +98,14 @@ def _snapshot(case):
     if evaluation.shape[1] != collocation.shape[1]:
         raise ValueError("Evaluation and collocation points must have the same input dimension.")
     arrays.update(evaluation_points=evaluation, reference=reference)
-    return PINNProblem(problem.residual, collocation, constraints, residual_target, data_identity=getattr(problem,'data_identity','')), arrays, names
+    return PINNProblem(
+        problem.residual,
+        collocation,
+        constraints,
+        problem.residual_target if callable(problem.residual_target) else residual_target,
+        measure=problem.measure,
+        data_identity=getattr(problem,'data_identity',''),
+    ), arrays, names
 
 
 def _fingerprint(arrays):
@@ -111,20 +118,40 @@ def _fingerprint(arrays):
 
 
 def _json(path, value):
-    # A temporary sibling prevents partially written results on interruption.
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
-    temporary.replace(path)
+    import os
+    import tempfile
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=".margam-bench-", suffix=".tmp", delete=False, encoding="utf-8") as stream:
+            temporary = Path(stream.name)
+            stream.write(json.dumps(value, indent=2, allow_nan=False) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
 
 
 def _csv(path, rows):
+    import os
+    import tempfile
     keys = list(dict.fromkeys(key for row in rows for key in row))
     if not keys:
         keys = ["iteration", "total"]
-    with path.open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=keys)
-        writer.writeheader()
-        writer.writerows(rows)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=".margam-bench-", suffix=".tmp", delete=False, newline="", encoding="utf-8") as stream:
+            temporary = Path(stream.name)
+            writer = csv.DictWriter(stream, fieldnames=keys)
+            writer.writeheader()
+            writer.writerows(rows)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
 
 
 def _sync(model):
@@ -251,7 +278,7 @@ def run_benchmark(case, recipes, *, seeds, iterations, output_dir, display_every
                 _sync(model)
                 result["training_seconds"] = time.perf_counter() - start
                 history = [{"iteration": i+1, **row} for i, row in enumerate(model.loss_history)]
-                if len(history) != iterations:
+                if len(history) != iterations and not (getattr(model, "converged", False) and len(history) <= iterations):
                     raise ValueError("Recipe must record one loss_history entry per update.")
                 for row in history:
                     if any(not np.isfinite(float(v)) for v in row.values()):

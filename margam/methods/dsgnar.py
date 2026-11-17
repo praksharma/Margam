@@ -69,19 +69,31 @@ def _count_add_touched(matrix,residual,jacobian,values,buckets,signs):
 
 def lm_step(singular,projected,vt,radius):
     """Safeguarded secular solve, including rank-zero and unconstrained cases."""
-    squares=singular.square();g=singular*projected
-    active=singular>0
-    def coefficients(lam):
-        denom=squares+lam
-        return torch.where(active,g/denom.clamp_min(torch.finfo(singular.dtype).tiny),0.)
-    coeff=coefficients(0.)
-    if torch.linalg.vector_norm(coeff).item()<=radius:return -(vt.T@coeff),0.
-    lo=0.;hi=max(torch.linalg.vector_norm(g).item()/radius,torch.finfo(singular.dtype).tiny)
-    for _ in range(80):
+    s64=singular.to(torch.float64);p64=projected.to(torch.float64)
+    s_max=float(s64.max().item()) if s64.numel() else 0.
+    scale=s_max if s_max>1e150 else 1.
+    s_scaled=s64/scale;p_scaled=p64/scale
+    tiny=torch.finfo(torch.float64).tiny
+    active=s_scaled>math.sqrt(tiny)
+    squares=s_scaled.square();g=s_scaled*p_scaled
+    def coefficients(lam_scaled):
+        denom=squares+lam_scaled
+        return torch.where(active,g/denom.clamp_min(tiny),0.)
+    coeff0=coefficients(0.)
+    if torch.linalg.vector_norm(coeff0).item()<=radius:
+        return -(vt.T@coeff0.to(vt.dtype)),0.
+    hi=max(torch.linalg.vector_norm(g).item()/radius,tiny)
+    lo=0.
+    while hi*0.5>tiny and torch.linalg.vector_norm(coefficients(hi*0.5)).item()<=radius:
+        hi*=0.5
+    if hi*0.5>tiny:
+        lo=hi*0.5
+    for _ in range(60):
         mid=(lo+hi)/2
         if torch.linalg.vector_norm(coefficients(mid)).item()>radius:lo=mid
         else:hi=mid
-    return -(vt.T@coefficients(hi)),hi
+    lam=hi*(scale*scale)
+    return -(vt.T@coefficients(hi).to(vt.dtype)),lam
 
 
 def _pchip_coefficients(x,y):
@@ -133,9 +145,21 @@ def choose_radius(radii,ratios,target):
 
 
 def reweight(weights,losses,alpha):
-    if alpha==0 or sum(losses.values())==0:return dict(weights)
-    average=sum(losses.values())/len(losses)
-    logs={name:math.log(value)+alpha*math.log(average/(losses[name]+1e-8)) for name,value in weights.items()}
+    if alpha==0 or not losses:return dict(weights)
+    vals=[float(v) for v in losses.values()]
+    if any(not math.isfinite(v) or v<0 for v in vals):
+        raise FloatingPointError('Non-finite DSGNAR loss during reweighting.')
+    max_loss=max(vals)
+    if max_loss==0.:return dict(weights)
+    if 1e-290<=max_loss<=1e290:
+        average=sum(losses.values())/len(losses)
+        if average<=0.:return dict(weights)
+        logs={name:math.log(value)+alpha*math.log(average/(losses[name]+1e-8)) for name,value in weights.items()}
+    elif max_loss<1e-290:
+        logs={name:math.log(value)-alpha*math.log(float(losses[name])+1e-8) for name,value in weights.items()}
+    else:
+        scaled={k:float(v)/max_loss for k,v in losses.items()}
+        logs={name:math.log(value)-alpha*math.log(max(scaled[name],1e-300)) for name,value in weights.items()}
     maximum=max(logs.values());values={name:math.exp(max(-700.,value-maximum)) for name,value in logs.items()}
     mean=sum(values.values())/len(values)
     return {name:value/mean for name,value in values.items()}
@@ -285,9 +309,9 @@ class DSGNARPINN(PINN):
                     if not math.isfinite(ratio):ratio=-1.
                     return objective,ratio,lam,losses,step
                 low=self.radius/3;high=min(self.radius*3,self.settings['max_radius'])
-                radii=torch.logspace(math.log10(low),math.log10(high),self.settings['probes'],dtype=torch.float64).tolist()
+                radii=[min(r,self.settings['max_radius']) for r in torch.logspace(math.log10(low),math.log10(high),self.settings['probes'],dtype=torch.float64).tolist()]
                 ratios=[trial(radius)[1] for radius in radii]
-                chosen=choose_radius(radii,ratios,self.target_ratio)
+                chosen=min(choose_radius(radii,ratios,self.target_ratio),self.settings['max_radius'])
                 after,ratio,lam,after_terms,step=trial(chosen)
                 accepted=math.isfinite(after) and after<before and ratio>0
                 self._assign(base+lift_step(step.to(self.device),operators) if accepted else base)

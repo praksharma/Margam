@@ -46,7 +46,7 @@ class TimeMarchingPINN:
         lower,upper=config.bounds;self.start=lower[-1];self.end=upper[-1]
         self.edges=[self.start+(self.end-self.start)*i/self.count for i in range(self.count+1)]
         self.signature=asdict(config)
-        for key in ('iterations','device'):self.signature.pop(key)
+        for key in ('iterations','device','dsgnar_settings'):self.signature.pop(key,None)
         self.active=self._build(0)
 
     def _build(self,index,teacher=None):
@@ -122,7 +122,8 @@ class TimeMarchingPINN:
         payload=state.get('marching') if isinstance(state,dict) else None
         if isinstance(payload,dict) and isinstance(payload.get('configuration'),dict):
             from ..components.scale_config import scale_defaults
-            payload=deepcopy(payload);payload['configuration'].setdefault('scale_settings',scale_defaults())
+            payload=deepcopy(payload);payload['configuration'].pop('dsgnar_settings',None)
+            payload['configuration'].setdefault('scale_settings',scale_defaults())
             from ..components.gpinn_config import gpinn_defaults
             payload['configuration'].setdefault('gpinn_weights',gpinn_defaults())
             from ..components.rba_config import rba_defaults
@@ -141,6 +142,7 @@ class TimeMarchingPINN:
         steps=state.get('iter');offset=len(prefix)
         if type(steps) is not int or not offset<=steps<=100000 or len(state.get('loss_history',[]))!=steps or state['loss_history'][:offset]!=prefix or state.get('training_history')!=[row['total'] for row in state['loss_history']]:raise ValueError('Invalid time-marching history.')
         local=steps-offset
+        if len(completed)>0 and local==0:raise ValueError('Completed time windows require at least one update in the active window.')
         if len(completed)<self.count-1 and local>self.window_steps:raise ValueError('Time-window phase exceeds its update budget.')
         active={k:v for k,v in state.items() if k!='marching'}
         active.update(iter=local,loss_history=state['loss_history'][offset:],training_history=state['training_history'][offset:])

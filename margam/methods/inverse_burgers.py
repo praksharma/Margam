@@ -8,9 +8,12 @@ from .pinn import PINN
 class InverseBurgersNetwork(torch.nn.Module):
     def __init__(self,network,initial):
         super().__init__();self.solution=network
-        self.lambda_1=torch.nn.Parameter(torch.tensor(float(initial['lambda_1'])))
-        self.log_lambda_2=torch.nn.Parameter(torch.tensor(float(initial['log_lambda_2'])))
-        self._margam_spec=dict(type='inverse_burgers',options=deepcopy(initial),network=deepcopy(network._margam_spec))
+        params=list(network.parameters())
+        param_dtype=params[0].dtype if params else torch.get_default_dtype()
+        self.lambda_1=torch.nn.Parameter(torch.tensor(float(initial['lambda_1']),dtype=param_dtype))
+        self.log_lambda_2=torch.nn.Parameter(torch.tensor(float(initial['log_lambda_2']),dtype=param_dtype))
+        if hasattr(network,'_margam_spec'):
+            self._margam_spec=dict(type='inverse_burgers',options=deepcopy(initial),network=deepcopy(network._margam_spec))
 
     def forward(self,points):return self.solution(points)
 
@@ -31,14 +34,23 @@ class InverseBurgersPINN(PINN):
             return gradient
         for parameter in network.parameters():parameter.register_hook(finite_gradient)
 
+    def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):
+        self.inverse_history=[]
+        return super().compile(optimiser_string,lr,metrics_string,device,optimiser=optimiser)
+
     def estimated_parameters(self):return self.network.estimated_parameters()
 
     def train(self,iterations,display_every=1):
+        self._require_compiled()
         if type(iterations) is not int or iterations<0 or type(display_every) is not int or display_every<0:raise ValueError('Use non-negative integer updates/display interval.')
         for _ in range(iterations):
+            old_net=deepcopy(self.network.state_dict());old_opt=deepcopy(self.optimiser.state_dict())
             super().train(1,display_every)
             values=self.estimated_parameters()
-            if not all(math.isfinite(v) for v in values.values()) or values['lambda_2']<=0:raise FloatingPointError('Non-finite/underflowed physical coefficients after the inverse update.')
+            if not all(math.isfinite(v) for v in values.values()) or values['lambda_2']<=0:
+                self.network.load_state_dict(old_net);self.optimiser.load_state_dict(old_opt)
+                self.iter-=1;self.loss_history.pop();self.training_history.pop()
+                raise FloatingPointError('Non-finite/underflowed physical coefficients after the inverse update.')
             self.inverse_history.append(dict(step=self.iter,**values))
         return self.training_history
 

@@ -20,6 +20,8 @@ class ModifiedFourierNetwork(PointwiseNetwork):
         x=self.coordinates(x);x=torch.cat((x,self.features(x)),dim=-1)
         u=activate(self.encoder_u(x),self.options['activation']);v=activate(self.encoder_v(x),self.options['activation'])
         x=activate(self.trunk.layers[0](x),self.options['activation']);previous=None
+        if not self.trunk.layers[1:]:
+            return self.output(u+(v-u)*x)
         for i,layer in enumerate(self.trunk.layers[1:],1):
             z=activate(layer(x),self.options['activation']);x=u+(v-u)*z
             if self.options['skip_connections'] and i%2==0:
