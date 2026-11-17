@@ -12,7 +12,15 @@ _EXPORTS = {
     'error_norms': '.error_norms',
 }
 
-__all__ = tuple(_EXPORTS)
+__all__ = (
+    'PINNProblem',
+    'PointConstraint',
+    'IntegralConstraint',
+    'weighted_loss',
+    'sample_box',
+    'derivative',
+    'error_norms',
+)
 
 if TYPE_CHECKING:
     from .differential import derivative

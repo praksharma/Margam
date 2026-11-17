@@ -21,3 +21,10 @@ docs = ["zensical==0.0.73"]
 
 [tool.setuptools.packages.find]
 include = ["margam*"]
+
+[tool.ruff]
+target-version = "py314"
+include = ["margam/**/*.py", "tests/**/*.py", "examples/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E9", "F6", "F7", "F82"]

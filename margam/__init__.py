@@ -10,7 +10,18 @@ _EXPORTS = {
 }
 _SUBPACKAGES = ("nn", "utils", "components", "methods", "benchmarking", "research")
 
-__all__ = ("__version__", *_EXPORTS, *_SUBPACKAGES)
+__all__ = (
+    "__version__",
+    "PINN",
+    "PINNProblem",
+    "PointConstraint",
+    "nn",
+    "utils",
+    "components",
+    "methods",
+    "benchmarking",
+    "research",
+)
 
 if TYPE_CHECKING:
     from .components import PINNProblem, PointConstraint

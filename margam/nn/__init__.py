@@ -16,7 +16,21 @@ _EXPORTS = {
     'MultiplicativeFilterNetwork': '.multiplicative_filter',
 }
 
-__all__ = ('BaseNetwork', 'FullyConnected', 'activation', 'initialiser', *_EXPORTS)
+__all__ = (
+    'BaseNetwork',
+    'FullyConnected',
+    'activation',
+    'initialiser',
+    'build_network',
+    'FourierNetwork',
+    'AffineFourierNetwork',
+    'HighwayFourierNetwork',
+    'ModifiedFourierNetwork',
+    'MultiscaleFourierNetwork',
+    'DGMNetwork',
+    'SirenNetwork',
+    'MultiplicativeFilterNetwork',
+)
 
 if TYPE_CHECKING:
     from .affine_fourier import AffineFourierNetwork

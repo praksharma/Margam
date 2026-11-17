@@ -16,7 +16,19 @@ _EXPORTS = {
     'DSGNARPINN': '.dsgnar',
 }
 
-__all__ = ('PINN', *_EXPORTS)
+__all__ = (
+    'PINN',
+    'HardDirichletPINN',
+    'SelfAdaptivePINN',
+    'LearningRateAnnealingPINN',
+    'ExpertPINN',
+    'TimeMarchingPINN',
+    'ScalePINN',
+    'GradientEnhancedPINN',
+    'ResidualAttentionPINN',
+    'InverseBurgersPINN',
+    'DSGNARPINN',
+)
 
 if TYPE_CHECKING:
     from .dsgnar import DSGNARPINN
