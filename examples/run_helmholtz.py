@@ -51,11 +51,16 @@ if __name__=='__main__':
                  'margam/templates/poisson.py','margam/methods/pinn.py','margam/methods/learning_rate_annealing.py',
                  'margam/components/sampling.py','margam/components/expressions.py','margam/components/losses.py',
                  'margam/nn/factory.py','margam/nn/fourier.py','margam/nn/pointwise.py','margam/components/network_config.py']
+        try:
+            git_head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True,timeout=5).strip()
+            tracked_changes=subprocess.run(['git','diff','--quiet','HEAD'],cwd=root,timeout=5).returncode!=0
+        except (OSError,subprocess.SubprocessError):
+            git_head=None;tracked_changes=None
         report=dict(schema_version=1,study='lra_paper_helmholtz_existing_fourier_network',recorded_utc=datetime.now(timezone.utc).isoformat(),
                     environment=dict(python=platform.python_version(),torch=str(torch.__version__),platform=platform.platform(),
                                      device='cpu',dtype='float32',cpu_threads=1,cuda_available=torch.cuda.is_available()),
-                    provenance=dict(git_head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
-                                    tracked_changes=subprocess.run(['git','diff','--quiet','HEAD'],cwd=root).returncode!=0,
+                    provenance=dict(git_head=git_head,
+                                    tracked_changes=tracked_changes,
                                     source_sha256={p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in sources}),
                     settings=dict(base_config=asdict(config),network_seeds=args.seeds,evaluation_resolution=101,evaluation_points=10201,
                                   evaluation_domain=[[-1.,-1.],[1.,1.]],includes_boundary=True,reference='sin(pi*x)*sin(4*pi*y)',

@@ -4,7 +4,10 @@ import json
 import sys
 import unittest
 from unittest.mock import patch
-import test_study_cli as fixture
+try:
+    from . import test_study_cli as fixture
+except ImportError:
+    import test_study_cli as fixture
 from margam.studies import catalogue,values_for,preview,config_from_document
 from margam.study_document import capture,write,read,trial_model
 from margam.components.network_config import network_options

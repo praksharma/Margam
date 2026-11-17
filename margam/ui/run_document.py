@@ -66,7 +66,7 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba','inverse','dsgnar'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','weights','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba','inverse','dsgnar'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('marching' in checkpoint)==(config.method=='expert' and config.expert_settings['windows']>1),'Checkpoint time marching/config mismatch.')
@@ -131,22 +131,14 @@ def archive_workspace(data):
 
 
 def capture_run(window):
+    from copy import deepcopy
+    from .clipboard_files import capture_files
     result={key:value for key,value in window.result.items() if key!='config'}
     result['outputs']={identifier:{key:value for key,value in output.items() if key!='config'} for identifier,output in result['outputs'].items()}
     checkpoint=window.last_run.model.training_state() if window.last_run is not None and window.last_run.model is not None else window.loaded_checkpoint
-    workspace=window.project_workspace
-    root=workspace.companion(workspace.model_path) if workspace.model_path else Path(workspace._temporary.name) if workspace._temporary else None
-    files={}
-    if root is not None and root.exists():
-        require(not root.is_symlink(),'Run archives cannot follow a symbolic project folder.')
-        total=0
-        for path in root.rglob('*'):
-            require(not path.is_symlink(),'Run archives cannot contain symbolic links.')
-            if not path.is_file():continue
-            total+=path.stat().st_size
-            require(total<=LIMIT and len(files)<4096,'Owned files exceed run archive limits.')
-            files[path.relative_to(root).as_posix()]=path.read_bytes()
-    return {'format':'margam-run','version':4,'model':capture_model(window),'result':result,
+    model_doc=capture_model(window)
+    files=capture_files(deepcopy(model_doc),window.project_workspace,locked=window.is_running() or window.scene.locked,file_limit=LIMIT,total_limit=LIMIT,max_files=4096)
+    return {'format':'margam-run','version':4,'model':model_doc,'result':result,
             'monitors':window.monitor_records,'checkpoint':checkpoint,'owned_files':files}
 
 
@@ -175,64 +167,88 @@ def load_run_payload(path):
 def load_run(path):
     data,config=load_run_payload(path)
     import torch
-    if data['checkpoint'] is not None and config.method in ('expert','scale','dsgnar'):
-        from copy import deepcopy
-        from ..templates.poisson import build_pinn
-        config=deepcopy(config);config.device='cpu'
-        model=build_pinn(config);model.load_training_state(data['checkpoint'])
-        return data
-    if data['checkpoint'] is not None:
-        # Validate the architecture/Adam payload without opening external input
-        # files: archived predictions remain viewable if those files moved.
-        # Actual resume still reconstructs data and verifies the original digest.
-        from ..components import PINNProblem,PointConstraint
-        from ..methods import PINN
-        from ..nn.factory import build_network
-        config=decode_document(data['model'])[0]
-        dimension=len(config.bounds[0])
-        network=build_network(config)
-        if config.method=='hard_dirichlet':
-            from ..methods.hard_dirichlet import BoxDirichletNetwork
-            network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
-        adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
-        attention=data['checkpoint'].get('rba',{}).get('attention')
-        def dummy(name):
-            if name=='pde' and attention is not None:return torch.zeros((len(attention),dimension))
-            if name=='pde' and config.adaptive_sampling:
-                from ..templates.poisson import sample_problem
-                from ..components.collocation import collocation_rows
-                points,sets=sample_problem(config)
-                return torch.tensor(collocation_rows(config,points,sets))
-            return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
-        problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
-        from ..components.losses import apply_problem_measures
-        apply_problem_measures(problem,config)
-        if config.method=='inverse_burgers':
-            from ..methods.inverse_burgers import InverseBurgersPINN
-            model=InverseBurgersPINN(problem,network,weights=config.loss_weights,initial=config.inverse_settings).compile(lr=config.lr,device='cpu')
-        elif config.method=='self_adaptive':
-            from ..methods.self_adaptive import SelfAdaptivePINN
-            model=SelfAdaptivePINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
-        elif config.method=='rba':
-            from dataclasses import asdict
-            from ..methods.rba import ResidualAttentionPINN
-            model=ResidualAttentionPINN(problem,network,settings=config.rba_settings,weights=config.loss_weights,configuration=asdict(config)).compile(lr=config.lr,device='cpu')
-        elif config.method=='gpinn':
-            from dataclasses import asdict
-            from ..methods.gpinn import GradientEnhancedPINN
-            model=GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=config.loss_weights,configuration=asdict(config),residual_components=3 if config.physics=='incompressible_2d' else 1).compile(lr=config.lr,device='cpu')
-        elif config.method=='lra':
-            from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
-            model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
-        else:model=PINN(problem,network,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu')
-        from ..components.adaptive_sampling import configure_adaptive_sampling
-        configure_adaptive_sampling(model,config)
-        if 'data_fingerprint' not in data['checkpoint']:
-            require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
+    from copy import deepcopy
+    temp_workspace=archive_workspace(data) if data.get('owned_files') else None
+    try:
+        if data['checkpoint'] is not None and config.method in ('expert','scale','dsgnar'):
             from ..templates.poisson import build_pinn
-            from copy import deepcopy
-            legacy=deepcopy(config);legacy.device='cpu'
-            data['checkpoint']['data_fingerprint']=build_pinn(legacy).data_fingerprint()
-        state=dict(data['checkpoint'],data_fingerprint=model.data_fingerprint())
-        model.load_training_state(state)
-    return data
+            run_cfg=temp_workspace.resolve_config(deepcopy(config),create=False) if temp_workspace is not None else deepcopy(config)
+            run_cfg.device='cpu'
+            model=build_pinn(run_cfg);model.load_training_state(data['checkpoint'])
+            return data
+        if data['checkpoint'] is not None:
+            # Validate the architecture/Adam payload without opening external input
+            # files: archived predictions remain viewable if those files moved.
+            # Actual resume still reconstructs data and verifies the original digest.
+            from ..components import PINNProblem,PointConstraint
+            from ..methods import PINN
+            from ..nn.factory import build_network
+            config=decode_document(data['model'])[0]
+            sample_cfg=temp_workspace.resolve_config(deepcopy(config),create=False) if temp_workspace is not None else config
+            dimension=len(config.bounds[0])
+            network=build_network(config)
+            if config.method=='hard_dirichlet':
+                from ..methods.hard_dirichlet import BoxDirichletNetwork
+                network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
+            adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
+            attention=data['checkpoint'].get('rba',{}).get('attention')
+            anchor_count=0
+            pde_dummy=None
+            if config.adaptive_sampling:
+                from ..templates.poisson import sample_problem
+                from ..components.collocation import boundary_rows,collocation_rows
+                try:
+                    points,sets=sample_problem(sample_cfg)
+                    pde_dummy=torch.tensor(collocation_rows(sample_cfg,points,sets))
+                    if sample_cfg.pde_points=='both':
+                        anchor_count=len(boundary_rows(sample_cfg,sets))
+                except FileNotFoundError:
+                    sampling=data['checkpoint'].get('sampling',{})
+                    initial_count=sampling.get('initial_count') if isinstance(sampling,dict) else None
+                    pts=sampling.get('points') if isinstance(sampling,dict) else None
+                    require(type(initial_count) is int and config.points<=initial_count<=100000 and isinstance(pts,torch.Tensor) and pts.ndim==2 and pts.shape[1]==dimension,'Invalid adaptive sampling checkpoint.')
+                    anchor_count=initial_count-config.points if config.pde_points=='both' else 0
+                    start=initial_count-anchor_count if config.adaptive_sampling.get('method')=='rar' else len(pts)-anchor_count
+                    require(0<=start and start+anchor_count<=len(pts),'Invalid adaptive boundary anchor slice.')
+                    pde_dummy=torch.cat((torch.zeros((config.points,dimension),dtype=pts.dtype),pts[start:start+anchor_count].detach().cpu()),dim=0) if anchor_count else torch.zeros((initial_count,dimension),dtype=pts.dtype)
+            def dummy(name):
+                if name=='pde' and attention is not None:return torch.zeros((len(attention),dimension))
+                if name=='pde' and pde_dummy is not None:return pde_dummy
+                return torch.zeros((len(adaptive[name]) if name in adaptive else 1,dimension))
+            problem=PINNProblem(lambda x,u:u,dummy('pde'),[PointConstraint(name,dummy(name),0.) for name in config.constraint_names])
+            from ..components.losses import apply_problem_measures
+            apply_problem_measures(problem,config)
+            if config.method=='inverse_burgers':
+                from ..methods.inverse_burgers import InverseBurgersPINN
+                model=InverseBurgersPINN(problem,network,weights=config.loss_weights,initial=config.inverse_settings).compile(lr=config.lr,device='cpu')
+            elif config.method=='self_adaptive':
+                from ..methods.self_adaptive import SelfAdaptivePINN
+                model=SelfAdaptivePINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',adaptive_lr=config.sa_lr,initial_weight=config.sa_initial,max_weight=config.sa_max,adapt_boundary=config.sa_boundary)
+            elif config.method=='rba':
+                from dataclasses import asdict
+                from ..methods.rba import ResidualAttentionPINN
+                model=ResidualAttentionPINN(problem,network,settings=config.rba_settings,weights=config.loss_weights,configuration=asdict(config)).compile(lr=config.lr,device='cpu')
+            elif config.method=='gpinn':
+                from dataclasses import asdict
+                from ..methods.gpinn import GradientEnhancedPINN
+                model=GradientEnhancedPINN(problem,network,coordinates=config.coordinate_names,gradient_weights=config.gpinn_weights,weights=config.loss_weights,configuration=asdict(config),residual_components=3 if config.physics=='incompressible_2d' else 1).compile(lr=config.lr,device='cpu')
+            elif config.method=='lra':
+                from ..methods.learning_rate_annealing import LearningRateAnnealingPINN
+                model=LearningRateAnnealingPINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu',alpha=config.lra_alpha,update_interval=config.lra_interval,epsilon=config.lra_epsilon,max_weight=config.lra_max)
+            else:model=PINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu')
+            if config.adaptive_sampling:
+                from ..components.adaptive_sampling import AdaptiveSampler
+                if config.pde_points=='both':
+                    model.problem.boundary_anchor_count=anchor_count
+                model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed)
+            if 'data_fingerprint' not in data['checkpoint']:
+                require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
+                from ..templates.poisson import build_pinn
+                legacy=deepcopy(config);legacy.device='cpu'
+                data['checkpoint']['data_fingerprint']=build_pinn(legacy).data_fingerprint()
+            state=dict(data['checkpoint'],data_fingerprint=model.data_fingerprint())
+            model.load_training_state(state)
+        return data
+    finally:
+        if temp_workspace is not None:
+            temp_workspace.close()

@@ -57,16 +57,16 @@ class DatasetDialog(QDialog):
 class JorvikGeometryActions:
     def jorvik_document(self,node,create=False):
         reference=node.settings.get('jorvik_files',{}).get('document','margam-owned:'+document_relative(node.identifier))
-        path=Path(self.project_workspace.resolve(reference))
+        path=Path(self.project_workspace.resolve(reference,create=create))
         if create and not path.exists():
             from jorvik.project import create_empty_project
             path.parent.mkdir(parents=True,exist_ok=True)
             create_empty_project(path)
         return path
 
-    def jorvik_export(self,node):
+    def jorvik_export(self,node,create=False):
         reference=node.settings.get('jorvik_files',{}).get('export')
-        return Path(self.project_workspace.resolve(reference)) if reference else self.jorvik_document(node).with_suffix('.nc')
+        return Path(self.project_workspace.resolve(reference,create=create)) if reference else self.jorvik_document(node,create=create).with_suffix('.nc')
 
     def browse_jorvik(self,node,kind,path=None):
         if self.is_running() or self.scene.locked:return False
@@ -118,8 +118,9 @@ class JorvikGeometryActions:
     def edit_jorvik(self,node):
         if self.is_running() or self.scene.locked:return False
         try:
-            path=self.jorvik_document(node)
+            path=self.jorvik_document(node,create=False)
             if not path.is_file():raise FileNotFoundError('The Jorvik document is missing. Restore the project companion folder before editing.')
+            before_stat=(path.stat().st_size,path.stat().st_mtime_ns)
         except (OSError,ValueError,ImportError) as error:
             QMessageBox.warning(self,'Jorvik could not be opened',str(error));return False
         process=QProcess(self)
@@ -133,14 +134,16 @@ class JorvikGeometryActions:
         def finished(*args):
             if getattr(self,'jorvik_process',None) is not process:return
             self.jorvik_process=None;self.project_workspace.busy=False;self.set_busy(False)
-            self.undo_stack.resetClean()
-            if self.desktop_state is not None:self.desktop_state.queue()
+            changed_on_disk=path.is_file() and (path.stat().st_size,path.stat().st_mtime_ns)!=before_stat
+            if changed_on_disk:
+                self.undo_stack.resetClean()
+                if self.desktop_state is not None:self.desktop_state.queue()
             if not args or args[0]==0:
                 if node.settings.get('jorvik_files',{}).get('export'):
                     self.statusBar().showMessage('Jorvik closed · selected NetCDF copy remains active; clear that override to use saved project samples')
                 else:
                     try:
-                        count=export_saved_project(self.jorvik_document(node),self.jorvik_export(node))
+                        count=export_saved_project(self.jorvik_document(node,create=False),self.jorvik_export(node,create=True))
                         self.statusBar().showMessage(f'Exported {count} saved Jorvik datasets · Update from Jorvik to apply')
                     except (OSError,ValueError,TypeError,KeyError,ImportError,BadZipFile) as error:
                         self.statusBar().showMessage('Jorvik closed · '+str(error))
@@ -158,9 +161,9 @@ class JorvikGeometryActions:
         if self.is_running() or self.scene.locked:return False
         snapshot=None
         try:
-            path=self.jorvik_export(node)
+            path=self.jorvik_export(node,create=not bool(node.settings.get('jorvik_files',{}).get('export')))
             if not node.settings.get('jorvik_files',{}).get('export'):
-                export_saved_project(self.jorvik_document(node),path)
+                export_saved_project(self.jorvik_document(node,create=False),path)
             previous=node.settings.get('jorvik',{})
             if selections is None:
                 dialog=DatasetDialog(path,previous,self)

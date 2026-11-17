@@ -78,7 +78,10 @@ from margam.ui.model_document import capture_model
 from margam.ui.clipboard_files import MIME
 from PySide6.QtCore import QMimeData
 from jorvik.project import load_project
-from test_jorvik import fixture,SELECTION
+try:
+    from .test_jorvik import fixture,SELECTION
+except ImportError:
+    from test_jorvik import fixture,SELECTION
 app=QApplication([]);a=Window(state_directory=False);b=Window(state_directory=False)
 a.show();b.show();app.processEvents()
 g=a.add_node('Jorvik geometry');original=a.jorvik_document(g,create=True);fixture(original.with_suffix('.nc'))

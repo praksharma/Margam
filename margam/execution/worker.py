@@ -22,7 +22,10 @@ def main():
         pending=b''
         while True:
             # A daemon must not hold sys.stdin's buffered lock at interpreter exit.
-            raw=os.read(0,4096)
+            try:
+                raw=os.read(0,4096)
+            except OSError:
+                raw=b''
             if not raw:
                 cancelled.set()
                 if not finished.wait(5):os._exit(72)

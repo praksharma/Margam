@@ -885,6 +885,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             self.scene.blockSignals(False);self._resetting=False
         self.project_workspace.close()
         self.project_workspace = workspace or ProjectWorkspace(path)
+        self.config=self.project_workspace.resolve_config(self.config,create=False)
         self.model_path=str(Path(path).absolute()) if path else None;self._history_epoch+=1
         self.settings_changed();self.selection_changed();self.fit_model()
         self.undo_stack.setClean();self.update_document_title();self.update_history_actions()
@@ -1088,7 +1089,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.resizeDocks([self.library_dock,self.properties_dock],[240,310],Qt.Orientation.Horizontal)
 
     def export_block_data(self,node,path=None):
-        if self.is_running() or not isValid(node) or node.scene() is not self.scene or not output_enabled(node):return False
+        if self.is_running() or self.scene.locked or self.project_workspace.busy or not isValid(node) or node.scene() is not self.scene or not output_enabled(node):return False
         data=(self.result or {}).get('outputs',{}).get(node.identifier)
         if data is None:
             self.statusBar().showMessage('Connect this export block and train before exporting.');return False
@@ -1161,14 +1162,15 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if node.kind=='jorvik_geometry':
             for label,callback in [('Edit in Jorvik',self.edit_jorvik),('Update from Jorvik',self.update_jorvik)]:
                 action=menu.addAction(label);action.setEnabled(not self.is_running() and not self.scene.locked);action.triggered.connect(lambda checked=False,fn=callback:fn(node))
+        busy=self.is_running() or self.scene.locked or self.project_workspace.busy
         if node.kind in ('solution','comparison','export','paraview'):
-            action=menu.addAction('Evaluate requested outputs');action.setEnabled(not self.is_running() and output_enabled(node));action.triggered.connect(self.evaluate_trained_outputs)
+            action=menu.addAction('Evaluate requested outputs');action.setEnabled(not busy and output_enabled(node));action.triggered.connect(self.evaluate_trained_outputs)
         if node.kind in COMPACT_RECIPES:
-            action=menu.addAction('Expand into components');action.setEnabled(not self.is_running())
+            action=menu.addAction('Expand into components');action.setEnabled(not busy)
             action.triggered.connect(lambda:self.expand_recipe(node))
         elif node.kind in TRAINER_RECIPES:
             recipe=TRAINER_RECIPES[node.kind]
-            action=menu.addAction('Collapse as '+recipe.NAME);action.setEnabled(not self.is_running() and self.config_for_node(node).method==recipe.DEFAULTS['method'])
+            action=menu.addAction('Collapse as '+recipe.NAME);action.setEnabled(not busy and self.config_for_node(node).method==recipe.DEFAULTS['method'])
             action.triggered.connect(lambda:self.collapse_recipe(node))
         if node.kind=='domain' and self.config_for_node(node).shape=='Rectangle':
             menu.addSeparator()
@@ -1176,10 +1178,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             menu.addAction('Preview samples').triggered.connect(lambda:self.open_rectangle_preview(node,True))
         elif node.kind in OUTPUT_KINDS:
             label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…','paraview':'Export ParaView…'}[node.kind]
-            action=menu.addAction(label);action.setEnabled(output_enabled(node));action.triggered.connect(lambda:self.open_block(node))
+            action=menu.addAction(label);action.setEnabled(output_enabled(node) and (node.kind not in ('export','paraview') or not busy));action.triggered.connect(lambda:self.open_block(node))
         if node.kind in ('sa_recipe','sa_method'):
             summary=menu.addAction('Adaptive weight summary')
-            summary.setEnabled(not self.is_running() and self.result is not None)
+            summary.setEnabled(not busy and self.result is not None)
             summary.triggered.connect(self.show_adaptive_summary)
         if node.kind in ('dsgnar_recipe','dsgnar_method'):
             action=menu.addAction('Step diagnostics');action.triggered.connect(self.show_dsgnar_summary)
@@ -1188,14 +1190,14 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if node.kind in ('scale_recipe','scale_method'):
             action=menu.addAction('Scale correction diagnostics');action.triggered.connect(self.show_scale_summary)
         if node.kind in ('expert_recipe','expert_method'):
-            summary=menu.addAction('Expert training summary');summary.setEnabled(not self.is_running() and self.result is not None)
+            summary=menu.addAction('Expert training summary');summary.setEnabled(not busy and self.result is not None)
             summary.triggered.connect(self.show_expert_summary)
         if node.kind in ('lra_recipe','lra_method'):
-            summary=menu.addAction('LRA loss-weight summary');summary.setEnabled(not self.is_running() and self.result is not None)
+            summary=menu.addAction('LRA loss-weight summary');summary.setEnabled(not busy and self.result is not None)
             summary.triggered.connect(self.show_lra_summary)
         menu.addSeparator()
         remove=menu.addAction('Delete block')
-        remove.setEnabled(not self.is_running())
+        remove.setEnabled(not busy)
         remove.triggered.connect(lambda:self.delete_block(node))
         menu.addSeparator()
         menu.addAction(self.copy_action);menu.addAction(self.cut_action);menu.addAction(self.paste_action)
@@ -1235,7 +1237,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if model is not None and not getattr(self.last_run,'evaluation_only',False) and hasattr(model,'expert_summary'):return model.expert_summary()
         checkpoint=self.loaded_checkpoint
         if checkpoint and 'expert' in checkpoint:
-            summary=dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=None)
+            summary=dict(step=checkpoint['iter'],coefficients=checkpoint['expert']['coefficients'],learning_rate=checkpoint['optimiser']['param_groups'][0]['lr'],minimum_causal_weight=checkpoint['expert'].get('minimum_causal_weight'))
             if 'marching' in checkpoint:
                 index=len(checkpoint['marching']['completed']);options=self.config.expert_settings
                 summary.update(window=index+1,windows=options['windows'],window_step=checkpoint['iter']-index*options['window_steps'])
@@ -1662,7 +1664,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         return node
 
     def delete_selected(self):
-        if not self.is_running():self.scene.delete_selection()
+        if not self.is_running() and not self.scene.locked and not self.project_workspace.busy:self.scene.delete_selection()
 
     def is_running(self):
         return self.worker is not None or (bool(getattr(getattr(self,'study_execution_dialog',None),'active',False)) or bool(getattr(getattr(self,'resource_probe_dialog',None),'active',False)))
@@ -1682,7 +1684,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self._evaluation_config=deepcopy(config) if same else None
 
     def evaluate_trained_outputs(self):
-        if self.is_running() or not self.validate_model():return False
+        if self.is_running() or self.scene.locked or self.project_workspace.busy or not self.validate_model():return False
         model=self.last_run.model if self.last_run is not None and self.last_run.model is not None else None
         checkpoint=self.loaded_checkpoint
         config=getattr(self,'_trained_config',None)
@@ -1821,7 +1823,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             setattr(self.config,attribute,deepcopy(current))
             if attribute in ('interior_data','boundary_data'):self.config=self.project_workspace.resolve_config(self.config)
             self.settings_changed()
-            if edit_token is None or attribute in ('shape','physics'):self.selection_changed()
+            if edit_token is None or attribute in ('shape','physics') or (attribute=='viscosity' and self.config.pde_preset=='expert_cavity'):self.selection_changed()
         merge=(node.identifier if node else None,attribute,edit_token) if edit_token is not None else None
         self.push_edit('Change '+attribute.replace('_',' '),lambda:apply(value),lambda:apply(old),merge)
 
@@ -1896,7 +1898,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.selection_changed()
 
     def add_boundary_data_set(self):
-        if self.is_running():return
+        if self.is_running() or self.scene.locked or self.project_workspace.busy:return
         if len(self.config.boundary_data)>=64:self.validation.setText('At most 64 boundary sets are supported.');return
         if self.config.shape=='Prepared2D':name,ok=QInputDialog.getText(self,'Add boundary point set','Set name (letters, digits, underscore or hyphen):')
         else:name,ok=QInputDialog.getItem(self,'Add boundary point set','Named side:',list(self.config.sides),0,False)
@@ -1947,7 +1949,20 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             node=reference;slot='reference_data';apply=lambda:self.change_output(reference,'reference_data',{})
         elif side:
             node=self.parameter_owner('boundary_data');slot='boundary:'+side
-            values=deepcopy(self.config.boundary_data);values.pop(side,None);apply=lambda:self.change('boundary_data',values)
+            values=deepcopy(self.config.boundary_data);values.pop(side,None)
+            def apply(side=side,values=values):
+                prune=side not in ('left','right','bottom','top')
+                if prune:self.undo_stack.beginMacro('Clear boundary dataset')
+                try:
+                    self.change('boundary_data',values)
+                    if prune:
+                        for key in ('bc_weights','bc_types','bc_values','bc_targets','bc_operators'):
+                            if side in getattr(self.config,key,{}):
+                                pruned=deepcopy(getattr(self.config,key))
+                                pruned.pop(side,None)
+                                self.change(key,pruned)
+                finally:
+                    if prune:self.undo_stack.endMacro()
         else:
             node=self.parameter_owner('interior_data');slot='interior_data';apply=lambda:self.change('interior_data',{})
         self.forget_dataset_source(node,slot,apply)
@@ -2813,7 +2828,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
 
     def training_finished(self):
         worker=self.worker;self.worker=None
-        self.set_busy(False)
+        if getattr(self,'jorvik_process',None) is None and not self.project_workspace.busy:
+            self.set_busy(False)
         if worker is not None:
             if self.result is not None:
                 previous=self.last_run;self.last_run=worker
@@ -2851,13 +2867,14 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def closeEvent(self,event):
         if self.is_running():
             self._closing=True;self.cancel_training();event.ignore();return
+        if not self.confirm_discard():
+            self._closing=False;event.ignore();return
         if getattr(self,'resource_probe_dialog',None) is not None:self.resource_probe_dialog.shutdown_review()
         if getattr(self,'study_execution_dialog',None) is not None:self.study_execution_dialog.shutdown_review()
         if getattr(self,'study_results_dialog',None) is not None:self.study_results_dialog.shutdown()
         if getattr(self,'run_comparison_dialog',None) is not None:self.run_comparison_dialog.shutdown()
         if getattr(self,'history_comparison_dialog',None) is not None:self.history_comparison_dialog.shutdown()
-        if not self.confirm_discard():
-            self._closing=False;event.ignore();return
+        if getattr(self,'design_points_dialog',None) is not None:self.design_points_dialog.detach()
         self._labels_closing=True
         self.automation_server.shutdown()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()

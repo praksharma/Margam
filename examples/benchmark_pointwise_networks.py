@@ -16,6 +16,7 @@ from margam.templates.poisson import PoissonConfig,build_pinn
 def smoke_options(kind):
     if kind in ('fourier','highway_fourier','modified_fourier'):return {'frequencies':[0.,.5,1.]}
     if kind=='fourier_mlp':return {'modes':3,'scale':.1}
+    if kind=='affine_fourier':return {'features':8,'cycles':.5}
     if kind=='multiscale_fourier':return {'scales':[.1,.5],'features':8}
     if kind=='siren':return {'first_omega':10.,'omega':10.}
     if kind in ('fourier_filter','gabor_filter'):return {'input_scale':.5}

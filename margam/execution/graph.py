@@ -35,9 +35,20 @@ class ExecutableGraph:
         nodes = self.nodes()
         if any('enabled' in n.settings and n.kind not in OUTPUT_KINDS for n in nodes):raise ValueError('Only optional result blocks support an enabled flag; required physics cannot be disabled.')
         if any(n.kind in ('inverse_recipe','inverse_method') for n in nodes):
+            destinations=set()
             for wire in self.wires:
                 error=self.connection_error(wire.source,wire.target,ignore=wire)
                 if error:raise ValueError(error)
+                source,target=wire.source.parentItem(),wire.target.parentItem()
+                if source.kind in OUTPUT_KINDS or target.kind in OUTPUT_KINDS or source.kind in ('reference','reference_data','evaluation_points'):
+                    allowed=role(source.kind)=='method' and target.kind in OUTPUT_KINDS and wire.target.name==('model' if target.kind=='comparison' else 'input')
+                    allowed=allowed or (source.kind in ('reference','reference_data') and target.kind=='comparison' and wire.target.name=='reference')
+                    allowed=allowed or (source.kind=='evaluation_points' and target.kind in ('solution','comparison','export','paraview') and wire.target.name=='points')
+                    allowed=allowed or (source.kind=='comparison' and target.kind in ('export','paraview') and wire.target.name=='comparison')
+                    if not allowed:raise ValueError('Unsupported output connection: '+source.title+' → '+target.title)
+                    key=(target.identifier,wire.target.name)
+                    if key in destinations:raise ValueError('Each output input accepts only one source.')
+                    destinations.add(key)
             assemble(nodes,self.wires);return
         # The executable dependencies determine which point sources are required.
         destinations=set()

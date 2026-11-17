@@ -22,7 +22,7 @@ TOOLS = {
     'read_results': ('Result reads', 'Read paginated data from explicit output blocks or retained loss history of the identified finished MCP job. No prediction or file export is triggered.'),
 }
 
-EDITABLE = frozenset(('points','sampling','seed','boundary_points','layers','network_type','network_seed','network_options','iterations','lr','pde_weight','boundary_weight','source','viscosity','fourth_order','pde_expression','pde_forcing','bc_values','bc_targets','bc_operators','bc_weights','inverse_settings','gpinn_weights','rba_settings','dsgnar_settings','sa_lr','sa_initial','sa_max','sa_boundary','lra_alpha','lra_interval','lra_epsilon','lra_max'))
+EDITABLE = frozenset(('points','sampling','seed','boundary_points','layers','network_type','network_seed','network_options','iterations','lr','pde_weight','boundary_weight','loss_formulation','source','viscosity','fourth_order','pde_expression','pde_forcing','bc_values','bc_targets','bc_operators','bc_weights','inverse_settings','gpinn_weights','rba_settings','dsgnar_settings','expert_settings','scale_settings','sa_lr','sa_initial','sa_max','sa_boundary','lra_alpha','lra_interval','lra_epsilon','lra_max'))
 
 class AutomationError(Exception):
     def __init__(self, code, message, operation_index=None):
@@ -71,6 +71,19 @@ class AutomationCommands:
                        workspace=id(self.window.project_workspace))
         revision = hashlib.sha256(json.dumps(content, sort_keys=True, allow_nan=False).encode()).hexdigest()
         return dict(session_id=self.session_id, revision=revision)
+
+    def numerical_revision(self):
+        from .model_document import capture_model
+        document = capture_model(self.window)
+        nodes = []
+        for node in document['nodes']:
+            if node['kind'] == 'annotation':
+                continue
+            settings = {k: v for k, v in node['settings'].items() if k not in ('label', 'network_label')}
+            nodes.append(dict(id=node['id'], kind=node['kind'], settings=settings))
+        content = dict(nodes=nodes, wires=document['wires'], device=self.window.application_device,
+                       workspace=id(self.window.project_workspace))
+        return hashlib.sha256(json.dumps(content, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
     def guard(self, arguments, revision=False):
         identity = self.identity()
@@ -173,7 +186,7 @@ class AutomationCommands:
             if not accepted: raise AutomationError('training_rejected','Current model cannot start or resume training.')
             # Native continuation updates the requested total as an ordinary undoable
             # setting change. Track the resulting revision, not the pre-launch one.
-            job = self.job = dict(job_id=uuid4().hex, revision=self.identity()['revision'], running=True,
+            job = self.job = dict(job_id=uuid4().hex, revision=self.identity()['revision'], numerical_revision=self.numerical_revision(), running=True,
                 state='Running', step=continuation['steps'] if continuation is not None else 0, error=None,
                 operation=name, resumed_from=continuation['run_id'] if continuation is not None else None)
             worker = w.worker
@@ -207,6 +220,7 @@ class AutomationCommands:
         if len(json.dumps(operations,allow_nan=False).encode())>128*1024:
             raise AutomationError('invalid_batch','Batch exceeds 128 KiB.')
         document=capture_model(self.window); records={r['id']:r for r in document['nodes']}
+        explicit_iterations={op['node_id'] for op in operations if isinstance(op,dict) and op.get('parameter')=='iterations'}
         for i,op in enumerate(operations):
             if not isinstance(op,dict) or set(op)!={'node_id','parameter','value'}:
                 raise AutomationError('invalid_batch','Use node_id, parameter and value only.',i)
@@ -217,13 +231,16 @@ class AutomationCommands:
             if record is None or key not in EDITABLE or key not in PARAMETERS.get(record['kind'],()):
                 raise AutomationError('invalid_batch','Unknown block or parameter not editable through MCP.',i)
             record['settings']['parameters'][key]=deepcopy(op['value'])
+            if key=='expert_settings' and isinstance(op['value'],dict) and op['node_id'] not in explicit_iterations and 'iterations' in record['settings']['parameters']:
+                windows=op['value'].get('windows',1);window_steps=op['value'].get('window_steps',1000)
+                if type(windows) is int and type(window_steps) is int and windows>1:
+                    record['settings']['parameters']['iterations']=min(100000,windows*window_steps)
         # Strict document decoder and the same graph/config validators used by the GUI.
         decode_document(document)
+        from ..execution.graph import DocumentGraph
+        config=DocumentGraph(document,self.window.project_workspace,self.window.execution_device()).compile_config()
+        config.validate()
         scene=self.window.scene
-        nodes={r['id']:SimpleNamespace(**{k:r[k] for k in ('kind','title')},identifier=r['id'],settings=r['settings'],scene=lambda:scene) for r in records.values()}
-        wires=[SimpleNamespace(source=SimpleNamespace(parentItem=lambda n=nodes[r['source']]:n),
-            target=SimpleNamespace(parentItem=lambda n=nodes[r['target']]:n,name=r['input'])) for r in document['wires']]
-        config=assemble(list(nodes.values()),wires);config.validate()
         changes=[]
         for node in scene.nodes():
             before=node.settings.get('parameters');after=records[node.identifier]['settings'].get('parameters')
@@ -233,7 +250,9 @@ class AutomationCommands:
     def results(self, arguments):
         w=self.window;job=self.job
         if job['running']: raise AutomationError('busy','Wait for training to finish before reading its results.')
-        if job['revision']!=self.identity()['revision'] or w.last_run is None or w.result is None or job['state'] not in ('Completed','Partial'):
+        expected_num=job.get('numerical_revision')
+        stale_rev=(expected_num!=self.numerical_revision()) if expected_num is not None else (job['revision']!=self.identity()['revision'])
+        if stale_rev or w.last_run is None or w.result is None or job['state'] not in ('Completed','Partial'):
             raise AutomationError('stale_results','Results are unavailable or the graph changed; train again.')
         if w.last_run is not getattr(self,'accepted_worker',w.last_run):
             raise AutomationError('stale_results','Another desktop job replaced these results.')
@@ -244,12 +263,22 @@ class AutomationCommands:
         if node_id is None:
             rows=w.last_run.model.loss_history
             return dict(**self.status(),kind='loss_history',offset=offset,total_rows=len(rows),rows=deepcopy(rows[offset:offset+limit]))
+        if node_id in w.monitor_records:
+            records=w.monitor_records[node_id]
+            rows=[dict(step=step,**deepcopy(rec)) for step,rec in records[offset:offset+limit]]
+            return dict(**self.status(),node_id=node_id,kind='monitor',offset=offset,total_rows=len(records),rows=rows)
         data=w.result['outputs'].get(node_id)
         if data is None: raise AutomationError('no_results','Select an explicit evaluated output block ID; omit node_id for loss history.')
         rows=[dict(point=p,value=v) for p,v in zip(data['points'][offset:offset+limit],data['values'][offset:offset+limit])]
+        if data.get('reference') is not None:
+            for row,ref_val in zip(rows,data['reference'][offset:offset+limit]):row['reference']=ref_val
         if 'point_ids' in data:
             for row,point_id in zip(rows,data['point_ids'][offset:offset+limit]):row['point_id']=point_id
-        return dict(**self.status(),node_id=node_id,fields=data.get('fields',['u']),offset=offset,total_rows=len(data['points']),rows=rows)
+        payload=dict(**self.status(),node_id=node_id,fields=data.get('fields',['u']),offset=offset,total_rows=len(data['points']),rows=rows)
+        for extra in ('rmse','max_error','reference_name','rmse_by_field','max_error_by_field'):
+            if data.get(extra) is not None:
+                payload[extra]=deepcopy(data[extra])
+        return payload
 
 
 @dataclass

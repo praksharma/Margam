@@ -4,7 +4,10 @@ import sys
 import time
 import unittest
 from unittest.mock import patch
-import test_run_comparison as fixture
+try:
+    from . import test_run_comparison as fixture
+except ImportError:
+    import test_run_comparison as fixture
 from margam.history_comparison import retained_curve,compare_histories,available_curves,curve_label,read_histories
 
 

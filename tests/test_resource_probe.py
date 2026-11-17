@@ -6,7 +6,10 @@ import unittest
 from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import torch
-import test_study_cli as fixture
+try:
+    from . import test_study_cli as fixture
+except ImportError:
+    import test_study_cli as fixture
 from margam.execution.probe import probe_study,validate_probe
 from margam.execution.transport import JobTransport,JobFailed
 from margam.execution.codec import encode_config

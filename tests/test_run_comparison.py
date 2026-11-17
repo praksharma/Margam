@@ -7,7 +7,10 @@ import sys
 import time
 import unittest
 from unittest.mock import patch
-import test_study_cli as fixture
+try:
+    from . import test_study_cli as fixture
+except ImportError:
+    import test_study_cli as fixture
 from margam.run_comparison import compare_predictions,read_predictions
 from margam.execution.study_runner import run_study
 from margam.ui.model_document import capture_model
