@@ -80,13 +80,43 @@ def read_points(source,dimension,components=1):
     return points,normals,values
 
 
+def cluster_1d(values, tol):
+    values = np.asarray(values, dtype=float)
+    if len(values) == 0:
+        return np.empty(0, dtype=np.int64)
+    order = np.argsort(values, kind='mergesort')
+    sorted_vals = values[order]
+    clusters = np.zeros(len(values), dtype=np.int64)
+    if len(values) > 1:
+        clusters[1:] = np.cumsum(np.diff(sorted_vals) > float(tol))
+    result = np.empty(len(values), dtype=np.int64)
+    result[order] = clusters
+    return result
+
+
+def match_coordinates(a, b, tolerance, *, mismatch_message, duplicate_message=None):
+    n = len(a)
+    combined = np.vstack((a, b))
+    ranks = np.column_stack([cluster_1d(combined[:, i], float(tolerance[i])) for i in range(a.shape[1])])
+    ranks_a, ranks_b = ranks[:n], ranks[n:]
+    if len(np.unique(ranks_a, axis=0)) != n or len(np.unique(ranks_b, axis=0)) != n:
+        raise ValueError(duplicate_message or mismatch_message)
+    source = np.lexsort(ranks_a.T[::-1])
+    target = np.lexsort(ranks_b.T[::-1])
+    if not np.all(np.abs(a[source] - b[target]) <= tolerance):
+        raise ValueError(mismatch_message)
+    return source, target
+
+
 def reference_values(source,points,components=1):
     requested=np.asarray(points,dtype=float)
     coordinates,_,values=read_points(source,requested.shape[1],components)
     if values is None or len(coordinates)!=len(requested):raise ValueError('Reference data must provide the explicit field values for every requested evaluation coordinate; interpolation is not implicit.')
-    source_order=np.lexsort(coordinates.T[::-1]);target_order=np.lexsort(requested.T[::-1])
     tolerance=np.maximum(np.ptp(requested,axis=0)*1e-9,np.finfo(float).eps*np.maximum(1,np.abs(requested).max(axis=0))*8)
-    if len(np.unique(coordinates,axis=0))!=len(coordinates) or not np.all(np.abs(coordinates[source_order]-requested[target_order])<=tolerance):raise ValueError('Reference coordinates do not match the evaluation points. Supply matching points or resample explicitly.')
+    mismatch='Reference coordinates do not match the evaluation points. Supply matching points or resample explicitly.'
+    if len(np.unique(coordinates,axis=0))!=len(coordinates) or len(np.unique(requested,axis=0))!=len(requested):
+        raise ValueError(mismatch)
+    source_order,target_order=match_coordinates(coordinates,requested,tolerance,mismatch_message=mismatch)
     output=np.empty((len(requested),components));output[target_order]=values[source_order]
     return output[:,0].tolist() if components==1 else output.tolist()
 

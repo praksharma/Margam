@@ -81,9 +81,34 @@ def validate(study):
     return study
 
 
+def _read_linked_input(source, *, limit):
+    import stat
+    raw_path = Path(os.path.abspath(source))
+    if raw_path.suffix.lower() not in ('.csv', '.npz', '.nc'):
+        raise ValueError('Study linked inputs must be CSV, NPZ or NetCDF files.')
+    parent = raw_path.parent.resolve(strict=True)
+    target = parent / raw_path.name
+    if raw_path.is_symlink():
+        # Preserve OSError(ELOOP) contract when leaf linked path itself is a symlink
+        target = raw_path
+    fd = os.open(target, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+            raise ValueError('Copy only regular owned files within the selected file budget.')
+        with os.fdopen(os.dup(fd), 'rb') as stream:
+            content = stream.read(limit + 1)
+        after = os.fstat(fd)
+        if len(content) > limit or (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+            raise ValueError('Owned file changed while copying, or exceeds the selected file budget.')
+        return content, raw_path.suffix.lower()
+    finally:
+        os.close(fd)
+
+
 def capture(model,axes,workspace,*,execution,include_links=False,scene=None,network_defaults=None,combination='cartesian'):
     """Freeze current inputs in an independent declaration; never edit the source."""
-    from .ui.clipboard_files import capture_files,read_owned
+    from .ui.clipboard_files import capture_files
     if type(include_links) is not bool:raise ValueError('Include linked inputs must be explicitly True or False.')
     if workspace.busy:raise ValueError('Close the geometry editor before saving a study.')
     model=deepcopy(model);resolve_axes(model,axes,combination)
@@ -96,10 +121,8 @@ def capture(model,axes,workspace,*,execution,include_links=False,scene=None,netw
     files=capture_files(model,workspace,file_limit=FILE_LIMIT,total_limit=TOTAL_LIMIT,max_files=MAX_FILES)
     replacements={};total=sum(map(len,files.values()))
     for source in sorted(links):
-        path=Path(source).absolute()
-        if path.suffix.lower() not in ('.csv','.npz','.nc'):raise ValueError('Study linked inputs must be CSV, NPZ or NetCDF files.')
-        content=read_owned(path.anchor,path.relative_to(path.anchor).as_posix(),limit=FILE_LIMIT)
-        name='study_inputs/'+digest(content)+path.suffix.lower()
+        content,suffix=_read_linked_input(source,limit=FILE_LIMIT)
+        name='study_inputs/'+digest(content)+suffix
         if name in files and files[name]!=content:raise ValueError('Study input name conflict.')
         if name not in files:total+=len(content);files[name]=content
         if len(files)>MAX_FILES or total>TOTAL_LIMIT:raise ValueError('Study inputs exceed 256 files or 256 MiB.')

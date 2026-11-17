@@ -15,12 +15,30 @@ def check_cancel(check):
 
 def _read_snapshot(path,*,check=None):
     """Copy a bounded stable archive and validate its restricted CPU payload."""
+    import errno
     from .ui.run_document import LIMIT,load_run_payload
-    from .execution.study_state import safe_path
-    path=Path(path).absolute();safe_path(path.parent,path.name);check_cancel(check)
+    raw_path=Path(os.path.abspath(path))
+    if not raw_path.name or raw_path.is_symlink():
+        raise ValueError('Choose a regular native run archive, without a symlink.')
+    try:
+        parent=raw_path.parent.resolve(strict=True)
+    except OSError as error:
+        raise ValueError('Choose a regular results directory, without a symlink.') from error
+    if not parent.is_dir():
+        raise ValueError('Choose a regular results directory, without a symlink.')
+    target_path=parent/raw_path.name
+    if target_path.is_symlink():
+        raise ValueError('Choose a regular native run archive, without a symlink.')
+    check_cancel(check)
     with TemporaryDirectory(prefix='margam-run-comparison-') as directory:
         frozen=Path(directory)/'run.pt';hasher=hashlib.sha256();size=0
-        with os.fdopen(os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK),'rb') as source,frozen.open('xb') as target:
+        try:
+            fd=os.open(target_path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        except OSError as error:
+            if error.errno==errno.ELOOP:
+                raise ValueError('Choose a regular native run archive, without a symlink.') from error
+            raise
+        with os.fdopen(fd,'rb') as source,frozen.open('xb') as target:
             before=os.fstat(source.fileno())
             if not stat.S_ISREG(before.st_mode) or before.st_size>LIMIT:raise ValueError('Choose a regular native run archive within 256 MiB.')
             while chunk:=source.read(1024*1024):
@@ -48,7 +66,9 @@ def compare_predictions(left,left_id,right,right_id):
     a=left['outputs'][left_id];b=right['outputs'][right_id];fields=a.get('fields',['u'])
     if fields!=b.get('fields',['u']):raise ValueError('Field names/order differ; no implicit field mapping is performed.')
     points=array(a['points']);other=array(b['points'])
-    if points.shape[1]!=len(left['coordinates']) or points.shape!=other.shape or a['points']!=b['points'] or not np.array_equal(points,other):raise ValueError('Evaluation coordinates/order differ. Re-evaluate both runs on the same points; no interpolation or row sorting is performed.')
+    raw_points_a=a['points'].tolist() if hasattr(a['points'],'tolist') else a['points']
+    raw_points_b=b['points'].tolist() if hasattr(b['points'],'tolist') else b['points']
+    if points.shape[1]!=len(left['coordinates']) or points.shape!=other.shape or raw_points_a!=raw_points_b or not np.array_equal(points,other):raise ValueError('Evaluation coordinates/order differ. Re-evaluate both runs on the same points; no interpolation or row sorting is performed.')
     ids=a.get('point_ids');other_ids=b.get('point_ids')
     if (ids is None)!=(other_ids is None) or ids is not None and (len(ids)!=len(points) or len(ids)!=len(other_ids) or any(type(x) is not type(y) or x!=y for x,y in zip(ids,other_ids))):raise ValueError('Point IDs/types/order differ; rows are not automatically matched.')
     values_a=array(a['values']);values_b=array(b['values'])
@@ -76,8 +96,11 @@ def compare_predictions(left,left_id,right,right_id):
             row.extend([x,y,difference if math.isfinite(difference) else 'overflow'])
         preview.append(row)
     changed=sorted(key for key in left['config'].keys()|right['config'].keys() if left['config'].get(key)!=right['config'].get(key))
+    raw_ref_a=a.get('reference');raw_ref_b=b.get('reference')
+    if hasattr(raw_ref_a,'tolist'):raw_ref_a=raw_ref_a.tolist()
+    if hasattr(raw_ref_b,'tolist'):raw_ref_b=raw_ref_b.tolist()
     return dict(rows=len(points),fields=fields,diagnostics=diagnostics,headers=headers,preview=preview,configuration_differences=changed,
-        identical_reference_values=references[0] is not None and references[1] is not None and a['reference']==b['reference'],
+        identical_reference_values=references[0] is not None and references[1] is not None and raw_ref_a==raw_ref_b and np.array_equal(references[0],references[1]),
         scope='Prediction differences are not accuracy claims. Relative difference uses A as denominator. Own reference errors are separate; no unit or physics equivalence is inferred.')
 
 
