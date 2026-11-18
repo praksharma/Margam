@@ -209,3 +209,60 @@ state-isolated producer window, then run two/three updates through the **real
 headless CLI**, verify native archives, CSV IDs/reference columns and eleven
 physical-time ParaView frames. They validate software/data behavior, not trained
 shock accuracy. See [recorded CPU/GPU evidence](../../assets/benchmarks/study-cli-2026-11-15.json).
+
+## Programmatic study inspection, execution, collection and Slurm export
+
+You can inspect `.margam-study` archives, run or resume a study grid, collect
+version-2 results into Python dictionaries or CSV tables, and export reviewable
+Slurm batch bundles directly from Python:
+
+```python
+from margam import study_document as sd
+from margam import study_results
+from margam.execution.study_runner import inspect, resume_study, run_study
+from margam.slurm import export_job
+
+study_path = "assets/examples/studies/poisson-1d-study.margam-study"
+
+# 1. Inspect study metadata and deterministic trial models without launching jobs
+info = inspect(study_path)
+print("Study ID:", info["study_id"], "Total trials:", info["trials"])
+
+study, files = sd.read(study_path)
+trial_id, trial_0_model = sd.trial_model(study, 0)
+print("First design point ID:", trial_id)
+
+# 2. Execute or resume a study grid from Python
+report = run_study(
+    study_path,
+    "build/programmatic-study-run",
+    device="cpu",
+    wall_time_seconds=120,
+    exports=True,
+)
+print("Run state:", report["state"], "Counts:", report["counts"])
+
+# Verify or continue an interrupted/failed study folder
+resumed = resume_study("build/programmatic-study-run", retry_failed=False)
+
+# 3. Collect version-2 study results and export a flat metadata CSV
+collection = study_results.collect("build/programmatic-study-run")
+for record in collection["records"]:
+    row = record["row"]
+    print(row["trial_id"], row["status"], "steps=", row["steps"], "choices=", record["choices"])
+
+study_results.export_csv(collection, "build/programmatic-study-summary.csv")
+
+# 4. Export a single-node serial Slurm bundle (never submits a cluster job)
+manifest = export_job(
+    study_path,
+    "build/poisson-slurm-bundle",
+    cpus=4,
+    memory_mb=8192,
+    minutes=60,
+    gpu=False,
+    partition="compute",
+    exports=True,
+)
+print("Exported Slurm bundle for study:", manifest["study_id"])
+```

@@ -148,5 +148,102 @@ The Python setting is `PoissonConfig(bc_weights={'inner': 2.0, 'outer': 0.5})`.
 Keys are constraint names (`initial` for a time-zero set, `left:u` for a coupled
 velocity component). Inactive entries do not contribute to the current objective.
 Model format 27 stores the mapping; older models default to unit coefficients.
+
+## Expression syntax cheat sheet and snippets
+
+Restricted expressions in **PDE residual**, **Predefined PDE** forcing, **Boundary
+condition** operators/targets, and **Reference** blocks are parsed through an
+allowlisted mathematical AST (never Python `eval`).
+
+| Construct | Syntax | Notes |
+| --- | --- | --- |
+| Spatial / temporal coordinates | `x`, `y`, `t` | Available names depend on domain (`Interval`: `x`; `Rectangle`: `x, y`; `SpaceTime1D`: `x, t`) |
+| Solution fields | `u` (scalar) or `u, v, p` (2D flow) | Prohibited in target/forcing/reference expressions (`target=True`) |
+| Constants and parameters | `pi`, `c`, `nu` | `c` binds `config.source`; `nu` binds `config.viscosity` |
+| Outward unit normal components | `nx`, `ny` | Boundary expressions only (`ny` requires a 2D domain) |
+| Coordinate partial derivative | `D(expr, x)` | Nest for higher orders, e.g. `D(D(u, x), x)` or mixed `D(D(u, x), y)` |
+| Spatial Laplacian | `laplace(expr)` | $\partial_{xx} + \partial_{yy}$ over active coordinates |
+| Outward normal derivative | `dn(expr)` | $\nabla(\text{expr}) \cdot \mathbf{n}$ on boundary point sets |
+| Elementary functions | `sin`, `cos`, `tan`, `tanh`, `exp`, `log`, `sqrt`, `abs` | Standard unary mathematical functions |
+
+### Snippet: 2D PDE with mixed Dirichlet, Neumann and Robin boundary conditions
+
+```python
+import torch
+from margam.templates.poisson import PoissonConfig, build_pinn
+
+# Solve -laplace(u) + c*u = f(x, y) on [0, 1]^2 with:
+# - left (x=0) & bottom (y=0): Dirichlet u = sin(pi*x) + y^2
+# - right (x=1): outward Neumann dn(u) = -pi
+# - top (y=1): custom Robin operator u + 0.5*dn(u) = sin(pi*x) + 2.0
+config = PoissonConfig(
+    shape="Rectangle",
+    points=100,
+    boundary_points=20,
+    pde_points="both",
+    source=1.0,
+    pde_expression="-laplace(u) + c*u - ((pi*pi + 1)*sin(pi*x) - 2 + c*y*y)",
+    bc_types={
+        "left": "Dirichlet",
+        "bottom": "Dirichlet",
+        "right": "Neumann",
+        "top": "Custom",
+    },
+    bc_values={"left": 0.0, "bottom": 0.0, "right": 0.0, "top": 0.0},
+    bc_targets={
+        "left": "y*y",
+        "bottom": "sin(pi*x)",
+        "right": "-pi",
+        "top": "sin(pi*x) + 2.0",
+    },
+    bc_operators={"top": "u + 0.5*dn(u)"},
+    bc_weights={"left": 2.0, "bottom": 2.0, "right": 1.0, "top": 1.0},
+    layers=(32, 32),
+    lr=0.005,
+    iterations=500,
+    device="cpu",
+)
+
+model = build_pinn(config)
+model.train(200, display_every=0)
+grid = torch.tensor([[0.5, 0.5], [0.25, 0.75]])
+print("Predicted u(x, y):", model.predict(grid).squeeze(-1).tolist())
+```
+
+### Snippet: 1D transient heat / reaction–diffusion equation on `SpaceTime1D`
+
+On a `SpaceTime1D` domain, coordinates are `(x, t)` where `y_min` / `y_max`
+define the time interval $[t_{\min}, t_{\max}]$, `bottom` is the initial condition
+at $t = t_{\min}$ (reported as constraint `'initial'`), and `left` / `right` are
+the spatial boundary traces:
+
+```python
+from margam.templates.poisson import PoissonConfig, build_pinn
+
+# u_t - nu * u_xx = 0 on x in [0, 1], t in [0, 0.5]
+# Exact solution: u(x, t) = exp(-nu * pi^2 * t) * sin(pi * x)
+transient_cfg = PoissonConfig(
+    shape="SpaceTime1D",
+    x_min=0.0,
+    x_max=1.0,
+    y_min=0.0,
+    y_max=0.5,
+    viscosity=0.1,
+    pde_expression="D(u, t) - nu * D(D(u, x), x)",
+    bc_types={"left": "Dirichlet", "right": "Dirichlet", "bottom": "Dirichlet", "top": "Dirichlet"},
+    bc_values={"left": 0.0, "right": 0.0, "bottom": 0.0, "top": 0.0},
+    bc_targets={"bottom": "sin(pi * x)"},
+    points=128,
+    boundary_points=24,
+    layers=(32, 32),
+    lr=0.005,
+    iterations=500,
+    device="cpu",
+)
+
+transient_model = build_pinn(transient_cfg)
+transient_model.train(200, display_every=0)
+print("Constraint terms:", [k for k in transient_model.loss_history[-1] if not k.startswith("weighted:")])
+```
 Changing an active coefficient is rejected when loading a checkpoint from a
 previously different objective.
