@@ -70,8 +70,9 @@ def memory_snapshot(device):
     try:
         import torch
         dtype=str(torch.get_default_dtype());info.update(dtype=dtype,scalar_bytes={'torch.float16':2,'torch.bfloat16':2,'torch.float32':4,'torch.float64':8}.get(dtype))
-        if str(device).startswith('cuda') and torch.cuda.is_available():
-            free,total=torch.cuda.mem_get_info(device);info.update(gpu_available=free,gpu_total=total)
+        target='cuda' if str(device)=='auto' and torch.cuda.is_available() else str(device)
+        if target.startswith('cuda') and torch.cuda.is_available():
+            free,total=torch.cuda.mem_get_info(None if target=='cuda' else target);info.update(gpu_available=free,gpu_total=total)
     except (ImportError,RuntimeError,ValueError,AssertionError):pass
     for key in ('host_available','host_total','gpu_available','gpu_total'):
         if info[key] is not None and info[key]<0:info[key]=None

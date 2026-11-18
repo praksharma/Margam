@@ -22,7 +22,7 @@ class Expression:
         if isinstance(node,ast.Constant):
             if type(node.value) not in (int,float) or not math.isfinite(node.value) or abs(node.value)>1e6:raise ValueError('Use finite numeric constants up to 1e6.')
         elif isinstance(node,ast.Name):
-            names={'c','nx','ny','pi','nu'} | set(self.coordinates) | (set() if self.target else set(self.fields))
+            names={'c','nx',*(('ny',) if 'y' in self.coordinates else ()),'pi','nu'} | set(self.coordinates) | (set() if self.target else set(self.fields))
             if node.id not in names:raise ValueError('Unknown expression name: '+node.id)
         elif isinstance(node,ast.UnaryOp) and isinstance(node.op,(ast.UAdd,ast.USub)):
             self.check(node.operand,depth+1)
@@ -61,7 +61,15 @@ class Expression:
                 if isinstance(node.op,ast.Sub):return a-b
                 if isinstance(node.op,ast.Mult):return a*b
                 if isinstance(node.op,ast.Div):return a/b
-                return a**b
+                if isinstance(b,float) and not b.is_integer():
+                    if isinstance(a,torch.Tensor) and (a<0).any().item():
+                        raise ValueError('Fractional power of a negative value is not real.')
+                    if isinstance(a,(int,float)) and a<0:
+                        raise ValueError('Fractional power of a negative value is not real.')
+                out=a**b
+                if isinstance(out,complex) or (isinstance(out,torch.Tensor) and out.is_complex()):
+                    raise ValueError('Expression produced a complex value; only real values are supported.')
+                return out
             name=node.func.id;value=visit(node.args[0])
             if name=='D':return derivative(value,self.coordinates.index(node.args[1].id))
             if name=='dn':return sum(normal[i]*derivative(value,i) for i in range(self.dimensions))
@@ -70,5 +78,7 @@ class Expression:
             return getattr(torch,name)(tensor)
         try:result=visit(self.root)
         except ArithmeticError as error:raise ValueError('Expression evaluation failed: '+str(error)) from error
+        if isinstance(result,complex) or (isinstance(result,torch.Tensor) and result.is_complex()):
+            raise ValueError('Expression produced a complex value; only real values are supported.')
         if not isinstance(result,torch.Tensor):return points.new_full((len(points),1),float(result))
         return result.expand(len(points),1) if result.ndim==0 else result

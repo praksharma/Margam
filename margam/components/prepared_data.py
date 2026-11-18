@@ -80,13 +80,78 @@ def read_points(source,dimension,components=1):
     return points,normals,values
 
 
+def cluster_1d(values, tol):
+    values = np.asarray(values, dtype=float)
+    if len(values) == 0:
+        return np.empty(0, dtype=np.int64)
+    order = np.argsort(values, kind='mergesort')
+    sorted_vals = values[order]
+    clusters = np.zeros(len(values), dtype=np.int64)
+    if len(values) > 1:
+        clusters[1:] = np.cumsum(np.diff(sorted_vals) > float(tol))
+    result = np.empty(len(values), dtype=np.int64)
+    result[order] = clusters
+    return result
+
+
+def match_coordinates(a, b, tolerance, *, mismatch_message, duplicate_message=None):
+    from itertools import product
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+    tol = np.asarray(tolerance, dtype=np.float64)
+    n, dim = a.shape
+    if n == 0:
+        return np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64)
+    dup_err = duplicate_message or mismatch_message
+    origin = np.minimum(a.min(axis=0), b.min(axis=0))
+    cell_size = tol * (1.0 + 1e-6)
+    offsets = list(product((-1, 0, 1), repeat=dim))
+    tol_list = tol.tolist()
+
+    def build_grid(pts):
+        cells = [tuple(row) for row in np.floor((pts - origin) / cell_size).astype(np.int64).tolist()]
+        rows = pts.tolist()
+        grid = {}
+        for idx, (cell, row) in enumerate(zip(cells, rows)):
+            for delta in offsets:
+                neighbor = tuple(c + d for c, d in zip(cell, delta))
+                if neighbor in grid:
+                    for other in grid[neighbor]:
+                        if all(abs(u - v) <= t for u, v, t in zip(row, rows[other], tol_list)):
+                            raise ValueError(dup_err)
+            grid.setdefault(cell, []).append(idx)
+        return cells, rows, grid
+
+    _, rows_a, grid_a = build_grid(a)
+    cells_b, rows_b, _ = build_grid(b)
+    source = np.empty(n, dtype=np.int64)
+    used = np.zeros(n, dtype=bool)
+    for j, (cell, row_b) in enumerate(zip(cells_b, rows_b)):
+        matches = []
+        for delta in offsets:
+            neighbor = tuple(c + d for c, d in zip(cell, delta))
+            if neighbor in grid_a:
+                for i in grid_a[neighbor]:
+                    if all(abs(u - v) <= t for u, v, t in zip(rows_a[i], row_b, tol_list)):
+                        matches.append(i)
+        if not matches:
+            raise ValueError(mismatch_message)
+        if len(matches) > 1 or used[matches[0]]:
+            raise ValueError(dup_err)
+        used[matches[0]] = True
+        source[j] = matches[0]
+    return source, np.arange(n, dtype=np.int64)
+
+
 def reference_values(source,points,components=1):
     requested=np.asarray(points,dtype=float)
     coordinates,_,values=read_points(source,requested.shape[1],components)
     if values is None or len(coordinates)!=len(requested):raise ValueError('Reference data must provide the explicit field values for every requested evaluation coordinate; interpolation is not implicit.')
-    source_order=np.lexsort(coordinates.T[::-1]);target_order=np.lexsort(requested.T[::-1])
     tolerance=np.maximum(np.ptp(requested,axis=0)*1e-9,np.finfo(float).eps*np.maximum(1,np.abs(requested).max(axis=0))*8)
-    if len(np.unique(coordinates,axis=0))!=len(coordinates) or not np.all(np.abs(coordinates[source_order]-requested[target_order])<=tolerance):raise ValueError('Reference coordinates do not match the evaluation points. Supply matching points or resample explicitly.')
+    mismatch='Reference coordinates do not match the evaluation points. Supply matching points or resample explicitly.'
+    if len(np.unique(coordinates,axis=0))!=len(coordinates) or len(np.unique(requested,axis=0))!=len(requested):
+        raise ValueError(mismatch)
+    source_order,target_order=match_coordinates(coordinates,requested,tolerance,mismatch_message=mismatch)
     output=np.empty((len(requested),components));output[target_order]=values[source_order]
     return output[:,0].tolist() if components==1 else output.tolist()
 

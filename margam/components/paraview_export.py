@@ -25,7 +25,13 @@ def _grid(data):
         raise ValueError('Export fields must be distinct names; velocity is reserved for the derived flow vector.')
     if values.ndim==1:values=values[:,None]
     if values.shape!=(len(points),len(fields)) or not np.isfinite(values).all():raise ValueError('Prediction values must be finite and match points and fields.')
-    axes=[np.unique(points[:,i]) for i in range(points.shape[1])]
+    from .prepared_data import cluster_1d
+    axes=[]
+    for i in range(points.shape[1]):
+        col=points[:,i]
+        col_tol=max(1e-12,1e-7*float(np.ptp(col)),8*np.finfo(float).eps*float(np.abs(col).max()))
+        clusters=cluster_1d(col,col_tol)
+        axes.append(np.array([float(col[clusters==k].mean()) for k in range(int(clusters.max())+1)],dtype=np.float64))
     if any(len(a)<2 for a in axes) or math.prod(len(a) for a in axes)!=len(points):raise ValueError('VTI needs a complete non-degenerate regular line or rectangle grid.')
     spacing=[float((a[-1]-a[0])/(len(a)-1)) for a in axes]
     ideal=[np.linspace(a[0],a[-1],len(a)) for a in axes]
@@ -114,6 +120,21 @@ def export_pvd(path,frames,*,unstructured=False,supplied=False):
     if supplied and not unstructured:raise ValueError('Supplied time frames require unstructured point clouds.')
     path=Path(path)
     if path.suffix.lower()!='.pvd':raise ValueError('A time series needs a .pvd filename.')
+    import re
+    prior_companions=set()
+    if path.is_file() and not path.is_symlink():
+        try:
+            old_root=ET.parse(path).getroot()
+            pattern=re.compile(re.escape(path.stem)+r'_frames_[0-9a-f]{32}')
+            for ds in old_root.findall('.//DataSet'):
+                rel=ds.attrib.get('file','')
+                folder=rel.split('/',1)[0] if '/' in rel else ''
+                if pattern.fullmatch(folder):
+                    candidate=path.parent/folder
+                    if candidate.is_dir() and not candidate.is_symlink():
+                        prior_companions.add(candidate)
+        except (ET.ParseError,OSError):
+            pass
     stage=Path(tempfile.mkdtemp(dir=path.parent,prefix='.margam-series-'))
     destination=path.parent/(path.stem+'_frames_'+uuid4().hex)
     published=False
@@ -132,7 +153,7 @@ def export_pvd(path,frames,*,unstructured=False,supplied=False):
             name=f'frame_{index:06d}.'+('vtu' if unstructured else 'vti')
             if supplied:
                 from .point_export import supplied_document
-                tree=supplied_document(data,time)
+                tree=supplied_document(data,time,emit_numeric_id=data.get('_emit_numeric_id'))
             else:tree=_reference_arrays(point_document(grid,time) if unstructured else _document(grid,time),data)
             _write(stage/name,tree)
             ET.SubElement(collection,'DataSet',timestep=format(time,'.17g'),group='',part='0',file=destination.name+'/'+name)
@@ -140,6 +161,9 @@ def export_pvd(path,frames,*,unstructured=False,supplied=False):
         if not count:raise ValueError('A time series needs at least one physical-time frame.')
         stage.rename(destination)
         _write(path,ET.ElementTree(root));published=True
+        for old_dir in prior_companions:
+            if old_dir!=destination and old_dir.is_dir() and not old_dir.is_symlink():
+                shutil.rmtree(old_dir,ignore_errors=True)
         return path
     finally:
         if stage.exists():shutil.rmtree(stage)

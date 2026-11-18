@@ -143,6 +143,8 @@ def _execute_grid(output,report,study,files,selected,lease_fd,*,kind='run',recov
                 atomic_json(folder/'model.margam.json',model)
                 workspace=sd.restore(files);graph=DocumentGraph(model,workspace,effective)
                 config,requests=prepare_graph(graph)
+                if config.method=='expert' and config.is_time_dependent and config.expert_settings['windows']>1:
+                    config.iterations=config.expert_settings['windows']*config.expert_settings['window_steps']
                 detail['config']=workspace.portable_document(asdict(config));detail['timing']['preflight_seconds']=time.perf_counter()-started
                 model['config']=detail['config'];detail['model_sha256']=sd.digest(sd.canonical(model))
                 atomic_json(folder/'model.margam.json',model);atomic_json(folder/'config.json',detail['config'])

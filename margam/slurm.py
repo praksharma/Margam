@@ -94,7 +94,8 @@ def export_job(study_path,output,*,cpus,memory_mb,minutes,gpu=False,partition=No
         output.mkdir(mode=0o700,parents=True,exist_ok=False);created=[]
         try:
             for name,data in payloads.items():
-                with (output/name).open('xb') as stream:created.append(output/name);stream.write(data)
+                with (output/name).open('xb') as stream:
+                    created.append(output/name);stream.write(data);stream.flush();os.fsync(stream.fileno())
         except BaseException:
             for path in created:path.unlink(missing_ok=True)
             try:output.rmdir()
@@ -126,7 +127,9 @@ def run_job(root,*,resume=False,retry_failed=False):
     from .execution.study_runner import run_study,resume_study,snapshot
     if resume:
         report=read_json(output,'summary.json')
-        if report['study_id']!=job['study_id'] or report['study_archive_sha256']!=job['files']['study.margam-study']['sha256'] or report['effective_execution']['requested_device']!=job['execution']['device'] or report['effective_execution']['exports']!=job['execution']['exports']:raise ValueError('Existing results differ from this Slurm bundle.')
+        eff=report.get('effective_execution') if isinstance(report,dict) else None
+        if not isinstance(report,dict) or not isinstance(eff,dict) or report.get('study_id')!=job['study_id'] or report.get('study_archive_sha256')!=job['files']['study.margam-study']['sha256'] or eff.get('requested_device')!=job['execution']['device'] or eff.get('exports')!=job['execution']['exports']:
+            raise ValueError('Existing results differ from this Slurm bundle.')
         return resume_study(output,retry_failed=retry_failed)
     with TemporaryDirectory(prefix='margam-slurm-run-') as directory:
         frozen=Path(directory)/'study.margam-study'

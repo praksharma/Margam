@@ -14,7 +14,10 @@ from margam.execution.probe_report import validate_window_report
 from margam.execution.codec import encode_config,cpu_tree
 from margam.execution.transport import JobTransport,JobFailed
 from margam.templates.poisson import build_pinn
-from test_expert_extensions import config as expert_config
+try:
+    from .test_expert_extensions import config as expert_config
+except ImportError:
+    from test_expert_extensions import config as expert_config
 
 
 def config(device='cpu',case='expert_burgers',mode='ntk',steps=2,windows=3):
@@ -154,7 +157,10 @@ class WindowProbeWorkerTests(unittest.TestCase):
         self.assertIsNone(transport.process)
 
 
-import test_resource_probe_ui as fixture
+try:
+    from . import test_resource_probe_ui as fixture
+except ImportError:
+    import test_resource_probe_ui as fixture
 from margam.ui.model_document import capture_model
 from margam.ui.app import Window
 from margam.studies import catalogue

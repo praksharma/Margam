@@ -3,7 +3,10 @@ from copy import deepcopy
 import time
 import unittest
 from unittest.mock import patch
-import test_history_comparison as fixture
+try:
+    from . import test_history_comparison as fixture
+except ImportError:
+    import test_history_comparison as fixture
 from margam.history_comparison import compare_history_group,compare_histories
 
 

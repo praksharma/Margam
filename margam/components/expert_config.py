@@ -21,6 +21,7 @@ def validate_expert_settings(settings):
 def validate_expert_problem(config):
     validate_expert_settings(config.expert_settings)
     if config.expert_settings['windows']>1 and not config.is_time_dependent:raise ValueError('Time marching requires a transient problem.')
+    if config.is_time_dependent and config.pde_points=='boundary':raise ValueError('Transient Expert PINN causal bins require interior PDE collocation points.')
     if config.is_paper_case:
         from ..templates.expert_examples import validate_case
         validate_case(config)

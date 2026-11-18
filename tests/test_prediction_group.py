@@ -2,7 +2,10 @@
 from copy import deepcopy
 import unittest
 from unittest.mock import patch
-import test_run_comparison as fixture
+try:
+    from . import test_run_comparison as fixture
+except ImportError:
+    import test_run_comparison as fixture
 from margam.run_comparison import compare_predictions,compare_prediction_group,read_predictions
 
 

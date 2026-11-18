@@ -10,7 +10,7 @@ def point_grid(data):
     fields=list(data.get('fields',['u']))
     if values.ndim==1:values=values[:,None]
     if points.ndim!=2 or points.shape[1] not in (1,2) or not len(points) or not np.isfinite(points).all() or values.shape!=(len(points),len(fields)) or not np.isfinite(values).all():raise ValueError('VTU point export requires finite spatial 1D/2D points and matching fields.')
-    if len(set(fields))!=len(fields) or any(not isinstance(f,str) or not f or f=='velocity' for f in fields):raise ValueError('Invalid VTU field names.')
+    if len(set(fields))!=len(fields) or any(not isinstance(f,str) or not f.strip() or f=='velocity' for f in fields):raise ValueError('Invalid VTU field names.')
     return points,fields,values
 
 
@@ -41,7 +41,17 @@ def export_vtu(path,data):
     _write(path,_reference_arrays(point_document(point_grid(data)),data));return path
 
 
-def supplied_document(data,time=None):
+def _all_int64_ids(ids):
+    if ids is None:
+        return False
+    try:
+        numbers=[int(v) for v in ids]
+        return all(str(a)==str(b) and -2**63<=a<2**63 for a,b in zip(numbers,ids))
+    except (ValueError,TypeError):
+        return False
+
+
+def supplied_document(data,time=None,*,emit_numeric_id=None):
     """Point-cloud fields, source row identity and lossless integer/text IDs."""
     import json
     from .paraview_export import _array
@@ -60,11 +70,8 @@ def supplied_document(data,time=None):
         if fd is None:fd=ET.SubElement(mesh,'FieldData')
         encoded=json.dumps(ids,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         a=integer_array(fd,'point_ids_json_utf8',encoded,'UInt8');a.set('NumberOfTuples',str(len(encoded)))
-        try:
-            numbers=[int(v) for v in ids]
-            numeric=all(str(a)==str(b) and -2**63<=a<2**63 for a,b in zip(numbers,ids))
-        except (ValueError,TypeError):numeric=False
-        if numeric:integer_array(pd,'point_id',numbers)
+        numeric=_all_int64_ids(ids) if emit_numeric_id is None else bool(emit_numeric_id)
+        if numeric:integer_array(pd,'point_id',[int(v) for v in ids])
     from .paraview_export import _reference_arrays
     _reference_arrays(tree,data)
     return tree
@@ -73,16 +80,29 @@ def supplied_document(data,time=None):
 def export_supplied(path,data):
     """Supplied snapshots use VTU vertices; transient snapshots form physical-time PVD."""
     from .paraview_export import _write,export_pvd
+    from .evaluation_data import _time_tolerance
+    from .prepared_data import cluster_1d
     config=data['config'];path=Path(path)
     if not config.is_time_dependent:
         if path.suffix.lower()!='.vtu':raise ValueError('Supplied spatial points need a .vtu filename.')
         _write(path,supplied_document(data));return path
-    points=np.asarray(data['points'],dtype=float)
+    if path.suffix.lower()!='.pvd':raise ValueError('A time series needs a .pvd filename.')
+    try:
+        points=np.asarray(data['points'],dtype=float)
+    except (KeyError,TypeError,ValueError) as error:
+        raise ValueError('VTU point export requires finite spatial 1D/2D points and matching fields.') from error
+    if points.ndim!=2 or points.shape[1]<2 or not len(points) or not np.isfinite(points).all():
+        raise ValueError('VTU point export requires finite spatial 1D/2D points and matching fields.')
+    all_ids=data.get('point_ids')
+    emit_numeric=_all_int64_ids(all_ids) if all_ids is not None else False
+    times=points[:,-1]
+    clusters=cluster_1d(times,_time_tolerance(times))
     frames=[]
-    for time in np.unique(points[:,-1]):
-        indices=np.flatnonzero(points[:,-1]==time).tolist()
-        frame=dict(points=points[indices,:-1].tolist(),values=[data['values'][i] for i in indices],fields=data.get('fields',['u']),source_rows=indices)
+    for cluster_id in range(int(clusters.max())+1):
+        indices=np.flatnonzero(clusters==cluster_id).tolist()
+        time=float(times[indices[0]])
+        frame=dict(points=points[indices,:-1].tolist(),values=[data['values'][i] for i in indices],fields=data.get('fields',['u']),source_rows=indices,_emit_numeric_id=emit_numeric)
         for key in ('point_ids','reference'):
             if data.get(key) is not None:frame[key]=[data[key][i] for i in indices]
-        frames.append((float(time),frame))
+        frames.append((time,frame))
     return export_pvd(path,frames,unstructured=True,supplied=True)

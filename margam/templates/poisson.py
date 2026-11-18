@@ -197,8 +197,19 @@ class PoissonConfig:
 
     def validate(self):
         if self.pde_preset:
+            from copy import deepcopy
             from .predefined_pdes import resolve_predefined,validate_predefined
-            resolve_predefined(self);validate_predefined(self)
+            validate_predefined(self)
+            candidate=deepcopy(self)
+            resolve_predefined(candidate)
+            candidate._validate_resolved()
+            self.physics=candidate.physics
+            self.pde_expression=candidate.pde_expression
+            self.flow_residuals=candidate.flow_residuals
+            return
+        self._validate_resolved()
+
+    def _validate_resolved(self):
         self.validate_sampling()
         from ..components.adaptive_sampling import validate_adaptive_sampling
         validate_adaptive_sampling(self.adaptive_sampling)
@@ -403,8 +414,10 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
         operator = None
         if config.bc_types[side] == 'Neumann':
             def operator(x, u, normal=normal):
-                derivative = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
-                return (derivative * x.new_tensor(normal)).sum(dim=1,keepdim=True)
+                derivative = torch.autograd.grad(u.sum(), x, create_graph=True, retain_graph=True, allow_unused=True)[0] if u.requires_grad else None
+                if derivative is None:
+                    return u.new_zeros((len(x), 1))
+                return (derivative * derivative.new_tensor(normal)).sum(dim=1, keepdim=True)
         if config.bc_types[side]=='Custom':
             expression=Expression(config.bc_operators[side],len(rows[0]),coordinates=config.coordinate_names)
             def operator(x,u,expression=expression,normal=normal):

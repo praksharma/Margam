@@ -15,8 +15,8 @@ def spatial_laplacian(x,values,axes):
 
 
 class ScalePINN(PINN):
-    def __init__(self,problem,network,*,config):
-        super().__init__(problem,network,weights=config.loss_weights)
+    def __init__(self,problem,network,*,config,weights=None):
+        super().__init__(problem,network,weights=config.loss_weights if weights is None else weights)
         self.config=deepcopy(config);self.options=deepcopy(config.scale_settings);self._scale_fingerprint=None
 
     def compile(self,optimiser_string='adam',lr=.001,metrics_string='MSE',device='auto',*,optimiser=None):
@@ -75,7 +75,7 @@ class ScalePINN(PINN):
         # Original BC/IC operators and weights remain untouched.
         if self.options['strength']==0:
             terms=super().compute_losses();value=terms['pde'].detach().item();self._latest=dict(physical_pde=value,corrected_pde=value,correction_rms=0.);return terms
-        samples=self.loss_samples();terms={name:self._term(*sample) for name,sample in samples.items() if name!='pde'}
+        samples=self.constraint_samples();terms={name:self._term(*sample) for name,sample in samples.items()}
         x=self.collocation_point_sample.detach().requires_grad_(True);values=self.network(x)
         physical=self.problem.residual(x,values);correction=self.correction(x,values)
         if physical.shape!=correction.shape:raise ValueError('Scale correction and physical residual components must match.')

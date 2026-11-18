@@ -33,6 +33,9 @@ class Trainer(PINN):
         self.loss = dict(loss) if isinstance(loss,Mapping) else loss
         self.step = step
         self.checkpoint_id = checkpoint_id
+        self._pointwise_microbatch = None
+        self.schedule = None
+        self._integral_weights = {}
 
     @property
     def pointwise_microbatch(self):
@@ -126,6 +129,9 @@ class Trainer(PINN):
 
     def scheduled_rates(self, completed=None):
         """Compute configured group rates after the given completed-update count."""
+        self._require_compiled()
+        if self.schedule is None:
+            raise ValueError('No learning-rate schedule is configured.')
         return self.schedule.rates(self._base_lrs,self.iter if completed is None else completed)
 
     def check_schedule(self):
@@ -198,9 +204,13 @@ class Trainer(PINN):
         if self.step is not None:
             self.step(self,terms,total)
             return
-        next_rates=self._prepare_default_update()
-        total.backward()
-        self._finish_default_update(next_rates)
+        try:
+            next_rates=self._prepare_default_update()
+            total.backward()
+            self._finish_default_update(next_rates)
+        except Exception:
+            self.optimizer.zero_grad(set_to_none=True)
+            raise
 
     def _prepare_default_update(self):
         self._record_weights=dict(self.weights)

@@ -7,7 +7,10 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
-import test_study_cli as fixture
+try:
+    from . import test_study_cli as fixture
+except ImportError:
+    import test_study_cli as fixture
 from margam.slurm import export_job,read_job,run_job,resources
 from margam.execution.study_runner import atomic_json
 from margam.study_results import collect

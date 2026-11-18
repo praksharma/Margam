@@ -55,9 +55,18 @@ class DesignPoints(QDialog):
     def watch(self):
         if not self.connected:
             if self.result is not None:self.invalidate('Preview again against the current graph.')
-            self.owner.scene.changed.connect(self.model_changed);self.connected=True
+            self.owner.scene.graphChanged.connect(self.model_changed)
+            self.owner.undo_stack.indexChanged.connect(self.model_changed)
+            self.connected=True
+    def detach(self):
+        if self.connected:
+            try:self.owner.scene.graphChanged.disconnect(self.model_changed)
+            except (RuntimeError,TypeError):pass
+            try:self.owner.undo_stack.indexChanged.disconnect(self.model_changed)
+            except (RuntimeError,TypeError):pass
+            self.connected=False
     def closeEvent(self,event):
-        if self.connected:self.owner.scene.changed.disconnect(self.model_changed);self.connected=False
+        self.detach()
         super().closeEvent(event)
     def model_changed(self,*args):self.invalidate('Canvas/model changed. Preview again to use the current graph.')
     def invalidate(self,message='Draft changed. Preview again.'):

@@ -199,6 +199,7 @@ def decode_document(data):
             COMPACT_RECIPES[node['kind']].split(settings['parameters'])
             require(type(settings['parameters']['network_seed']) is int,'Recipe network requires an explicit seed.')
         if node['kind']=='inverse_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='inverse_burgers','Invalid inverse trainer settings.')
+        if node['kind']=='dsgnar_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='dsgnar','Invalid DSGNAR trainer settings.')
         if node['kind']=='rba_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='rba','Invalid RBA trainer settings.')
         if node['kind']=='gpinn_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='gpinn','Invalid gPINN trainer settings.')
         if node['kind']=='scale_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='scale','Invalid Scale trainer settings.')
@@ -230,7 +231,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':30,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':33,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
