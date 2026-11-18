@@ -11,7 +11,7 @@ import margam.components
 import margam.methods
 import margam.nn
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QApplication, QDoubleSpinBox, QLabel
+from PySide6.QtWidgets import QApplication, QDoubleSpinBox, QLabel, QMessageBox
 from margam.slurm import export_job, run_job
 from margam.study_document import capture as capture_study, write as write_study
 from margam.ui.app import Window
@@ -25,14 +25,28 @@ class UIMCPAndAPIRegressionTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
+        self._msg_patches = [
+            patch.object(
+                QMessageBox,
+                method,
+                side_effect=lambda *args, m=method: self.fail(f'Unexpected QMessageBox.{m}: {args[1:]}'),
+            )
+            for method in ('warning', 'critical', 'information', 'question')
+        ]
+        for p in self._msg_patches:
+            p.start()
         self.w = Window(state_directory=False)
         self.w.set_application_device('cpu')
 
     def tearDown(self):
-        self.app.clipboard().clear()
-        self.w.undo_stack.setClean()
-        self.w.close()
-        self.app.processEvents()
+        try:
+            self.app.clipboard().clear()
+            self.w.undo_stack.setClean()
+            self.w.close()
+            self.app.processEvents()
+        finally:
+            for p in reversed(self._msg_patches):
+                p.stop()
 
     def _finish_worker(self, timeout=30.0):
         import time
@@ -58,28 +72,45 @@ class UIMCPAndAPIRegressionTests(unittest.TestCase):
 
     def test_jorvik_readonly_inspection_lock_and_run_archive_cleanliness(self):
         import shutil
+        import sys
+        from types import ModuleType
         with TemporaryDirectory() as tmp:
             model_path = Path(tmp) / 'geom.margam.json'
             self.assertTrue(self.w.save_model(model_path))
             companion = Path(tmp) / 'geom_files'
 
-            # Add Jorvik geometry block, save model, remove companion folder, then reopen & inspect:
-            # read-only inspection (show_block_properties) must NOT recreate geom_files on disk.
-            j_node = self.w.add_node('Jorvik geometry')
+            # When optional jorvik is absent (as in base CI requirements.txt), add_node('Jorvik geometry')
+            # reports via QMessageBox.warning; use a lightweight stub module to create the node without
+            # requiring the external jorvik package, and also verify the missing-package warning path.
+            with patch.dict(sys.modules, {'jorvik': None, 'jorvik.project': None}), patch.object(
+                QMessageBox, 'warning'
+            ) as warn_mock:
+                self.assertIsNone(self.w.add_node('Jorvik geometry'))
+                warn_mock.assert_called_once()
+
+            stub_jorvik = ModuleType('jorvik')
+            stub_project = ModuleType('jorvik.project')
+            stub_project.create_empty_project = lambda p: Path(p).write_bytes(b'stub-jorvik')
+            stub_jorvik.project = stub_project
+            with patch.dict(sys.modules, {'jorvik': stub_jorvik, 'jorvik.project': stub_project}):
+                j_node = self.w.add_node('Jorvik geometry')
+            self.assertIsNotNone(j_node)
             self.assertTrue(self.w.save_model(model_path))
             if companion.exists():
                 shutil.rmtree(companion)
             self.assertFalse(companion.exists())
 
-            w_inspect = Window(state_directory=False)
-            try:
-                self.assertTrue(w_inspect.load_model(model_path))
-                loaded_j = next(n for n in w_inspect.scene.nodes() if n.kind == 'jorvik_geometry')
-                w_inspect.show_block_properties(loaded_j)
-                self.assertFalse(companion.exists())
-            finally:
-                w_inspect.undo_stack.setClean()
-                w_inspect.close()
+            # Read-only model load and block inspection must NOT recreate geom_files or import jorvik
+            with patch.dict(sys.modules, {'jorvik': None, 'jorvik.project': None}):
+                w_inspect = Window(state_directory=False)
+                try:
+                    self.assertTrue(w_inspect.load_model(model_path))
+                    loaded_j = next(n for n in w_inspect.scene.nodes() if n.kind == 'jorvik_geometry')
+                    w_inspect.show_block_properties(loaded_j)
+                    self.assertFalse(companion.exists())
+                finally:
+                    w_inspect.undo_stack.setClean()
+                    w_inspect.close()
 
             # Remove jorvik node so standard interval model can train, then place editor.log in companion
             self.w.scene.clearSelection()
