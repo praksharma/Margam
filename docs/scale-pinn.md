@@ -271,3 +271,55 @@ The [cavity reproduction guide](scale-cavity-benchmark.md) documents the indepen
 paper-shaped shared-trunk/three-head network, fixed-cloud mini-batch protocol,
 cosine decay, compiled coordinate-derivative backend and raw CFD comparison.
 Those research runs are distinct from the editable GUI starter presets above.
+
+## Python tutorial: run Scale-PINN presets and inspect sequential correction diagnostics
+
+You can load any of the eight Scale-PINN examples (`scale_allen_cahn`,
+`scale_cavity_400`, `scale_cavity_3200`, `scale_cavity_7500`,
+`scale_cavity_10000`, `scale_cavity_20000`, `scale_ks`, `scale_kdv`), customize
+$\tau_{\mathrm{sc}}$, $\tau_\alpha$, $\gamma$, and the affine Fourier input transform,
+and compare physical PDE MSE against the corrected training residual:
+
+```python
+from margam.templates.poisson import build_pinn
+from margam.templates.scale_examples import SCALE_EXAMPLES, scale_example_config
+
+print("Available Scale-PINN presets:", list(SCALE_EXAMPLES))
+
+# 1. Scalar dispersive equation: Korteweg-de Vries (u_t + u u_x + nu u_xxx = 0)
+kdv_cfg = scale_example_config("scale_kdv")
+kdv_cfg.device = "cpu"
+kdv_cfg.points = 128
+kdv_cfg.boundary_points = 24
+kdv_cfg.layers = (32, 32)
+print("KdV affine transform:", kdv_cfg.network_options["input_transform"])
+print("KdV Scale settings:", kdv_cfg.scale_settings)
+
+kdv_model = build_pinn(kdv_cfg)
+kdv_model.train(50, display_every=25)
+print("Latest Scale correction summary:", kdv_model.scale_summary())
+
+# 2. Steady incompressible flow: Lid-driven cavity at Re=3200 (u, v, p)
+# Momentum x/y receive spatial-Laplacian smoothing; continuity receives (p_k - p_{k-1})/tau_sc
+cav_cfg = scale_example_config("scale_cavity_3200")
+cav_cfg.device = "cpu"
+cav_cfg.points = 128
+cav_cfg.boundary_points = 16
+cav_cfg.layers = (32, 32)
+cav_cfg.network_options["features"] = 32
+
+cav_model = build_pinn(cav_cfg)
+cav_model.train(20, display_every=10)
+diag = cav_model.scale_summary()
+print(
+    f"Step {diag['step']}: physical_pde={diag['physical_pde']:.4e}, "
+    f"corrected_pde={diag['corrected_pde']:.4e}, correction_rms={diag['correction_rms']:.4e}"
+)
+
+# 3. Checkpoint and resume (preserves both current w^k and frozen previous iterate w^(k-1))
+state = cav_model.training_state()
+resumed = build_pinn(cav_cfg)
+resumed.load_training_state(state)
+resumed.train(10, display_every=0)
+print("Resumed step:", resumed.iter)
+```
