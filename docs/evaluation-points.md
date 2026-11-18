@@ -160,3 +160,66 @@ changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-li
 **View → Project data overview…** also lists evaluation and reference sources,
 their row counts, field/ID mappings and missing/changed-file warnings. It does not
 replace the normal reference alignment checks. See [input diagnostics](use/saving.md#inspect-the-projects-input-data).
+
+## Python tutorial: evaluate at unsorted supplied points with shuffled reference IDs
+
+The snippet below demonstrates how `read_point_data` and `evaluate_outputs`
+preserve the exact row order and point IDs of your **Evaluation points** CSV/NPZ
+file while aligning an independently ordered **Reference data** file by ID and
+coordinate verification (never by interpolation):
+
+```python
+from margam.components.evaluation_data import read_point_data
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.templates.poisson import PoissonConfig, build_pinn
+
+# 1. Train a 1D Poisson PINN: u_xx + 2 = 0 on [0, 1], exact u(x) = x*(1 - x)
+cfg = PoissonConfig(
+    shape="Interval",
+    x_min=0.0,
+    x_max=1.0,
+    points=32,
+    pde_points="both",
+    layers=(16, 16),
+    lr=5e-3,
+    boundary_weight=10.0,
+    iterations=400,
+    device="cpu",
+)
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=0)
+
+# 2. Load the bundled unsorted evaluation points (node-B, node-A, node-D, node-C)
+eval_data = read_point_data(
+    {
+        "path": "assets/evaluation/supplied-points.csv",
+        "coordinates": "x",
+        "values": "",
+        "ids": "point_id",
+    },
+    cfg,
+    reference=False,
+)
+
+# 3. Load the bundled reference values (stored in a different row order: node-A..node-D)
+ref_data = read_point_data(
+    {
+        "path": "assets/evaluation/reference-values.csv",
+        "coordinates": "x",
+        "values": "u",
+        "ids": "point_id",
+    },
+    cfg,
+    reference=True,
+)
+
+# 4. Evaluate and align by point_id without retraining
+out = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("supplied_cmp", "comparison", point_data=eval_data, reference_data=ref_data)],
+)["supplied_cmp"]
+
+for pid, pt, pred, ref in zip(out["point_ids"], out["points"], out["values"], out["reference"]):
+    print(f"{pid:6s}  x={pt[0]:.2f}  pred={pred:.6f}  ref={ref:.6f}  err={pred - ref:+.2e}")
+```
