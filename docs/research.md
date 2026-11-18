@@ -444,6 +444,172 @@ without changing tensors or gradients. See [error norm definitions and examples]
 ordinary pointwise network and fixed PINNProblem, without GUI registration.
 Its SVD update/state contract is separate from Trainer custom-step callbacks.
 
+## End-to-end research tutorials
+
+### Tutorial 1: 2D manufactured PDE with mixed Dirichlet and Neumann operators
+
+Solve $-\Delta u = 2\pi^2 \sin(\pi x)\cos(\pi y)$ on $[0, 1]^2$ with Dirichlet
+conditions on $x=0$ and $x=1$ and zero normal-flux Neumann conditions on $y=0$
+and $y=1$:
+
+```python
+import math
+import torch
+from margam.nn import FullyConnected
+from margam.research import PINNProblem, PointConstraint, Trainer, derivative, error_norms
+
+torch.manual_seed(0)
+
+# Collocation and boundary points on [0, 1]^2
+gx = torch.linspace(0.0, 1.0, 21)[1:-1]
+X, Y = torch.meshgrid(gx, gx, indexing="ij")
+interior = torch.column_stack([X.reshape(-1), Y.reshape(-1)])
+
+s = torch.linspace(0.0, 1.0, 21)
+left_right = torch.cat([
+    torch.column_stack([torch.zeros_like(s), s]),
+    torch.column_stack([torch.ones_like(s), s]),
+])
+bottom_top = torch.cat([
+    torch.column_stack([s, torch.zeros_like(s)]),
+    torch.column_stack([s, torch.ones_like(s)]),
+])
+
+def pde_residual(xy, u):
+    u_xx = derivative(u, xy, axis=0, order=2)
+    u_yy = derivative(u, xy, axis=1, order=2)
+    forcing = 2.0 * (math.pi**2) * torch.sin(math.pi * xy[:, 0:1]) * torch.cos(math.pi * xy[:, 1:2])
+    return u_xx + u_yy + forcing
+
+problem = PINNProblem(
+    residual=pde_residual,
+    collocation_points=interior,
+    constraints=[
+        PointConstraint("dirichlet_x", left_right, target=0.0),
+        PointConstraint(
+            "neumann_y",
+            bottom_top,
+            target=0.0,
+            operator=lambda xy, u: derivative(u, xy, axis=1, order=1),
+        ),
+    ],
+)
+
+net = FullyConnected([2, 32, 32, 1], "tanh", "Xavier normal",
+                     input_bounds=([0.0, 0.0], [1.0, 1.0]))
+trainer = Trainer(problem, net, weights={"dirichlet_x": 10.0, "neumann_y": 10.0}).compile(
+    lr=2e-3, device="cpu"
+)
+trainer.train(600, display_every=200)
+
+# Evaluate against exact u(x, y) = sin(pi x) cos(pi y)
+pred = trainer.predict(interior)
+exact = torch.sin(math.pi * interior[:, 0:1]) * torch.cos(math.pi * interior[:, 1:2])
+print(error_norms(pred, exact, fields=["u"], norm="relative_l2"))
+```
+
+### Tutorial 2: Cosine learning-rate schedule with exact checkpoint continuation
+
+Combine `CosineDecay` with `save_checkpoint` and `load_checkpoint` to split a
+finite-horizon training budget across two separate stages with identical RNG and
+schedule continuation:
+
+```python
+from pathlib import Path
+import torch
+from margam.nn import FullyConnected
+from margam.research import CosineDecay, PINNProblem, PointConstraint, Trainer, derivative
+
+def make_scheduled_trainer():
+    torch.manual_seed(42)
+    x_int = torch.linspace(0.0, 1.0, 66)[1:-1, None]
+    x_bc = torch.tensor([[0.0], [1.0]])
+    problem = PINNProblem(
+        residual=lambda x, u: derivative(u, x, axis=0, order=2) + 2.0,
+        collocation_points=x_int,
+        constraints=[PointConstraint("bc", x_bc, target=0.0)],
+    )
+    net = FullyConnected([1, 24, 24, 1], "tanh", "Xavier normal",
+                         input_bounds=([0.0], [1.0]))
+    schedule = CosineDecay(steps=400, minimum_ratio=0.05, power=1.0)
+    return Trainer(
+        problem,
+        net,
+        weights={"bc": 10.0},
+        checkpoint_id="tutorial-cosine-poisson-v1",
+    ).compile(lr=3e-3, device="cpu", schedule=schedule)
+
+ckpt_path = Path("build/tutorial-cosine-ckpt.pt")
+ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+
+# Stage 1: train first 200 updates and save format-2 scheduled checkpoint
+stage1 = make_scheduled_trainer()
+stage1.train(200, display_every=0)
+stage1.save_checkpoint(ckpt_path)
+
+# Stage 2: reconstruct identical trainer, restore checkpoint, finish remaining 200 updates
+stage2 = make_scheduled_trainer()
+stage2.load_checkpoint(ckpt_path)
+stage2.train(200, display_every=0)
+
+print("Completed updates:", stage2.iter)
+print("Final learning rate used:", stage2.loss_history[-1]["learning_rate:0"])
+```
+
+### Tutorial 3: Joint PDE and physical parameter identification in a custom module
+
+Because `Trainer.compile()` optimizes all parameters registered on `self.network`,
+you can wrap a neural network alongside trainable `torch.nn.Parameter` scalars to
+identify unknown physical coefficients from noisy or sparse interior observations:
+
+```python
+import math
+import torch
+from margam.nn import FullyConnected
+from margam.research import PINNProblem, PointConstraint, Trainer, derivative
+
+class ParametricPoissonNet(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.backbone = FullyConnected([1, 32, 32, 1], "tanh", "Xavier normal",
+                                       input_bounds=([0.0], [1.0]))
+        # Unknown diffusion scaling alpha (true value = 2.5), stored in log-space
+        self.log_alpha = torch.nn.Parameter(torch.tensor(0.0))
+
+    @property
+    def alpha(self):
+        return torch.exp(self.log_alpha)
+
+    def forward(self, x):
+        return self.backbone(x)
+
+torch.manual_seed(7)
+model_net = ParametricPoissonNet()
+
+# True solution: u(x) = sin(pi x), satisfying -alpha * u_xx = 2.5 * pi^2 * sin(pi x)
+true_alpha = 2.5
+x_col = torch.linspace(0.0, 1.0, 66)[1:-1, None]
+x_obs = torch.linspace(0.0, 1.0, 21)[:, None]
+u_obs = torch.sin(math.pi * x_obs)
+
+def inverse_residual(x, u):
+    u_xx = derivative(u, x, axis=0, order=2)
+    rhs = true_alpha * (math.pi**2) * torch.sin(math.pi * x)
+    return model_net.alpha * u_xx + rhs
+
+problem = PINNProblem(
+    residual=inverse_residual,
+    collocation_points=x_col,
+    constraints=[PointConstraint("observations", x_obs, target=u_obs)],
+)
+
+trainer = Trainer(problem, model_net, weights={"observations": 50.0}).compile(
+    lr=5e-3, device="cpu"
+)
+trainer.train(800, display_every=200)
+print(f"Identified alpha = {model_net.alpha.item():.4f} (true = {true_alpha:.4f})")
+```
+
 ## PyTorch compilation
 
 Margam's `Trainer.compile()` prepares training data and optimization; it does not
