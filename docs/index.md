@@ -4,8 +4,9 @@ Connect a domain, samples, physics and a PINN method. Train it, open the results
 you need, then save or export your work. You can start with a complete example
 and replace its components as you learn the editor.
 
-**New here?** Start with [installation](start/install.md), then follow
-[Your first PINN](start/first-pinn.md). No mesh or geometry file is needed.
+**New here?** Start with [installation](start/install.md), follow
+[Your first PINN](start/first-pinn.md), or browse the
+[Tutorials and code snippets cookbook](start/tutorials.md). No mesh or geometry file is needed.
 
 ![The Margam desktop: block library, model canvas and Properties](../assets/screenshots/manual-workspace.png)
 
@@ -19,6 +20,7 @@ behind RAR, PINN importance sampling and integral loss.
 
 | Your task | Start here |
 | --- | --- |
+| Browse hands-on tutorials and copy-pasteable Python snippets | [Tutorials and snippets](start/tutorials.md) |
 | Write custom PyTorch research code without GUI blocks | [Research Python API](research.md) |
 | Run an example and see where results appear | [Your first PINN](start/first-pinn.md) |
 | Find a pane, command or keyboard shortcut | [Workspace tour](start/workspace.md) |
