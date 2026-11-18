@@ -73,3 +73,37 @@ The view preserves the model, Undo history, trained weights, output data and
 freshness. It does not merge definitions, edit either file, compare learned
 weights or score the accuracy of two runs. Use normal validation and explicit
 results/reference blocks for those separate checks.
+
+## Python tutorial: diff two `.margam.json` model definitions in a script
+
+You can run the same stable-ID model diff from Python using `read_model` and
+`compare_models` without starting a Qt window:
+
+```python
+from copy import deepcopy
+from margam.ui.model_diff import compare_models, value_text
+from margam.ui.model_document import read_model
+
+# 1. Load a saved model definition (or two distinct .margam.json files)
+baseline = read_model("assets/examples/models/jorvik-annulus-demo.margam.json")
+candidate = deepcopy(baseline)
+
+# Simulate editing a block parameter and a block label on the candidate copy
+for node in candidate["nodes"]:
+    params = node["settings"].get("parameters", {})
+    if "lr" in params:
+        params["lr"] = 0.0005
+        node["title"] = "Tuned trainer"
+
+# 2. Compare numerical settings and connections (presentation changes hidden by default)
+numerical_diffs = compare_models(baseline, candidate, include_presentation=False)
+for change in numerical_diffs:
+    print(
+        f"[{change.category}] {change.block} ({change.node_id[:8]}) "
+        f"{change.field}: {value_text(change.before)} -> {value_text(change.after)}"
+    )
+
+# 3. Include titles, labels, notes and canvas positions
+all_diffs = compare_models(baseline, candidate, include_presentation=True)
+print(f"Numerical differences: {len(numerical_diffs)}, total with presentation: {len(all_diffs)}")
+```

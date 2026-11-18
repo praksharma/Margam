@@ -93,3 +93,43 @@ Recorded three-seed 5,000-update relative L2 errors are 1.333%, 1.464% and 0.832
 for network seeds 7,11,19 (mean 1.210%). See [full field, residual and
 boundary metrics](results.md#helmholtz-with-fourier-lra-pinn), including the distinction
 between training-point and dense-grid residuals.
+
+## Python tutorial: train 2D Helmholtz with Fourier features and LRA balancing
+
+You can build the 2D Helmholtz example from Python, inspect the Learning Rate
+Annealing (LRA) per-constraint weights over training, and evaluate field and PDE
+residual errors on an independent $101\times 101$ test grid:
+
+```python
+from dataclasses import replace
+import torch
+from margam.templates.examples import example_config
+from margam.templates.poisson import build_pinn
+
+# 1. Load the 2D Helmholtz Fourier LRA-PINN preset on [-1, 1]^2
+cfg = replace(
+    example_config("helmholtz_lra_2d"),
+    iterations=500,
+    network_seed=7,
+    device="cpu",
+)
+print("Network:", cfg.network_type, cfg.network_options)
+print("Trainer:", cfg.method, "LRA interval:", cfg.lra_interval, "alpha:", cfg.lra_alpha)
+
+# 2. Build and train
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=100)
+
+# 3. Inspect adaptive LRA boundary weights
+print("LRA balancing summary:", model.balancing_summary())
+
+# 4. Evaluate relative L2 error against u(x, y) = sin(pi*x)*sin(4*pi*y) on a 101x101 grid
+axis = torch.linspace(-1.0, 1.0, 101)
+points = torch.cartesian_prod(axis, axis)
+exact = torch.sin(torch.pi * points[:, 0:1]) * torch.sin(4.0 * torch.pi * points[:, 1:2])
+
+pred = model.predict(points)
+rel_l2 = ((pred - exact).norm() / exact.norm()).item()
+max_err = (pred - exact).abs().max().item()
+print(f"101x101 grid relative L2: {rel_l2:.4e}, max error: {max_err:.4e}")
+```

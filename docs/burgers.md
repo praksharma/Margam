@@ -164,3 +164,61 @@ python -m examples.burgers_reference_workflow --device cuda --output results/bur
 
 Choose fresh output directories. See the [dataset provenance](../assets/evaluation/burgers-reference/README.md)
 and [workflow evidence](../assets/benchmarks/burgers-reference-2026-11-14.json).
+
+## Python tutorial: train Burgers, evaluate Cole–Hopf reference and export PVD
+
+You can configure and train the 1D space–time Burgers equation, compare against
+the bundled Cole–Hopf Gauss–Hermite reference snapshot, and write a physical-time
+ParaView `.pvd` collection directly from Python:
+
+```python
+from pathlib import Path
+from margam.components.evaluation_data import read_point_data
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.components.paraview_export import export_spacetime_pvd
+from margam.components.point_export import export_supplied
+from margam.templates.burgers import burgers_config
+from margam.templates.poisson import build_pinn
+
+# 1. Build the continuous-time Burgers problem on x in [-1, 1], t in [0, 1]
+cfg = burgers_config()
+cfg.pde_points = "both"
+cfg.iterations = 300
+cfg.device = "cpu"
+
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=100)
+print("Final losses:", model.loss_history[-1])
+
+# 2. Export regular-grid physical-time line snapshots (11 spatial points x 11 times)
+grid_out = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("regular_pvd", "paraview", resolution=11)],
+)["regular_pvd"]
+pvd_path = Path("build/burgers-regular.pvd")
+pvd_path.parent.mkdir(parents=True, exist_ok=True)
+export_spacetime_pvd(pvd_path, grid_out)
+
+# 3. Evaluate on the bundled 2,827-point Cole-Hopf reference grid (11 physical times)
+ref_csv = "assets/evaluation/burgers-reference/reference.csv"
+eval_pts = read_point_data(
+    {"path": ref_csv, "coordinates": "x,t", "values": "", "ids": "point_id"},
+    cfg,
+    reference=False,
+)
+ref_data = read_point_data(
+    {"path": ref_csv, "coordinates": "x,t", "values": "u", "ids": "point_id"},
+    cfg,
+    reference=True,
+)
+cmp_out = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("cole_hopf", "comparison", point_data=eval_pts, reference_data=ref_data)],
+)["cole_hopf"]
+print(f"Cole-Hopf comparison RMSE: {cmp_out['rmse']:.4e}, max error: {cmp_out['max_error']:.4e}")
+
+# Export the supplied comparison frames (includes u, ref_u, error_u and point IDs)
+export_supplied(Path("build/burgers-cole-hopf.pvd"), cmp_out)
+```

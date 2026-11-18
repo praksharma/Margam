@@ -153,3 +153,46 @@ hashes and the inspected MIT-licensed upstream revision. No upstream code/data i
 copied into the independent implementation. The
 [capture manifest](../assets/screenshots/manual-rba-captures.json) identifies the
 actual isolated desktop screenshots.
+
+## Python tutorial: train RBA-PINN in both initialization modes and inspect masks
+
+Use `rba_example_config(key)` from `margam.templates.rba_examples` (or set
+`method="rba"` and `rba_settings` on a `PoissonConfig`) to run residual-based
+attention and inspect the detached pointwise mask statistics via
+`attention_summary()`:
+
+```python
+from margam.templates.poisson import build_pinn
+from margam.templates.rba_examples import RBA_EXAMPLES, rba_example_config
+
+print("Available RBA presets:", list(RBA_EXAMPLES))
+
+# Mode 1 ("zero"): lambda starts at 0, first step adds eta * |r| / max(|r|)
+cfg_zero = rba_example_config("rba_helmholtz_2d")
+cfg_zero.device = "cpu"
+cfg_zero.points = 144
+cfg_zero.boundary_points = 24
+cfg_zero.layers = (24, 24)
+cfg_zero.rba_settings = {"decay": 0.999, "rate": 0.01, "initialization": "zero"}
+
+model_zero = build_pinn(cfg_zero)
+model_zero.train(50, display_every=25)
+print("Zero-start attention summary:", model_zero.attention_summary())
+print(
+    "Raw vs weighted PDE MSE:",
+    model_zero.loss_history[-1]["pde"],
+    model_zero.loss_history[-1]["pde_weighted"],
+)
+
+# Mode 2 ("normalized"): first step sets lambda = |r| / max(|r|), subsequent steps add eta * q
+cfg_norm = rba_example_config("rba_allen_cahn")
+cfg_norm.device = "cpu"
+cfg_norm.points = 128
+cfg_norm.boundary_points = 24
+cfg_norm.layers = (24, 24)
+cfg_norm.rba_settings = {"decay": 0.999, "rate": 0.001, "initialization": "normalized"}
+
+model_norm = build_pinn(cfg_norm)
+model_norm.train(50, display_every=25)
+print("Normalized-start attention summary:", model_norm.attention_summary())
+```

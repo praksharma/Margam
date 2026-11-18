@@ -117,3 +117,47 @@ as needed: this is a postprocessing diagnostic, not a differentiable training lo
 The returned record includes the value/status, norm, selected fields, row/component
 counts and zero-reference policy. It is suitable for an explicit JSON report in
 your own research script. See [Research API](../research.md).
+
+### Snippet: Sweep all six discrete norms and both zero-reference policies
+
+```python
+import torch
+from margam.components.error_norms import error_norms
+
+# Coupled 2D flow array (N, 3) with fields ("u", "v", "p") where reference v is identically 0
+prediction = torch.tensor([[1.02, 0.01, 0.50], [0.48, -0.01, 0.25], [0.00, 0.00, 0.00]])
+reference = torch.tensor([[1.00, 0.00, 0.50], [0.50, 0.00, 0.25], [0.00, 0.00, 0.00]])
+
+# 1. Inspect all six norms on the 2D velocity vector (u, v)
+for norm_name in ("relative_l2", "relative_max", "rms", "mean", "max", "l2"):
+    res = error_norms(
+        prediction,
+        reference,
+        fields=("u", "v", "p"),
+        selected=("u", "v"),
+        norm=norm_name,
+    )
+    print(f"velocity (u, v) {norm_name:12s}: value={res['value']:.6e} ({res['status']})")
+
+# 2. Zero-reference component v under "undefined" vs "zero_if_exact"
+v_undef = error_norms(
+    prediction,
+    reference,
+    fields=("u", "v", "p"),
+    selected=("v",),
+    norm="relative_l2",
+    zero_reference="undefined",
+)
+print("v relative_l2 (nonzero pred vs zero ref):", v_undef["value"], "|", v_undef["status"])
+
+exact_zero_pred = reference.clone()
+v_exact = error_norms(
+    exact_zero_pred,
+    reference,
+    fields=("u", "v", "p"),
+    selected=("v",),
+    norm="relative_l2",
+    zero_reference="zero_if_exact",
+)
+print("v relative_l2 (0/0 with zero_if_exact):  ", v_exact["value"], "|", v_exact["status"])
+```

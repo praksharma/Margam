@@ -416,3 +416,54 @@ UI workflows, independent training and recorded successes/failures.
 The [isolated profiling guide](dsgnar-profiling.md) measures complete attempts
 across Jacobian batches, separates nested phase costs, records allocator peaks
 and verifies continuation against an uninstrumented reference.
+
+## Python tutorial: run DSGNAR presets and inspect trust-region step diagnostics
+
+You can load any of the five built-in DSGNAR presets (`dsgnar_poisson_1d`,
+`dsgnar_burgers`, `dsgnar_wave`, `dsgnar_multiscale`, `dsgnar_cavity`) via
+`dsgnar_example_config(key)`, run double-precision sketched Gauss–Newton
+attempts, and inspect per-attempt trust-region acceptance, radius, Levenberg–Marquardt
+regularization $\lambda$, and achieved reduction ratio:
+
+```python
+import torch
+from margam.templates.dsgnar_examples import DSGNAR_EXAMPLES, dsgnar_example_config
+from margam.templates.poisson import build_pinn
+
+print("Available DSGNAR presets:", list(DSGNAR_EXAMPLES))
+
+# 1. Load the 1D Poisson DSGNAR preset (u_xx + 2 = 0 on [0, 1], exact u = x*(1 - x))
+cfg = dsgnar_example_config("dsgnar_poisson_1d")
+cfg.device = "cpu"
+cfg.dsgnar_settings.update(
+    precision="float64",
+    sketch_size=32,
+    hashes=4,
+    probes=6,
+    initial_radius=1.0,
+    min_radius=1e-7,
+)
+
+# 2. Build and run 15 sketched Gauss-Newton trust-region attempts
+model = build_pinn(cfg)
+model.train(15, display_every=5)
+
+summary = model.dsgnar_summary()
+print(
+    f"Attempts: {summary['attempts']}, accepted: {summary['accepted']}, "
+    f"current radius: {summary['radius']:.4e}, converged: {summary['converged']}"
+)
+last_step = summary["last"]
+print(
+    f"Last attempt #{last_step['step']}: accepted={last_step['accepted']}, "
+    f"lambda={last_step['regularization']:.4e}, ratio={last_step['ratio']:.4f}, "
+    f"objective {last_step['objective_before']:.4e} -> {last_step['objective_after']:.4e}"
+)
+
+# 3. Evaluate relative L2 error in float64 on a 201-point grid
+x_eval = torch.linspace(0.0, 1.0, 201, dtype=torch.float64)[:, None]
+u_exact = x_eval * (1.0 - x_eval)
+u_pred = model.predict(x_eval)
+rel_l2 = ((u_pred - u_exact).norm() / u_exact.norm()).item()
+print(f"float64 DSGNAR relative L2 error: {rel_l2:.4e}")
+```

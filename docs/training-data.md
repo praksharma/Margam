@@ -173,3 +173,127 @@ changed. See [the illustrated copy/link guide](use/saving.md#choose-copied-or-li
 Use **View → Project data overview…** to inspect row counts and storage for all
 imported sets, including disconnected blocks. It flags missing/invalid files and
 changes since its first session check. See [the overview guide](use/saving.md#inspect-the-projects-input-data).
+
+## Python tutorial: generate and train a custom `Prepared2D` domain from scratch
+
+You can generate your own non-rectangular interior and named boundary CSV files
+with outward unit normals (`nx, ny`), configure a `Prepared2D` problem in Python,
+and train it with any supported scalar method (`baseline`, `lra`, `self_adaptive`,
+`gpinn`, or `rba`):
+
+```python
+import csv
+import math
+from pathlib import Path
+from margam.components.evaluation_data import read_point_data
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.templates.poisson import PoissonConfig, build_pinn
+
+# 1. Create a quarter-annulus or custom right-triangle domain in build/custom-prepared/
+# Here we solve -laplace(u) = -4 on {x >= 0, y >= 0, x + y <= 1} with exact u = x^2 + y^2
+data_dir = Path("build/custom-prepared")
+data_dir.mkdir(parents=True, exist_ok=True)
+
+with (data_dir / "interior.csv").open("w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["x", "y"])
+    for i in range(1, 10):
+        for j in range(1, 10 - i):
+            w.writerow([i / 10.0, j / 10.0])
+
+# Base (y = 0): Dirichlet u = x^2
+with (data_dir / "base.csv").open("w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["x", "y", "u_val"])
+    for i in range(1, 10):
+        x = i / 10.0
+        w.writerow([x, 0.0, x * x])
+
+# Upright (x = 0): outward normal (-1, 0), Neumann du/dn = -2*x = 0
+with (data_dir / "upright.csv").open("w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["x", "y", "nx", "ny"])
+    for j in range(1, 10):
+        w.writerow([0.0, j / 10.0, -1.0, 0.0])
+
+# Hypotenuse (x + y = 1): outward normal (1, 1)/sqrt(2), Neumann du/dn = sqrt(2)*(x + y) = sqrt(2)
+inv_sqrt2 = 1.0 / math.sqrt(2.0)
+with (data_dir / "hypotenuse.csv").open("w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["x", "y", "nx", "ny", "flux"])
+    for i in range(1, 10):
+        x = i / 10.0
+        w.writerow([x, 1.0 - x, inv_sqrt2, inv_sqrt2, math.sqrt(2.0)])
+
+# Evaluation points inside the triangle with text point IDs
+with (data_dir / "eval.csv").open("w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["point_id", "x", "y", "u"])
+    for idx, (x, y) in enumerate([(0.2, 0.2), (0.4, 0.2), (0.2, 0.5), (0.3, 0.3)], start=1):
+        w.writerow([f"tri-{idx:02d}", x, y, x * x + y * y])
+
+# 2. Configure Prepared2D with named boundary sets and downstream physics
+cfg = PoissonConfig(
+    shape="Prepared2D",
+    x_min=0.0,
+    x_max=1.0,
+    y_min=0.0,
+    y_max=1.0,
+    source=-2.0,  # -laplace(u) - 2*source = 0 -> laplace(u) = 4
+    interior_data={
+        "path": str(data_dir / "interior.csv"),
+        "coordinates": "x,y",
+        "values": "",
+        "normals": "",
+    },
+    boundary_data={
+        "base": {
+            "path": str(data_dir / "base.csv"),
+            "coordinates": "x,y",
+            "values": "u_val",
+            "normals": "",
+        },
+        "upright": {
+            "path": str(data_dir / "upright.csv"),
+            "coordinates": "x,y",
+            "values": "",
+            "normals": "nx,ny",
+        },
+        "hypotenuse": {
+            "path": str(data_dir / "hypotenuse.csv"),
+            "coordinates": "x,y",
+            "values": "flux",
+            "normals": "nx,ny",
+        },
+    },
+    bc_types={"base": "Dirichlet", "upright": "Neumann", "hypotenuse": "Neumann"},
+    bc_values={"base": 0.0, "upright": 0.0, "hypotenuse": 0.0},
+    bc_targets={"base": "", "upright": "", "hypotenuse": ""},
+    bc_operators={"base": "", "upright": "", "hypotenuse": ""},
+    layers=(32, 32),
+    lr=5e-3,
+    iterations=300,
+    device="cpu",
+)
+
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=100)
+
+# 3. Evaluate on the supplied triangle points (Prepared2D always uses explicit evaluation points)
+eval_pts = read_point_data(
+    {"path": str(data_dir / "eval.csv"), "coordinates": "x,y", "values": "", "ids": "point_id"},
+    cfg,
+    reference=False,
+)
+ref_pts = read_point_data(
+    {"path": str(data_dir / "eval.csv"), "coordinates": "x,y", "values": "u", "ids": "point_id"},
+    cfg,
+    reference=True,
+)
+cmp = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("tri_cmp", "comparison", point_data=eval_pts, reference_data=ref_pts)],
+)["tri_cmp"]
+print(f"Prepared2D triangle RMSE: {cmp['rmse']:.4e}, max error: {cmp['max_error']:.4e}")
+```

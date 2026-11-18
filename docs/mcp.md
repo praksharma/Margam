@@ -188,3 +188,111 @@ An earlier parent-process CUDA oracle differed by 2.38e-7 in one PDE loss
 reduction; matching thread count alone did not reliably remove it. The qualified
 comparison uses independent native workers with the same execution setup, without
 relaxing the exact weight/history assertions. This is workflow correctness, not numerical solution accuracy.
+
+## Python tutorial: automate a live Margam window with the official MCP client
+
+When the desktop MCP listener is running (and **Model reads**, **Result reads**,
+**Model edits**, and **Training** are enabled in **Automation → MCP server…**),
+you can drive the open window from an asynchronous Python script using the
+official `mcp` package:
+
+```python
+import asyncio
+import json
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+MCP_URL = "http://127.0.0.1:8765/mcp"
+MCP_TOKEN = "PASTE_TOKEN_FROM_AUTOMATION_PANEL"
+
+async def call_json(session, tool_name, arguments=None):
+    result = await session.call_tool(tool_name, arguments or {})
+    payload = json.loads(result.content[0].text)
+    if not payload.get("ok"):
+        raise RuntimeError(f"{tool_name} failed: {payload.get('error')}")
+    return payload["data"]
+
+async def main():
+    headers = {"Authorization": f"Bearer {MCP_TOKEN}"}
+    async with streamablehttp_client(MCP_URL, headers=headers) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # 1. Read the current open graph and its session_id / revision
+            model_info = await call_json(session, "read_model")
+            session_id = model_info["session_id"]
+            revision = model_info["revision"]
+            print("Connected to session:", session_id, "revision:", revision)
+
+            # 2. Discover editable block parameters
+            schema = await call_json(session, "read_schema", {"session_id": session_id})
+            trainer_node = next(
+                b for b in schema["blocks"] if "iterations" in b["editable_parameters"]
+            )
+            output_node = next(
+                (b for b in model_info["nodes"] if b["kind"] in ("solution_plot", "comparison")),
+                None,
+            )
+
+            # 3. Atomically update trainer iterations and learning rate (one Undo step)
+            updated = await call_json(
+                session,
+                "apply_batch",
+                {
+                    "session_id": session_id,
+                    "expected_revision": revision,
+                    "operations": [
+                        {"node_id": trainer_node["node_id"], "parameter": "iterations", "value": 200},
+                        {"node_id": trainer_node["node_id"], "parameter": "lr", "value": 0.005},
+                    ],
+                },
+            )
+            revision = updated["revision"]
+
+            # 4. Validate the graph before launching a background training job
+            validation = await call_json(session, "validate_model", {"session_id": session_id})
+            print("Model valid:", validation["valid"], "issues:", len(validation["issues"]))
+
+            # 5. Start training and poll until the isolated worker finishes
+            job = await call_json(
+                session,
+                "start_training",
+                {"session_id": session_id, "expected_revision": revision},
+            )
+            job_id = job["job_id"]
+            while True:
+                status = await call_json(
+                    session,
+                    "training_status",
+                    {"session_id": session_id, "job_id": job_id},
+                )
+                if not status["running"]:
+                    print("Job finished with state:", status["state"], "steps:", status["steps"])
+                    break
+                await asyncio.sleep(0.25)
+
+            # 6. Read loss history and paginated output predictions
+            losses = await call_json(
+                session,
+                "read_results",
+                {"session_id": session_id, "job_id": job_id, "offset": 0, "limit": 10},
+            )
+            print("Latest loss record:", losses["loss_history"][-1])
+
+            if output_node is not None:
+                preds = await call_json(
+                    session,
+                    "read_results",
+                    {
+                        "session_id": session_id,
+                        "job_id": job_id,
+                        "node_id": output_node["id"],
+                        "offset": 0,
+                        "limit": 5,
+                    },
+                )
+                print("First 5 prediction rows:", preds["output"]["rows"])
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

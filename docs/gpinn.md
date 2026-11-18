@@ -180,3 +180,49 @@ A measured fixed-point run differed by 4.6566×10⁻¹⁰ in one recorded gradie
 loss, with zero weight difference; the paired RAR run matched completely.
 This does not promise universal bitwise GPU reproducibility; see
 [PyTorch reproducibility](https://docs.pytorch.org/docs/2.14/notes/randomness.html).
+
+## Python tutorial: scalar and coupled steady-flow gPINN with RAR refinement
+
+Use `gpinn_example_config(key)` from `margam.templates.gpinn_examples` (or set
+`method="gpinn"` and `gpinn_weights` on any `PoissonConfig`) to penalize
+coordinate derivatives of the full PDE residual:
+
+```python
+from margam.templates.gpinn_examples import GPINN_EXAMPLES, gpinn_example_config
+from margam.templates.poisson import build_pinn
+
+print("Available gPINN presets:", list(GPINN_EXAMPLES))
+
+# 1. 1D + time Burgers with x/t residual gradients and Residual-based Adaptive Refinement (RAR)
+burgers_rar_cfg = gpinn_example_config("gpinn_burgers_rar")
+burgers_rar_cfg.device = "cpu"
+burgers_rar_cfg.points = 64
+burgers_rar_cfg.boundary_points = 16
+burgers_rar_cfg.layers = (24, 24)
+burgers_rar_cfg.adaptive_sampling.update(interval=25, candidates=128, batch=8, maximum=128)
+
+model_rar = build_pinn(burgers_rar_cfg)
+model_rar.train(50, display_every=25)
+last = model_rar.loss_history[-1]
+print(
+    f"Burgers+RAR step {model_rar.iter}: pde={last['pde']:.4e}, "
+    f"pde_grad_x={last['pde_grad_x']:.4e}, pde_grad_t={last['pde_grad_t']:.4e}, "
+    f"active_points={len(model_rar.collocation_point_sample)}"
+)
+
+# 2. Steady 2D Couette flow (u, v, p): differentiates momentum-x, momentum-y and continuity separately
+flow_cfg = gpinn_example_config("gpinn_couette_2d")
+flow_cfg.device = "cpu"
+flow_cfg.points = 64
+flow_cfg.boundary_points = 12
+flow_cfg.layers = (24, 24)
+flow_cfg.gpinn_weights = {"x": 1e-4, "y": 1e-4, "t": 0.0}
+
+flow_model = build_pinn(flow_cfg)
+flow_model.train(40, display_every=20)
+flow_last = flow_model.loss_history[-1]
+print(
+    f"Couette gPINN: pde={flow_last['pde']:.4e}, "
+    f"pde_grad_x={flow_last['pde_grad_x']:.4e}, pde_grad_y={flow_last['pde_grad_y']:.4e}"
+)
+```
