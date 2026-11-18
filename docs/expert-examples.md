@@ -109,3 +109,61 @@ python -m examples.expert_suite --device cuda
 python -m unittest tests.test_expert_examples -v
 python -m examples.capture_expert_suite --overwrite
 ```
+
+## Python tutorial: run any Expert PINN suite case with NTK or time marching
+
+Use `case_config(key)` from `margam.templates.expert_examples` to construct any
+of the seven Expert suite problems (`expert_allen_cahn`, `expert_advection`,
+`expert_ks`, `expert_stokes`, `expert_cavity`, `expert_torus`, `expert_cylinder`),
+customize causal chunks, gradient-norm or NTK balancing, or sequential time
+windows, and export ParaView snapshots or time series:
+
+```python
+from pathlib import Path
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.components.paraview_export import export_spacetime_pvd
+from margam.components.point_export import export_vtu
+from margam.templates.expert_examples import CASES, case_config
+from margam.templates.poisson import build_pinn
+
+print("Available Expert cases:", list(CASES))
+
+# Example A: 1D + time Allen-Cahn with 2 sequential time-marching windows and NTK balancing
+ac_cfg = case_config("expert_allen_cahn")
+ac_cfg.device = "cpu"
+ac_cfg.points = 128
+ac_cfg.boundary_points = 32
+ac_cfg.expert_settings.update(
+    chunks=8,
+    causal_epsilon=1.0,
+    balance_mode="ntk",
+    balance_every=25,
+    windows=2,
+    window_steps=50,
+)
+ac_model = build_pinn(ac_cfg)
+ac_model.train(100, display_every=50)
+print("Allen-Cahn window summary:", ac_model.expert_summary())
+
+# Export piecewise physical-time PVD frames across both trained windows
+ac_out = evaluate_outputs(ac_model, ac_cfg, [OutputRequest("ac_pvd", "paraview", resolution=11)])["ac_pvd"]
+Path("build").mkdir(parents=True, exist_ok=True)
+export_spacetime_pvd(Path("build/expert-allen-cahn.pvd"), ac_out)
+
+# Example B: 2D Stokes channel flow around a circular cylinder obstacle (u, v, p)
+stokes_cfg = case_config("expert_stokes")
+stokes_cfg.device = "cpu"
+stokes_cfg.points = 128
+stokes_cfg.boundary_points = 24
+stokes_cfg.iterations = 50
+stokes_model = build_pinn(stokes_cfg)
+stokes_model.train(50, display_every=0)
+
+# Obstacle domains exclude the solid disk and export as VTU vertex clouds with velocity=(u,v,0)
+stokes_out = evaluate_outputs(
+    stokes_model,
+    stokes_cfg,
+    [OutputRequest("stokes_vtu", "paraview", resolution=15)],
+)["stokes_vtu"]
+export_vtu(Path("build/expert-stokes-cylinder.vtu"), stokes_out)
+```

@@ -144,3 +144,46 @@ spatially varying coefficients, discrete-time Runge–Kutta discovery and compos
 with SA/LRA/Expert/Scale/gPINN/RBA or adaptive sampling are separate future work.
 Observation coverage and coefficient identifiability need a problem-specific
 study before claiming parameter accuracy.
+
+## Python tutorial: run Inverse Burgers, inspect coefficient history and resume
+
+You can run the continuous-time inverse Burgers identification problem from
+Python, inspect the per-update trajectory of $\lambda_1$ and
+$\lambda_2 = \exp(\text{log\_lambda\_2})$, and save/restore a weights-only
+checkpoint that preserves both the learned physical parameters and their Adam
+moments:
+
+```python
+import torch
+from margam.templates.inverse_burgers import inverse_example_config
+from margam.templates.poisson import build_pinn
+
+# 1. Load the default 2,000-observation inverse Burgers configuration
+cfg = inverse_example_config()
+cfg.device = "cpu"
+cfg.lr = 1e-3
+cfg.boundary_weight = 10.0  # Weight on the observation MSE term
+cfg.inverse_settings = {"lambda_1": 0.0, "log_lambda_2": -6.0}
+
+# 2. Train for 200 updates and inspect the identified parameters
+model = build_pinn(cfg)
+model.train(200, display_every=50)
+
+est = model.estimated_parameters()
+print(f"After 200 updates: lambda_1 = {est['lambda_1']:.6f}, lambda_2 = {est['lambda_2']:.6e}")
+print("First and latest coefficient history entries:")
+print("  step 1:  ", model.inverse_history[0])
+print("  step 200:", model.inverse_history[-1])
+
+# 3. Save and resume into a freshly compiled trainer
+state = model.training_state()
+resumed = build_pinn(cfg)
+resumed.load_training_state(state)
+resumed.train(100, display_every=50)
+
+print("After 300 total updates:", resumed.estimated_parameters())
+
+# 4. Predict the reconstructed field u(x, t) at query space-time points
+xt_query = torch.tensor([[-0.5, 0.25], [0.0, 0.5], [0.5, 0.75]])
+print("Predicted u(x, t):", resumed.predict(xt_query).squeeze(-1).tolist())
+```

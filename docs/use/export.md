@@ -66,16 +66,19 @@ compare saved native run archives directly from Python without launching the GUI
 from pathlib import Path
 from margam.components.outputs import OutputRequest, evaluate_outputs
 from margam.components.paraview_export import export_vti
-from margam.templates.poisson import PoissonConfig, build_pinn, make_rectangle_reference
+from margam.templates.poisson import PoissonConfig, build_pinn, make_poisson_reference
 
 cfg = PoissonConfig(
     shape="Rectangle",
-    bounds=([0.0, 0.0], [1.0, 1.0]),
-    interior_points=256,
+    x_min=0.0,
+    x_max=1.0,
+    y_min=0.0,
+    y_max=1.0,
+    points=256,
     boundary_points=32,
-    layers=[32, 32],
+    layers=(32, 32),
     iterations=300,
-    seed=0,
+    seed=7,
 )
 model = build_pinn(cfg)
 model.train(cfg.iterations, display_every=0)
@@ -83,7 +86,7 @@ model.train(cfg.iterations, display_every=0)
 outputs = evaluate_outputs(
     model,
     cfg,
-    [OutputRequest("paraview_grid", "paraview", resolution=41, reference=make_rectangle_reference(cfg))],
+    [OutputRequest("paraview_grid", "paraview", resolution=41, reference=make_poisson_reference(cfg))],
 )
 
 out_path = Path("build/poisson-steady.vti")
@@ -97,11 +100,12 @@ export_vti(out_path, outputs["paraview_grid"])
 from pathlib import Path
 from margam.components.outputs import OutputRequest, evaluate_outputs
 from margam.components.paraview_export import export_spacetime_pvd
-from margam.templates.burgers import build_burgers_pinn, make_burgers_config
+from margam.templates.burgers import burgers_config
+from margam.templates.poisson import build_pinn
 
-cfg = make_burgers_config()
+cfg = burgers_config()
 cfg.iterations = 200
-model = build_burgers_pinn(cfg)
+model = build_pinn(cfg)
 model.train(cfg.iterations, display_every=0)
 
 outputs = evaluate_outputs(
@@ -119,21 +123,25 @@ export_spacetime_pvd(pvd_path, outputs["burgers_pvd"])
 
 ```python
 from pathlib import Path
-from margam.components.evaluation_data import load_evaluation_points
+from margam.components.evaluation_data import read_point_data
 from margam.components.outputs import OutputRequest, evaluate_outputs
 from margam.components.point_export import export_supplied
 from margam.templates.poisson import PoissonConfig, build_pinn
 
-cfg = PoissonConfig(shape="Rectangle", bounds=([0.0, 0.0], [1.0, 1.0]), iterations=100)
+cfg = PoissonConfig(shape="Rectangle", x_min=0.0, x_max=1.0, y_min=0.0, y_max=1.0, iterations=100)
 model = build_pinn(cfg)
 model.train(cfg.iterations, display_every=0)
 
 # Load explicit evaluation coordinates (and optional point_id column) from CSV/NPZ
-pts = load_evaluation_points(
-    "assets/training/triangle/eval.csv",
-    shape="Rectangle",
-    coordinates={"x": "x", "y": "y"},
-    id_column="id",
+pts = read_point_data(
+    {
+        "path": "assets/evaluation/triangle/evaluation_points.csv",
+        "coordinates": "x,y",
+        "values": "",
+        "ids": "point_id",
+    },
+    cfg,
+    reference=False,
 )
 outputs = evaluate_outputs(
     model,

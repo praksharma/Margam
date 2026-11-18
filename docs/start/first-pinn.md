@@ -103,7 +103,7 @@ print("Final losses:", model.loss_history[-1])
 reference = make_interval_reference(config)
 request = OutputRequest("cmp", "comparison", resolution=101, reference=reference)
 results = evaluate_outputs(model, config, [request])["cmp"]
-print(f"Comparison RMSE: {results['rmse']:.4e}, max error: {results['max_abs']:.4e}")
+print(f"Comparison RMSE: {results['rmse']:.4e}, max error: {results['max_error']:.4e}")
 
 # 4. Predict directly at arbitrary tensor coordinates
 query = torch.tensor([[0.25], [0.5], [0.75]])
