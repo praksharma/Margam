@@ -54,3 +54,121 @@ Mesh connectivity and direct Jorvik integration remain future work.
 For [Burgers](../burgers.md), CSV headings are `x,t,u`. ParaView Export writes a
 PVD collection of 1D spatial VTI frames with physical-time stamps; open the PVD
 and press Play. Time is not exported as a spatial axis.
+
+## Programmatic export and run-comparison snippets
+
+You can also evaluate outputs, write ParaView `.vti` / `.vtu` / `.pvd` files, and
+compare saved native run archives directly from Python without launching the GUI.
+
+### 1. Export steady regular-grid predictions to ParaView VTI
+
+```python
+from pathlib import Path
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.components.paraview_export import export_vti
+from margam.templates.poisson import PoissonConfig, build_pinn, make_rectangle_reference
+
+cfg = PoissonConfig(
+    shape="Rectangle",
+    bounds=([0.0, 0.0], [1.0, 1.0]),
+    interior_points=256,
+    boundary_points=32,
+    layers=[32, 32],
+    iterations=300,
+    seed=0,
+)
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=0)
+
+outputs = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("paraview_grid", "paraview", resolution=41, reference=make_rectangle_reference(cfg))],
+)
+
+out_path = Path("build/poisson-steady.vti")
+out_path.parent.mkdir(parents=True, exist_ok=True)
+export_vti(out_path, outputs["paraview_grid"])
+```
+
+### 2. Export space–time predictions to a playable physical-time PVD series
+
+```python
+from pathlib import Path
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.components.paraview_export import export_spacetime_pvd
+from margam.templates.burgers import build_burgers_pinn, make_burgers_config
+
+cfg = make_burgers_config()
+cfg.iterations = 200
+model = build_burgers_pinn(cfg)
+model.train(cfg.iterations, display_every=0)
+
+outputs = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("burgers_pvd", "paraview", resolution=31)],
+)
+
+pvd_path = Path("build/burgers-series.pvd")
+pvd_path.parent.mkdir(parents=True, exist_ok=True)
+export_spacetime_pvd(pvd_path, outputs["burgers_pvd"])
+```
+
+### 3. Export supplied point clouds with integer or text IDs to VTU
+
+```python
+from pathlib import Path
+from margam.components.evaluation_data import load_evaluation_points
+from margam.components.outputs import OutputRequest, evaluate_outputs
+from margam.components.point_export import export_supplied
+from margam.templates.poisson import PoissonConfig, build_pinn
+
+cfg = PoissonConfig(shape="Rectangle", bounds=([0.0, 0.0], [1.0, 1.0]), iterations=100)
+model = build_pinn(cfg)
+model.train(cfg.iterations, display_every=0)
+
+# Load explicit evaluation coordinates (and optional point_id column) from CSV/NPZ
+pts = load_evaluation_points(
+    "assets/training/triangle/eval.csv",
+    shape="Rectangle",
+    coordinates={"x": "x", "y": "y"},
+    id_column="id",
+)
+outputs = evaluate_outputs(
+    model,
+    cfg,
+    [OutputRequest("supplied_cloud", "paraview", point_data=pts)],
+)
+
+vtu_path = Path("build/supplied-cloud.vtu")
+vtu_path.parent.mkdir(parents=True, exist_ok=True)
+export_supplied(vtu_path, outputs["supplied_cloud"])
+```
+
+### 4. Compare predictions across two or more saved `.margam-run.pt` archives
+
+Use `margam.run_comparison` to compare explicit saved predictions on identical
+ordered coordinates, field names and point IDs without deserializing or executing
+the neural network:
+
+```python
+from margam.run_comparison import compare_prediction_group, compare_predictions, read_predictions
+
+run_a = read_predictions("results/my-study-run/DP0001/artifacts/run.margam-run.pt")
+run_b = read_predictions("results/my-study-run/DP0002/artifacts/run.margam-run.pt")
+
+# Pick the first recorded output request ID from each archive
+out_id_a = next(iter(run_a["outputs"]))
+out_id_b = next(iter(run_b["outputs"]))
+
+# Pairwise difference (B - A) with RMS, max and relative_l2 diagnostics
+diff = compare_predictions(run_a, out_id_a, run_b, out_id_b)
+for diag in diff["diagnostics"]:
+    print(diag["field"], "RMS(B-A)=", diag["rms_difference"]["value"])
+print("Changed settings:", diff["configuration_differences"])
+
+# Multi-run comparison (2 to 8 runs against baseline A)
+group = compare_prediction_group([(run_a, out_id_a), (run_b, out_id_b)])
+print("Compared rows:", group["rows"], "Headers:", group["headers"])
+```
