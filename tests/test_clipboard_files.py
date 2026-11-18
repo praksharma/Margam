@@ -1,4 +1,5 @@
 """Owned clipboard files are bounded, independent and safe across project closure."""
+import importlib.util
 import json,os
 from pathlib import Path
 import subprocess,sys,tempfile,unittest
@@ -66,6 +67,7 @@ class ClipboardFileTests(unittest.TestCase):
             with self.assertRaises(OSError):install(w,{'data.csv':b'rows'},'clipboard/blocked/')
             self.assertEqual(list(outside.iterdir()),[])
 
+    @unittest.skipUnless(importlib.util.find_spec('jorvik'),'Optional Jorvik required')
     def test_real_jorvik_cross_project_paste_undo_save_and_closed_source(self):
         code=r'''
 import tempfile
