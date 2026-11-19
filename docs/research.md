@@ -444,6 +444,17 @@ without changing tensors or gradients. See [error norm definitions and examples]
 ordinary pointwise network and fixed PINNProblem, without GUI registration.
 Its SVD update/state contract is separate from Trainer custom-step callbacks.
 
+## 3D turbulence, PirateNet and SOAP (`margam.research.jaxpi2`)
+
+`from margam.research import jaxpi2` provides the PyTorch port of
+[arXiv:2507.08972v2](https://arxiv.org/abs/2507.08972v2) and `sifanexisted/jaxpi2`:
+`PirateNet`, `ModifiedMlp`, `PeriodEmbs`, `FourierEmbs`, `DirectFactorizedLinear`,
+`stable_swish`, `Jaxpi2Optimizer` (`SOAP` + `Schedule-Free` + global gradient norm
+clipping + ROCm `rocSOLVER` hardening), 3D unsteady `navier_stokes`, per-component
+causal gating, pseudo-time stepping, multi-stage linearized perturbation operators,
+and `Jaxpi2CropTrainer`. See [3D sphere flow and JAXPI2 turbulence methods](sphere-turbulence.md)
+for full tutorials and AMD Instinct MI300X $\text{Re}=300$ sphere-flow benchmarks.
+
 ## End-to-end research tutorials
 
 ### Tutorial 1: 2D manufactured PDE with mixed Dirichlet and Neumann operators
