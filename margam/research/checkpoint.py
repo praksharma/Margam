@@ -11,15 +11,17 @@ def canonical(value):
 
 def signature(trainer, *, check_schedule=True):
     trainer._require_compiled()
+    from dataclasses import asdict
     from .trainer import Trainer
+    from .jaxpi2.optim import Jaxpi2Optimizer
     if trainer.checkpoint_id is None:
         raise NotImplementedError('Set a versioned checkpoint_id identifying your physics, network and loss code before checkpointing.')
     if trainer.step is not None or type(trainer).update is not Trainer.update or type(trainer).training_step is not Trainer.training_step:
         raise NotImplementedError('Custom update code must implement its own complete checkpoint state, including extra optimizers/schedules.')
     if trainer.sampling_controller is not None:
         raise NotImplementedError('Research checkpoints currently require fixed point sets.')
-    if type(trainer.optimizer) not in (torch.optim.Adam,torch.optim.AdamW,torch.optim.SGD):
-        raise NotImplementedError('Research checkpoints currently support Adam, AdamW and SGD; custom optimizers own their state contract.')
+    if type(trainer.optimizer) not in (torch.optim.Adam,torch.optim.AdamW,torch.optim.SGD,Jaxpi2Optimizer):
+        raise NotImplementedError('Research checkpoints currently support Adam, AdamW, SGD and Jaxpi2Optimizer; custom optimizers own their state contract.')
     losses=trainer.loss.values() if isinstance(trainer.loss,dict) else (trainer.loss,)
     if any(isinstance(loss,torch.nn.Module) and loss.state_dict() for loss in losses):
         raise NotImplementedError('Stateful loss modules require their own checkpoint implementation.')
@@ -28,6 +30,8 @@ def signature(trainer, *, check_schedule=True):
     if check_schedule:
         trainer.check_schedule()
     groups=[{k:v for k,v in group.items() if k!='params'} for group in trainer.optimizer.state_dict()['param_groups']]
+    if type(trainer.optimizer) is Jaxpi2Optimizer:
+        for group in groups:group['lr']=float(trainer.optimizer.config.learning_rate)
     value=dict(checkpoint_id=trainer.checkpoint_id,
         trainer_class=type(trainer).__module__+'.'+type(trainer).__qualname__,
         network_class=type(trainer.network).__module__+'.'+type(trainer.network).__qualname__,
@@ -35,6 +39,8 @@ def signature(trainer, *, check_schedule=True):
         groups=groups,weights=trainer.weights,loss_formulation=trainer.loss_formulation,
         measures=trainer.loss_measures,data_fingerprint=trainer.data_fingerprint(),
         device=str(trainer.collocation_point_sample.device))
+    if type(trainer.optimizer) is Jaxpi2Optimizer:
+        value['jaxpi2_optim_config']=asdict(trainer.optimizer.config)
     if trainer.pointwise_microbatch is not None:
         value['pointwise_microbatch']=dict(size=trainer.pointwise_microbatch,contract='deterministic-pointwise-mean-v1')
     if trainer.schedule is not None:
@@ -70,10 +76,18 @@ def require(value,message):
 
 
 def validate_optimizer(trainer,state,steps):
-    require(isinstance(state,dict) and set(state)=={'state','param_groups'},'Invalid optimizer state.')
+    from .jaxpi2.optim import Jaxpi2Optimizer
+    is_jaxpi2=type(trainer.optimizer) is Jaxpi2Optimizer
+    expected_keys={'state','param_groups','jaxpi2_step_count'} if is_jaxpi2 else {'state','param_groups'}
+    require(isinstance(state,dict) and set(state)==expected_keys,'Invalid optimizer state.')
+    if is_jaxpi2:
+        require(type(state['jaxpi2_step_count']) is int and state['jaxpi2_step_count']==steps,'Invalid Jaxpi2Optimizer step count.')
     current=dict(param_groups=deepcopy(trainer.optimizer.state_dict()['param_groups']));groups=state['param_groups']
     if trainer.schedule is not None:
         for group,rate in zip(current['param_groups'],trainer.scheduled_rates(steps)):group['lr']=rate
+    elif is_jaxpi2:
+        expected_lr=float(trainer.optimizer.lr_fn(steps)) if steps>0 else float(trainer.optimizer.config.learning_rate)
+        for group in current['param_groups']:group['lr']=expected_lr
     require(isinstance(groups,list) and len(groups)==len(current['param_groups']),'Optimizer parameter groups differ.')
     for a,b in zip(groups,current['param_groups']):
         require(isinstance(a,dict) and set(a)==set(b) and canonical(a)==canonical(b),'Optimizer settings or parameter identities differ.')
@@ -85,6 +99,27 @@ def validate_optimizer(trainer,state,steps):
     has_momentum={key:bool(group.get('momentum',0)) for group in groups for key in group['params']}
     for key,values in state['state'].items():
         require(isinstance(values,dict),'Invalid optimizer parameter state.')
+        if is_jaxpi2:
+            cfg=trainer.optimizer.config
+            required={'step','exp_avg','exp_avg_sq'}
+            if cfg.optimizer.lower()=='soap':required|={'GG','Q'}
+            if cfg.schedule_free:required|={'z','sf_step_count','sf_weight_sum','sf_max_lr'}
+            require(set(values)==required,'Invalid Jaxpi2Optimizer state fields.')
+            require(type(values['step']) is int and 0<=values['step']<=steps,'Invalid Jaxpi2Optimizer parameter step.')
+            for tname in ('exp_avg','exp_avg_sq',*(('z',) if cfg.schedule_free else ())):
+                val=values[tname]
+                require(isinstance(val,torch.Tensor) and torch.isfinite(val).all().item() and val.shape==expected[key].shape and val.dtype==expected[key].dtype,'Invalid Jaxpi2Optimizer moment/z tensor.')
+            require(not (values['exp_avg_sq']<0).any().item(),'Negative second-moment optimizer tensor.')
+            if cfg.optimizer.lower()=='soap':
+                for mname in ('GG','Q'):
+                    mlist=values[mname]
+                    require(isinstance(mlist,list),'Invalid SOAP preconditioner list.')
+                    for mat in mlist:
+                        require(mat is None or (isinstance(mat,torch.Tensor) and mat.ndim==2 and mat.shape[0]==mat.shape[1] and torch.isfinite(mat).all().item()),'Invalid SOAP preconditioner matrix.')
+            if cfg.schedule_free:
+                require(type(values['sf_step_count']) is int and values['sf_step_count']>=1,'Invalid Schedule-Free step count.')
+                require(all(type(values[k]) in (int,float) and math.isfinite(values[k]) and values[k]>=0 for k in ('sf_weight_sum','sf_max_lr')),'Invalid Schedule-Free scalar state.')
+            continue
         if is_sgd:
             required=allowed={'momentum_buffer'} if has_momentum[key] else set()
         else:

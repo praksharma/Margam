@@ -274,3 +274,17 @@ class Trainer(PINN):
     def load_checkpoint(self,path):
         """Rebuild/compile your Python code first; loading never imports user code."""
         return self.load_training_state(torch.load(path,map_location='cpu',weights_only=True))
+
+    def use_eval_params(self):
+        """Context manager temporarily switching to Schedule-Free averaged evaluation parameters."""
+        from contextlib import nullcontext
+        self._require_compiled()
+        if hasattr(self.optimizer,'use_eval_params'):
+            return self.optimizer.use_eval_params()
+        return nullcontext()
+
+    def eval_state_dict(self):
+        """Return a deep copy of network.state_dict() under Schedule-Free evaluation parameters."""
+        from copy import deepcopy
+        with self.use_eval_params():
+            return deepcopy(self.network.state_dict())
