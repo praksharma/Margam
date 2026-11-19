@@ -1,0 +1,165 @@
+{
+  "study": "sphere300_jaxpi2_pytorch_port_and_mi300x_benchmark",
+  "recorded_utc": "2026-11-18T21:07:00Z",
+  "reference_paper": {
+    "title": "Simulating Three-dimensional Turbulence with Physics-informed Neural Networks",
+    "authors": [
+      "Sifan Wang",
+      "Shyam Sankaran",
+      "Xiantao Fan",
+      "Panos Stinis",
+      "Paris Perdikaris"
+    ],
+    "arxiv": "2507.08972v2"
+  },
+  "audited_upstreams": {
+    "jaxpi2": {
+      "repository": "https://github.com/sifanexisted/jaxpi2",
+      "commit": "77a5c1315a056388271822c35ad512a5a192b60d"
+    },
+    "soap_jax": {
+      "repository": "https://github.com/haydn-jones/SOAP_JAX",
+      "tag": "v0.2.1",
+      "commit": "45145bcadb20864e821b87999c306e885bed7171"
+    }
+  },
+  "fixed_point_parity": {
+    "float64": {
+      "status": "passed",
+      "checks": 628,
+      "max_non_multistage_abs_diff": 2.5754081534046236e-08,
+      "max_multistage_abs_diff": 9.313225746154785e-10
+    },
+    "float32": {
+      "status": "passed",
+      "checks": 628,
+      "max_non_multistage_abs_diff": 5.17e-05,
+      "max_multistage_rel_diff": 5.0e-07
+    }
+  },
+  "rocm_rocsolver_finding": {
+    "issue": "When PirateNet initializes block skip gates at alpha=0 (nonlinearity=0.0), step-1 PirateBlock dense gradients are zero (GG=0), causing float32 rocsolver_ssyevd (eigh) on AMD MI300X (ROCm 6.2) to raise LinAlgError on repeated zero eigenvalues. At steps 3-5, block preconditioner entries (~4.65e-21) lie below sqrt(FLT_MIN) (1.084e-19), causing float32 rocsolver_sgeqrf (qr) to underflow on squared column norms and return non-orthogonal matrices (||Q^T Q - I||_inf > 4e4).",
+    "fix": "Normalize power_iter by its maximum magnitude before QR, promote ROCm (and qr_dtype='float64') eigensolver/QR factorizations to float64, verify ||Q^T Q - I||_inf <= 1e-2, and fall back to CPU LAPACK float64 on failure (verified ||Q^T Q - I||_inf <= 8.35e-7 on MI300X)."
+  },
+  "problem": {
+    "description": "3D unsteady incompressible Navier-Stokes flow past a sphere at Re=300",
+    "reynolds": 300.0,
+    "domain_lower": [-8.0, -8.0, -8.0],
+    "domain_upper": [24.0, 8.0, 8.0],
+    "sphere_radius": 0.5,
+    "time_horizon_t_star": 0.90,
+    "held_out_evaluation_nodes": 8192
+  },
+  "runs": [
+    {
+      "name": "expert_pinn_baseline_rtx3060",
+      "hardware": "NVIDIA RTX 3060 Laptop GPU",
+      "architecture": "ModifiedMlp (width 256, 4 layers, RWF, GELU)",
+      "optimizer": "Adam + exponential decay",
+      "parameters": 397832,
+      "steps": 20000,
+      "pde_batch": 2048,
+      "pools": "sparse_4k",
+      "metrics_t090": {
+        "velocity_rel_l2": 0.0640,
+        "velocity_near_sphere_rel_l2": 0.2373,
+        "velocity_wake_rel_l2": 0.0515,
+        "pressure_fixed_gauge_rel_l2": 1.7817,
+        "pressure_centered_rel_l2": 1.2991,
+        "sphere_noslip_rmse": 0.0425,
+        "outer_flux_rel_imbalance": 0.004318
+      }
+    },
+    {
+      "name": "jaxpi2_rtx3060_sparse4k_w256",
+      "hardware": "NVIDIA RTX 3060 Laptop GPU",
+      "architecture": "PirateNet (width 256, 2 blocks, RWF, Swish)",
+      "optimizer": "SOAP + Schedule-Free + grad_clip_norm(1.0)",
+      "parameters": 529930,
+      "steps": 20000,
+      "pde_batch": 2048,
+      "pools": "sparse_4k",
+      "metrics_t090": {
+        "velocity_rel_l2": 0.0253,
+        "velocity_near_sphere_rel_l2": 0.0999,
+        "velocity_wake_rel_l2": 0.0083,
+        "pressure_fixed_gauge_rel_l2": 0.4526,
+        "pressure_near_sphere_rel_l2": 0.5917,
+        "pressure_wake_rel_l2": 0.0560,
+        "sphere_noslip_rmse": 0.00236,
+        "outer_flux_rel_imbalance": 0.0000571
+      }
+    },
+    {
+      "name": "jaxpi2_mi300x_run0_dense_w256",
+      "hardware": "AMD Instinct MI300X (192 GB)",
+      "architecture": "PirateNet (width 256, 2 blocks, RWF, Swish)",
+      "optimizer": "SOAP + Schedule-Free + grad_clip_norm(1.0)",
+      "parameters": 529930,
+      "steps": 50000,
+      "pde_batch": 8192,
+      "pools": "dense_16k_volume_8k_surface_32k_ic",
+      "milestone_step20000_t090": {
+        "velocity_rel_l2": 0.00294,
+        "velocity_near_sphere_rel_l2": 0.00338,
+        "velocity_wake_rel_l2": 0.00607,
+        "pressure_fixed_gauge_rel_l2": 0.0336,
+        "pressure_near_sphere_rel_l2": 0.0139,
+        "pressure_wake_rel_l2": 0.0402
+      },
+      "metrics_t090": {
+        "velocity_rel_l2": 0.002954816046303208,
+        "velocity_near_sphere_rel_l2": 0.00270,
+        "velocity_wake_rel_l2": 0.00613,
+        "velocity_disturbance_rel_l2": 0.0138,
+        "pressure_fixed_gauge_rel_l2": 0.014935152054004227,
+        "pressure_centered_rel_l2": 0.00959988304396305,
+        "pressure_near_sphere_rel_l2": 0.00593,
+        "pressure_wake_rel_l2": 0.0186,
+        "sphere_noslip_rmse": 0.0025906346272677183,
+        "continuous_divergence_over_grad_rms": 0.000893,
+        "outer_flux_rel_imbalance": -0.0003175985776379514
+      }
+    },
+    {
+      "name": "jaxpi2_mi300x_run1_dense_w512",
+      "hardware": "AMD Instinct MI300X (192 GB)",
+      "architecture": "PirateNet (width 512, 2 blocks, RWF, Swish)",
+      "optimizer": "SOAP + Schedule-Free + grad_clip_norm(1.0)",
+      "parameters": 2108426,
+      "steps": 50000,
+      "pde_batch": 8192,
+      "pools": "dense_16k_volume_8k_surface_32k_ic",
+      "metrics_t090": {
+        "velocity_rel_l2": 0.00298,
+        "velocity_near_sphere_rel_l2": 0.00383,
+        "velocity_wake_rel_l2": 0.00603,
+        "pressure_fixed_gauge_rel_l2": 0.0887,
+        "pressure_centered_rel_l2": 0.0152,
+        "pressure_near_centered_rel_l2": 0.0107,
+        "pressure_wake_centered_rel_l2": 0.0119,
+        "sphere_noslip_rmse": 0.00120,
+        "continuous_divergence_over_grad_rms": 0.000480
+      }
+    },
+    {
+      "name": "jaxpi2_mi300x_run2_dense_w512_2win",
+      "hardware": "AMD Instinct MI300X (192 GB)",
+      "architecture": "PirateNet (width 512, 2 blocks, RWF, Swish), 2 windows ([0, 0.45] + [0.45, 0.90])",
+      "optimizer": "SOAP + Schedule-Free + grad_clip_norm(1.0)",
+      "parameters": 2108426,
+      "steps": 50000,
+      "pde_batch": 8192,
+      "pools": "dense_16k_volume_8k_surface_32k_ic",
+      "metrics_t090": {
+        "velocity_t045_rel_l2": 0.00184,
+        "velocity_rel_l2": 0.00289,
+        "velocity_near_sphere_rel_l2": 0.00270,
+        "velocity_wake_rel_l2": 0.00599,
+        "pressure_fixed_gauge_rel_l2": 0.7288,
+        "pressure_centered_rel_l2": 0.1504,
+        "note": "Lowest velocity relative L2 (0.289%), while fixed-gauge pressure carried a uniform offset (delta_p ~ -0.0299) from constraining Window 2 t=0 pressure to Window 1's 25k-step prediction. Use include_pressure_ic=False on subsequent windows so pressure is fixed solely by the window gauge anchor."
+      }
+    }
+  ]
+}

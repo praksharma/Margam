@@ -30,6 +30,7 @@ copy-pasteable snippets across Margam.
 | **20. Scalar & vector error norms** | [Sweep all six discrete error norms and zero-reference policies](../use/error-norms.md#snippet-sweep-all-six-discrete-norms-and-both-zero-reference-policies) |
 | **21. Diff `.margam.json` model files** | [Compare two saved model definitions by stable block ID](../use/compare-models.md#python-tutorial-diff-two-margamjson-model-definitions-in-a-script) |
 | **22. Automate the GUI via MCP** | [Drive an open Margam window with the official Python MCP client](../mcp.md#python-tutorial-automate-a-live-margam-window-with-the-official-mcp-client) |
+| **23. 3D sphere flow & JAXPI2 (`PirateNet` + `SOAP`)** | [`PirateNet`, `SOAP` + `Schedule-Free`, 3D Navier–Stokes, and MI300X sphere benchmarks](../sphere-turbulence.md#python-tutorials) |
 
 ---
 

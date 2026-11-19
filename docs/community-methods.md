@@ -20,6 +20,7 @@ composition, implementation differences and validation evidence.
 | Residual derivatives | Yu, Lu, Meng and Karniadakis; [gPINN](gpinn.md) |
 | Residual-based attention | Anagnostopoulos and colleagues; [RBA](rba-pinn.md) |
 | Inverse coefficient identification | Raissi, Perdikaris and Karniadakis; [inverse Burgers](inverse-burgers.md) |
+| 3D turbulence & PirateNet / SOAP | Wang, Sankaran, Fan, Stinis and Perdikaris; [3D sphere flow & JAXPI2](sphere-turbulence.md) |
 
 ## Inverse Burgers
 
@@ -78,3 +79,16 @@ is documented by [Burkardt](https://people.sc.fsu.edu/~jburkardt/py_src/burgers_
 No upstream solver code or arrays were copied into the generated reference CSV.
 Comparison against the already retained MIT-licensed inverse observation fixture
 validates this evaluator, not the short-run PINN accuracy.
+
+## 3D turbulence, PirateNet and SOAP (`margam.research.jaxpi2`)
+
+`margam.research.jaxpi2` is a PyTorch research-API implementation of Wang,
+Sankaran, Fan, Stinis and Perdikaris (2025), *Simulating Three-dimensional
+Turbulence with Physics-informed Neural Networks*
+([arXiv:2507.08972v2](https://arxiv.org/abs/2507.08972v2)), audited against
+`sifanexisted/jaxpi2` (`77a5c1315a056388271822c35ad512a5a192b60d`) and
+`haydn-jones/SOAP_JAX@v0.2.1` (`45145bcadb20864e821b87999c306e885bed7171`).
+No JAX/Flax/Optax code or CFD arrays are bundled in the repository. See
+[3D sphere flow and JAXPI2 turbulence methods](sphere-turbulence.md) for the
+628-check fixed-point parity verification, AMD ROCm `rocSOLVER` eigensolver/QR
+hardening, and $\text{Re}=300$ sphere-flow MI300X results.
