@@ -138,6 +138,48 @@ class UIImprovementsTests(unittest.TestCase):
         window.undo_edit()
         self.assertEqual(len(window.scene.wires), before_wires)
 
+    def test_training_monitor_hover_log_toggle_and_csv_export(self):
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        window = self.window
+        method = next(n for n in window.scene.nodes() if n.kind == 'method')
+        monitor = window.add_node('Training Monitor', QPointF(1000, 0))
+        window.scene.connect_nodes(method, monitor)
+        window.monitor_records[monitor.identifier] = [
+            (1, {'total': 1.0, 'pde': 0.8, 'left': 0.05, 'right': 0.05, 'bottom': 0.05, 'top': 0.05}),
+            (2, {'total': 0.1, 'pde': 0.07, 'left': 0.01, 'right': 0.01, 'bottom': 0.005, 'top': 0.005}),
+            (3, {'total': 0.01, 'pde': 0.006, 'left': 0.001, 'right': 0.001, 'bottom': 0.001, 'top': 0.001}),
+        ]
+        window.open_block(monitor)
+        _, view = window.output_views.entries[monitor.identifier]
+        self.assertTrue(view.log_scale.isChecked())
+        self.assertTrue(view.detail.logarithmic)
+        self.assertIn('log scale', view.detail.caption)
+
+        # Toggle to linear scale
+        view.log_scale.setChecked(False)
+        self.assertFalse(view.detail.logarithmic)
+        self.assertIn('linear scale', view.detail.caption)
+        view.log_scale.setChecked(True)
+
+        # Hover readout at step 2
+        readout = view.detail.hover_at_x(2.1)
+        self.assertIn('x=2', readout)
+        self.assertIn('Total=0.1', readout)
+        self.assertEqual(view.hover_label.text(), readout)
+        view.detail.clear_hover()
+        self.assertEqual(view.hover_label.text(), '')
+
+        # Copy CSV to clipboard and Export CSV to file
+        self.assertTrue(view.copy_csv())
+        csv_text = QApplication.clipboard().text()
+        self.assertIn('step,total,pde,left,right,bottom,top', csv_text)
+        self.assertIn('2,0.1,0.07,0.01,0.01,0.005,0.005', csv_text)
+        with TemporaryDirectory() as tmp:
+            out_path = Path(tmp) / 'losses.csv'
+            self.assertTrue(view.export_csv(out_path))
+            self.assertEqual(out_path.read_text(encoding='utf-8'), csv_text)
+
 
 if __name__ == '__main__':
     unittest.main()

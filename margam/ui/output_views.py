@@ -1,7 +1,10 @@
 """Views belong to output-block identities; hiding a dock does not remove its block."""
+import os
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from PySide6.QtCore import Qt,QAbstractListModel,QModelIndex
 from .plots import CurvePlot, SolutionView
-from PySide6.QtWidgets import QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem,QComboBox,QHBoxLayout
+from PySide6.QtWidgets import QApplication,QWidget,QVBoxLayout,QLabel,QTableWidget,QTableWidgetItem,QComboBox,QHBoxLayout,QCheckBox,QPushButton,QFileDialog
 
 from ..components.output_settings import OUTPUT_KINDS,output_enabled
 
@@ -91,19 +94,38 @@ class TrainingMonitorView(QWidget):
         super().__init__();layout=QVBoxLayout(self)
         controls=QHBoxLayout();controls.addWidget(QLabel('Loss view'))
         self.constraint=QComboBox();self.constraint.setObjectName('monitor_constraint')
-        controls.addWidget(self.constraint);controls.addStretch();layout.addLayout(controls)
+        controls.addWidget(self.constraint)
+        self.log_scale=QCheckBox('Log scale');self.log_scale.setObjectName('monitor_log_scale');self.log_scale.setChecked(True)
+        controls.addWidget(self.log_scale)
+        controls.addStretch()
+        self.copy_csv_button=QPushButton('Copy CSV');self.copy_csv_button.setObjectName('monitor_copy_csv');self.copy_csv_button.setEnabled(False)
+        self.export_csv_button=QPushButton('Export CSV…');self.export_csv_button.setObjectName('monitor_export_csv');self.export_csv_button.setEnabled(False)
+        controls.addWidget(self.copy_csv_button);controls.addWidget(self.export_csv_button)
+        layout.addLayout(controls)
         self.detail=CurvePlot(logarithmic=True);layout.addWidget(self.detail)
+        self.hover_label=QLabel('');self.hover_label.setObjectName('monitor_hover_readout');layout.addWidget(self.hover_label)
         self.records=[];self.summary_series=[];self.summary_caption=''
         self.constraint.currentIndexChanged.connect(self.refresh_detail)
+        self.log_scale.toggled.connect(self.set_log_scale)
+        self.copy_csv_button.clicked.connect(self.copy_csv)
+        self.export_csv_button.clicked.connect(lambda:self.export_csv())
+        self.detail.hoverChanged.connect(self.hover_label.setText)
 
     @property
     def series(self):return self.detail.series
+
+    def set_log_scale(self,enabled):
+        self.detail.set_logarithmic(enabled)
+        self.refresh_detail()
 
     def set_series(self,series,caption):
         self.summary_series=series;self.summary_caption=caption;self.refresh_detail()
 
     def show_constraints(self,records,names):
         selected=self.constraint.currentData();self.records=records
+        has_records=bool(records)
+        self.copy_csv_button.setEnabled(has_records)
+        self.export_csv_button.setEnabled(has_records)
         self.constraint.blockSignals(True);self.constraint.clear();self.constraint.addItem('Summary (all losses)',None)
         for name in names:self.constraint.addItem(name,name)
         index=self.constraint.findData(selected)
@@ -111,14 +133,49 @@ class TrainingMonitorView(QWidget):
 
     def refresh_detail(self):
         name=self.constraint.currentData()
+        scale_text='log scale' if self.detail.logarithmic else 'linear scale'
         if name is None:
-            self.detail.set_series(self.summary_series,self.summary_caption);return
+            caption=self.summary_caption if self.detail.logarithmic else self.summary_caption.replace('log scale','linear scale')
+            self.detail.set_series(self.summary_series,caption);return
         raw=[(step,row[name]) for step,row in self.records if name in row]
         weighted=[(step,row['weighted:'+name]) for step,row in self.records if 'weighted:'+name in row]
         series=[('Raw',raw,'#7089d5'),('Weighted contribution',weighted,'#d58b35')] if raw else []
-        note=name+' · loss before update · log scale' if raw else 'Train to inspect a named boundary/initial constraint.'
+        note=name+f' · loss before update · {scale_text}' if raw else 'Train to inspect a named boundary/initial constraint.'
         if raw and len(weighted)<len(raw):note+=' · older records have no weighted contribution'
         self.detail.set_series(series,note)
+
+    def format_csv(self):
+        if not self.records:return ''
+        keys=[]
+        for preferred in ('total','pde'):
+            if any(preferred in row for _,row in self.records):keys.append(preferred)
+        for _,row in self.records:
+            for key in row:
+                if key not in keys:keys.append(key)
+        lines=['step,'+','.join(keys)]
+        for step,row in self.records:
+            lines.append(str(step)+','+','.join('' if key not in row else f'{float(row[key]):.10g}' for key in keys))
+        return '\n'.join(lines)+'\n'
+
+    def copy_csv(self):
+        if not self.records:return False
+        QApplication.clipboard().setText(self.format_csv())
+        return True
+
+    def export_csv(self,path=None):
+        if not self.records:return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(self,'Export training loss history','loss_history.csv','CSV (*.csv)')
+        if not path:return False
+        target=Path(path)
+        if target.suffix.lower()!='.csv':target=target.with_suffix(target.suffix+'.csv' if target.suffix else '.csv')
+        target.parent.mkdir(parents=True,exist_ok=True)
+        text=self.format_csv()
+        with NamedTemporaryFile('w',encoding='utf-8',dir=target.parent,delete=False) as handle:
+            temp=Path(handle.name)
+            handle.write(text)
+        os.replace(temp,target)
+        return True
 
 
 class OutputViews:
