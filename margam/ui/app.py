@@ -2157,6 +2157,52 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         font=heading.font();font.setBold(True);heading.setFont(font)
         heading.setContentsMargins(0,10,0,2);self.form.addRow(heading)
 
+    def attach_expression_helper(self,edit,*,target=False,allow_blank=True,blank_message='Blank: uses default preset',multi_field=False):
+        coords=tuple(self.config.coordinate_names)
+        fields=tuple(self.config.field_names)
+        dimension=len(self.config.bounds[0])
+        normals='nx, ny' if 'y' in coords else 'nx'
+        if target:
+            allowed=f"Allowed: {', '.join(coords)}, c, nu, pi, {normals}; sin/cos/exp/tanh/sqrt/abs"
+        else:
+            allowed=f"Allowed: {', '.join(coords)}, {', '.join(fields)}, c, nu, pi, {normals}; D(..), laplace(..), dn(..), sin/cos/exp/tanh/sqrt/abs"
+        status=QLabel();status.setWordWrap(True)
+        name=edit.objectName() or edit.property('search_key') or 'expression'
+        status.setObjectName(name+'_status')
+        def check_text(raw_text):
+            text=raw_text.strip()
+            if not text:
+                if allow_blank:
+                    status.setText(f'{blank_message} · {allowed}')
+                    status.setProperty('expression_valid',True)
+                    status.setStyleSheet('')
+                else:
+                    status.setText(f'Invalid: Expressions need 1–512 characters. · {allowed}')
+                    status.setProperty('expression_valid',False)
+                    status.setStyleSheet('color: #c94a4a;')
+                return
+            try:
+                if multi_field:
+                    parts=[p.strip() for p in text.split(';')]
+                    if len(parts)!=len(fields):
+                        raise ValueError(f'Provide {len(fields)} semicolon-separated expressions ({", ".join(fields)}).')
+                    for part in parts:
+                        Expression(part,dimension,target=target,fields=fields,coordinates=coords)
+                else:
+                    Expression(text,dimension,target=target,fields=fields,coordinates=coords)
+            except ValueError as error:
+                status.setText(f'Invalid: {error} · {allowed}')
+                status.setProperty('expression_valid',False)
+                status.setStyleSheet('color: #c94a4a;')
+            else:
+                status.setText(f'Valid expression · {allowed}')
+                status.setProperty('expression_valid',True)
+                status.setStyleSheet('')
+        edit.textChanged.connect(check_text)
+        check_text(edit.text())
+        self.form.addRow(status)
+        return status
+
     def field(self,label,attribute,kind='float',choices=None,minimum=-1000000,maximum=1000000):
         value=getattr(self.config,attribute)
         token=object()
@@ -2366,6 +2412,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
                 forcing.editingFinished.connect(lambda e=forcing:self.change('pde_forcing',e.text().strip()))
                 self.form.addRow('Forcing f',forcing)
+                self.attach_expression_helper(forcing,target=True,allow_blank=False)
             if self.config.pde_preset in ('advection_diffusion_1d','incompressible_2d','burgers_1d','kdv_1d'):
                 self.field('Dispersion ν' if self.config.pde_preset=='kdv_1d' else 'Diffusivity / viscosity ν','viscosity',minimum=.000001,maximum=100000)
         elif node.kind=='pde':
@@ -2381,6 +2428,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     edit=QLineEdit(self.config.flow_residuals[index]);edit.setObjectName('flow_residual_'+str(index))
                     edit.editingFinished.connect(lambda i=index,e=edit:self.change_flow_residual(i,e.text().strip()))
                     self.form.addRow(label,edit)
+                    self.attach_expression_helper(edit,target=False,allow_blank=False)
             else:
                 note=QLabel('1D space–time scalar residual: use x,t and an explicit time-dependent equation. No default final-time condition.' if self.config.is_time_dependent else 'Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
                 self.field('Constant c','source')
@@ -2388,6 +2436,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
                 edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
                 self.form.addRow('Residual = 0',edit)
+                self.attach_expression_helper(edit,target=False,allow_blank=not self.config.is_time_dependent,blank_message='Blank: Poisson preset')
                 note=QLabel('Scalar expressions: '+', '.join(self.config.coordinate_names)+', u, c, nu, pi; D(u,x), '+('D(u,t), ' if self.config.is_time_dependent else '')+'laplace(u), sin/cos/exp/tanh/sqrt/abs. Laplacian is spatial only. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='bc' and (self.config.is_paper_case or self.config.pde_preset in ('kdv_1d','wave_1d')):
             from ..templates.expert_examples import condition_description
@@ -2411,6 +2460,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                         edit=QLineEdit(spec[key]);edit.setObjectName('flow_'+side+'_'+field+'_'+key)
                         edit.editingFinished.connect(lambda s=side,f=field,k=key,e=edit:self.change_flow_boundary(s,f,k,e.text().strip()))
                         self.form.addRow(field+label,edit)
+                        self.attach_expression_helper(edit,target=(key=='target'),allow_blank=True,blank_message='Blank: 0' if key=='target' else 'Blank: unused unless Custom')
                 for name in self.config.constraint_names:
                     if name.startswith(side+':'):self.boundary_coefficient_field(name)
                 for index,label in enumerate(('Gauge x','Gauge y')):
@@ -2437,11 +2487,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
                     target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' target expression',target)
+                    self.attach_expression_helper(target,target=True,allow_blank=True,blank_message='Blank: constant target above')
                     operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
                     operator.setProperty('search_key','bc_operators.'+side)
                     operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
                     operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' custom operator',operator)
+                    self.attach_expression_helper(operator,target=False,allow_blank=(self.config.bc_types.get(side)!='Custom'),blank_message='Blank: unused unless Custom')
                 note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             architecture=QComboBox();architecture.setObjectName('network_architecture')
@@ -2581,10 +2633,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if source:
                 clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.forget_dataset_source(n,'source_data',lambda:self.change_output(n,'source_data',{})));self.form.addRow(clear)
         elif node.kind=='reference':
-            expression=QLineEdit(node.settings.get('reference_expression',''));expression.setProperty('search_key','reference_expression')
+            expression=QLineEdit(node.settings.get('reference_expression',''));expression.setObjectName('reference_expression');expression.setProperty('search_key','reference_expression')
             expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')
             expression.editingFinished.connect(lambda n=node,e=expression:self.change_output(n,'reference_expression',e.text().strip()))
             self.form.addRow('Reference expression',expression)
+            self.attach_expression_helper(expression,target=True,allow_blank=True,blank_message='Blank: built-in reference preset',multi_field=(len(self.config.field_names)>1))
             imported=QPushButton('Map / preview imported reference values…');imported.clicked.connect(lambda checked=False,n=node:self.edit_point_data(reference=n));self.form.addRow(imported)
             if node.settings.get('reference_data'):
                 source_label=QLabel(self.dataset_label(node.settings['reference_data']));source_label.setWordWrap(True);self.form.addRow(source_label)

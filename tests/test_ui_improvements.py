@@ -228,6 +228,54 @@ class UIImprovementsTests(unittest.TestCase):
         self.assertEqual(len(copied), 2)
         self.assertIn('325,0,424,325,99', copied[1])
 
+    def test_live_expression_syntax_and_symbol_helper(self):
+        from PySide6.QtWidgets import QLineEdit, QLabel
+        window = self.window
+        pde = next(n for n in window.scene.nodes() if n.kind == 'pde')
+        window.scene.clearSelection()
+        pde.setSelected(True)
+        self.app.processEvents()
+
+        body = window.property_scroll.widget()
+        edit = body.findChild(QLineEdit, 'pde_expression')
+        status = body.findChild(QLabel, 'pde_expression_status')
+        self.assertIsNotNone(edit)
+        self.assertIsNotNone(status)
+        self.assertTrue(status.property('expression_valid'))
+        self.assertIn('Blank: Poisson preset', status.text())
+        self.assertIn('Allowed: x, y, u, c, nu, pi, nx, ny', status.text())
+
+        undo_count = window.undo_stack.count()
+
+        # Live typing an invalid expression updates status immediately without pushing an Undo step
+        edit.setText('laplace(u) + unknown_var')
+        self.assertFalse(status.property('expression_valid'))
+        self.assertIn('Invalid: Unknown expression name: unknown_var', status.text())
+        self.assertEqual(window.undo_stack.count(), undo_count)
+
+        # Live typing a valid expression marks status valid without pushing an Undo step
+        edit.setText('laplace(u) + c*sin(pi*x)')
+        self.assertTrue(status.property('expression_valid'))
+        self.assertIn('Valid expression', status.text())
+        self.assertEqual(window.undo_stack.count(), undo_count)
+
+        # Also check BC target expression helper (coordinate-only target=True)
+        bc = next(n for n in window.scene.nodes() if n.kind == 'bc')
+        window.scene.clearSelection()
+        bc.setSelected(True)
+        self.app.processEvents()
+        bc_body = window.property_scroll.widget()
+        target_edit = bc_body.findChild(QLineEdit, 'left_target_expression')
+        target_status = bc_body.findChild(QLabel, 'left_target_expression_status')
+        self.assertIsNotNone(target_edit)
+        self.assertIsNotNone(target_status)
+        # Field symbol 'u' is not allowed in a boundary target expression
+        target_edit.setText('u + x')
+        self.assertFalse(target_status.property('expression_valid'))
+        self.assertIn('Unknown expression name: u', target_status.text())
+        target_edit.setText('y*(1-y)')
+        self.assertTrue(target_status.property('expression_valid'))
+
 
 if __name__ == '__main__':
     unittest.main()
