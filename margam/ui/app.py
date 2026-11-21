@@ -472,6 +472,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.cancel_training)
         for button in [self.validate_button,self.train_button,self.cancel_button]:toolbar.addWidget(button)
+        self.solution_explorer_button=QPushButton('Solution Explorer')
+        self.solution_explorer_button.setObjectName('toolbar_solution_explorer')
+        self.solution_explorer_button.setToolTip('Open the dedicated Solution Explorer window for 1D, 2D, 3D, and parametric results (Ctrl+Shift+V)')
+        self.solution_explorer_button.clicked.connect(lambda:self.show_solution_explorer())
+        toolbar.addWidget(self.solution_explorer_button)
         self.progress_bar=QProgressBar();self.progress_bar.setMaximumWidth(210)
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         toolbar.addWidget(self.progress_bar)
@@ -697,6 +702,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.open_output_action=self.view_menu.addAction('Open selected output')
         self.open_output_action.setEnabled(False)
         self.open_output_action.triggered.connect(self.open_selected_output)
+        self.solution_explorer_action=self.view_menu.addAction('Open Solution Explorer…')
+        self.solution_explorer_action.setIcon(icon('solution'))
+        self.solution_explorer_action.setShortcut('Ctrl+Shift+V')
+        self.solution_explorer_action.triggered.connect(lambda:self.show_solution_explorer())
         themes=self.view_menu.addMenu('Theme')
         self.theme_actions={}
         group=QActionGroup(self);group.setExclusive(True)
@@ -1327,6 +1336,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         elif node.kind in OUTPUT_KINDS:
             label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…','paraview':'Export ParaView…'}[node.kind]
             action=menu.addAction(label);action.setEnabled(output_enabled(node) and (node.kind not in ('export','paraview') or not busy));action.triggered.connect(lambda:self.open_block(node))
+            if node.kind in ('solution','comparison'):
+                explorer=menu.addAction('Open in Solution Explorer…')
+                explorer.setEnabled(output_enabled(node))
+                explorer.triggered.connect(lambda checked=False,n=node:self.show_solution_explorer(preferred_id=n.identifier))
         if node.kind in ('sa_recipe','sa_method'):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not busy and self.result is not None)
@@ -2999,6 +3012,17 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             dialog=StudyResults(self);self.study_results_dialog=dialog
         dialog.show();dialog.raise_();return dialog
 
+    def show_solution_explorer(self,preferred_id=None,*,dataset=None):
+        from .solution_explorer import SolutionExplorerWindow
+        win=getattr(self,'solution_explorer_window',None)
+        if win is None or not isValid(win):
+            win=SolutionExplorerWindow(owner=self);self.solution_explorer_window=win
+        if dataset is not None:
+            win.set_dataset(dataset)
+        else:
+            win.sync_from_owner(preferred_id=preferred_id)
+        win.show();win.raise_();return win
+
     def show_slurm_export(self):
         from .slurm_export import SlurmExport
         dialog=getattr(self,'slurm_export_dialog',None)
@@ -3141,6 +3165,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.automation_server.shutdown()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()
+        if getattr(self,'solution_explorer_window',None) is not None and isValid(self.solution_explorer_window):
+            self.solution_explorer_window.close()
         self.project_workspace.close()
         if self.desktop_state is not None:self.desktop_state.close()
         if not getattr(self,'_selection_disconnected',False):
