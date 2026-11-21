@@ -331,6 +331,35 @@ class UIImprovementsTests(unittest.TestCase):
         new_center = window.view.mapToScene(window.view.viewport().rect().center())
         self.assertLess((new_center - target_scene).manhattanLength(), 15.0)
 
+    def test_export_diagram_image_png_and_svg(self):
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        from PySide6.QtGui import QImage
+        window = self.window
+        first_node = window.scene.nodes()[0]
+        window.scene.clearSelection()
+        first_node.setSelected(True)
+        undo_count = window.undo_stack.count()
+
+        with TemporaryDirectory() as tmp:
+            png_path = Path(tmp) / 'diagram.png'
+            svg_path = Path(tmp) / 'diagram.svg'
+            self.assertTrue(window.export_diagram_image(png_path))
+            self.assertTrue(png_path.is_file())
+            img = QImage(str(png_path))
+            self.assertFalse(img.isNull())
+            self.assertGreater(img.width(), 100)
+            self.assertGreater(img.height(), 100)
+
+            self.assertTrue(window.export_diagram_image(svg_path))
+            self.assertTrue(svg_path.is_file())
+            svg_text = svg_path.read_text(encoding='utf-8')
+            self.assertIn('<svg', svg_text)
+
+        # Exporting diagram image preserves selection and does not mutate the Undo stack
+        self.assertTrue(first_node.isSelected())
+        self.assertEqual(window.undo_stack.count(), undo_count)
+
 
 if __name__ == '__main__':
     unittest.main()

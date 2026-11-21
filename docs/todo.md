@@ -819,3 +819,24 @@ linked diagnostics, recovery and owned data remain the supported workflows.
 - [x] Avoid empty-bucket reduction work on CPU, preserve exact sums/continuation,
   retain the existing GPU path after its occupied-row prototype regressed common
   sizes, and measure 4,000-row accumulation separately from full SVD/training.
+
+## Desktop canvas, monitor, table and inspector ergonomics
+
+- [x] Highlight compatible/incompatible input ports during wire drag and open a
+  type-filtered Quick Insert popup when a wire is dropped on empty canvas space,
+  inserting and connecting the chosen block as one undoable command.
+- [x] Support Simulink-style `Ctrl+drag` wire branching from existing connections,
+  a right-click wire context menu (`Select source`, `Select destination`,
+  `Delete connection`), and an inspector `Delete connection` button.
+- [x] Add cursor hover readout, horizontal gridlines, a `Log scale` (`log10`/linear)
+  toggle, and `Copy CSV` / `Export CSV…` controls to Training Monitor views.
+- [x] Add 200-row pagination (`Previous`/`Next`), `Locate max |error|`, and
+  `Copy rows CSV` to `VectorResultView` tables.
+- [x] Show live expression syntax validation and allowed-symbol hints below
+  restricted PDE, forcing, boundary target/operator, and reference expression
+  inputs in Properties without pushing premature Undo commands.
+- [x] Upgrade the toolbar zoom indicator to a clickable preset menu (`50%`–`200%`,
+  `Fit model`, `Fit selection`) and add `View → Show canvas minimap` with
+  click-and-drag viewport panning.
+- [x] Add `File → Export diagram image…` for cropped, selection-free PNG and SVG
+  block-diagram exports.

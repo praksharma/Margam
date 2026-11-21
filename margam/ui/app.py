@@ -596,6 +596,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.save_run_action=file_menu.addAction('Save run and checkpoint…')
         self.save_run_action.triggered.connect(lambda:self.save_current_run())
         self.save_run_action.setEnabled(False)
+        self.export_diagram_action=file_menu.addAction('Export diagram image…')
+        self.export_diagram_action.setIcon(icon('export'))
+        self.export_diagram_action.triggered.connect(lambda:self.export_diagram_image())
         file_menu.addSeparator()
         self.load_action.setShortcut('')
         self.examples_menu=file_menu.addMenu('Examples')
@@ -987,6 +990,76 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         try:save_run(path,capture_run(self))
         except Exception as error:QMessageBox.warning(self,'Run could not be saved',str(error));return False
         self.statusBar().showMessage('Saved run and method checkpoint · '+Path(path).name)
+        return True
+
+    def export_diagram_image(self,path=None,scale=2):
+        import os
+        from tempfile import NamedTemporaryFile
+        from PySide6.QtCore import QRectF, QSize
+        from PySide6.QtGui import QImage
+        if not self.scene.items():
+            self.statusBar().showMessage('Add at least one block before exporting a diagram image.')
+            return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(
+                self,
+                'Export diagram image',
+                str(self.model_dialog_directory()/'diagram.png'),
+                'PNG image (*.png);;SVG vector diagram (*.svg)',
+            )
+            if not path:return False
+        target=Path(path)
+        if target.suffix.lower() not in ('.png','.svg'):
+            target=target.with_suffix(target.suffix+'.png' if target.suffix else '.png')
+        bounds=self.scene.itemsBoundingRect().adjusted(-24,-24,24,24)
+        if bounds.width()<=0 or bounds.height()<=0:return False
+        target.parent.mkdir(parents=True,exist_ok=True)
+        selected=list(self.scene.selectedItems())
+        self.scene.blockSignals(True)
+        try:
+            self.scene.clearSelection()
+            with NamedTemporaryFile(dir=target.parent,suffix=target.suffix.lower(),delete=False) as handle:
+                temp=Path(handle.name)
+            try:
+                if target.suffix.lower()=='.svg':
+                    from PySide6.QtSvg import QSvgGenerator
+                    w=max(1,int(round(bounds.width())))
+                    h=max(1,int(round(bounds.height())))
+                    generator=QSvgGenerator()
+                    generator.setFileName(str(temp))
+                    generator.setSize(QSize(w,h))
+                    generator.setViewBox(QRectF(0,0,w,h))
+                    generator.setTitle(self.windowTitle())
+                    painter=QPainter(generator)
+                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                    painter.fillRect(QRectF(0,0,w,h),QColor(colors()['canvas']))
+                    self.scene.render(painter,QRectF(0,0,w,h),bounds)
+                    painter.end()
+                else:
+                    w=max(1,int(round(bounds.width()*scale)))
+                    h=max(1,int(round(bounds.height()*scale)))
+                    image=QImage(w,h,QImage.Format.Format_ARGB32_Premultiplied)
+                    image.fill(QColor(colors()['canvas']))
+                    painter=QPainter(image)
+                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+                    self.scene.render(painter,QRectF(0,0,w,h),bounds)
+                    painter.end()
+                    if not image.save(str(temp),'PNG'):
+                        raise OSError('Could not encode PNG diagram image.')
+                os.replace(temp,target)
+            except Exception:
+                temp.unlink(missing_ok=True)
+                raise
+        except Exception as error:
+            QMessageBox.warning(self,'Diagram could not be exported',str(error))
+            return False
+        finally:
+            self.scene.clearSelection()
+            for item in selected:
+                if isValid(item) and item.scene() is self.scene:item.setSelected(True)
+            self.scene.blockSignals(False)
+        self.statusBar().showMessage('Exported diagram image · '+target.name)
         return True
 
     def open_saved_run(self,path=None):
