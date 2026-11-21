@@ -61,12 +61,32 @@ class Port(QGraphicsEllipseItem):
         self.name = spec.name
         self.data_type = spec.data_type
         self.label = spec.label
+        self.wire_candidate = None
         self.setPos(170 if output else 0, y)
         self.setBrush(QColor(colors()['highlight']))
         self.setPen(QPen(QColor(colors()['base']), 2))
         from .graph_explanations import port_text
         self.setToolTip(literal_tooltip(port_text(self)))
         self.setZValue(2)
+
+    def paint(self, painter, option, widget=None):
+        painter.save()
+        if self.wire_candidate == 'compatible':
+            halo = QColor(colors()['highlight'])
+            halo.setAlpha(95)
+            painter.setBrush(halo)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(-11, -11, 22, 22)
+            super().paint(painter, option, widget)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(QColor(colors()['highlight']), 2))
+            painter.drawEllipse(-8, -8, 16, 16)
+        elif self.wire_candidate == 'incompatible':
+            painter.setOpacity(0.35)
+            super().paint(painter, option, widget)
+        else:
+            super().paint(painter, option, widget)
+        painter.restore()
 
     def mousePressEvent(self, event):
         if event.button()==Qt.MouseButton.LeftButton and self.output and not self.scene().locked:
@@ -80,7 +100,7 @@ class Port(QGraphicsEllipseItem):
             self.scene().pending.update_path(event.scenePos())
 
     def mouseReleaseEvent(self, event):
-        self.scene().finish_wire(event.scenePos())
+        self.scene().finish_wire(event.scenePos(), event.screenPos())
 
 
 class Wire(QGraphicsPathItem):
@@ -131,6 +151,34 @@ class Wire(QGraphicsPathItem):
                     point=self.mapFromScene(port.scenePos());painter.drawEllipse(point,10,10)
         else:super().paint(painter,option,widget)
         painter.restore()
+
+    def mousePressEvent(self, event):
+        if event.button()==Qt.MouseButton.RightButton and self.isSelected():
+            event.accept();return
+        if event.button()==Qt.MouseButton.LeftButton and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) and self.scene() is not None and not self.scene().locked and self.source is not None:
+            self.scene().begin_wire(self.source)
+            if self.scene().pending is not None:
+                self.scene().pending.update_path(event.scenePos())
+            event.accept();return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.scene() is not None and self.scene().pending is not None:
+            self.scene().pending.update_path(event.scenePos())
+            event.accept();return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.scene() is not None and self.scene().pending is not None:
+            self.scene().finish_wire(event.scenePos(), event.screenPos())
+            event.accept();return
+        super().mouseReleaseEvent(event)
+
+    def contextMenuEvent(self, event):
+        if not self.isSelected():
+            self.scene().clearSelection();self.setSelected(True)
+        self.scene().wireContextRequested.emit(self, event.screenPos())
+        event.accept()
 
 
 from ..execution.graph import ExecutableGraph,CORE_KINDS
@@ -217,6 +265,8 @@ class Canvas(QGraphicsScene,ExecutableGraph):
     presentationChanged = Signal()
     blockOpened = Signal(object)
     blockContextRequested = Signal(object, object)
+    wireContextRequested = Signal(object, object)
+    wireDropQuickInsertRequested = Signal(object, object, object)
     connectionRejected = Signal(str)
 
     def __init__(self):
@@ -274,6 +324,11 @@ class Canvas(QGraphicsScene,ExecutableGraph):
             self.edit('Move blocks',lambda:place(True),lambda:place(False))
 
     def cancel_wire(self):
+        for node in self.nodes():
+            for port in node.inputs.values():
+                if port.wire_candidate is not None:
+                    port.wire_candidate = None
+                    port.update()
         if self.pending is not None:
             self.removeItem(self.pending)
             self.pending=None
@@ -284,6 +339,10 @@ class Canvas(QGraphicsScene,ExecutableGraph):
         self.cancel_wire()
         self.pending = Wire(source)
         self.addItem(self.pending)
+        for node in self.nodes():
+            for port in node.inputs.values():
+                port.wire_candidate = 'compatible' if self.connection_error(source, port) is None else 'incompatible'
+                port.update()
 
     def connect_ports(self, source, target):
         if self.locked:raise ValueError('Connections are locked during training.')
@@ -299,14 +358,18 @@ class Canvas(QGraphicsScene,ExecutableGraph):
         self.edit('Connect blocks',add,remove)
         return wire
 
-    def finish_wire(self, position):
+    def finish_wire(self, position, screen_position=None):
         if self.pending is None:return
         source=self.pending.source
         targets=[item for item in self.items(position) if isinstance(item,Port) and not item.output]
         self.cancel_wire()
-        if self.locked or not targets:return
-        try:self.connect_ports(source,targets[0])
-        except ValueError as error:self.connectionRejected.emit(str(error))
+        if self.locked:return
+        if targets:
+            try:self.connect_ports(source,targets[0])
+            except ValueError as error:self.connectionRejected.emit(str(error))
+            return
+        if screen_position is not None and (position-source.scenePos()).manhattanLength()>=24:
+            self.wireDropQuickInsertRequested.emit(source, position, screen_position)
 
     def connect_nodes(self, source, target, input_name=None):
         if input_name is None and source.output is not None:
@@ -386,7 +449,17 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.fit_action.triggered.connect(self.fit_model)
         self.actual_size_action=toolbar.addAction('100%')
         self.actual_size_action.triggered.connect(lambda:self.view.actual_size())
-        self.zoom_label=QLabel('100%');toolbar.addWidget(self.zoom_label)
+        self.zoom_label=QToolButton();self.zoom_label.setText('100%');self.zoom_label.setObjectName('toolbar_zoom_preset')
+        self.zoom_label.setToolTip('Canvas zoom level · click to choose a zoom preset')
+        self.zoom_label.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.zoom_menu=QMenu(self.zoom_label)
+        for percent in (50,75,100,125,150,200):
+            self.zoom_menu.addAction(f'{percent}%').triggered.connect(lambda checked=False,p=percent:self.view.set_zoom(p/100.))
+        self.zoom_menu.addSeparator()
+        self.zoom_menu.addAction('Fit model').triggered.connect(self.fit_model)
+        self.zoom_menu.addAction('Fit selection').triggered.connect(self.fit_selection)
+        self.zoom_label.setMenu(self.zoom_menu)
+        toolbar.addWidget(self.zoom_label)
         self.delete_action=toolbar.addAction('Delete selected')
         self.delete_action.setShortcut('Delete')
         self.delete_action.triggered.connect(self.delete_selected)
@@ -440,6 +513,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.blockOpened.connect(self.open_block)
         self.scene.connectionRejected.connect(self.connection_rejected)
         self.scene.blockContextRequested.connect(self.show_block_menu)
+        self.scene.wireContextRequested.connect(self.show_wire_menu)
+        self.scene.wireDropQuickInsertRequested.connect(lambda source,pos,screen:self.show_quick_insert(pos,screen,source))
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
         self.scene.graphChanged.connect(self.graph_changed)
@@ -521,6 +596,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.save_run_action=file_menu.addAction('Save run and checkpoint…')
         self.save_run_action.triggered.connect(lambda:self.save_current_run())
         self.save_run_action.setEnabled(False)
+        self.export_diagram_action=file_menu.addAction('Export diagram image…')
+        self.export_diagram_action.setIcon(icon('export'))
+        self.export_diagram_action.triggered.connect(lambda:self.export_diagram_image())
         file_menu.addSeparator()
         self.load_action.setShortcut('')
         self.examples_menu=file_menu.addMenu('Examples')
@@ -914,6 +992,76 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.statusBar().showMessage('Saved run and method checkpoint · '+Path(path).name)
         return True
 
+    def export_diagram_image(self,path=None,scale=2):
+        import os
+        from tempfile import NamedTemporaryFile
+        from PySide6.QtCore import QRectF, QSize
+        from PySide6.QtGui import QImage
+        if not self.scene.items():
+            self.statusBar().showMessage('Add at least one block before exporting a diagram image.')
+            return False
+        if path is None:
+            path,_=QFileDialog.getSaveFileName(
+                self,
+                'Export diagram image',
+                str(self.model_dialog_directory()/'diagram.png'),
+                'PNG image (*.png);;SVG vector diagram (*.svg)',
+            )
+            if not path:return False
+        target=Path(path)
+        if target.suffix.lower() not in ('.png','.svg'):
+            target=target.with_suffix(target.suffix+'.png' if target.suffix else '.png')
+        bounds=self.scene.itemsBoundingRect().adjusted(-24,-24,24,24)
+        if bounds.width()<=0 or bounds.height()<=0:return False
+        target.parent.mkdir(parents=True,exist_ok=True)
+        selected=list(self.scene.selectedItems())
+        self.scene.blockSignals(True)
+        try:
+            self.scene.clearSelection()
+            with NamedTemporaryFile(dir=target.parent,suffix=target.suffix.lower(),delete=False) as handle:
+                temp=Path(handle.name)
+            try:
+                if target.suffix.lower()=='.svg':
+                    from PySide6.QtSvg import QSvgGenerator
+                    w=max(1,int(round(bounds.width())))
+                    h=max(1,int(round(bounds.height())))
+                    generator=QSvgGenerator()
+                    generator.setFileName(str(temp))
+                    generator.setSize(QSize(w,h))
+                    generator.setViewBox(QRectF(0,0,w,h))
+                    generator.setTitle(self.windowTitle())
+                    painter=QPainter(generator)
+                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                    painter.fillRect(QRectF(0,0,w,h),QColor(colors()['canvas']))
+                    self.scene.render(painter,QRectF(0,0,w,h),bounds)
+                    painter.end()
+                else:
+                    w=max(1,int(round(bounds.width()*scale)))
+                    h=max(1,int(round(bounds.height()*scale)))
+                    image=QImage(w,h,QImage.Format.Format_ARGB32_Premultiplied)
+                    image.fill(QColor(colors()['canvas']))
+                    painter=QPainter(image)
+                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+                    self.scene.render(painter,QRectF(0,0,w,h),bounds)
+                    painter.end()
+                    if not image.save(str(temp),'PNG'):
+                        raise OSError('Could not encode PNG diagram image.')
+                os.replace(temp,target)
+            except Exception:
+                temp.unlink(missing_ok=True)
+                raise
+        except Exception as error:
+            QMessageBox.warning(self,'Diagram could not be exported',str(error))
+            return False
+        finally:
+            self.scene.clearSelection()
+            for item in selected:
+                if isValid(item) and item.scene() is self.scene:item.setSelected(True)
+            self.scene.blockSignals(False)
+        self.statusBar().showMessage('Exported diagram image · '+target.name)
+        return True
+
     def open_saved_run(self,path=None):
         if self.is_running() or self.scene.locked:return False
         if path is None:path,_=QFileDialog.getOpenFileName(self,'Open saved run','','Margam run (*.margam-run.pt)')
@@ -1270,6 +1418,33 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         menu.exec(position)
         menu.deleteLater()
 
+    def create_wire_menu(self, wire):
+        menu=QMenu(self)
+        if wire.source is not None and wire.source.parentItem() is not None:
+            source_id=wire.source.parentItem().identifier
+            menu.addAction('Select source').triggered.connect(lambda:self.locate_block(source_id))
+        if wire.target is not None and wire.target.parentItem() is not None:
+            target_id=wire.target.parentItem().identifier
+            menu.addAction('Select destination').triggered.connect(lambda:self.locate_block(target_id))
+        menu.addSeparator()
+        busy=self.is_running() or self.scene.locked or self.project_workspace.busy
+        remove=menu.addAction('Delete connection')
+        remove.setEnabled(not busy)
+        remove.triggered.connect(lambda:self.delete_wire(wire))
+        return menu
+
+    def show_wire_menu(self, wire, position):
+        menu=self.create_wire_menu(wire)
+        menu.exec(position)
+        menu.deleteLater()
+
+    def delete_wire(self, wire):
+        if self.is_running() or self.scene.locked or self.project_workspace.busy or not isValid(wire) or wire.scene() is not self.scene:
+            return False
+        self.scene.clearSelection();wire.setSelected(True)
+        self.scene.delete_selection('Delete connection')
+        return True
+
     def show_block_properties(self, node):
         if not isValid(node) or node.scene() is not self.scene:return
         self.scene.clearSelection();node.setSelected(True)
@@ -1543,12 +1718,15 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.statusBar().showMessage('Supplied points example · shuffled reference IDs · explicit CSV/VTU comparison exports · views remain closed')
         return True
 
-    def show_quick_insert(self,position,screen_position):
+    def show_quick_insert(self,position,screen_position,source_port=None):
         if self.is_running() or self.scene.locked:return
         if self.quick_insert is not None:self.quick_insert.reject()
-        popup=QuickInsert(self)
+        popup=QuickInsert(self,source_port=source_port)
         self.quick_insert=popup
-        popup.blockChosen.connect(lambda title:self.add_node(title,position))
+        if source_port is not None:
+            popup.blockChosen.connect(lambda title,s=source_port,p=position:self.add_and_connect_node(title,p,s))
+        else:
+            popup.blockChosen.connect(lambda title:self.add_node(title,position))
         def finished():
             if self.quick_insert is popup:self.quick_insert=None
             self.view.setFocus()
@@ -1559,6 +1737,33 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         popup.move(max(screen.left(),min(screen_position.x(),screen.right()-popup.width()+1)),
                    max(screen.top(),min(screen_position.y(),screen.bottom()-popup.height()+1)))
         popup.library.search.setFocus()
+
+    def add_and_connect_node(self,title,position,source_port):
+        if self.is_running() or self.scene.locked or title not in KINDS or source_port is None or not isValid(source_port) or source_port.scene() is not self.scene or not source_port.output:return None
+        point=self.scene.snap_point(position-QPointF(0,40))
+        node=Node(title,'Not configured',point.x(),point.y())
+        target_port=next((port for port in node.inputs.values() if compatible(source_port.data_type,port.data_type)),None)
+        if target_port is None:return None
+        if node.kind=='jorvik_geometry':
+            try:self.jorvik_document(node,create=True)
+            except (OSError,ValueError,ImportError) as error:
+                QMessageBox.warning(self,'Jorvik document could not be created',str(error));return None
+        if node.kind in OUTPUT_KINDS:
+            node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
+            node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
+        wire=Wire(source_port,target_port)
+        def add():
+            self.scene.addItem(node)
+            self.scene.addItem(wire);self.scene.wires.append(wire);wire.update_path()
+            self.scene.clearSelection();node.setSelected(True)
+            self.graph_changed()
+        def remove():
+            if wire in self.scene.wires:self.scene.wires.remove(wire)
+            self.scene.removeItem(wire)
+            self.scene.removeItem(node)
+            self.graph_changed()
+        self.push_edit('Add and connect '+title,add,remove)
+        return node
 
     def replace_recipe_parts(self,text,old_nodes,old_wires,new_nodes,new_wires,selected):
         """One reversible structural edit; retain objects and external block IDs."""
@@ -2035,6 +2240,52 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         font=heading.font();font.setBold(True);heading.setFont(font)
         heading.setContentsMargins(0,10,0,2);self.form.addRow(heading)
 
+    def attach_expression_helper(self,edit,*,target=False,allow_blank=True,blank_message='Blank: uses default preset',multi_field=False):
+        coords=tuple(self.config.coordinate_names)
+        fields=tuple(self.config.field_names)
+        dimension=len(self.config.bounds[0])
+        normals='nx, ny' if 'y' in coords else 'nx'
+        if target:
+            allowed=f"Allowed: {', '.join(coords)}, c, nu, pi, {normals}; sin/cos/exp/tanh/sqrt/abs"
+        else:
+            allowed=f"Allowed: {', '.join(coords)}, {', '.join(fields)}, c, nu, pi, {normals}; D(..), laplace(..), dn(..), sin/cos/exp/tanh/sqrt/abs"
+        status=QLabel();status.setWordWrap(True)
+        name=edit.objectName() or edit.property('search_key') or 'expression'
+        status.setObjectName(name+'_status')
+        def check_text(raw_text):
+            text=raw_text.strip()
+            if not text:
+                if allow_blank:
+                    status.setText(f'{blank_message} · {allowed}')
+                    status.setProperty('expression_valid',True)
+                    status.setStyleSheet('')
+                else:
+                    status.setText(f'Invalid: Expressions need 1–512 characters. · {allowed}')
+                    status.setProperty('expression_valid',False)
+                    status.setStyleSheet('color: #c94a4a;')
+                return
+            try:
+                if multi_field:
+                    parts=[p.strip() for p in text.split(';')]
+                    if len(parts)!=len(fields):
+                        raise ValueError(f'Provide {len(fields)} semicolon-separated expressions ({", ".join(fields)}).')
+                    for part in parts:
+                        Expression(part,dimension,target=target,fields=fields,coordinates=coords)
+                else:
+                    Expression(text,dimension,target=target,fields=fields,coordinates=coords)
+            except ValueError as error:
+                status.setText(f'Invalid: {error} · {allowed}')
+                status.setProperty('expression_valid',False)
+                status.setStyleSheet('color: #c94a4a;')
+            else:
+                status.setText(f'Valid expression · {allowed}')
+                status.setProperty('expression_valid',True)
+                status.setStyleSheet('')
+        edit.textChanged.connect(check_text)
+        check_text(edit.text())
+        self.form.addRow(status)
+        return status
+
     def field(self,label,attribute,kind='float',choices=None,minimum=-1000000,maximum=1000000):
         value=getattr(self.config,attribute)
         token=object()
@@ -2083,6 +2334,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     button=QPushButton(label)
                     button.clicked.connect(lambda checked=False,identifier=endpoint.identifier:self.locate_block(identifier))
                     self.form.addRow(button)
+                remove=QPushButton('Delete connection');remove.setObjectName('delete_connection_button')
+                remove.setEnabled(not self.is_running() and not self.scene.locked and not self.project_workspace.busy)
+                remove.clicked.connect(lambda checked=False,w=wire:self.delete_wire(w))
+                self.form.addRow(remove)
             else:
                 message=QLabel('Blank model: add geometry, samples, PDE, boundary conditions, a network and trainer from the library, or choose File → Examples.' if not self.scene.nodes() else 'Select a block to edit its settings.');message.setWordWrap(True);self.form.addRow(message)
         elif node.kind=='annotation':
@@ -2240,6 +2495,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 forcing=QLineEdit(self.config.pde_forcing);forcing.setMaxLength(384);forcing.setObjectName('predefined_forcing')
                 forcing.editingFinished.connect(lambda e=forcing:self.change('pde_forcing',e.text().strip()))
                 self.form.addRow('Forcing f',forcing)
+                self.attach_expression_helper(forcing,target=True,allow_blank=False)
             if self.config.pde_preset in ('advection_diffusion_1d','incompressible_2d','burgers_1d','kdv_1d'):
                 self.field('Dispersion ν' if self.config.pde_preset=='kdv_1d' else 'Diffusivity / viscosity ν','viscosity',minimum=.000001,maximum=100000)
         elif node.kind=='pde':
@@ -2255,6 +2511,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     edit=QLineEdit(self.config.flow_residuals[index]);edit.setObjectName('flow_residual_'+str(index))
                     edit.editingFinished.connect(lambda i=index,e=edit:self.change_flow_residual(i,e.text().strip()))
                     self.form.addRow(label,edit)
+                    self.attach_expression_helper(edit,target=False,allow_blank=False)
             else:
                 note=QLabel('1D space–time scalar residual: use x,t and an explicit time-dependent equation. No default final-time condition.' if self.config.is_time_dependent else 'Poisson preset: Δu + c = 0\nUnknown: scalar field u\n1D: uₓₓ + c = 0\n2D: uₓₓ + uᵧᵧ + c = 0');note.setWordWrap(True);self.form.addRow(note)
                 self.field('Constant c','source')
@@ -2262,6 +2519,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 edit.setPlaceholderText('Blank: Poisson preset; e.g. laplace(u) + c')
                 edit.editingFinished.connect(lambda e=edit:self.change('pde_expression',e.text().strip()))
                 self.form.addRow('Residual = 0',edit)
+                self.attach_expression_helper(edit,target=False,allow_blank=not self.config.is_time_dependent,blank_message='Blank: Poisson preset')
                 note=QLabel('Scalar expressions: '+', '.join(self.config.coordinate_names)+', u, c, nu, pi; D(u,x), '+('D(u,t), ' if self.config.is_time_dependent else '')+'laplace(u), sin/cos/exp/tanh/sqrt/abs. Laplacian is spatial only. Arithmetic only; no Python code. Additional pointwise PDE inputs remain future work.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='bc' and (self.config.is_paper_case or self.config.pde_preset in ('kdv_1d','wave_1d')):
             from ..templates.expert_examples import condition_description
@@ -2285,6 +2543,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                         edit=QLineEdit(spec[key]);edit.setObjectName('flow_'+side+'_'+field+'_'+key)
                         edit.editingFinished.connect(lambda s=side,f=field,k=key,e=edit:self.change_flow_boundary(s,f,k,e.text().strip()))
                         self.form.addRow(field+label,edit)
+                        self.attach_expression_helper(edit,target=(key=='target'),allow_blank=True,blank_message='Blank: 0' if key=='target' else 'Blank: unused unless Custom')
                 for name in self.config.constraint_names:
                     if name.startswith(side+':'):self.boundary_coefficient_field(name)
                 for index,label in enumerate(('Gauge x','Gauge y')):
@@ -2311,11 +2570,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     target.setPlaceholderText('Blank: constant target above; e.g. x*(1-x)')
                     target.editingFinished.connect(lambda s=side,e=target:self.change_bc_expression(s,'bc_targets',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' target expression',target)
+                    self.attach_expression_helper(target,target=True,allow_blank=True,blank_message='Blank: constant target above')
                     operator=QLineEdit(self.config.bc_operators.get(side,''));operator.setObjectName(side+'_operator_expression')
                     operator.setProperty('search_key','bc_operators.'+side)
                     operator.setPlaceholderText('Custom only: e.g. u + dn(u)')
                     operator.editingFinished.connect(lambda s=side,e=operator:self.change_bc_expression(s,'bc_operators',e.text().strip()))
                     self.form.addRow(self.config.side_label(side)+' custom operator',operator)
+                    self.attach_expression_helper(operator,target=False,allow_blank=(self.config.bc_types.get(side)!='Custom'),blank_message='Blank: unused unless Custom')
                 note=QLabel('Dirichlet: u = target.\nNeumann: ∂u/∂n = target (outward normal), not conductivity-scaled flux.\nAdjacent Dirichlet values must agree at shared rectangle corners. At least one Dirichlet side is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='network':
             architecture=QComboBox();architecture.setObjectName('network_architecture')
@@ -2455,10 +2716,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if source:
                 clear=QPushButton('Clear source');clear.clicked.connect(lambda checked=False,n=node:self.forget_dataset_source(n,'source_data',lambda:self.change_output(n,'source_data',{})));self.form.addRow(clear)
         elif node.kind=='reference':
-            expression=QLineEdit(node.settings.get('reference_expression',''));expression.setProperty('search_key','reference_expression')
+            expression=QLineEdit(node.settings.get('reference_expression',''));expression.setObjectName('reference_expression');expression.setProperty('search_key','reference_expression')
             expression.setPlaceholderText('Blank: preset; e.g. y; 0; 0' if self.config.physics=='incompressible_2d' else 'Blank: preset; e.g. x*(1-x)')
             expression.editingFinished.connect(lambda n=node,e=expression:self.change_output(n,'reference_expression',e.text().strip()))
             self.form.addRow('Reference expression',expression)
+            self.attach_expression_helper(expression,target=True,allow_blank=True,blank_message='Blank: built-in reference preset',multi_field=(len(self.config.field_names)>1))
             imported=QPushButton('Map / preview imported reference values…');imported.clicked.connect(lambda checked=False,n=node:self.edit_point_data(reference=n));self.form.addRow(imported)
             if node.settings.get('reference_data'):
                 source_label=QLabel(self.dataset_label(node.settings['reference_data']));source_label.setWordWrap(True);self.form.addRow(source_label)

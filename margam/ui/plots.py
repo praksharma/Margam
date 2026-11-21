@@ -1,6 +1,6 @@
 """Native 2D sample, convergence and solution views; no plotting dependency."""
 import math
-from PySide6.QtCore import Qt, QPointF, QRectF
+from PySide6.QtCore import Qt, QPointF, QRectF, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QImage
 from PySide6.QtWidgets import QWidget
 from .theme import colors
@@ -63,21 +63,87 @@ class RectanglePreview(QWidget):
 
 
 class CurvePlot(QWidget):
+    hoverChanged = Signal(str)
+
     def __init__(self, logarithmic=False, parent=None):
         super().__init__(parent)
         self.series = []
         self.logarithmic = logarithmic
         self.caption = 'Run training to see results.'
+        self.hover_x = None
+        self.hover_text = ''
+        self.setMouseTracking(True)
         self.setMinimumHeight(190)
+
+    def set_logarithmic(self, logarithmic):
+        self.logarithmic = bool(logarithmic)
+        self.update()
 
     def set_series(self, series, caption):
         self.series,self.caption = series,caption
+        if not series:
+            self.clear_hover()
+        elif self.hover_x is not None:
+            self.hover_at_x(self.hover_x)
         self.update()
+
+    def clear_hover(self):
+        if self.hover_x is not None or self.hover_text:
+            self.hover_x = None
+            self.hover_text = ''
+            self.hoverChanged.emit('')
+            self.update()
+
+    def _finite_series(self):
+        return [
+            (name, [(float(x), float(y)) for x, y in rows if math.isfinite(x) and math.isfinite(y)], color)
+            for name, rows, color in self.series
+        ]
+
+    def hover_at_x(self, target_x):
+        raw_series = [(name, data, color) for name, data, color in self._finite_series() if data]
+        if not raw_series:
+            self.clear_hover()
+            return ''
+        all_xs = [x for _, data, _ in raw_series for x, _ in data]
+        nearest_x = min(all_xs, key=lambda x: abs(x - target_x))
+        parts = [f'x={nearest_x:g}']
+        for name, data, _ in raw_series:
+            pt_x, pt_y = min(data, key=lambda item: abs(item[0] - nearest_x))
+            parts.append(f'{name}={pt_y:.4g}')
+        self.hover_x = nearest_x
+        self.hover_text = ' · '.join(parts)
+        self.hoverChanged.emit(self.hover_text)
+        self.update()
+        return self.hover_text
+
+    def mouseMoveEvent(self, event):
+        raw_series = [(name, data, color) for name, data, color in self._finite_series() if data]
+        if not raw_series:
+            self.clear_hover()
+            return
+        xs = [x for _, data, _ in raw_series for x, _ in data]
+        xmin, xmax = min(xs), max(xs)
+        if xmax == xmin:
+            xmax = xmin + 1
+        area = QRectF(72, 52, max(50, self.width() - 110), max(30, self.height() - 95))
+        pos = event.position()
+        if area.left() <= pos.x() <= area.right() and area.top() <= pos.y() <= area.bottom():
+            target_x = xmin + (pos.x() - area.left()) / area.width() * (xmax - xmin)
+            self.hover_at_x(target_x)
+        else:
+            self.clear_hover()
+        super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event):
+        self.clear_hover()
+        super().leaveEvent(event)
 
     def paintEvent(self,event):
         p=QPainter(self);p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setPen(QColor(colors()['text']));p.drawText(18,22,self.caption)
-        series=[(name,[(float(x),math.log10(max(float(y),1e-16)) if self.logarithmic else float(y)) for x,y in rows if math.isfinite(x) and math.isfinite(y)],color) for name,rows,color in self.series]
+        raw_series=self._finite_series()
+        series=[(name,[(x,math.log10(max(y,1e-16)) if self.logarithmic else y) for x,y in rows],color) for name,rows,color in raw_series]
         rows=[row for _,data,_ in series for row in data]
         if not rows:return
         xs,ys=zip(*rows);xmin,xmax=min(xs),max(xs);ymin,ymax=min(ys),max(ys)
@@ -85,6 +151,11 @@ class CurvePlot(QWidget):
         if ymax==ymin:ymin-=.5;ymax+=.5
         margin=(ymax-ymin)*.05;ymin-=margin;ymax+=margin
         area=QRectF(72,52,max(50,self.width()-110),max(30,self.height()-95))
+        grid_pen=QPen(QColor(colors()['grid']),1,Qt.PenStyle.DashLine)
+        p.setPen(grid_pen)
+        for frac in (0.25, 0.5, 0.75):
+            gy=area.top()+frac*area.height()
+            p.drawLine(QPointF(area.left(),gy),QPointF(area.right(),gy))
         p.setPen(QPen(QColor(colors()['border']),1));p.drawRect(area)
         def mapped(x,y):return QPointF(area.left()+(x-xmin)/(xmax-xmin)*area.width(),area.bottom()-(y-ymin)/(ymax-ymin)*area.height())
         for name,data,color in series:
@@ -95,8 +166,21 @@ class CurvePlot(QWidget):
                 if i==0:path.moveTo(mapped(x,y))
                 else:path.lineTo(mapped(x,y))
             p.drawPath(path)
+        if self.hover_x is not None and xmin<=self.hover_x<=xmax:
+            cx=mapped(self.hover_x,ymin).x()
+            p.setPen(QPen(QColor(colors()['muted']),1,Qt.PenStyle.DashLine))
+            p.drawLine(QPointF(cx,area.top()),QPointF(cx,area.bottom()))
+            for name,data,color in series:
+                if not data:continue
+                px,py=min(data,key=lambda item:abs(item[0]-self.hover_x))
+                pt=mapped(px,py)
+                p.setBrush(QColor(color));p.setPen(QPen(QColor(colors()['base']),1.5))
+                p.drawEllipse(pt,3.5,3.5)
+            p.setBrush(Qt.BrushStyle.NoBrush)
         p.setPen(QColor(colors()['text']))
+        ymid=0.5*(ymin+ymax)
         p.drawText(5,int(area.top()+8),f'{10**ymax:.2g}' if self.logarithmic else f'{ymax:.3g}')
+        p.drawText(5,int(area.center().y()+4),f'{10**ymid:.2g}' if self.logarithmic else f'{ymid:.3g}')
         p.drawText(5,int(area.bottom()),f'{10**ymin:.2g}' if self.logarithmic else f'{ymin:.3g}')
         p.drawText(int(area.left()),int(area.bottom()+22),f'{xmin:.3g}')
         p.drawText(int(area.right()-35),int(area.bottom()+22),f'{xmax:.3g}')

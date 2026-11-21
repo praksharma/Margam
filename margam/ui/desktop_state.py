@@ -40,6 +40,8 @@ class DesktopState:
         w.show_grid_action.setChecked(self.settings.value('show_grid',False,type=bool))
         w.snap_grid_action.setChecked(self.settings.value('snap_grid',False,type=bool))
         w.route_wires_action.setChecked(self.settings.value('route_wires',False,type=bool))
+        if hasattr(w,'show_minimap_action'):
+            w.show_minimap_action.setChecked(self.settings.value('show_minimap',False,type=bool))
         w.set_dependency_mode(self.settings.value('dependency_mode','off'))
         collapsed=self.settings.value('collapsed',[]) or []
         if isinstance(collapsed,str):collapsed=[collapsed]

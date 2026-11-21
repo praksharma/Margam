@@ -23,9 +23,9 @@ docks and can float or dock. No default figure pane or 3D viewport is created.
 
 | Menu | Implemented actions |
 | --- | --- |
-| File | Model Open/Save/Save As; run Open/Save; Examples; Insert PINN recipe; Quit |
+| File | Model Open/Save/Save As; run Open/Save; Export diagram image (PNG/SVG); Examples; Insert PINN recipe; Quit |
 | Edit | Undo/Redo, block Copy/Cut/Paste, Delete selected, Select all blocks |
-| View | Panels, zoom/100%/Fit/Pan, Reset panel layout, Open selected output, Theme |
+| View | Panels, zoom/100%/Fit/Pan, Show canvas minimap, Reset panel layout, Open selected output, Theme |
 | Run | Validate, Train, Stop, Resume checkpoint |
 | Help | Quick start and About |
 
@@ -72,14 +72,23 @@ headings only expand/collapse. Double-click empty canvas space or press Tab with
 canvas focus for quick insertion. Search and Enter selects the first match; Down
 moves into the matches. Escape/click outside cancels. New blocks are unconnected.
 
-Drag from an output port to a compatible input. Hover to see port roles. Inputs
-accept one source; outputs may fan out. Incompatible/occupied inputs and self-connections are rejected immediately. Delete an existing wire before replacing its source.
+Drag from an output port to a compatible input. While dragging a wire, compatible
+unoccupied inputs highlight with a halo and incompatible inputs dim. Dropping a
+dragged wire onto empty canvas space opens Quick Insert pre-filtered to blocks
+with a compatible input port and connects the chosen block in a single undoable
+step (`Add and connect <block>`). Hold `Ctrl` and left-drag on any existing wire
+to branch a new connection from its source output port. Right-click a wire for
+its context menu (`Select source`, `Select destination`, `Delete connection`).
+Hover to see port roles. Inputs accept one source; outputs may fan out.
+Incompatible/occupied inputs and self-connections are rejected immediately.
+Delete an existing wire before replacing its source.
 Rejected/cancelled wiring leaves current results intact. Pan/zoom is respected by
 insertion and does not change block coordinates.
 
 | Navigation | Control |
 | --- | --- |
-| Pointer-centred zoom | Wheel, 10–400%; toolbar/View zoom actions |
+| Pointer-centred zoom | Wheel, 10–400%; toolbar zoom preset menu (`50%`–`200%`, `Fit model`, `Fit selection`) and View zoom actions |
+| Canvas minimap | `View → Show canvas minimap` corner overview with click-and-drag viewport panning |
 | Persistent pan | Pan toggle, left-drag; open/closed hand cursors; Escape returns to selection |
 | Temporary pan | Middle-drag or Space+left-drag |
 | Fit | Tap Space or Fit model |
@@ -142,7 +151,13 @@ Poisson reference is a labelled 40-odd-mode-per-axis truncated series, not a uni
 exact solution. Couette reference is valid for the unchanged Couette setup.
 
 Existing scalar interval/rectangle plots remain available; coupled fields use tables
-(first 200 rows shown) and full CSV. No new field heatmaps are being developed.
+(200 rows per page with `Previous`/`Next` pagination, `Locate max |error|` row jump,
+and `Copy rows CSV`) and full CSV. Training Monitor views include a cursor hover
+readout, horizontal gridlines, a `Log scale` toggle (`log10` or linear), and
+`Copy CSV` / `Export CSV…` actions for retained loss histories. Restricted
+expression fields in Properties show live syntax validation and the active allowed
+coordinate, field, constant, normal and derivative symbols as you type without
+mutating the Undo stack until editing finishes. No new field heatmaps are being developed.
 For SA-PINN, the monitor total includes adaptive masks and can increase while field
 error falls. Right-click the completed SA block for Adaptive weight summary; this
 reports λ rather than λ² and also works for loaded run archives.
