@@ -86,6 +86,58 @@ class UIImprovementsTests(unittest.TestCase):
         self.assertEqual(len(window.scene.nodes()), before_nodes + 1)
         self.assertEqual(len(window.scene.wires), before_wires + 1)
 
+    def test_wire_branching_and_wire_context_menu_and_inspector_delete(self):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QGraphicsSceneMouseEvent, QPushButton
+        window = self.window
+        method = next(n for n in window.scene.nodes() if n.kind == 'method')
+        monitor = window.add_node('Training Monitor', QPointF(1000, 0))
+        sol = window.add_node('Solution Plot', QPointF(1000, 160))
+        wire1 = window.scene.connect_nodes(method, monitor)
+
+        # Simulate Ctrl+LeftButton press on existing wire1 to branch from wire1.source (method.output)
+        press = QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.Type.GraphicsSceneMousePress)
+        press.setButton(Qt.MouseButton.LeftButton)
+        press.setModifiers(Qt.KeyboardModifier.ControlModifier)
+        press.setScenePos((method.output.scenePos() + monitor.inputs['input'].scenePos()) / 2)
+        wire1.mousePressEvent(press)
+        self.assertIsNotNone(window.scene.pending)
+        self.assertIs(window.scene.pending.source, method.output)
+
+        # Release the branched wire on sol.inputs['input']
+        release = QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.Type.GraphicsSceneMouseRelease)
+        release.setButton(Qt.MouseButton.LeftButton)
+        release.setScenePos(sol.inputs['input'].scenePos())
+        release.setScreenPos(QPoint(300, 300))
+        wire1.mouseReleaseEvent(release)
+        self.assertIsNone(window.scene.pending)
+        wire2 = next((w for w in window.scene.wires if w.target is sol.inputs['input']), None)
+        self.assertIsNotNone(wire2)
+        self.assertIs(wire2.source, method.output)
+
+        # Verify wire context menu actions (Select source, Select destination, Delete connection)
+        menu = window.create_wire_menu(wire2)
+        labels = [a.text() for a in menu.actions() if not a.isSeparator()]
+        self.assertEqual(labels, ['Select source', 'Select destination', 'Delete connection'])
+        next(a for a in menu.actions() if a.text() == 'Select source').trigger()
+        self.assertTrue(method.isSelected())
+        next(a for a in menu.actions() if a.text() == 'Select destination').trigger()
+        self.assertTrue(sol.isSelected())
+        menu.deleteLater()
+
+        # Select wire2 and verify the Properties inspector has 'Delete connection' button
+        window.scene.clearSelection()
+        wire2.setSelected(True)
+        self.app.processEvents()
+        del_btn = window.property_scroll.widget().findChild(QPushButton, 'delete_connection_button')
+        self.assertIsNotNone(del_btn)
+        before_wires = len(window.scene.wires)
+        del_btn.click()
+        self.assertEqual(len(window.scene.wires), before_wires - 1)
+        self.assertEqual(window.undo_stack.undoText(), 'Delete connection')
+        window.undo_edit()
+        self.assertEqual(len(window.scene.wires), before_wires)
+
 
 if __name__ == '__main__':
     unittest.main()

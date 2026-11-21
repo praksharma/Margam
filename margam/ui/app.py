@@ -152,6 +152,34 @@ class Wire(QGraphicsPathItem):
         else:super().paint(painter,option,widget)
         painter.restore()
 
+    def mousePressEvent(self, event):
+        if event.button()==Qt.MouseButton.RightButton and self.isSelected():
+            event.accept();return
+        if event.button()==Qt.MouseButton.LeftButton and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) and self.scene() is not None and not self.scene().locked and self.source is not None:
+            self.scene().begin_wire(self.source)
+            if self.scene().pending is not None:
+                self.scene().pending.update_path(event.scenePos())
+            event.accept();return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.scene() is not None and self.scene().pending is not None:
+            self.scene().pending.update_path(event.scenePos())
+            event.accept();return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.scene() is not None and self.scene().pending is not None:
+            self.scene().finish_wire(event.scenePos(), event.screenPos())
+            event.accept();return
+        super().mouseReleaseEvent(event)
+
+    def contextMenuEvent(self, event):
+        if not self.isSelected():
+            self.scene().clearSelection();self.setSelected(True)
+        self.scene().wireContextRequested.emit(self, event.screenPos())
+        event.accept()
+
 
 from ..execution.graph import ExecutableGraph,CORE_KINDS
 
@@ -237,6 +265,7 @@ class Canvas(QGraphicsScene,ExecutableGraph):
     presentationChanged = Signal()
     blockOpened = Signal(object)
     blockContextRequested = Signal(object, object)
+    wireContextRequested = Signal(object, object)
     wireDropQuickInsertRequested = Signal(object, object, object)
     connectionRejected = Signal(str)
 
@@ -474,6 +503,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.blockOpened.connect(self.open_block)
         self.scene.connectionRejected.connect(self.connection_rejected)
         self.scene.blockContextRequested.connect(self.show_block_menu)
+        self.scene.wireContextRequested.connect(self.show_wire_menu)
         self.scene.wireDropQuickInsertRequested.connect(lambda source,pos,screen:self.show_quick_insert(pos,screen,source))
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
@@ -1304,6 +1334,33 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         menu=self.create_group_menu() if len(selected)>1 and node in selected else self.create_block_menu(node)
         menu.exec(position)
         menu.deleteLater()
+
+    def create_wire_menu(self, wire):
+        menu=QMenu(self)
+        if wire.source is not None and wire.source.parentItem() is not None:
+            source_id=wire.source.parentItem().identifier
+            menu.addAction('Select source').triggered.connect(lambda:self.locate_block(source_id))
+        if wire.target is not None and wire.target.parentItem() is not None:
+            target_id=wire.target.parentItem().identifier
+            menu.addAction('Select destination').triggered.connect(lambda:self.locate_block(target_id))
+        menu.addSeparator()
+        busy=self.is_running() or self.scene.locked or self.project_workspace.busy
+        remove=menu.addAction('Delete connection')
+        remove.setEnabled(not busy)
+        remove.triggered.connect(lambda:self.delete_wire(wire))
+        return menu
+
+    def show_wire_menu(self, wire, position):
+        menu=self.create_wire_menu(wire)
+        menu.exec(position)
+        menu.deleteLater()
+
+    def delete_wire(self, wire):
+        if self.is_running() or self.scene.locked or self.project_workspace.busy or not isValid(wire) or wire.scene() is not self.scene:
+            return False
+        self.scene.clearSelection();wire.setSelected(True)
+        self.scene.delete_selection('Delete connection')
+        return True
 
     def show_block_properties(self, node):
         if not isValid(node) or node.scene() is not self.scene:return
@@ -2148,6 +2205,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     button=QPushButton(label)
                     button.clicked.connect(lambda checked=False,identifier=endpoint.identifier:self.locate_block(identifier))
                     self.form.addRow(button)
+                remove=QPushButton('Delete connection');remove.setObjectName('delete_connection_button')
+                remove.setEnabled(not self.is_running() and not self.scene.locked and not self.project_workspace.busy)
+                remove.clicked.connect(lambda checked=False,w=wire:self.delete_wire(w))
+                self.form.addRow(remove)
             else:
                 message=QLabel('Blank model: add geometry, samples, PDE, boundary conditions, a network and trainer from the library, or choose File → Examples.' if not self.scene.nodes() else 'Select a block to edit its settings.');message.setWordWrap(True);self.form.addRow(message)
         elif node.kind=='annotation':
