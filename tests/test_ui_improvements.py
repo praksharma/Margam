@@ -180,6 +180,54 @@ class UIImprovementsTests(unittest.TestCase):
             self.assertTrue(view.export_csv(out_path))
             self.assertEqual(out_path.read_text(encoding='utf-8'), csv_text)
 
+    def test_vector_result_view_pagination_locate_max_error_and_copy_csv(self):
+        from margam.ui.output_views import VectorResultView
+        from margam.templates.poisson import PoissonConfig
+        view = VectorResultView()
+        config = PoissonConfig()
+        points = [[float(i), 0.0] for i in range(450)]
+        values = [float(i) for i in range(450)]
+        reference = [float(i) for i in range(450)]
+        # Make row index 325 (which lives on page 2, 0-based page=1, row_in_page=125) have max |error| = 99.0
+        values[325] = 325.0 + 99.0
+        view.show_result({
+            'config': config,
+            'fields': ['u'],
+            'points': points,
+            'values': values,
+            'reference': reference,
+            'steps': 50,
+        })
+        self.assertEqual(view.page, 0)
+        self.assertEqual(view.table.rowCount(), 200)
+        self.assertIn('Page 1 of 3 (rows 1–200 of 450)', view.page_label.text())
+        self.assertFalse(view.prev_page_button.isEnabled())
+        self.assertTrue(view.next_page_button.isEnabled())
+
+        # Navigate pages
+        view.next_page_button.click()
+        self.assertEqual(view.page, 1)
+        self.assertEqual(view.table.rowCount(), 200)
+        self.assertIn('Page 2 of 3 (rows 201–400 of 450)', view.page_label.text())
+        view.next_page_button.click()
+        self.assertEqual(view.page, 2)
+        self.assertEqual(view.table.rowCount(), 50)
+        self.assertIn('Page 3 of 3 (rows 401–450 of 450)', view.page_label.text())
+
+        # Locate max |error| jumps from page 2 back to page 1 (row_in_page 125, global index 325)
+        located = view.locate_max_error()
+        self.assertEqual(located, (325, 1, 125))
+        self.assertEqual(view.page, 1)
+        selected_rows = sorted({idx.row() for idx in view.table.selectedIndexes()})
+        self.assertEqual(selected_rows, [125])
+
+        # Copy selected row CSV to clipboard
+        self.assertTrue(view.copy_rows_csv())
+        copied = QApplication.clipboard().text().strip().splitlines()
+        self.assertEqual(copied[0], 'x,y,u,ref u,error u')
+        self.assertEqual(len(copied), 2)
+        self.assertIn('325,0,424,325,99', copied[1])
+
 
 if __name__ == '__main__':
     unittest.main()
