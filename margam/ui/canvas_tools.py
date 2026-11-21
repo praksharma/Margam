@@ -36,6 +36,9 @@ class CanvasTools:
         self.route_wires_action=self.view_menu.addAction('Route wires around blocks');self.route_wires_action.setCheckable(True)
         self.route_wires_action.setToolTip('Use bounded right-angle detours around up to 64 blocks/notes. Curved fallback when no clear lane exists; wire crossings may remain.')
         self.route_wires_action.toggled.connect(lambda checked:self.set_canvas_preference('route_wires',checked))
+        self.show_minimap_action=self.view_menu.addAction('Show canvas minimap');self.show_minimap_action.setCheckable(True)
+        self.show_minimap_action.setToolTip('Show a corner overview of blocks and the current viewport · click or drag inside to pan')
+        self.show_minimap_action.toggled.connect(self.set_show_minimap)
         menu=self.view_menu.addMenu('Highlight dependencies');group=QActionGroup(self);group.setExclusive(True)
         self.dependency_actions={};self.dependency_mode='off'
         for key,label in [('off','Off'),('upstream','Upstream'),('downstream','Downstream'),('both','Both directions')]:
@@ -49,6 +52,12 @@ class CanvasTools:
         if key=='route_wires':self.scene.reroute_wires()
         state=getattr(self,'desktop_state',None)
         if state is not None:state.settings.setValue(key,bool(value))
+
+    def set_show_minimap(self,enabled):
+        enabled=bool(enabled)
+        self.view.set_minimap_visible(enabled)
+        state=getattr(self,'desktop_state',None)
+        if state is not None:state.settings.setValue('show_minimap',enabled)
 
     def set_dependency_mode(self,mode):
         if mode not in self.dependency_actions:return

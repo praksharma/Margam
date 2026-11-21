@@ -276,6 +276,61 @@ class UIImprovementsTests(unittest.TestCase):
         target_edit.setText('y*(1-y)')
         self.assertTrue(target_status.property('expression_valid'))
 
+    def test_toolbar_zoom_presets_and_canvas_minimap(self):
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QMouseEvent
+        window = self.window
+        window.show()
+        self.app.processEvents()
+
+        # Verify toolbar zoom preset menu actions
+        actions = {a.text(): a for a in window.zoom_menu.actions() if not a.isSeparator()}
+        self.assertIn('50%', actions)
+        self.assertIn('150%', actions)
+        self.assertIn('200%', actions)
+        self.assertIn('Fit model', actions)
+        self.assertIn('Fit selection', actions)
+
+        actions['150%'].trigger()
+        self.assertEqual(window.zoom_label.text(), '150%')
+        self.assertAlmostEqual(window.view.transform().m11(), 1.5, places=3)
+
+        actions['75%'].trigger()
+        self.assertEqual(window.zoom_label.text(), '75%')
+        self.assertAlmostEqual(window.view.transform().m11(), 0.75, places=3)
+
+        # Toggle canvas minimap via View -> Show canvas minimap
+        self.assertFalse(window.view.show_minimap)
+        window.show_minimap_action.setChecked(True)
+        self.assertTrue(window.view.show_minimap)
+        self.app.processEvents()
+        self.assertFalse(window.view.grab().isNull())
+
+        # Click inside minimap panel to recenter the viewport
+        panel, _, _, _ = window.view._minimap_geometry()
+        click_pos = panel.topLeft() + QPointF(20, 20)
+        target_scene = window.view._minimap_point_to_scene(click_pos)
+        press = QMouseEvent(
+            QMouseEvent.Type.MouseButtonPress,
+            click_pos,
+            window.view.viewport().mapToGlobal(click_pos.toPoint()),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        release = QMouseEvent(
+            QMouseEvent.Type.MouseButtonRelease,
+            click_pos,
+            window.view.viewport().mapToGlobal(click_pos.toPoint()),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        window.view.mousePressEvent(press)
+        window.view.mouseReleaseEvent(release)
+        new_center = window.view.mapToScene(window.view.viewport().rect().center())
+        self.assertLess((new_center - target_scene).manhattanLength(), 15.0)
+
 
 if __name__ == '__main__':
     unittest.main()
