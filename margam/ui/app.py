@@ -61,12 +61,32 @@ class Port(QGraphicsEllipseItem):
         self.name = spec.name
         self.data_type = spec.data_type
         self.label = spec.label
+        self.wire_candidate = None
         self.setPos(170 if output else 0, y)
         self.setBrush(QColor(colors()['highlight']))
         self.setPen(QPen(QColor(colors()['base']), 2))
         from .graph_explanations import port_text
         self.setToolTip(literal_tooltip(port_text(self)))
         self.setZValue(2)
+
+    def paint(self, painter, option, widget=None):
+        painter.save()
+        if self.wire_candidate == 'compatible':
+            halo = QColor(colors()['highlight'])
+            halo.setAlpha(95)
+            painter.setBrush(halo)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(-11, -11, 22, 22)
+            super().paint(painter, option, widget)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(QColor(colors()['highlight']), 2))
+            painter.drawEllipse(-8, -8, 16, 16)
+        elif self.wire_candidate == 'incompatible':
+            painter.setOpacity(0.35)
+            super().paint(painter, option, widget)
+        else:
+            super().paint(painter, option, widget)
+        painter.restore()
 
     def mousePressEvent(self, event):
         if event.button()==Qt.MouseButton.LeftButton and self.output and not self.scene().locked:
@@ -80,7 +100,7 @@ class Port(QGraphicsEllipseItem):
             self.scene().pending.update_path(event.scenePos())
 
     def mouseReleaseEvent(self, event):
-        self.scene().finish_wire(event.scenePos())
+        self.scene().finish_wire(event.scenePos(), event.screenPos())
 
 
 class Wire(QGraphicsPathItem):
@@ -217,6 +237,7 @@ class Canvas(QGraphicsScene,ExecutableGraph):
     presentationChanged = Signal()
     blockOpened = Signal(object)
     blockContextRequested = Signal(object, object)
+    wireDropQuickInsertRequested = Signal(object, object, object)
     connectionRejected = Signal(str)
 
     def __init__(self):
@@ -274,6 +295,11 @@ class Canvas(QGraphicsScene,ExecutableGraph):
             self.edit('Move blocks',lambda:place(True),lambda:place(False))
 
     def cancel_wire(self):
+        for node in self.nodes():
+            for port in node.inputs.values():
+                if port.wire_candidate is not None:
+                    port.wire_candidate = None
+                    port.update()
         if self.pending is not None:
             self.removeItem(self.pending)
             self.pending=None
@@ -284,6 +310,10 @@ class Canvas(QGraphicsScene,ExecutableGraph):
         self.cancel_wire()
         self.pending = Wire(source)
         self.addItem(self.pending)
+        for node in self.nodes():
+            for port in node.inputs.values():
+                port.wire_candidate = 'compatible' if self.connection_error(source, port) is None else 'incompatible'
+                port.update()
 
     def connect_ports(self, source, target):
         if self.locked:raise ValueError('Connections are locked during training.')
@@ -299,14 +329,18 @@ class Canvas(QGraphicsScene,ExecutableGraph):
         self.edit('Connect blocks',add,remove)
         return wire
 
-    def finish_wire(self, position):
+    def finish_wire(self, position, screen_position=None):
         if self.pending is None:return
         source=self.pending.source
         targets=[item for item in self.items(position) if isinstance(item,Port) and not item.output]
         self.cancel_wire()
-        if self.locked or not targets:return
-        try:self.connect_ports(source,targets[0])
-        except ValueError as error:self.connectionRejected.emit(str(error))
+        if self.locked:return
+        if targets:
+            try:self.connect_ports(source,targets[0])
+            except ValueError as error:self.connectionRejected.emit(str(error))
+            return
+        if screen_position is not None and (position-source.scenePos()).manhattanLength()>=24:
+            self.wireDropQuickInsertRequested.emit(source, position, screen_position)
 
     def connect_nodes(self, source, target, input_name=None):
         if input_name is None and source.output is not None:
@@ -440,6 +474,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.blockOpened.connect(self.open_block)
         self.scene.connectionRejected.connect(self.connection_rejected)
         self.scene.blockContextRequested.connect(self.show_block_menu)
+        self.scene.wireDropQuickInsertRequested.connect(lambda source,pos,screen:self.show_quick_insert(pos,screen,source))
         self.scene.selectionChanged.connect(self.selection_changed)
         self.populate_template()
         self.scene.graphChanged.connect(self.graph_changed)
@@ -1543,12 +1578,15 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.statusBar().showMessage('Supplied points example · shuffled reference IDs · explicit CSV/VTU comparison exports · views remain closed')
         return True
 
-    def show_quick_insert(self,position,screen_position):
+    def show_quick_insert(self,position,screen_position,source_port=None):
         if self.is_running() or self.scene.locked:return
         if self.quick_insert is not None:self.quick_insert.reject()
-        popup=QuickInsert(self)
+        popup=QuickInsert(self,source_port=source_port)
         self.quick_insert=popup
-        popup.blockChosen.connect(lambda title:self.add_node(title,position))
+        if source_port is not None:
+            popup.blockChosen.connect(lambda title,s=source_port,p=position:self.add_and_connect_node(title,p,s))
+        else:
+            popup.blockChosen.connect(lambda title:self.add_node(title,position))
         def finished():
             if self.quick_insert is popup:self.quick_insert=None
             self.view.setFocus()
@@ -1559,6 +1597,33 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         popup.move(max(screen.left(),min(screen_position.x(),screen.right()-popup.width()+1)),
                    max(screen.top(),min(screen_position.y(),screen.bottom()-popup.height()+1)))
         popup.library.search.setFocus()
+
+    def add_and_connect_node(self,title,position,source_port):
+        if self.is_running() or self.scene.locked or title not in KINDS or source_port is None or not isValid(source_port) or source_port.scene() is not self.scene or not source_port.output:return None
+        point=self.scene.snap_point(position-QPointF(0,40))
+        node=Node(title,'Not configured',point.x(),point.y())
+        target_port=next((port for port in node.inputs.values() if compatible(source_port.data_type,port.data_type)),None)
+        if target_port is None:return None
+        if node.kind=='jorvik_geometry':
+            try:self.jorvik_document(node,create=True)
+            except (OSError,ValueError,ImportError) as error:
+                QMessageBox.warning(self,'Jorvik document could not be created',str(error));return None
+        if node.kind in OUTPUT_KINDS:
+            node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
+            node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
+        wire=Wire(source_port,target_port)
+        def add():
+            self.scene.addItem(node)
+            self.scene.addItem(wire);self.scene.wires.append(wire);wire.update_path()
+            self.scene.clearSelection();node.setSelected(True)
+            self.graph_changed()
+        def remove():
+            if wire in self.scene.wires:self.scene.wires.remove(wire)
+            self.scene.removeItem(wire)
+            self.scene.removeItem(node)
+            self.graph_changed()
+        self.push_edit('Add and connect '+title,add,remove)
+        return node
 
     def replace_recipe_parts(self,text,old_nodes,old_wires,new_nodes,new_wires,selected):
         """One reversible structural edit; retain objects and external block IDs."""

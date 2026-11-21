@@ -41,8 +41,9 @@ class LibraryTree(QTreeWidget):
 class BlockLibrary(QWidget):
     blockActivated = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, compatible_with=None):
         super().__init__(parent)
+        self.compatible_with = compatible_with
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         self.search = QLineEdit()
@@ -77,6 +78,14 @@ class BlockLibrary(QWidget):
         self.search.textChanged.connect(self.filter_blocks)
         self.tree.itemDoubleClicked.connect(self.activate_item)
         self.tree.enterPressed.connect(self.activate_item)
+        if self.compatible_with is not None:
+            self.filter_blocks('')
+
+    def accepts_source_type(self, title):
+        if self.compatible_with is None:
+            return True
+        from .ports import INPUTS, compatible
+        return any(compatible(self.compatible_with, spec.data_type) for spec in INPUTS.get(KINDS.get(title, ''), ()))
 
     def describe_item(self,item,previous=None):
         title=item.data(0,Qt.ItemDataRole.UserRole) if item else None
@@ -103,14 +112,16 @@ class BlockLibrary(QWidget):
             visible = False
             for index in range(group.childCount()):
                 item = group.child(index)
-                match = not query or query in item.text(0).casefold() or query in group.text(0).casefold()
-                if item.data(0,Qt.ItemDataRole.UserRole)=='Neural network':match |= query in ' '.join(NETWORK_NAMES.values()).casefold()
+                title = item.data(0, Qt.ItemDataRole.UserRole)
+                match = self.accepts_source_type(title) and (not query or query in item.text(0).casefold() or query in group.text(0).casefold())
+                if title=='Neural network' and self.accepts_source_type(title):
+                    match |= query in ' '.join(NETWORK_NAMES.values()).casefold()
                 item.setHidden(not match)
                 visible |= match
             group.setHidden(not visible)
-            if query and visible:
+            if (query or self.compatible_with is not None) and visible:
                 group.setExpanded(True)
-        if not query and self._expanded_before_search is not None:
+        if not query and self.compatible_with is None and self._expanded_before_search is not None:
             for group, expanded in zip(groups, self._expanded_before_search):
                 group.setExpanded(expanded)
             self._expanded_before_search = None
@@ -120,13 +131,19 @@ class QuickInsert(QDialog):
     """Small canvas popup using the same supported catalogue as the library."""
     blockChosen = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, source_port=None):
         super().__init__(parent, Qt.WindowType.Popup)
+        self.source_port = source_port
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setWindowTitle('Add block')
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel('Add block · search, then Enter · Esc to cancel'))
-        self.library = BlockLibrary()
+        heading = (
+            f'Connect {source_port.label} → add compatible block · Enter · Esc to cancel'
+            if source_port is not None
+            else 'Add block · search, then Enter · Esc to cancel'
+        )
+        layout.addWidget(QLabel(heading))
+        self.library = BlockLibrary(compatible_with=source_port.data_type if source_port is not None else None)
         # Drag insertion belongs to the dock, not a popup that owns focus/grabs.
         self.library.tree.setDragEnabled(False)
         layout.addWidget(self.library)
