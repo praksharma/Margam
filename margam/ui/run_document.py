@@ -189,7 +189,7 @@ def load_run(path):
             network=build_network(config)
             if config.method=='hard_dirichlet':
                 from ..methods.hard_dirichlet import BoxDirichletNetwork
-                network=BoxDirichletNetwork(network,*config.bounds,config.bc_values['left'])
+                network=BoxDirichletNetwork(network,*config.spatial_time_bounds,config.bc_values['left'])
             adaptive=data['checkpoint'].get('adaptive',{}).get('weights',{})
             attention=data['checkpoint'].get('rba',{}).get('attention')
             anchor_count=0

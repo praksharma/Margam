@@ -17,7 +17,7 @@ class CheckpointPredictor:
             self.network=build_network(config)
             if config.method=='hard_dirichlet':
                 from ..methods.hard_dirichlet import BoxDirichletNetwork
-                self.network=BoxDirichletNetwork(self.network,*config.bounds,config.bc_values['left'])
+                self.network=BoxDirichletNetwork(self.network,*config.spatial_time_bounds,config.bc_values['left'])
         expected=self.network.state_dict();weights=checkpoint.get('network',{})
         expected_spec=getattr(self.network,'_margam_spec',None)
         if 'network_spec' in checkpoint:

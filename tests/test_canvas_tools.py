@@ -19,7 +19,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from PySide6.QtWidgets import QApplication,QPlainTextEdit
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 app=QApplication([]);w=Window(state_directory=False)
 def wait():
  while w.worker is not None:app.processEvents()
@@ -51,7 +51,7 @@ try:
  assert all(n.settings['annotation_text']==note.settings['annotation_text'] for n in notes) and w.result is result
  assert w.cut_blocks() and len([n for n in w.scene.nodes() if n.kind=='annotation'])==1 and w.result is result
  w.undo_edit();assert len([n for n in w.scene.nodes() if n.kind=='annotation'])==2 and w.result is result
- doc=capture_model(w);assert doc['version']==33;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==CURRENT_VERSION;decode_document(doc)
  legacy=deepcopy(doc);legacy['version']=28;legacy['nodes']=[n for n in legacy['nodes'] if n['kind']!='annotation'];decode_document(legacy)
  bad=deepcopy(doc);next(n for n in bad['nodes'] if n['kind']=='annotation')['settings']['annotation_text']='x'*4097
  try:decode_document(bad);assert False

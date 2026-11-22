@@ -37,17 +37,22 @@
   distinguishing verified behaviours from deliberate Margam choices.
 - The project is a PINN builder across physics, not a heat-transfer-only tool.
   Keep demo-specific assumptions in templates rather than shared UI contracts.
-- Basic interval/rectangle sampling must work directly. Advanced CAD/geometry
-  workflows belong to future Jorvik integration. Do not add a 3D viewport.
-- Views are optional and owned by their blocks. Do not show global default figure
-  panes or assume an analytical solution. Only expose supported context actions.
+- Basic interval/rectangle/3D-box/sphere-obstacle sampling must work directly.
+  Advanced CAD/geometry editing belongs to Jorvik integration. An optional
+  dedicated Solution Explorer window supports interactive 1D, 2D, 3D viewport,
+  transient playback, and parametric solution post-processing.
+- Views are optional and owned by their blocks or opened explicitly in the
+  dedicated Solution Explorer window. Do not show global default figure panes
+  at startup or assume an analytical solution.
 - Local sample/geometry previews currently belong to Rectangle blocks only.
   Keep operational progress/errors separate from numerical output views.
-- Do not continue polishing or expanding in-app field heatmaps without a concrete
-  user request. Preserve existing behaviour unless the user requests removal.
-- ParaView file export was explicitly requested and is supported through its own
-  opt-in block. Viewer embedding/launching and arbitrary mesh export remain deferred. Concrete
-  2D transient flow is supported by the Expert suite; do not infer generic 3D support.
+- In-app 2D/3D field visualization, vector overlays, probes, and parametric
+  exploration are actively supported in the dedicated Solution Explorer window
+  (using native PySide6/OpenGL with a deterministic software fallback so
+  offscreen tests work cleanly).
+- ParaView file export remains supported through its own opt-in block alongside
+  the in-app Solution Explorer. Concrete 2D and 3D transient/steady flows and
+  continuous parametric PINNs are supported where explicitly configured.
 
 ## Validation and commits
 
@@ -79,13 +84,13 @@
 - Unit tests must use Window(state_directory=False), or a dedicated temporary
   directory when testing desktop state. Do not overwrite personal layout/recovery
   files during validation. Release test clipboard data before offscreen Qt teardown.
-- Coupled u/v/p results currently use tables/CSV. Preserve the pause on heatmap
-  development. Full 3D/non-planar Jorvik remains deferred. ParaView export is
-  opt-in; never infer physical time from training updates. Evaluation points and
-  Reference data blocks accept CSV/NPZ independently of training. Preserve exact
-  coordinates, row order and integer/text IDs. Align references explicitly without
-  interpolation. Supplied clouds export as VTU vertices and physical-time PVD;
-  mesh connectivity, units/region metadata and Jorvik integration remain deferred.
+- Coupled u/v/p and 3D u/v/w/p results support tables/CSV, ParaView export, and
+  interactive inspection in the dedicated Solution Explorer window. ParaView
+  export is opt-in; never infer physical time from training updates. Evaluation
+  points and Reference data blocks accept CSV/NPZ independently of training.
+  Preserve exact coordinates, row order and integer/text IDs. Align references
+  explicitly without interpolation. Supplied clouds export as VTU vertices and
+  physical-time PVD.
 
 - Prepared 2D uses separate Interior data and Boundary data blocks, with coordinate
   bounds for scaling only. Keep free boundary labels and target/operator physics

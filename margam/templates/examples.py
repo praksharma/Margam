@@ -20,6 +20,9 @@ EXAMPLE_PROBLEMS = {
     'advection_diffusion':ExampleProblem('Advection–diffusion','Unit advection, diffusivity 0.1, unequal Dirichlet endpoints.','x'),
     'helmholtz_lra_2d':ExampleProblem('2D Helmholtz — Fourier LRA-PINN','LRA paper sine modes (1,4) on [-1,1]²; existing Fourier-feature network, soft zero Dirichlet boundaries.','sin(pi*x)*sin(4*pi*y)'),
     'poisson_sine_2d':ExampleProblem('2D Poisson — sinusoidal forcing','Manufactured rectangular solution; zero edges.','sin(pi*x)*sin(pi*y)'),
+    'poisson_3d':ExampleProblem('3D Poisson — unit cube','Manufactured 3D Poisson Δu + 3π² sin(πx)sin(πy)sin(πz) = 0 on [0,1]³ with zero faces and exact analytical reference.','sin(pi*x)*sin(pi*y)*sin(pi*z)'),
+    'sphere_heat_3d':ExampleProblem('3D heat conduction — spherical cavity','3D Laplace equation Δu = 0 on [0,1]³ excluding a hot sphere (u=1) with cold outer walls (u=0); inspect in Solution Explorer 3D viewport.',''),
+    'parametric_poisson_2d':ExampleProblem('2D parametric Poisson — u(x,y; μ)','Continuous parametric diffusivity μ·Δu + 2π² sin(πx)sin(πy) = 0 for μ ∈ [0.5, 2.0]; scrub μ live in Solution Explorer.','sin(pi*x)*sin(pi*y)/mu'),
 }
 
 
@@ -66,6 +69,26 @@ def _example_config(identifier):
     elif identifier=='poisson_sine_2d':
         config.shape='Rectangle';config.points=144;config.boundary_points=24;config.layers=(32,32);config.iterations=2500
         config.source=0.;config.pde_forcing='2*pi*pi*sin(pi*x)*sin(pi*y)';config.method='hard_dirichlet'
+    elif identifier=='poisson_3d':
+        config.shape='Box3D';config.points=512;config.boundary_points=36;config.sampling='hammersley'
+        config.layers=(32,32,32);config.iterations=1500;config.lr=.005
+        config.source=0.;config.pde_preset='poisson';config.pde_forcing='3*pi*pi*sin(pi*x)*sin(pi*y)*sin(pi*z)'
+        config.method='hard_dirichlet'
+        config.bc_types=dict.fromkeys(config.sides,'Dirichlet');config.bc_values=dict.fromkeys(config.sides,0.)
+    elif identifier=='sphere_heat_3d':
+        config.shape='SphereObstacle3D';config.sphere_x=config.sphere_y=config.sphere_z=.5;config.sphere_radius=.2
+        config.points=512;config.boundary_points=49;config.sampling='hammersley'
+        config.layers=(32,32,32);config.iterations=1500;config.lr=.005;config.boundary_weight=10.
+        config.source=0.;config.pde_preset='poisson';config.pde_forcing='0';config.method='baseline'
+        config.bc_types=dict.fromkeys(config.sides,'Dirichlet')
+        config.bc_values={**dict.fromkeys(config.sides,0.),'sphere':1.}
+    elif identifier=='parametric_poisson_2d':
+        config.shape='Rectangle';config.x_min=config.y_min=0.;config.x_max=config.y_max=1.
+        config.parametric_axes=({'name':'mu','min':.5,'max':2.0,'default':1.0},)
+        config.points=512;config.boundary_points=32;config.sampling='hammersley'
+        config.layers=(32,32,32);config.iterations=1500;config.lr=.005
+        config.pde_preset='';config.pde_expression='mu * laplace(u) + 2*pi*pi*sin(pi*x)*sin(pi*y)'
+        config.method='hard_dirichlet'
     return config
 
 from .expert_examples import CASES

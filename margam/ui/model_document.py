@@ -7,12 +7,14 @@ import os
 from pathlib import Path
 import tempfile
 
-from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults
+from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults, validate_parametric_axes
 from ..components.sampling import SAMPLERS
 from .ports import INPUTS, OUTPUTS, compatible
 
 MAX_BYTES = 4 * 1024 * 1024
 SIDES = {'left', 'right', 'bottom', 'top'}
+ALL_BUILTIN_SIDES = {'left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial'}
+CURRENT_VERSION = 35
 
 
 def require(condition, message):
@@ -27,7 +29,7 @@ def number(value):
 def decode_document(data):
     """Validate editor structure; incomplete/physically invalid drafts are allowed."""
     require(isinstance(data, dict) and set(data) == {'format', 'version', 'config', 'nodes', 'wires'}, 'Invalid Margam model document.')
-    require(data['format'] == 'margam-model' and type(data['version']) is int and data['version'] in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33), 'Unsupported Margam model format/version.')
+    require(data['format'] == 'margam-model' and type(data['version']) is int and 1 <= data['version'] <= CURRENT_VERSION, 'Unsupported Margam model format/version.')
     c = data['config']
     if isinstance(c,dict) and data['version'] in (1,2,3,4,5,6,7,8,9,10):
         c=dict(c)
@@ -59,6 +61,12 @@ def decode_document(data):
         from ..components.dsgnar_config import dsgnar_defaults
         c=dict(c,dsgnar_settings=c.get('dsgnar_settings',dsgnar_defaults()))
     if isinstance(c,dict) and isinstance(c.get('dsgnar_settings'),dict):c=dict(c,dsgnar_settings=dict(c['dsgnar_settings'],stage_grace=c['dsgnar_settings'].get('stage_grace',0)))
+    if isinstance(c,dict) and data['version']<34:
+        c=dict(c)
+        for key,value in (('z_min',0.),('z_max',1.),('sphere_x',.5),('sphere_y',.5),('sphere_z',.5),('sphere_radius',.2)):c.setdefault(key,value)
+    if isinstance(c,dict) and data['version']<35:
+        c=dict(c)
+        c.setdefault('parametric_axes',[])
     from ..components.dsgnar_config import validate_dsgnar_settings
     validate_dsgnar_settings(c.get('dsgnar_settings',{}) if isinstance(c,dict) else {})
     from ..components.inverse_config import validate_inverse_settings
@@ -67,8 +75,8 @@ def decode_document(data):
     from ..components.losses import validate_boundary_weights
     validate_boundary_weights(c['bc_weights'])
     require(c['pde_points'] in ('interior','boundary','both'),'Invalid PDE collocation selection.')
-    require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
-    for key in ('x_min','x_max','y_min','y_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','fourth_order','startup_time'):
+    require(c['shape'] in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D','Box3D','SpaceTime3D','SphereObstacle3D') and c['sampling'] in SAMPLERS and c['device'] in ('cpu', 'auto', 'cuda'), 'Unsupported template option.')
+    for key in ('x_min','x_max','y_min','y_max','z_min','z_max','source','lr','pde_weight','boundary_weight','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','sphere_x','sphere_y','sphere_z','sphere_radius','fourth_order','startup_time'):
         require(number(c[key]), f'{key} must be finite numeric data.')
     for key,lower,upper in (('points',1,100000),('boundary_points',1,10000),
                             ('seed',0,2**31-1),('iterations',1,100000)):
@@ -115,13 +123,14 @@ def decode_document(data):
     from ..components.expert_config import validate_expert_settings
     validate_expert_settings(c['expert_settings'])
     recipes = c['boundary_sampling']
-    require(isinstance(recipes,dict) and set(recipes) <= SIDES, 'Invalid boundary sampling sets.')
+    require(isinstance(recipes,dict) and set(recipes) <= ALL_BUILTIN_SIDES, 'Invalid boundary sampling sets.')
     parsed = {}
     for side, recipe in recipes.items():
         require(isinstance(recipe,dict) and set(recipe) == {'points','method','seed'}, 'Invalid boundary recipe.')
         require(recipe['method'] in SAMPLERS and type(recipe['points']) is int and 1 <= recipe['points'] <= 10000 and type(recipe['seed']) is int and 0 <= recipe['seed'] < 2**31, 'Unsupported boundary recipe settings.')
         parsed[side] = BoundarySampling(**recipe)
-    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']))
+    parametric_axes = validate_parametric_axes(c['parametric_axes'])
+    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']),parametric_axes=parametric_axes)
     config = PoissonConfig(**values)
     nodes, wires = deepcopy(data['nodes']), deepcopy(data['wires'])
     for item in nodes if isinstance(nodes,list) else []:
@@ -223,6 +232,9 @@ def decode_document(data):
                 parameters=dict(parameters,expert_settings={**expert_defaults(),**parameters['expert_settings']});node['settings']=settings=dict(settings,parameters=parameters)
             if data['version']<27 and node['kind']=='bc' and isinstance(parameters,dict):
                 parameters=dict(parameters,bc_weights=parameters.get('bc_weights',{}));node['settings']=settings=dict(settings,parameters=parameters)
+            if data['version']<35 and node['kind'] in ('domain','jorvik_geometry') and isinstance(parameters,dict):
+                from .graph_model import parameters_for
+                parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')
             if node['kind']=='method':require(parameters['method'] in ('baseline','hard_dirichlet'),'Use the self-adaptive trainer for SA-PINN settings.')
             if node['kind'] in ('rar','importance'):
@@ -231,7 +243,7 @@ def decode_document(data):
             if node['kind'] in ('interior','interior_data'):require(parameters['adaptive_sampling']=={},'Use a dedicated adaptive sampler block.')
             if node['kind']=='network':require(type(parameters['network_seed']) is int,'Network instances require an explicit seed.')
             trial=asdict(config);trial.update(parameters)
-            decode_document({'format':'margam-model','version':33,'config':trial,'nodes':[],'wires':[]})
+            decode_document({'format':'margam-model','version':CURRENT_VERSION,'config':trial,'nodes':[],'wires':[]})
         by_id[identifier] = node
     occupied = set()
     for wire in wires:
@@ -249,7 +261,7 @@ def decode_document(data):
 
 
 def capture_model(window):
-    document = {'format':'margam-model', 'version':33, 'config':asdict(window.config),
+    document = {'format':'margam-model', 'version':CURRENT_VERSION, 'config':asdict(window.config),
             'nodes':[{'id':n.identifier,'kind':n.kind,'title':n.title,
                       'position':[n.pos().x(),n.pos().y()],'settings':deepcopy(n.settings)}
                      for n in sorted(window.scene.nodes(),key=lambda n:n.identifier)],

@@ -12,7 +12,7 @@ from unittest.mock import patch
 import xml.etree.ElementTree as ET
 from PySide6.QtWidgets import QApplication,QComboBox,QDoubleSpinBox
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 def finish():
  deadline=time.monotonic()+30
@@ -29,7 +29,7 @@ try:
    if node.kind in ('solution','comparison','export','paraview'):node.settings['resolution']=5
   trainer=next(n for n in w.scene.nodes() if n.kind=='rba_method');compact=w.collapse_recipe(trainer);assert compact;w.show_block_properties(compact)
   assert w.property_scroll.findChild(QDoubleSpinBox,'rba_decay');w.expand_recipe(compact)
-  doc=capture_model(w);assert doc['version']==33;decode_document(doc)
+  doc=capture_model(w);assert doc['version']==CURRENT_VERSION;decode_document(doc)
   assert w.start_training();finish();assert w.result['steps']==3 and not w.last_run.model.attention.requires_grad
   monitor=next(n for n in w.scene.nodes() if n.kind=='monitor');w.open_block(monitor);app.processEvents()
   assert 'pde_weighted' in w.last_run.model.loss_history[-1]

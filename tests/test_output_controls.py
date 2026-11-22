@@ -15,7 +15,7 @@ import time,os,torch
 from PySide6.QtWidgets import QApplication,QCheckBox
 from margam.ui.app import Window
 from margam.ui.output_views import OUTPUT_KINDS,output_enabled
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 from margam.ui.validation_report import collect_issues
 from margam.ui.settings_search import entries
 from margam.components.outputs import evaluate_outputs
@@ -52,7 +52,7 @@ try:
  except ValueError as error:assert 'required physics cannot be disabled' in str(error)
  else:raise AssertionError('Disabled required physics was accepted')
  core.settings.pop('enabled')
- doc=capture_model(w);assert doc['version']==33;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==CURRENT_VERSION;decode_document(doc)
  for flag in (False,True,0,'false'):
   bad=deepcopy(doc);bad['nodes'][0]['settings']['enabled']=flag
   if bad['nodes'][0]['kind'] not in OUTPUT_KINDS:

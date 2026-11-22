@@ -19,13 +19,17 @@ wire their requested outputs. See [problem definitions](problem-examples.md).
 The library is on the left, canvas in the middle and selected-block properties on
 the right. Operational Messages are initially hidden and can be opened from View;
 training errors show them. Results and rectangle previews have their own optional
-docks and can float or dock. No default figure pane or 3D viewport is created.
+docks and can float or dock. No default figure pane opens at startup; for
+interactive 1D/2D/3D field visualization, time playback, parameter studies, and
+continuous parametric scrubbing, open the dedicated **Solution Explorer** window
+via **View → Open Solution Explorer…** (`Ctrl+Shift+V`). See
+[Solution Explorer](use/solution-explorer.md).
 
 | Menu | Implemented actions |
 | --- | --- |
-| File | Model Open/Save/Save As; run Open/Save; Export diagram image (PNG/SVG); Examples; Insert PINN recipe; Quit |
+| File | Model Open/Save/Save As; run Open/Save; Export diagram image (PNG/SVG); Examples (including 1D, 2D, 3D, and Parametric examples); Insert PINN recipe; Quit |
 | Edit | Undo/Redo, block Copy/Cut/Paste, Delete selected, Select all blocks |
-| View | Panels, zoom/100%/Fit/Pan, Show canvas minimap, Reset panel layout, Open selected output, Theme |
+| View | Panels, zoom/100%/Fit/Pan, Show canvas minimap, Reset panel layout, Open selected output, Open Solution Explorer (`Ctrl+Shift+V`), Theme |
 | Run | Validate, Train, Stop, Resume checkpoint |
 | Help | Quick start and About |
 
@@ -46,7 +50,7 @@ arbitrary cyclic simulations are not supported.
 
 | Block | Edit in its properties |
 | --- | --- |
-| Domain | Interval/rectangle shape and physical bounds |
+| Domain | Interval, Rectangle, SpaceTime1D, Prepared2D, Box3D, SpaceTime3D, or SphereObstacle3D geometry, physical bounds, obstacle parameters, and optional continuous parametric axes (`mu`, …) |
 | Interior sampler | Grid, random, Hammersley or stratified method; budget and seed; optional imported points |
 | Boundary points | Rectangle named side, its independent sampler/count/seed; optional point/normal mapping; interval endpoints are fixed |
 | PDE residual | Restricted scalar expression or steady u/v/p residuals; blank scalar expression retains constant-source Poisson |

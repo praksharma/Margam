@@ -80,11 +80,11 @@ def config_from_document(document,scene=None):
     """Use the editor's real structural decoder and typed graph assembler."""
     from .ui.model_document import decode_document
     from .ui.graph_model import assemble
-    decode_document(document)
+    _,records,connections=decode_document(document)
     nodes={record['id']:SimpleNamespace(kind=record['kind'],title=record['title'],identifier=record['id'],
-        settings=deepcopy(record['settings']),scene=lambda:scene) for record in document['nodes']}
+        settings=deepcopy(record['settings']),scene=lambda:scene) for record in records}
     wires=[SimpleNamespace(source=SimpleNamespace(parentItem=lambda n=nodes[row['source']]:n),
-        target=SimpleNamespace(parentItem=lambda n=nodes[row['target']]:n,name=row['input'])) for row in document['wires']]
+        target=SimpleNamespace(parentItem=lambda n=nodes[row['target']]:n,name=row['input'])) for row in connections]
     return assemble(list(nodes.values()),wires)
 
 

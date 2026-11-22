@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from PySide6.QtWidgets import QApplication,QComboBox,QSpinBox,QMessageBox
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 def fail(parent,title,message,*args):raise RuntimeError(str(title)+': '+str(message))
 QMessageBox.critical=QMessageBox.warning=fail
 app=QApplication([]);w=Window(state_directory=False);assert w.set_application_device('cpu')
@@ -30,7 +30,7 @@ try:
   trainer=next(n for n in w.scene.nodes() if n.kind=='dsgnar_method');w.show_block_properties(trainer)
   assert w.property_scroll.findChild(QSpinBox,'dsgnar_sketch_size') and w.property_scroll.findChild(QComboBox,'dsgnar_precision')
   compact=w.collapse_recipe(trainer);assert compact;w.show_block_properties(compact);w.expand_recipe(compact)
-  document=capture_model(w);assert document['version']==33;decode_document(document)
+  document=capture_model(w);assert document['version']==CURRENT_VERSION;decode_document(document)
   for n in w.scene.nodes():
    if n.kind in ('solution','comparison','export','paraview'):n.settings['resolution']=3
   with TemporaryDirectory() as directory:

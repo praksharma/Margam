@@ -50,7 +50,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsPathItem,
     QGraphicsItem, QWidget, QVBoxLayout, QLabel, QFormLayout, QLineEdit,
     QMenu, QPlainTextEdit, QScrollArea, QComboBox, QDoubleSpinBox,
-    QSpinBox, QPushButton, QToolButton, QProgressBar, QHBoxLayout, QCheckBox, QMessageBox, QFileDialog, QInputDialog,
+    QSpinBox, QPushButton, QToolButton, QProgressBar, QHBoxLayout, QCheckBox, QMessageBox, QFileDialog, QInputDialog, QDialog, QDialogButtonBox,
 )
 
 
@@ -472,6 +472,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.cancel_training)
         for button in [self.validate_button,self.train_button,self.cancel_button]:toolbar.addWidget(button)
+        self.solution_explorer_button=QPushButton('Solution Explorer')
+        self.solution_explorer_button.setObjectName('toolbar_solution_explorer')
+        self.solution_explorer_button.setToolTip('Open the dedicated Solution Explorer window for 1D, 2D, 3D, and parametric results (Ctrl+Shift+V)')
+        self.solution_explorer_button.clicked.connect(lambda:self.show_solution_explorer())
+        toolbar.addWidget(self.solution_explorer_button)
         self.progress_bar=QProgressBar();self.progress_bar.setMaximumWidth(210)
         self.progress_bar.setRange(0,self.config.iterations);self.progress_bar.setValue(0)
         toolbar.addWidget(self.progress_bar)
@@ -608,6 +613,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.prepared_example_action=self.examples_menu.addAction('2D prepared triangle · imported data');self.prepared_example_action.triggered.connect(self.request_training_data_example)
         self.examples_menu.addSeparator()
         self.examples_1d_menu=self.examples_menu.addMenu('1D examples');self.examples_1d_menu.setIcon(icon('examples'))
+        self.examples_3d_menu=self.examples_menu.addMenu('3D examples');self.examples_3d_menu.setIcon(icon('examples'))
+        self.examples_parametric_menu=self.examples_menu.addMenu('Parametric examples');self.examples_parametric_menu.setIcon(icon('examples'))
         self.inverse_example_action=self.examples_1d_menu.addAction('Inverse Burgers · 1D + time');self.inverse_example_action.setIcon(icon('inverse_recipe'));self.inverse_example_action.triggered.connect(lambda:self.load_inverse_example() if not self.is_running() and not self.scene.locked and self.confirm_discard() else False)
         self.burgers_reference_action=self.examples_1d_menu.addAction('Burgers with reference data · 1D + time');self.burgers_reference_action.setIcon(icon('reference_data'));self.burgers_reference_action.triggered.connect(self.request_burgers_reference_example)
         self.evaluation_example_action=self.examples_1d_menu.addAction('Supplied evaluation points · 1D');self.evaluation_example_action.triggered.connect(self.request_evaluation_example)
@@ -618,7 +625,9 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.rba_examples_menu=self.examples_menu.addMenu('RBA examples');self.rba_examples_menu.setIcon(icon('rba_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
-            menu=self.dsgnar_examples_menu if identifier.startswith('dsgnar_') else self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_1d_menu if example_config(identifier).shape in ('Interval','SpaceTime1D') else self.examples_menu
+            cfg_ex=example_config(identifier)
+            cfg_shape=cfg_ex.shape
+            menu=self.dsgnar_examples_menu if identifier.startswith('dsgnar_') else self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_parametric_menu if cfg_ex.parametric_axes else self.examples_3d_menu if cfg_shape in ('Box3D','SpaceTime3D','SphereObstacle3D') else self.examples_1d_menu if cfg_shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -697,6 +706,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.open_output_action=self.view_menu.addAction('Open selected output')
         self.open_output_action.setEnabled(False)
         self.open_output_action.triggered.connect(self.open_selected_output)
+        self.solution_explorer_action=self.view_menu.addAction('Open Solution Explorer…')
+        self.solution_explorer_action.setIcon(icon('solution'))
+        self.solution_explorer_action.setShortcut('Ctrl+Shift+V')
+        self.solution_explorer_action.triggered.connect(lambda:self.show_solution_explorer())
         themes=self.view_menu.addMenu('Theme')
         self.theme_actions={}
         group=QActionGroup(self);group.setExclusive(True)
@@ -1327,6 +1340,10 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         elif node.kind in OUTPUT_KINDS:
             label={'monitor':'Open monitor','solution':'Open plot','comparison':'Open comparison','export':'Export CSV…','paraview':'Export ParaView…'}[node.kind]
             action=menu.addAction(label);action.setEnabled(output_enabled(node) and (node.kind not in ('export','paraview') or not busy));action.triggered.connect(lambda:self.open_block(node))
+            if node.kind in ('solution','comparison'):
+                explorer=menu.addAction('Open in Solution Explorer…')
+                explorer.setEnabled(output_enabled(node))
+                explorer.triggered.connect(lambda checked=False,n=node:self.show_solution_explorer(preferred_id=n.identifier))
         if node.kind in ('sa_recipe','sa_method'):
             summary=menu.addAction('Adaptive weight summary')
             summary.setEnabled(not busy and self.result is not None)
@@ -1616,7 +1633,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if wire.source.parentItem() is old or wire.target.parentItem() is old:
                 self.scene.wires.remove(wire);self.scene.removeItem(wire)
         self.scene.removeItem(old)
-        pde=self.make_node('PDE residual' if config.physics=='incompressible_2d' else 'Predefined PDE','',480,40)
+        pde=self.make_node('PDE residual' if (config.physics=='incompressible_2d' or not config.pde_preset) else 'Predefined PDE','',480,40)
         if config.adaptive_sampling:
             old_interior=interior
             title='Residual refinement (RAR)' if config.adaptive_sampling['method']=='rar' else 'Importance sampling'
@@ -1641,7 +1658,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(boundary,pde,'boundary_points');self.scene.connect_nodes(pde,method)
         comparison=None
         output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export') if example.reference else ('Training Monitor','Solution Plot','CSV Export','ParaView Export')
-        if identifier=='dsgnar_wave':output_titles+=('ParaView Export',)
+        if identifier=='dsgnar_wave' or (config.is_3d and 'ParaView Export' not in output_titles):output_titles+=('ParaView Export',)
         for index,title in enumerate(output_titles):
             node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
             if node.kind=='comparison':comparison=node
@@ -1749,7 +1766,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             except (OSError,ValueError,ImportError) as error:
                 QMessageBox.warning(self,'Jorvik document could not be created',str(error));return None
         if node.kind in OUTPUT_KINDS:
-            node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
+            dim=len(self.config.spatial_time_bounds[0])
+            node.settings['resolution']=5 if dim>=4 else 9 if dim==3 else 101 if self.config.shape=='Interval' else 41
             node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
         wire=Wire(source_port,target_port)
         def add():
@@ -1858,7 +1876,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             except (OSError,ValueError,ImportError) as error:
                 QMessageBox.warning(self,'Jorvik document could not be created',str(error));return
         if node.kind in OUTPUT_KINDS:
-            node.settings['resolution']=9 if len(self.config.bounds[0])==3 else 101 if self.config.shape=='Interval' else 41
+            dim=len(self.config.spatial_time_bounds[0])
+            node.settings['resolution']=5 if dim>=4 else 9 if dim==3 else 101 if self.config.shape=='Interval' else 41
             node.title=title+' '+str(1+sum(n.kind==node.kind for n in self.scene.nodes()))
         def add():
             self.scene.addItem(node)
@@ -1956,14 +1975,25 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         for node in self.scene.nodes():
             if node.kind=='annotation':self.refresh_note(node);continue
             c=self.config_for_node(node)
+            st_dim=len(c.spatial_time_bounds[0])
             actual=int(c.points**.5)**2 if len(c.bounds[0])==2 and c.sampling=='grid' else c.points
-            details={'observations':'Measured u · fixed (x,t) rows','inverse_pde':'u_t + λ1 u u_x − λ2 u_xx = 0','inverse_method':f'Joint Adam · {c.iterations} updates','inverse_recipe':f'Inverse Burgers · {c.iterations} updates','domain':f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if len(c.bounds[0])==3 else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval' else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}',
+            domain_detail=(
+                f'x,y,z,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.z_max-c.z_min:g} × {c.t_max-c.t_min:g}' if c.shape=='SpaceTime3D'
+                else f'x,y,z · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.z_max-c.z_min:g}' if c.is_3d
+                else f'x,y,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g} × {c.t_max-c.t_min:g}' if st_dim==3
+                else f'x,t · {c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}' if c.is_time_dependent
+                else f'x: {c.x_min:g}…{c.x_max:g}' if c.shape=='Interval'
+                else f'{c.x_max-c.x_min:g} × {c.y_max-c.y_min:g}'
+            )
+            if c.parametric_axes:
+                domain_detail+=' · '+', '.join(f'{ax["name"]}∈[{ax["min"]:g},{ax["max"]:g}]' for ax in c.parametric_axes)
+            details={'observations':'Measured u · fixed (x,t) rows','inverse_pde':'u_t + λ1 u u_x − λ2 u_xx = 0','inverse_method':f'Joint Adam · {c.iterations} updates','inverse_recipe':f'Inverse Burgers · {c.iterations} updates','domain':domain_detail,
                      'rar':f'RAR · every {c.adaptive_sampling.get("interval",100)} updates',
                      'importance':f'{actual} points · '+('field gradient' if c.adaptive_sampling.get('score')=='field_gradient' else 'residual importance'),
                      'interior_data':'Supplied PDE coordinates','boundary_data':f'{len(c.boundary_data)} imported sets',
                      'interior':'Imported PDE points' if c.interior_data else f'{actual} points · {c.sampling}',
-                     'boundary':f'{len(c.constraint_names)} conditions · shared initial points' if c.pde_preset=='wave_1d' else f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])==2 and c.shape!='Prepared2D' else len(c.sides) if c.shape=='Interval' else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
-                     'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types[s][0] for s in c.sides),
+                     'boundary':f'{len(c.constraint_names)} conditions · shared initial points' if c.pde_preset=='wave_1d' else f'{len(c.constraint_names)} named sets · random' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else f'{len(c.sides)} sets · {sum(c.boundary_recipe(s).points for s in c.sides) if len(c.bounds[0])>=2 and c.shape!="Prepared2D" else len(c.sides) if c.shape=="Interval" else 0} points', 'pde':'Steady flow · u, v, p' if c.physics=='incompressible_2d' else c.pde_expression or f'Δu + {c.source:g} = 0',
+                     'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types.get(s,'Dirichlet')[0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'dsgnar_recipe':f'DSGNAR · {c.iterations} attempts','dsgnar_method':f'SVD · sketch {c.dsgnar_settings["sketch_size"]}',
                      'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
@@ -1974,11 +2004,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'sa_recipe':f'SA-PINN · {c.iterations} steps', 'sa_method':f'Adam min/max · {c.iterations} steps',
                      'network':NETWORK_NAMES[c.network_type]+' · '+' → '.join(map(str,c.layers)), 'method':f'{"Hard BC · " if c.method=="hard_dirichlet" else ""}Adam · {c.iterations} steps · lr {c.lr:g}',
                      'predefined_pde':PREDEFINED_PDES.get(c.pde_preset,PREDEFINED_PDES['poisson']).label,
-                     'solution':'Requested field table' if c.is_time_dependent or len(c.field_names)>1 else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
+                     'solution':'Requested field table' if c.is_time_dependent or len(c.field_names)>1 or c.is_3d or c.parametric_axes else 'Requested prediction plot', 'monitor':'Requested loss history', 'export':'Explicit CSV data request', 'paraview':'Explicit ParaView data request',
                      'evaluation_points':'Supplied coordinates / IDs','reference_data':'Supplied reference fields',
                      'comparison':'Model + explicit reference source', 'reference':'Explicit user reference required' if c.is_time_dependent or c.is_paper_case else 'Explicit Couette reference' if c.physics=='incompressible_2d' else 'Explicit Poisson reference'}
             if c.pde_preset=='expert_cavity':details['predefined_pde']=f'Lid-driven cavity · Re={abs(c.bc_values["top"])*(c.y_max-c.y_min)/c.viscosity:g}' if c.viscosity>0 else 'Lid-driven cavity · invalid viscosity'
-            if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder','Prepared2D':'Coordinate bounds'}.get(c.shape,c.shape)
+            if node.kind=='domain':node.title={'SpaceTime1D':'1D space–time','SpaceTime2D':'2D space–time','Channel2D':'Channel / cylinder','ChannelTime2D':'Space–time channel / cylinder','Prepared2D':'Coordinate bounds','Box3D':'3D box','SpaceTime3D':'3D space–time','SphereObstacle3D':'3D box / sphere'}.get(c.shape,c.shape)
             if node.kind=='boundary':node.title='Case sample sets' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Boundary / initial points' if c.is_time_dependent else 'Boundary points'
             if node.kind=='bc':node.title='Case conditions' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Boundary / initial conditions' if c.is_time_dependent else 'Boundary condition'
             if node.kind=='network':node.title='Neural network' if c.network_type=='fcnn' else NETWORK_NAMES[c.network_type]
@@ -2353,16 +2383,42 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         elif node.kind=='jorvik_geometry':self.jorvik_fields(node)
         elif node.kind=='domain':
             shape=QComboBox();shape.setProperty('search_key','shape')
-            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('Prepared2D','Prepared 2D points'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder')]:shape.addItem(label,key)
+            for key,label in [('Interval','Interval'),('Rectangle','Rectangle'),('Prepared2D','Prepared 2D points'),('SpaceTime1D','1D space–time'),('SpaceTime2D','2D space–time'),('Channel2D','2D channel / cylinder'),('ChannelTime2D','2D space–time channel / cylinder'),('Box3D','3D box'),('SpaceTime3D','3D space–time'),('SphereObstacle3D','3D box with sphere')]:shape.addItem(label,key)
             shape.setCurrentIndex(shape.findData(self.config.shape));shape.currentIndexChanged.connect(lambda index,w=shape:self.change('shape',w.itemData(index)))
             self.form.addRow('Domain',shape)
             self.field('x minimum','x_min');self.field('x maximum','x_max')
-            if len(self.config.bounds[0])>=2:
-                self.field('t start' if self.config.shape=='SpaceTime1D' else 'y minimum','y_min');self.field('t end' if self.config.shape=='SpaceTime1D' else 'y maximum','y_max')
-            if len(self.config.bounds[0])==3:
-                self.field('t start','t_min');self.field('t end','t_max')
-            if self.config.has_obstacle:
-                self.field('Cylinder centre x','cylinder_x');self.field('Cylinder centre y','cylinder_y');self.field('Cylinder radius','cylinder_radius',minimum=.000001,maximum=100000)
+            if self.config.is_3d:
+                self.field('y minimum','y_min');self.field('y maximum','y_max')
+                self.field('z minimum','z_min');self.field('z maximum','z_max')
+                if self.config.shape=='SpaceTime3D':
+                    self.field('t start','t_min');self.field('t end','t_max')
+                if self.config.shape=='SphereObstacle3D':
+                    self.field('Sphere centre x','sphere_x');self.field('Sphere centre y','sphere_y');self.field('Sphere centre z','sphere_z')
+                    self.field('Sphere radius','sphere_radius',minimum=.000001,maximum=100000)
+            else:
+                st_dim=len(self.config.spatial_time_bounds[0])
+                if st_dim>=2:
+                    self.field('t start' if self.config.shape=='SpaceTime1D' else 'y minimum','y_min');self.field('t end' if self.config.shape=='SpaceTime1D' else 'y maximum','y_max')
+                if st_dim==3:
+                    self.field('t start','t_min');self.field('t end','t_max')
+                if self.config.has_obstacle:
+                    self.field('Cylinder centre x','cylinder_x');self.field('Cylinder centre y','cylinder_y');self.field('Cylinder radius','cylinder_radius',minimum=.000001,maximum=100000)
+            if self.config.shape in ('Interval','Rectangle','SpaceTime1D','Box3D','SpaceTime3D','SphereObstacle3D'):
+                self.property_section('Continuous parametric axes')
+                if self.config.parametric_axes:
+                    for ax in self.config.parametric_axes:
+                        row_w=QWidget();rl=QHBoxLayout(row_w);rl.setContentsMargins(0,0,0,0)
+                        rl.addWidget(QLabel(f"{ax['name']} ∈ [{ax['min']:g}, {ax['max']:g}] (default {ax['default']:g})"),1)
+                        rm=QPushButton('Remove');rm.setObjectName('remove_param_'+ax['name'])
+                        rm.clicked.connect(lambda checked=False,name=ax['name']:self.remove_parametric_axis(name))
+                        rl.addWidget(rm)
+                        self.form.addRow('Parameter',row_w)
+                else:
+                    empty_p=QLabel('None (standard non-parametric domain).');empty_p.setWordWrap(True);self.form.addRow(empty_p)
+                add_p=QPushButton('Add parameter axis…');add_p.setObjectName('add_parametric_axis');add_p.setProperty('search_key','parametric_axes')
+                add_p.setEnabled(len(self.config.parametric_axes)<4)
+                add_p.clicked.connect(self.prompt_add_parametric_axis)
+                self.form.addRow(add_p)
             note=QLabel('Coordinate bounds for scaling and validation only. Prepared 2D uses supplied training and evaluation points; no rectangle is filled.' if self.config.shape=='Prepared2D' else 'Built-in meshless geometry. No external file or mesh is required.');note.setWordWrap(True);self.form.addRow(note)
         elif node.kind=='inverse_pde':self.inverse_settings_fields()
         elif node.kind=='observations':
@@ -2439,7 +2495,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             note.setWordWrap(True);self.form.addRow(note)
             self.field('Points per set / edge','boundary_points','int',minimum=1,maximum=10000)
         elif node.kind=='boundary':
-            if len(self.config.bounds[0])==2:
+            if len(self.config.bounds[0])>=2:
                 side_choice=QComboBox()
                 for s in self.config.sides:side_choice.addItem(self.config.side_label(s),s)
                 side=getattr(self,'boundary_side','left')
@@ -2555,8 +2611,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             else:
                 for side in self.config.sides:
                     row=QWidget();layout=QHBoxLayout(row);layout.setContentsMargins(0,0,0,0)
-                    combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types[side])
-                    value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values[side])
+                    combo=QComboBox();combo.addItems(['Dirichlet','Neumann','Custom']);combo.setCurrentText(self.config.bc_types.get(side,'Dirichlet'))
+                    value=QDoubleSpinBox();value.setKeyboardTracking(False);value.setDecimals(5);value.setRange(-100000,100000);value.setValue(self.config.bc_values.get(side,0.))
                     mapped_values=self.config.boundary_data.get(side,{}).get('values','')
                     value.setEnabled(not mapped_values)
                     combo.setProperty('search_key','bc_types.'+side);value.setProperty('search_key','bc_values.'+side)
@@ -2913,6 +2969,39 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         except ValueError:layers=()
         self.change('layers',layers,edit_token)
 
+    def add_parametric_axis(self,name,low,high,default):
+        from ..templates.poisson import validate_parametric_axes
+        entry={'name':str(name).strip(),'min':float(low),'max':float(high),'default':float(default)}
+        updated=validate_parametric_axes(list(self.config.parametric_axes)+[entry])
+        self.change('parametric_axes',updated)
+        return True
+
+    def remove_parametric_axis(self,name):
+        updated=tuple(ax for ax in self.config.parametric_axes if ax['name']!=name)
+        if len(updated)==len(self.config.parametric_axes):return False
+        self.change('parametric_axes',updated)
+        return True
+
+    def prompt_add_parametric_axis(self):
+        if self.is_running() or self.scene.locked:return False
+        dialog=QDialog(self);dialog.setWindowTitle('Add continuous parametric axis')
+        layout=QFormLayout(dialog)
+        name_edit=QLineEdit('mu');name_edit.setObjectName('param_dialog_name')
+        lo_spin=QDoubleSpinBox();lo_spin.setRange(-1e6,1e6);lo_spin.setDecimals(6);lo_spin.setValue(0.5)
+        hi_spin=QDoubleSpinBox();hi_spin.setRange(-1e6,1e6);hi_spin.setDecimals(6);hi_spin.setValue(2.0)
+        def_spin=QDoubleSpinBox();def_spin.setRange(-1e6,1e6);def_spin.setDecimals(6);def_spin.setValue(1.0)
+        layout.addRow('Parameter symbol',name_edit)
+        layout.addRow('Minimum value',lo_spin)
+        layout.addRow('Maximum value',hi_spin)
+        layout.addRow('Default value',def_spin)
+        note=QLabel('Use the symbol in PDE, BC, and Reference expressions (for example: mu * laplace(u) + ...).');note.setWordWrap(True);layout.addRow(note)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept);buttons.rejected.connect(dialog.reject);layout.addRow(buttons)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return False
+        try:return self.add_parametric_axis(name_edit.text(),lo_spin.value(),hi_spin.value(),def_spin.value())
+        except ValueError as error:
+            QMessageBox.warning(self,'Invalid parametric axis',str(error));return False
+
     def connection_rejected(self,message):
         self.validation.setText(message)
         self.statusBar().showMessage(message)
@@ -2998,6 +3087,17 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if dialog is None or not isValid(dialog):
             dialog=StudyResults(self);self.study_results_dialog=dialog
         dialog.show();dialog.raise_();return dialog
+
+    def show_solution_explorer(self,preferred_id=None,*,dataset=None):
+        from .solution_explorer import SolutionExplorerWindow
+        win=getattr(self,'solution_explorer_window',None)
+        if win is None or not isValid(win):
+            win=SolutionExplorerWindow(owner=self);self.solution_explorer_window=win
+        if dataset is not None:
+            win.set_dataset(dataset)
+        else:
+            win.sync_from_owner(preferred_id=preferred_id)
+        win.show();win.raise_();return win
 
     def show_slurm_export(self):
         from .slurm_export import SlurmExport
@@ -3141,6 +3241,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.automation_server.shutdown()
         if getattr(self,'validation_report_dialog',None) is not None:self.validation_report_dialog.detach()
         if getattr(self,'project_data_dialog',None) is not None:self.project_data_dialog.detach()
+        if getattr(self,'solution_explorer_window',None) is not None and isValid(self.solution_explorer_window):
+            self.solution_explorer_window.close()
         self.project_workspace.close()
         if self.desktop_state is not None:self.desktop_state.close()
         if not getattr(self,'_selection_disconnected',False):

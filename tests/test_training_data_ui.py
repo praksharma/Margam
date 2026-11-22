@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from copy import deepcopy
 from PySide6.QtWidgets import QApplication,QPushButton,QComboBox
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 from margam.ui.data_mapping import DataMappingDialog
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 def finish():
@@ -33,7 +33,7 @@ try:
  w.undo_stack.undo();assert 'slope' in w.scene.compile_config().sides
  w.undo_stack.redo();assert 'slope' not in w.scene.compile_config().sides
  w.undo_stack.undo();assert 'slope' in w.scene.compile_config().sides
- document=capture_model(w);assert document['version']==33;decode_document(document)
+ document=capture_model(w);assert document['version']==CURRENT_VERSION;decode_document(document)
  with TemporaryDirectory() as directory:
   directory=Path(directory);path=directory/'triangle.margam.json';assert w.save_model(path);assert w.load_model(path)
   assert capture_model(w)==document

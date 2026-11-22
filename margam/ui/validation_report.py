@@ -98,6 +98,13 @@ def collect_issues(window,execution_error=None):
             lower,upper=config.bounds
             if not all(math.isfinite(value) for value in (*lower,*upper)) or any(b<=a for a,b in zip(lower,upper)):
                 add('Geometry','Each coordinate maximum must exceed its finite minimum.',node)
+            if config.shape=='SphereObstacle3D':
+                cx,cy,cz,radius=config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius
+                if not all(math.isfinite(v) for v in (cx,cy,cz,radius)) or radius<=0 or not (config.x_min<cx-radius and cx+radius<config.x_max and config.y_min<cy-radius and cy+radius<config.y_max and config.z_min<cz-radius and cz+radius<config.z_max):
+                    add('Geometry','Sphere obstacle must have a positive radius and lie strictly inside the 3D box.',node)
+            if config.parametric_axes:
+                from ..templates.poisson import validate_parametric_axes
+                check('Geometry',node,lambda c=config:validate_parametric_axes(c.parametric_axes))
         if node.kind=='network' or node.kind.endswith('_recipe') or node.kind=='recipe':
             check('Network',node,lambda c=config:validate_network(c.network_type,c.network_options,c.layers))
             if config.network_type=='affine_fourier':

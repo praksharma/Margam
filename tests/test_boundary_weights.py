@@ -79,7 +79,7 @@ from tempfile import TemporaryDirectory
 from copy import deepcopy
 from PySide6.QtWidgets import QApplication,QDoubleSpinBox
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 app=QApplication([]);w=Window(state_directory=False)
 def finish():
  deadline=time.monotonic()+30
@@ -92,7 +92,7 @@ try:
  control.setValue(2.5);assert w.scene.compile_config().bc_weights=={'slope':2.5}
  w.undo_edit();assert w.scene.compile_config().bc_weights=={}
  w.redo_edit();assert w.scene.compile_config().bc_weights=={'slope':2.5}
- doc=capture_model(w);assert doc['version']==33;decode_document(doc)
+ doc=capture_model(w);assert doc['version']==CURRENT_VERSION;decode_document(doc)
  old=deepcopy(doc);old['version']=26;old['config'].pop('bc_weights')
  for n in old['nodes']:n['settings'].get('parameters',{}).pop('bc_weights',None)
  migrated,records,_=decode_document(old);assert migrated.bc_weights=={}

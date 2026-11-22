@@ -50,7 +50,9 @@ def validate_points(points,config,ids=None):
     if a.ndim!=2 or a.shape[1]!=len(lower) or not 1<=len(a)<=100000 or not np.isfinite(a).all():raise ValueError('Evaluation coordinates must be finite (N,dimension), with 1–100000 rows.')
     tolerance=np.maximum((np.asarray(upper)-lower)*1e-7,np.finfo(float).eps*np.maximum(1,np.abs([lower,upper]).max(axis=0))*8)
     if ((a<np.asarray(lower)-tolerance)|(a>np.asarray(upper)+tolerance)).any():raise ValueError('Evaluation points lie outside the configured domain; extrapolation is not implicit.')
-    if config.has_obstacle and (np.hypot(a[:,0]-config.cylinder_x,a[:,1]-config.cylinder_y)<config.cylinder_radius-max(tolerance[:2])).any():raise ValueError('Evaluation points lie inside the solid cylinder.')
+    if config.shape=='SphereObstacle3D':
+        if (np.sqrt((a[:,0]-config.sphere_x)**2+(a[:,1]-config.sphere_y)**2+(a[:,2]-config.sphere_z)**2)<config.sphere_radius-max(tolerance[:3])).any():raise ValueError('Evaluation points lie inside the solid sphere.')
+    elif config.has_obstacle and (np.hypot(a[:,0]-config.cylinder_x,a[:,1]-config.cylinder_y)<config.cylinder_radius-max(tolerance[:2])).any():raise ValueError('Evaluation points lie inside the solid cylinder.')
     validate_ids(ids,a.tolist(),config.is_time_dependent)
     return a
 

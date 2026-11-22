@@ -22,7 +22,7 @@ from unittest.mock import patch
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication,QLineEdit,QInputDialog,QLabel
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 from margam.ui.model_diff import compare_models
 app=QApplication([]);w=Window(state_directory=False);w.set_application_device('cpu')
 try:
@@ -40,7 +40,7 @@ try:
  assert w.undo_stack.index()==index+1 and network.settings['parameters']==parameters
  assert w.result is result and w.last_run is run and state['loss_history']==run.model.training_state()['loss_history']
  assert w.scene.compile_config()==config
- after=capture_model(w);assert after['version']==33;decode_document(after)
+ after=capture_model(w);assert after['version']==CURRENT_VERSION;decode_document(after)
  assert compare_models(before,after)==[]
  changes=compare_models(before,after,include_presentation=True);assert len(changes)==1 and changes[0].field=='/settings/label'
  headings=[x for x in w.property_scroll.widget().findChildren(QLabel) if x.objectName()=='block_heading']
@@ -78,7 +78,7 @@ finally:w.undo_stack.setClean();w.close();app.clipboard().clear();app.processEve
 from copy import deepcopy
 from PySide6.QtWidgets import QApplication,QLineEdit
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 from margam.ui.block_labels import valid_label
 app=QApplication([]);w=Window(state_directory=False)
 try:

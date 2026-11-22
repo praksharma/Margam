@@ -94,9 +94,16 @@ HELP.update({
  'lra_epsilon':HELP['gradient_floor'],
  'lra_max':'Finite upper limit on each LRA constraint-loss coefficient, protecting against very small constraint gradients.',
 })
-for _axis in ('x','y','t'):
+for _axis in ('x','y','z','t'):
     HELP[_axis+'_min']='Lower physical coordinate bound for this problem coordinate. Built-in domains sample within their bounds; prepared-domain bounds support scaling and validation and do not invent geometry or points.'
     HELP[_axis+'_max']='Upper physical coordinate bound for this problem coordinate. It must exceed the corresponding lower bound. Sampling, derivative coordinates and explicit network normalization use the configured physical coordinate convention.'
+HELP.update({
+    'sphere_x':'x coordinate of the 3D spherical obstacle centre inside the bounding box.',
+    'sphere_y':'y coordinate of the 3D spherical obstacle centre inside the bounding box.',
+    'sphere_z':'z coordinate of the 3D spherical obstacle centre inside the bounding box.',
+    'sphere_radius':'Positive radius of the 3D spherical obstacle; the sphere must lie strictly inside the 3D box bounds.',
+    'parametric_axes':'Continuous parameter inputs (e.g. mu in [0.5, 2.0]) fed alongside spatial/time coordinates so one trained PINN u(x, t, mu) covers the whole parameter range and can be scrubbed live in Solution Explorer.',
+})
 
 CHOICES = {
  'tanh':'Smooth hyperbolic tangent.', 'silu':'Smooth sigmoid-weighted linear activation.', 'sin':'Smooth sinusoidal activation.',
