@@ -34,6 +34,7 @@ class StudyResults(QDialog):
         self.status=QLabel('Choose the directory containing summary.json and study.margam-study.');self.status.setTextFormat(Qt.TextFormat.PlainText);self.status.setWordWrap(True);layout.addWidget(self.status)
         row=QHBoxLayout();layout.addLayout(row)
         self.open_button=QPushButton('Verify and open completed trial');self.open_button.setIcon(icon('open'));self.open_button.clicked.connect(self.open_selected);row.addWidget(self.open_button)
+        self.explore_study_button=QPushButton('Explore in Solution Explorer…');self.explore_study_button.setIcon(icon('solution'));self.explore_study_button.clicked.connect(self.explore_in_solution_explorer);row.addWidget(self.explore_study_button)
         self.export_button=QPushButton('Export table CSV…');self.export_button.setIcon(icon('export'));self.export_button.clicked.connect(lambda:self.export_table());row.addWidget(self.export_button)
         self.cancel=QPushButton('Cancel reading');self.cancel.clicked.connect(self.cancel_reading);row.addWidget(self.cancel);row.addStretch()
         close=QPushButton('Close');close.clicked.connect(self.close);row.addWidget(close);self.buttons()
@@ -42,8 +43,16 @@ class StudyResults(QDialog):
         busy=self.worker is not None;index=self.table.currentRow()
         self.browse.setEnabled(not busy);self.refresh_button.setEnabled(not busy and self.root is not None);self.cancel.setEnabled(busy)
         self.export_button.setEnabled(not busy and self.collection is not None)
+        any_completed=self.collection is not None and any(rec['row']['status']=='completed' for rec in self.collection['records'])
+        self.explore_study_button.setEnabled(not busy and any_completed)
         completed=self.collection is not None and 0<=index<len(self.collection['records']) and self.collection['records'][index]['row']['status']=='completed'
         self.open_button.setEnabled(not busy and completed and not self.owner.is_running() and not self.owner.scene.locked and not self.owner.project_workspace.busy)
+
+    def explore_in_solution_explorer(self):
+        if self.worker is not None or self.root is None or self.collection is None:return None
+        win=self.owner.show_solution_explorer()
+        win.open_study_folder(self.root)
+        return win
 
     def start_read(self,operation,kind):
         if self.worker is not None:return False

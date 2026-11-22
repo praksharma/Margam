@@ -121,6 +121,10 @@ class SolutionExplorerWindow(QMainWindow):
         self.snapshot_action.setIcon(icon("export"))
         self.snapshot_action.triggered.connect(lambda: self.export_snapshot())
 
+        self.export_frames_action = tb.addAction("Export frames…")
+        self.export_frames_action.setIcon(icon("export"))
+        self.export_frames_action.triggered.connect(lambda: self.export_frame_sequence())
+
         self.export_probe_action = tb.addAction("Export probe CSV…")
         self.export_probe_action.setIcon(icon("save"))
         self.export_probe_action.triggered.connect(lambda: self.export_probe_csv())
@@ -182,9 +186,28 @@ class SolutionExplorerWindow(QMainWindow):
         self.time_slider.valueChanged.connect(self._on_time_changed)
         self.time_label = QLabel("t = 0")
         self.time_label.setObjectName("explorer_time_label")
+        self.fps_combo = QComboBox()
+        self.fps_combo.setObjectName("explorer_fps_combo")
+        for fps in (2, 5, 10, 20):
+            self.fps_combo.addItem(f"{fps} FPS", fps)
+        self.fps_combo.setCurrentIndex(1)
+        self.fps_combo.currentIndexChanged.connect(self._on_fps_changed)
         self.loop_check = QCheckBox("Loop")
         self.loop_check.setChecked(True)
-        for w in (QLabel("Time:"), self.play_button, self.step_back_button, self.time_slider, self.step_fwd_button, self.time_label, self.loop_check):
+        self.time_trace_button = QPushButton("Time trace")
+        self.time_trace_button.setObjectName("explorer_time_trace")
+        self.time_trace_button.clicked.connect(lambda: self.plot_time_trace())
+        for w in (
+            QLabel("Time:"),
+            self.play_button,
+            self.step_back_button,
+            self.time_slider,
+            self.step_fwd_button,
+            self.time_label,
+            self.fps_combo,
+            self.loop_check,
+            self.time_trace_button,
+        ):
             t_row.addWidget(w)
         layout.addWidget(self.time_bar)
         self.time_bar.hide()
@@ -585,16 +608,183 @@ class SolutionExplorerWindow(QMainWindow):
             return False
         return True
 
+    def _clear_parametric_panel(self):
+        while self.form_parametric.rowCount():
+            self.form_parametric.removeRow(0)
+        self._study_axis_combos: list[QComboBox] = []
+        self._study_diff_check = None
+        self._study_baseline_combo = None
+        self._study_resp_axis_combo = None
+        self._study_resp_metric_combo = None
+        self._study_status_label = None
+
     def set_study(self, collection):
-        """Attach a StudyCollection (expanded with full parameter sliders in Phase 4)."""
+        """Attach a StudyCollection and populate dynamic parametric scrubbers and response tools."""
         self.study = collection
-        if collection.completed_indices:
-            first = collection.load_trial_dataset(collection.completed_indices[0])
-            if first is not None:
-                self.set_dataset(first)
-        self.statusBar().showMessage(f"Loaded study {collection.root.name} · {len(collection.completed_indices)} completed trial(s)")
+        self._clear_parametric_panel()
+        self._study_output_id = None
+        if not collection.completed_indices:
+            self.form_parametric.addRow(QLabel("No completed trials found in this study folder."))
+            self.statusBar().showMessage(f"Loaded study {collection.root.name} · 0 completed trials")
+            return
+
+        # Populate available output IDs from the first completed trial
+        first_idx = collection.completed_indices[0]
+        output_ids = collection.output_ids_for_trial(first_idx)
+        self._study_output_id = output_ids[0] if output_ids else None
+        if output_ids:
+            self._updating_controls = True
+            self.output_combo.blockSignals(True)
+            self.output_combo.clear()
+            for oid in output_ids:
+                self.output_combo.addItem(f"Output {oid[:8]}", oid)
+            self.output_combo.blockSignals(False)
+            self._updating_controls = False
+
+        # One combo + step slider per swept parameter axis
+        first_choices = collection.trial_choices(first_idx)
+        for ax in collection.axes_meta:
+            combo = QComboBox()
+            combo.setObjectName(f"explorer_study_axis_{ax['index']}")
+            for val in ax["values"]:
+                combo.addItem(str(val), val)
+            init_val = first_choices[ax["index"]]["value"]
+            for i, val in enumerate(ax["values"]):
+                if val == init_val:
+                    combo.setCurrentIndex(i)
+                    break
+            combo.currentIndexChanged.connect(self._on_study_param_changed)
+            if len(ax["values"]) > 1:
+                sld = QSlider(Qt.Orientation.Horizontal)
+                sld.setRange(0, len(ax["values"]) - 1)
+                sld.setValue(combo.currentIndex())
+                sld.valueChanged.connect(combo.setCurrentIndex)
+                combo.currentIndexChanged.connect(sld.setValue)
+                row_w = QWidget()
+                rl = QHBoxLayout(row_w)
+                rl.setContentsMargins(0, 0, 0, 0)
+                rl.addWidget(sld, 1)
+                rl.addWidget(combo)
+                self.form_parametric.addRow(ax["label"], row_w)
+            else:
+                self.form_parametric.addRow(ax["label"], combo)
+            self._study_axis_combos.append(combo)
+
+        self._study_diff_check = QCheckBox("Compare difference vs baseline DP")
+        self._study_diff_check.setObjectName("explorer_study_diff")
+        self._study_diff_check.toggled.connect(self._on_study_param_changed)
+        self.form_parametric.addRow(self._study_diff_check)
+
+        self._study_baseline_combo = QComboBox()
+        self._study_baseline_combo.setObjectName("explorer_study_baseline")
+        for idx in collection.completed_indices:
+            summary = ", ".join(f"{c['parameter']}={c['value']}" for c in collection.trial_choices(idx))
+            self._study_baseline_combo.addItem(f"DP{idx + 1:04d} ({summary})", idx)
+        self._study_baseline_combo.currentIndexChanged.connect(self._on_study_param_changed)
+        self.form_parametric.addRow("Baseline DP", self._study_baseline_combo)
+
+        self._study_resp_axis_combo = QComboBox()
+        self._study_resp_axis_combo.setObjectName("explorer_study_resp_axis")
+        for ax in collection.axes_meta:
+            self._study_resp_axis_combo.addItem(ax["label"], ax["index"])
+        self.form_parametric.addRow("Response axis", self._study_resp_axis_combo)
+
+        self._study_resp_metric_combo = QComboBox()
+        self._study_resp_metric_combo.setObjectName("explorer_study_resp_metric")
+        for key, label in (
+            ("max", "Spatial max"),
+            ("min", "Spatial min"),
+            ("mean", "Spatial mean"),
+            ("l2", "Field L2"),
+            ("rmse", "Reference RMSE"),
+            ("rel_l2", "Reference rel L2"),
+            ("max_error", "Reference max |error|"),
+        ):
+            self._study_resp_metric_combo.addItem(label, key)
+        self.form_parametric.addRow("Response metric", self._study_resp_metric_combo)
+
+        btn_resp = QPushButton("Plot parametric response")
+        btn_resp.setObjectName("explorer_study_plot_response")
+        btn_resp.clicked.connect(self.plot_study_response)
+        self.form_parametric.addRow(btn_resp)
+
+        self._study_status_label = QLabel("")
+        self._study_status_label.setWordWrap(True)
+        self.form_parametric.addRow(self._study_status_label)
+
+        self._on_study_param_changed()
+        self.statusBar().showMessage(
+            f"Loaded study {collection.root.name} · {len(collection.completed_indices)} completed trial(s)"
+        )
+
+    def _selected_study_values(self) -> list[Any]:
+        return [combo.currentData() for combo in getattr(self, "_study_axis_combos", [])]
+
+    def _on_study_param_changed(self):
+        if self.study is None or self._updating_controls:
+            return
+        values = self._selected_study_values()
+        trial_idx = self.study.trial_for_values(values)
+        if trial_idx is None:
+            if self._study_status_label is not None:
+                self._study_status_label.setText("No trial matches this parameter combination.")
+            return
+        status = self.study.trial_status(trial_idx)
+        if status != "completed":
+            if self._study_status_label is not None:
+                self._study_status_label.setText(f"DP{trial_idx + 1:04d} status is '{status}' (not completed).")
+            return
+        oid = self.output_combo.currentData() or getattr(self, "_study_output_id", None)
+        ds = self.study.load_trial_dataset(trial_idx, output_id=oid)
+        if ds is None:
+            return
+        if self._study_diff_check is not None and self._study_diff_check.isChecked() and self._study_baseline_combo is not None:
+            base_idx = self._study_baseline_combo.currentData()
+            base_ds = self.study.load_trial_dataset(base_idx, output_id=oid) if base_idx is not None else None
+            if base_ds is not None:
+                try:
+                    ds = ds.with_difference(base_ds, label=f"DP{trial_idx + 1:04d} − DP{base_idx + 1:04d}")
+                except ValueError as exc:
+                    if self._study_status_label is not None:
+                        self._study_status_label.setText(str(exc))
+                    return
+        if self._study_status_label is not None:
+            self._study_status_label.setText(f"Active: DP{trial_idx + 1:04d}")
+        self.set_dataset(ds, preserve_lock=True)
+
+    def plot_study_response(self):
+        if self.study is None or self.dataset is None or self._study_resp_axis_combo is None:
+            return [], []
+        axis_index = self._study_resp_axis_combo.currentData()
+        metric = self._study_resp_metric_combo.currentData() or "max"
+        field_name = self.field_combo.currentText()
+        oid = self.output_combo.currentData() or getattr(self, "_study_output_id", None)
+        t_idx = self.time_slider.value() if self.dataset.is_time_dependent else 0
+        xs_raw, ys = self.study.parametric_response(
+            axis_index,
+            self._selected_study_values(),
+            field_name=field_name,
+            metric=metric,
+            output_id=oid,
+            time_index=t_idx,
+        )
+        if not ys:
+            self.probe_plot.set_series([], "No numeric response values for this axis/metric.")
+            return [], []
+        # Map numeric values directly or categorical values to integer indices
+        try:
+            xs_num = [float(v) for v in xs_raw]
+        except (TypeError, ValueError):
+            xs_num = list(range(len(xs_raw)))
+        axis_label = self.study.axes_meta[axis_index]["label"]
+        self.probe_plot.set_series(
+            [(f"{field_name} ({metric})", list(zip(xs_num, ys)), "#2b9d91")],
+            f"Parametric response · {field_name} {metric} vs {axis_label}",
+        )
+        return xs_raw, ys
 
     def set_datasets(self, datasets: dict[str, SolutionDataset], *, preferred_id: str | None = None):
+        self.study = None
         self.datasets_by_id = dict(datasets)
         self._updating_controls = True
         self.output_combo.blockSignals(True)
@@ -609,12 +799,13 @@ class SolutionExplorerWindow(QMainWindow):
         if chosen in self.datasets_by_id:
             self.set_dataset(self.datasets_by_id[chosen])
 
-    def set_dataset(self, dataset: SolutionDataset):
+    def set_dataset(self, dataset: SolutionDataset, *, preserve_lock: bool = False):
         self.play_timer.stop()
         self.play_button.setChecked(False)
         self.dataset = dataset
-        self._locked_limits = None
-        self.lock_range_check.setChecked(False)
+        if not preserve_lock:
+            self._locked_limits = None
+            self.lock_range_check.setChecked(False)
         self._last_line_cut = None
         self.viewport_2d.clear_line_cut()
         self.viewport_2d.set_highlight_point(None)
@@ -652,6 +843,9 @@ class SolutionExplorerWindow(QMainWindow):
 
     def _on_output_selected(self):
         if self._updating_controls:
+            return
+        if self.study is not None:
+            self._on_study_param_changed()
             return
         oid = self.output_combo.currentData()
         if oid in self.datasets_by_id:
@@ -930,6 +1124,75 @@ class SolutionExplorerWindow(QMainWindow):
         self.viewport_2d.reset_view()
         if self.viewport_3d is not None and hasattr(self.viewport_3d, "reset_camera"):
             self.viewport_3d.reset_camera()
+
+    def _on_fps_changed(self):
+        fps = int(self.fps_combo.currentData() or 5)
+        self.play_timer.setInterval(max(30, int(round(1000.0 / fps))))
+
+    def plot_time_trace(self, coord: tuple[float, ...] | None = None):
+        if self.dataset is None or not self.dataset.is_time_dependent:
+            return None
+        field_name = self.field_combo.currentText()
+        if not field_name:
+            return None
+        if coord is None:
+            if self.viewport_2d._hover_data is not None and self.dataset.spatial_dim == 2:
+                coord = self.viewport_2d._hover_data
+            elif self.dataset.spatial_bounds:
+                coord = tuple(0.5 * (lo + hi) for lo, hi in self.dataset.spatial_bounds)
+            else:
+                coord = tuple(0.0 for _ in range(self.dataset.spatial_dim))
+        mode = self.display_mode_combo.currentData() or "prediction"
+        if mode != "prediction" and not self.dataset.has_reference_for(field_name, 0):
+            mode = "prediction"
+        ts, vals, refs = self.dataset.time_trace(coord, field_name, mode=mode)
+        if len(ts) == 0:
+            return None
+        series = [(f"{field_name} ({mode})", list(zip(ts.tolist(), vals.tolist())), "#2b9d91")]
+        if refs is not None:
+            series.append(("Reference", list(zip(ts.tolist(), refs.tolist())), "#d58b35"))
+        c_str = ", ".join(f"{n}={v:.3g}" for n, v in zip(self.dataset.spatial_names, coord))
+        self.probe_plot.set_series(series, f"Time trace at ({c_str}) · {field_name}")
+        return ts, vals, refs
+
+    def export_frame_sequence(self, directory: str | Path | None = None, *, scale: int = 1) -> list[Path]:
+        if self.dataset is None:
+            return []
+        if directory is None:
+            directory = QFileDialog.getExistingDirectory(self, "Choose folder for PNG frame sequence")
+            if not directory:
+                return []
+        out_dir = Path(directory)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        written: list[Path] = []
+        if self.dataset.is_time_dependent and self.dataset.num_frames > 1:
+            saved_idx = self.time_slider.value()
+            try:
+                for frame in range(self.dataset.num_frames):
+                    self.set_time_index(frame)
+                    out_file = out_dir / f"frame_{frame:04d}.png"
+                    if self.export_snapshot(out_file, scale=scale):
+                        written.append(out_file)
+            finally:
+                self.set_time_index(saved_idx)
+        elif self.study is not None and getattr(self, "_study_axis_combos", None):
+            axis_i = self._study_resp_axis_combo.currentData() if self._study_resp_axis_combo is not None else 0
+            combo = self._study_axis_combos[axis_i]
+            saved_idx = combo.currentIndex()
+            try:
+                for step in range(combo.count()):
+                    combo.setCurrentIndex(step)
+                    out_file = out_dir / f"param_{step:04d}.png"
+                    if self.export_snapshot(out_file, scale=scale):
+                        written.append(out_file)
+            finally:
+                combo.setCurrentIndex(saved_idx)
+        else:
+            out_file = out_dir / "frame_0000.png"
+            if self.export_snapshot(out_file, scale=scale):
+                written.append(out_file)
+        self.statusBar().showMessage(f"Exported {len(written)} frame(s) to {out_dir.name}")
+        return written
 
     def set_time_index(self, index: int):
         if self.dataset is None or not self.dataset.is_time_dependent:
