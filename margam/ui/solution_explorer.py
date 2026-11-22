@@ -34,6 +34,7 @@ from .icons import icon
 from .plots import CurvePlot
 from .theme import colors, configure_theme, theme_name
 from .viewport_2d import ColorbarWidget, Viewport2D
+from .viewport_3d import Viewport3D
 from ..visualization.colormaps import COLORMAPS, COLORMAP_LABELS
 from ..visualization.dataset import DISPLAY_MODES, SolutionDataset
 from ..visualization.loaders import from_file, from_output_result, from_run_archive
@@ -151,15 +152,14 @@ class SolutionExplorerWindow(QMainWindow):
         self.viewport_2d.probeMoved.connect(self._on_probe_moved)
         self.viewport_2d.lineCutChanged.connect(self._on_line_cut_changed)
 
-        # Page 2: 3D Viewport placeholder (populated by Viewport3D in Phase 3)
+        # Page 2: 3D Viewport + Colorbar
         self.page_3d = QWidget()
         self.layout_3d = QHBoxLayout(self.page_3d)
         self.layout_3d.setContentsMargins(0, 0, 0, 0)
-        self.viewport_3d = None
+        self.viewport_3d = Viewport3D()
+        self.viewport_3d.setObjectName("explorer_viewport_3d")
         self.colorbar_3d = ColorbarWidget()
-        self._placeholder_3d = QLabel("3D Viewport ready — load a 2D or 3D solution to view in 3D.")
-        self._placeholder_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.layout_3d.addWidget(self._placeholder_3d, 1)
+        self.layout_3d.addWidget(self.viewport_3d, 1)
         self.layout_3d.addWidget(self.colorbar_3d)
         self.view_stack.addWidget(self.page_3d)
 
@@ -331,14 +331,42 @@ class SolutionExplorerWindow(QMainWindow):
         vbox.addWidget(self.group_2d)
 
         # 4. 3D / Slice Settings
-        self.group_3d = QGroupBox("3D & slice settings")
+        self.group_3d = QGroupBox("3D viewport & slice settings")
         self.form_3d = QFormLayout(self.group_3d)
+
+        cam_row = QHBoxLayout()
+        for key, label in (("iso", "Iso"), ("xy", "XY"), ("xz", "XZ"), ("yz", "YZ")):
+            btn = QPushButton(label)
+            btn.setObjectName(f"explorer_cam_{key}")
+            btn.clicked.connect(lambda checked=False, k=key: self.viewport_3d.set_preset(k))
+            cam_row.addWidget(btn)
+        self.form_3d.addRow("Camera", cam_row)
+
+        self.ortho_check = QCheckBox("Orthographic projection")
+        self.ortho_check.setObjectName("explorer_ortho")
+        self.ortho_check.toggled.connect(lambda checked: self.viewport_3d.set_orthographic(checked))
+        self.form_3d.addRow(self.ortho_check)
+
+        self.mode_3d_combo = QComboBox()
+        self.mode_3d_combo.setObjectName("explorer_mode_3d")
+        for key, label in (
+            ("auto", "Auto (heightfield / slices / cloud)"),
+            ("heightfield", "3D heightfield surface z=f(x,y)"),
+            ("slices", "Orthogonal 3D slices (X/Y/Z)"),
+            ("cloud", "3D point cloud (thresholded)"),
+            ("isosurface", "3D isosurface (marching tets)"),
+            ("slices_iso", "Slices + Isosurface"),
+        ):
+            self.mode_3d_combo.addItem(label, key)
+        self.mode_3d_combo.currentIndexChanged.connect(self.refresh_view)
+        self.form_3d.addRow("3D style", self.mode_3d_combo)
+
         self.slice_axis_combo = QComboBox()
         self.slice_axis_combo.setObjectName("explorer_slice_axis")
         for axis in ("z", "y", "x"):
-            self.slice_axis_combo.addItem(f"{axis.upper()} normal plane", axis)
+            self.slice_axis_combo.addItem(f"{axis.upper()} normal plane (2D view)", axis)
         self.slice_axis_combo.currentIndexChanged.connect(self._on_slice_axis_changed)
-        self.form_3d.addRow("Slice plane", self.slice_axis_combo)
+        self.form_3d.addRow("2D slice plane", self.slice_axis_combo)
 
         self.slice_slider = QSlider(Qt.Orientation.Horizontal)
         self.slice_slider.setObjectName("explorer_slice_slider")
@@ -349,7 +377,96 @@ class SolutionExplorerWindow(QMainWindow):
         s_row = QHBoxLayout()
         s_row.addWidget(self.slice_slider, 1)
         s_row.addWidget(self.slice_value_label)
-        self.form_3d.addRow("Slice position", s_row)
+        self.form_3d.addRow("2D slice pos", s_row)
+
+        # Orthogonal 3D X/Y/Z slice toggles + sliders
+        self.slice_3d_checks: dict[str, QCheckBox] = {}
+        self.slice_3d_sliders: dict[str, QSlider] = {}
+        for axis, default_on in (("x", False), ("y", False), ("z", True)):
+            chk = QCheckBox(f"{axis.upper()} slice")
+            chk.setObjectName(f"explorer_slice3d_{axis}_check")
+            chk.setChecked(default_on)
+            chk.toggled.connect(self.refresh_view)
+            sld = QSlider(Qt.Orientation.Horizontal)
+            sld.setObjectName(f"explorer_slice3d_{axis}_slider")
+            sld.setRange(0, 100)
+            sld.setValue(50)
+            sld.valueChanged.connect(self.refresh_view)
+            row_s = QHBoxLayout()
+            row_s.addWidget(chk)
+            row_s.addWidget(sld, 1)
+            self.form_3d.addRow(row_s)
+            self.slice_3d_checks[axis] = chk
+            self.slice_3d_sliders[axis] = sld
+
+        self.iso_slider = QSlider(Qt.Orientation.Horizontal)
+        self.iso_slider.setObjectName("explorer_iso_slider")
+        self.iso_slider.setRange(1, 99)
+        self.iso_slider.setValue(50)
+        self.iso_slider.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Isosurface level", self.iso_slider)
+
+        self.iso_opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.iso_opacity_slider.setRange(40, 255)
+        self.iso_opacity_slider.setValue(200)
+        self.iso_opacity_slider.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Isosurface alpha", self.iso_opacity_slider)
+
+        self.cloud_point_spin = QDoubleSpinBox()
+        self.cloud_point_spin.setRange(1.5, 12.0)
+        self.cloud_point_spin.setSingleStep(0.5)
+        self.cloud_point_spin.setValue(4.0)
+        self.cloud_point_spin.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Point size", self.cloud_point_spin)
+
+        self.thresh_min_slider = QSlider(Qt.Orientation.Horizontal)
+        self.thresh_min_slider.setObjectName("explorer_thresh_min")
+        self.thresh_min_slider.setRange(0, 100)
+        self.thresh_min_slider.setValue(0)
+        self.thresh_min_slider.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Cloud min %", self.thresh_min_slider)
+
+        self.thresh_max_slider = QSlider(Qt.Orientation.Horizontal)
+        self.thresh_max_slider.setObjectName("explorer_thresh_max")
+        self.thresh_max_slider.setRange(0, 100)
+        self.thresh_max_slider.setValue(100)
+        self.thresh_max_slider.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Cloud max %", self.thresh_max_slider)
+
+        self.clip_axis_combo = QComboBox()
+        for key, label in (("none", "None"), ("x", "Clip X ≤"), ("y", "Clip Y ≤"), ("z", "Clip Z ≤")):
+            self.clip_axis_combo.addItem(label, key)
+        self.clip_axis_combo.currentIndexChanged.connect(self.refresh_view)
+        self.clip_slider = QSlider(Qt.Orientation.Horizontal)
+        self.clip_slider.setRange(0, 100)
+        self.clip_slider.setValue(100)
+        self.clip_slider.valueChanged.connect(self.refresh_view)
+        clip_row = QHBoxLayout()
+        clip_row.addWidget(self.clip_axis_combo)
+        clip_row.addWidget(self.clip_slider, 1)
+        self.form_3d.addRow("Cutaway", clip_row)
+
+        self.warp_scale_spin = QDoubleSpinBox()
+        self.warp_scale_spin.setRange(0.05, 1.5)
+        self.warp_scale_spin.setSingleStep(0.1)
+        self.warp_scale_spin.setValue(0.55)
+        self.warp_scale_spin.valueChanged.connect(self.refresh_view)
+        self.form_3d.addRow("Height warp", self.warp_scale_spin)
+
+        self.wireframe_check = QCheckBox("Wireframe overlay")
+        self.wireframe_check.toggled.connect(self.refresh_view)
+        self.form_3d.addRow(self.wireframe_check)
+
+        self.show_box_check = QCheckBox("Show bounding box & axes")
+        self.show_box_check.setChecked(True)
+        self.show_box_check.toggled.connect(self.refresh_view)
+        self.form_3d.addRow(self.show_box_check)
+
+        self.show_obstacle_check = QCheckBox("Show obstacle mesh")
+        self.show_obstacle_check.setChecked(True)
+        self.show_obstacle_check.toggled.connect(self.refresh_view)
+        self.form_3d.addRow(self.show_obstacle_check)
+
         vbox.addWidget(self.group_3d)
 
         # 5. Parametric Settings (populated dynamically for studies & parametric PINNs)
@@ -547,7 +664,10 @@ class SolutionExplorerWindow(QMainWindow):
 
     def _on_lock_range_toggled(self, locked: bool):
         if locked:
-            self._locked_limits = (self.viewport_2d.effective_vmin, self.viewport_2d.effective_vmax)
+            if self.view_stack.currentIndex() == 2 and self.viewport_3d is not None:
+                self._locked_limits = (self.viewport_3d.effective_vmin, self.viewport_3d.effective_vmax)
+            else:
+                self._locked_limits = (self.viewport_2d.effective_vmin, self.viewport_2d.effective_vmax)
         else:
             self._locked_limits = None
         self.refresh_view()
@@ -684,8 +804,51 @@ class SolutionExplorerWindow(QMainWindow):
             self._on_line_cut_changed(*self.viewport_2d.line_cut)
 
     def _refresh_3d_viewport(self, field_name: str, mode: str, t_idx: int):
-        # Hook overridden / populated when Viewport3D is attached in Phase 3
-        pass
+        auto_range = self.auto_range_check.isChecked() and self._locked_limits is None
+        vmin = self._locked_limits[0] if self._locked_limits is not None else self.vmin_spin.value()
+        vmax = self._locked_limits[1] if self._locked_limits is not None else self.vmax_spin.value()
+        cmap = self.cmap_combo.currentData() or "viridis"
+        self.viewport_3d.configure(
+            dataset=self.dataset,
+            field_name=field_name,
+            display_mode=mode,
+            time_index=t_idx,
+            mode_3d=self.mode_3d_combo.currentData() or "auto",
+            cmap=cmap,
+            auto_range=auto_range,
+            symmetric=self.symmetric_check.isChecked(),
+            log_scale=self.log_scale_check.isChecked(),
+            manual_vmin=vmin,
+            manual_vmax=vmax,
+            show_slice_x=self.slice_3d_checks["x"].isChecked(),
+            show_slice_y=self.slice_3d_checks["y"].isChecked(),
+            show_slice_z=self.slice_3d_checks["z"].isChecked(),
+            slice_x_frac=self.slice_3d_sliders["x"].value() / 100.0,
+            slice_y_frac=self.slice_3d_sliders["y"].value() / 100.0,
+            slice_z_frac=self.slice_3d_sliders["z"].value() / 100.0,
+            iso_frac=self.iso_slider.value() / 100.0,
+            iso_alpha=self.iso_opacity_slider.value(),
+            point_size=self.cloud_point_spin.value(),
+            threshold_min_frac=self.thresh_min_slider.value() / 100.0,
+            threshold_max_frac=self.thresh_max_slider.value() / 100.0,
+            clip_axis=self.clip_axis_combo.currentData() or "none",
+            clip_frac=self.clip_slider.value() / 100.0,
+            warp_scale=self.warp_scale_spin.value(),
+            show_wireframe=self.wireframe_check.isChecked(),
+            show_box=self.show_box_check.isChecked(),
+            show_axes=self.show_box_check.isChecked(),
+            show_obstacle=self.show_obstacle_check.isChecked(),
+        )
+        eff_lo, eff_hi = self.viewport_3d.effective_vmin, self.viewport_3d.effective_vmax
+        if self.auto_range_check.isChecked():
+            self.vmin_spin.blockSignals(True)
+            self.vmax_spin.blockSignals(True)
+            self.vmin_spin.setValue(eff_lo)
+            self.vmax_spin.setValue(eff_hi)
+            self.vmin_spin.blockSignals(False)
+            self.vmax_spin.blockSignals(False)
+        bar_cmap = "coolwarm" if (mode == "signed_error" and cmap == "viridis") else cmap
+        self.colorbar_3d.configure(bar_cmap, eff_lo, eff_hi, log_scale=self.log_scale_check.isChecked(), label=field_name)
 
     def apply_preset_cut(self, orientation: str):
         if self.dataset is None or self.dataset.spatial_dim < 2 or not self.dataset.spatial_bounds:
