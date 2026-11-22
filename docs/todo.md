@@ -840,3 +840,29 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   click-and-drag viewport panning.
 - [x] Add `File → Export diagram image…` for cropped, selection-free PNG and SVG
   block-diagram exports.
+
+## Dedicated Solution Explorer, native 3D domains, and continuous parametric PINNs
+
+- [x] Add a unified `margam/visualization/` data layer (`colormaps.py`, `dataset.py`,
+  `field_ops.py`, `geometry_3d.py`, `loaders.py`) supporting 1D, 2D, 3D, transient,
+  unstructured, parameter-study, and continuous parametric datasets without extra
+  third-party plotting dependencies.
+- [x] Add a dedicated modeless `SolutionExplorerWindow` (`View → Open Solution Explorer…`,
+  `Ctrl+Shift+V`, toolbar button, output-block context menu, and Study Results launch)
+  with interactive 1D curves, 2D heatmaps/contours/RK4 streamlines/quiver/3-panel
+  comparison/line-cut probing, and a 3D viewport with camera orbit/pan/zoom/presets,
+  orthogonal X/Y/Z slices, marching-tetrahedra isosurfaces, thresholded 3D clouds
+  with cutaway clip, and 2D heightfield warping.
+- [x] Add transient playback (`Play/Pause`, FPS, loop, time-trace probe, PNG frame
+  export) and discrete parameter-study scrubbing (`StudyCollection`, baseline diff,
+  parametric response curves).
+- [x] Add native 3D domains (`Box3D`, `SpaceTime3D`, `SphereObstacle3D`), 3D `Expression`
+  derivatives (`z`, `nz`, `D(u,z)`, 3D `laplace(u)`, 3D `dn(u)`), 3D `HardDirichletPINN`,
+  3D `.vti`/`.vtu` ParaView export, model format 34, and `poisson_3d` / `sphere_heat_3d`
+  examples under `File → Examples → 3D examples`.
+- [x] Add native continuous parametric PINNs ($u_\theta(\mathbf{x}, t, \boldsymbol{\mu})$)
+  with validated `parametric_axes` on Domain/Config (model format 35), joint
+  space–time–parameter sampling, spatial-only hard Dirichlet wall factors, the
+  `parametric_poisson_2d` example under `File → Examples → Parametric examples`,
+  live debounced background-thread sliders and response-curve sweeping in Solution
+  Explorer, and the `margam.visualization.explore(...)` research bridge.

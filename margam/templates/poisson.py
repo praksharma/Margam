@@ -271,7 +271,7 @@ class PoissonConfig:
         if type(self.seed) is not int or not 0 <= self.seed < 2**31:
             raise ValueError('Seed must be a non-negative 32-bit integer.')
         if not isinstance(self.boundary_sampling, dict) or set(self.boundary_sampling) - {'left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial'}:
-            raise ValueError('Boundary sampling recipes must use named domain sides.')
+            raise ValueError('Boundary sampling recipes must use named rectangle sides or 3D faces.')
         for side, recipe in self.boundary_sampling.items():
             if not isinstance(recipe, BoundarySampling):
                 raise ValueError(f'{side}: expected a BoundarySampling recipe.')
@@ -384,8 +384,9 @@ class PoissonConfig:
         dimension=len(self.bounds[0])
         if self.pde_expression:Expression(self.pde_expression,dimension,coordinates=self.coordinate_names)
         for side in self.sides:
-            bc_type=self.bc_types.get(side,'Dirichlet')
-            bc_val=self.bc_values.get(side,0.)
+            extra_3d = self.is_3d and side in ('front','back','sphere','initial')
+            bc_type=self.bc_types.get(side,'Dirichlet' if extra_3d else None)
+            bc_val=self.bc_values.get(side,0. if extra_3d else float('nan'))
             if self.bc_targets.get(side):Expression(self.bc_targets[side],dimension,target=True,coordinates=self.coordinate_names)
             if bc_type=='Custom':Expression(self.bc_operators.get(side,''),dimension,coordinates=self.coordinate_names)
             if bc_type not in ('Dirichlet','Neumann','Custom') or not math.isfinite(bc_val):

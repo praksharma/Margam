@@ -1616,8 +1616,131 @@ class SolutionExplorerWindow(QMainWindow):
         super().closeEvent(event)
 
 
+def _dataset_from_callable_or_model(
+    source,
+    *,
+    bounds,
+    coordinate_names=None,
+    field_names=("u",),
+    resolution: int = 21,
+    times=None,
+    param_specs=None,
+    obstacle=None,
+    title: str = "Live model",
+) -> SolutionDataset:
+    """Evaluate a live PyTorch/Margam model or callable on a regular grid with live scrubbing."""
+    import itertools
+
+    bounds_list = [(float(lo), float(hi)) for lo, hi in bounds]
+    spatial_dim = len(bounds_list)
+    if spatial_dim not in (1, 2, 3):
+        raise ValueError("Live model exploration supports 1D, 2D, or 3D spatial bounds.")
+    if coordinate_names is None:
+        base_names = ("x", "y", "z")[:spatial_dim]
+    else:
+        base_names = tuple(coordinate_names)
+    p_specs = [dict(spec) for spec in (param_specs or ())]
+    p_names = tuple(spec["name"] for spec in p_specs)
+    p_defaults = {spec["name"]: float(spec.get("default", 0.5 * (spec["min"] + spec["max"]))) for spec in p_specs}
+    time_list = [float(t) for t in times] if times is not None and len(times) > 0 else []
+
+    axes = [np.linspace(lo, hi, max(2, int(resolution))) for lo, hi in bounds_list]
+    spatial_pts = np.array([list(reversed(row)) for row in itertools.product(*reversed(axes))], dtype=np.float64)
+    if obstacle:
+        kind = obstacle.get("kind")
+        center = obstacle.get("center", ())
+        radius = float(obstacle.get("radius", 0.0))
+        if kind == "sphere" and len(center) == 3 and spatial_dim == 3:
+            d2 = (spatial_pts[:, 0] - center[0]) ** 2 + (spatial_pts[:, 1] - center[1]) ** 2 + (spatial_pts[:, 2] - center[2]) ** 2
+            spatial_pts = spatial_pts[d2 >= radius * radius]
+        elif kind == "cylinder" and len(center) >= 2 and spatial_dim >= 2:
+            d2 = (spatial_pts[:, 0] - center[0]) ** 2 + (spatial_pts[:, 1] - center[1]) ** 2
+            spatial_pts = spatial_pts[d2 >= radius * radius]
+
+    full_coord_names = tuple(base_names) + (("t",) if time_list else ()) + p_names
+    f_names = tuple(field_names)
+
+    def _predict_raw(coords_np: np.ndarray) -> dict[str, np.ndarray]:
+        if hasattr(source, "predict"):
+            import torch
+            dtype = getattr(source, "dtype", torch.get_default_dtype())
+            if not isinstance(dtype, torch.dtype):
+                dtype = torch.get_default_dtype()
+            out = source.predict(torch.tensor(coords_np, dtype=dtype))
+        else:
+            out = source(coords_np)
+        if isinstance(out, dict):
+            return {str(k): np.asarray(v, dtype=np.float64).reshape(-1) for k, v in out.items()}
+        if hasattr(out, "detach"):
+            arr = out.detach().cpu().numpy()
+        else:
+            arr = np.asarray(out)
+        arr = np.asarray(arr, dtype=np.float64)
+        if arr.ndim == 1:
+            arr = arr[:, None]
+        names = f_names if len(f_names) == arr.shape[1] else tuple(f"f{i}" for i in range(arr.shape[1]))
+        return {name: arr[:, idx] for idx, name in enumerate(names)}
+
+    def live_evaluator(sp_pts: np.ndarray, *, time_value: float | None = None, params: dict[str, float] | None = None):
+        pts_in = np.asarray(sp_pts, dtype=np.float64)
+        if pts_in.ndim == 1:
+            pts_in = pts_in[:, None]
+        n = len(pts_in)
+        cols = [pts_in]
+        if time_list:
+            tv = float(time_value) if time_value is not None else time_list[0]
+            cols.append(np.full((n, 1), tv, dtype=np.float64))
+        p_map = dict(p_defaults)
+        if params:
+            p_map.update(params)
+        for pname in p_names:
+            cols.append(np.full((n, 1), float(p_map[pname]), dtype=np.float64))
+        return _predict_raw(np.hstack(cols))
+
+    if time_list:
+        all_pts = []
+        field_chunks: dict[str, list[np.ndarray]] = {}
+        for tv in time_list:
+            n = len(spatial_pts)
+            cols = [spatial_pts, np.full((n, 1), tv, dtype=np.float64)]
+            for pname in p_names:
+                cols.append(np.full((n, 1), p_defaults[pname], dtype=np.float64))
+            all_pts.append(np.hstack(cols))
+            res = live_evaluator(spatial_pts, time_value=tv, params=p_defaults)
+            for k, v in res.items():
+                field_chunks.setdefault(k, []).append(v)
+        points = np.vstack(all_pts)
+        fields = {k: np.concatenate(vs) for k, vs in field_chunks.items()}
+    else:
+        n = len(spatial_pts)
+        cols = [spatial_pts] + [np.full((n, 1), p_defaults[pname], dtype=np.float64) for pname in p_names]
+        points = np.hstack(cols)
+        fields = live_evaluator(spatial_pts, time_value=None, params=p_defaults)
+
+    return SolutionDataset(
+        points=points,
+        coordinate_names=full_coord_names,
+        fields=fields,
+        title=title,
+        source_description=f"Live {spatial_dim}D model · {len(points)} rows",
+        obstacle=obstacle,
+        live_evaluator=live_evaluator,
+        param_specs=p_specs,
+        spatial_bounds=bounds_list,
+        time_bounds=(min(time_list), max(time_list)) if time_list else None,
+    )
+
+
 def launch_solution_explorer(source=None, *, block: bool = True, owner=None, **kwargs):
-    """Open the dedicated Solution Explorer window from Python or a running desktop session."""
+    """Open the dedicated Solution Explorer window from Python or a running desktop session.
+
+    ``source`` may be:
+    - a :class:`SolutionDataset`,
+    - a path to a ``.margam-run.pt`` archive, ``.npz``/``.csv``/``.nc`` file, or parameter study folder,
+    - a desktop output result dict (``{'points', 'values', 'config', ...}``), or
+    - a trained model (with ``.predict``) or Python callable together with ``bounds=[(lo, hi), ...]``
+      (and optional ``field_names``, ``resolution``, ``times``, ``param_specs``, ``obstacle``, ``title``).
+    """
     app = QApplication.instance()
     owns_app = app is None
     if app is None:
@@ -1625,6 +1748,7 @@ def launch_solution_explorer(source=None, *, block: bool = True, owner=None, **k
         configure_theme(app, "light")
 
     dataset = None
+    datasets_map = None
     study_path = None
     if isinstance(source, SolutionDataset):
         dataset = source
@@ -1632,13 +1756,21 @@ def launch_solution_explorer(source=None, *, block: bool = True, owner=None, **k
         p = Path(source)
         if p.is_dir():
             study_path = p
+        elif p.suffix.lower() == ".pt":
+            datasets_map = from_run_archive(p)
         else:
             dataset = from_file(p)
     elif isinstance(source, dict) and "points" in source and "config" in source:
         dataset = from_output_result(source)
+    elif source is not None and (hasattr(source, "predict") or callable(source)):
+        if "bounds" not in kwargs:
+            raise ValueError("Passing a live model or callable to explore() requires bounds=[(lo, hi), ...].")
+        dataset = _dataset_from_callable_or_model(source, **kwargs)
 
     window = SolutionExplorerWindow(owner=owner, dataset=dataset)
-    if study_path is not None:
+    if datasets_map:
+        window.set_datasets(datasets_map)
+    elif study_path is not None:
         window.open_study_folder(study_path)
     window.show()
     window.raise_()

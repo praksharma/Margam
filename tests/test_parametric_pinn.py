@@ -249,6 +249,61 @@ finally:
         self.assertEqual(result.returncode, 0, result.stdout + '\n' + result.stderr)
         self.assertNotIn('Traceback', result.stderr)
 
+    def test_explore_research_callable_3d_parametric_bridge(self):
+        code = r'''
+import numpy as np
+from PySide6.QtWidgets import QApplication
+from margam.visualization import explore
+
+app = QApplication([])
+def synthetic_3d_flow(coords):
+    x, y, z, t, re = coords[:, 0], coords[:, 1], coords[:, 2], coords[:, 3], coords[:, 4]
+    u = np.sin(np.pi * x) * np.cos(t) * (re / 100.0)
+    v = np.cos(np.pi * y) * np.sin(t)
+    w = np.sin(np.pi * z) * 0.5
+    p = u * u + v * v
+    return {'u': u, 'v': v, 'w': w, 'p': p}
+
+win = explore(
+    synthetic_3d_flow,
+    bounds=[(0.0, 1.0), (0.0, 1.0), (0.0, 1.0)],
+    resolution=5,
+    times=[0.0, 0.5, 1.0],
+    param_specs=[{'name': 'Re', 'min': 50.0, 'max': 300.0, 'default': 100.0}],
+    obstacle={'kind': 'sphere', 'center': (0.5, 0.5, 0.5), 'radius': 0.2},
+    title='3D Sphere Flow Research Bridge',
+    block=False,
+)
+try:
+    assert win.dataset is not None
+    assert win.dataset.spatial_dim == 3
+    assert win.dataset.is_time_dependent and win.dataset.num_frames == 3
+    assert win.dataset.has_vector_3d
+    assert win.view_stack.currentIndex() == 2
+    ds_hi = win.evaluate_live_params({'Re': 300.0}, sync=True)
+    assert ds_hi is not None
+    assert float(np.max(np.abs(ds_hi.fields['u']))) > float(np.max(np.abs(win._base_parametric_dataset.fields['u']))) * 2.5
+finally:
+    app.clipboard().clear()
+    win.close()
+    app.processEvents()
+'''
+        result = subprocess.run(
+            [sys.executable, '-c', code],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=dict(
+                os.environ,
+                QT_QPA_PLATFORM='offscreen',
+                CUDA_VISIBLE_DEVICES='',
+                PYTHONDONTWRITEBYTECODE='1',
+            ),
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + '\n' + result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()
