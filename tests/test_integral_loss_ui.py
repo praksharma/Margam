@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from pathlib import Path
 from PySide6.QtWidgets import QApplication,QComboBox
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model,decode_document
+from margam.ui.model_document import CURRENT_VERSION,capture_model,decode_document
 app=QApplication([]);w=Window(state_directory=False);w.show();app.processEvents()
 try:
  for example,trainer_kind in [('interval_poisson','method'),('self_adaptive_poisson','sa_method'),('lra_poisson','lra_method')]:
@@ -36,7 +36,7 @@ try:
     w.scene.clearSelection();compact.setSelected(True);app.processEvents()
     choice=w.property_scroll.findChild(QComboBox,'loss_formulation');assert choice.currentData()=='integral'
     w.expand_recipe(compact);assert asdict(w.scene.compile_config())==before
-    doc=capture_model(w);assert doc['version']==33;decode_document(doc)
+    doc=capture_model(w);assert doc['version']==CURRENT_VERSION;decode_document(doc)
     with TemporaryDirectory() as directory:
         p=Path(directory)/'integral.json';assert w.save_model(p) and w.load_model(p)
         assert asdict(w.scene.compile_config())==before

@@ -18,8 +18,8 @@ def _grid(data):
         points=np.asarray(data['points'],dtype=np.float64)
         values=np.asarray(data['values'],dtype=np.float64)
     except (KeyError,TypeError,ValueError) as error:raise ValueError('Export needs numeric prediction points and values.') from error
-    if points.ndim!=2 or points.shape[1] not in (1,2) or not len(points) or not np.isfinite(points).all():
-        raise ValueError('VTI export requires finite 1D or 2D coordinates.')
+    if points.ndim!=2 or points.shape[1] not in (1,2,3) or not len(points) or not np.isfinite(points).all():
+        raise ValueError('VTI export requires finite 1D, 2D or 3D coordinates.')
     fields=data.get('fields',['u'])
     if not isinstance(fields,(list,tuple)) or not fields or any(not isinstance(f,str) or not f.strip() or f=='velocity' for f in fields) or len(set(fields))!=len(fields):
         raise ValueError('Export fields must be distinct names; velocity is reserved for the derived flow vector.')
@@ -39,7 +39,7 @@ def _grid(data):
     tolerance=max(1e-12,1e-7*max(float(a[-1]-a[0]) for a in axes),8*np.finfo(float).eps*float(np.abs(points).max()))
     if any(not np.allclose(a,b,rtol=0,atol=tolerance) for a,b in zip(axes,ideal)):
         raise ValueError('VTI requires uniform spacing; use a different format for irregular samples.')
-    expected=np.array([[x] for x in ideal[0]] if len(axes)==1 else [[x,y] for y in ideal[1] for x in ideal[0]])
+    expected=np.array([[x] for x in ideal[0]] if len(axes)==1 else [[x,y] for y in ideal[1] for x in ideal[0]] if len(axes)==2 else [[x,y,z] for z in ideal[2] for y in ideal[1] for x in ideal[0]])
     if not np.allclose(points,expected,rtol=0,atol=tolerance):raise ValueError('VTI coordinates must be complete and ordered with x varying fastest.')
     shape=[len(a) for a in axes]+[1]*(3-len(axes))
     origin=[float(a[0]) for a in axes]+[0.]*(3-len(axes))

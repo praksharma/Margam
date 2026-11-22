@@ -8,21 +8,26 @@ class Expression:
         if not isinstance(text,str) or not 0 < len(text.strip()) <= 512:
             raise ValueError('Expressions need 1–512 characters.')
         self.dimensions=dimensions;self.target=target;self.fields=tuple(fields)
-        self.coordinates=tuple(coordinates or ('x','y')[:dimensions])
-        if self.coordinates not in (('x',),('x','y'),('x','t'),('x','y','t')) or len(self.coordinates)!=dimensions:raise ValueError('Unsupported coordinate contract.')
-        if self.fields not in (('u',),('u','v'),('u','v','p'),('u','v','w')):raise ValueError('Unsupported field contract.')
+        self.coordinates=tuple(coordinates or ('x','y','z')[:dimensions])
+        if len(self.coordinates)!=dimensions or not all(isinstance(c,str) and c.isidentifier() for c in self.coordinates) or len(set(self.coordinates))!=dimensions:
+            raise ValueError('Unsupported coordinate contract.')
+        base_coords=tuple(c for c in self.coordinates if c in ('x','y','z','t'))
+        if base_coords not in (('x',),('x','y'),('x','t'),('x','y','t'),('x','y','z'),('x','y','z','t')):
+            raise ValueError('Unsupported coordinate contract.')
+        if self.fields not in (('u',),('u','v'),('u','v','p'),('u','v','w'),('u','v','w','p')):raise ValueError('Unsupported field contract.')
         try:self.root=ast.parse(text,mode='eval').body
         except SyntaxError as error:raise ValueError('Invalid mathematical expression.') from error
         if sum(1 for _ in ast.walk(self.root))>128:raise ValueError('Expression is too complex.')
         self.check(self.root)
-        self.uses_normal=any(isinstance(node,ast.Name) and node.id in ('nx','ny','dn') for node in ast.walk(self.root))
+        self.uses_normal=any(isinstance(node,ast.Name) and node.id in ('nx','ny','nz','dn') for node in ast.walk(self.root))
 
     def check(self,node,depth=0):
         if depth>20:raise ValueError('Expression nesting is too deep.')
         if isinstance(node,ast.Constant):
             if type(node.value) not in (int,float) or not math.isfinite(node.value) or abs(node.value)>1e6:raise ValueError('Use finite numeric constants up to 1e6.')
         elif isinstance(node,ast.Name):
-            names={'c','nx',*(('ny',) if 'y' in self.coordinates else ()),'pi','nu'} | set(self.coordinates) | (set() if self.target else set(self.fields))
+            normals={'nx',*(('ny',) if 'y' in self.coordinates else ()),*(('nz',) if 'z' in self.coordinates else ())}
+            names={'c','pi','nu'} | normals | set(self.coordinates) | (set() if self.target else set(self.fields))
             if node.id not in names:raise ValueError('Unknown expression name: '+node.id)
         elif isinstance(node,ast.UnaryOp) and isinstance(node.op,(ast.UAdd,ast.USub)):
             self.check(node.operand,depth+1)
@@ -46,11 +51,14 @@ class Expression:
             if not isinstance(value,torch.Tensor) or not value.requires_grad:return points.new_zeros((len(points),1))
             grad=torch.autograd.grad(value.sum(),points,create_graph=True,retain_graph=True,allow_unused=True)[0]
             return points.new_zeros((len(points),1)) if grad is None else grad[:,index:index+1]
-        normal=normal or (0.,)*self.dimensions
-        values={'x':points[:,0:1],'u':u,'c':source,'nx':normal[0],'ny':normal[1] if len(normal)>1 else 0.,'pi':math.pi,'nu':viscosity}
+        if normal is None:normal=(0.,)*self.dimensions
+        elif isinstance(normal,torch.Tensor):
+            normal=tuple(normal[:,i:i+1] for i in range(normal.shape[1])) if normal.ndim==2 else tuple(normal[i] for i in range(len(normal)))
+        values={'x':points[:,0:1],'u':u,'c':source,'nx':normal[0],'ny':normal[1] if len(normal)>1 else 0.,'nz':normal[2] if len(normal)>2 else 0.,'pi':math.pi,'nu':viscosity}
         if u is not None:
             for index,field in enumerate(self.fields):values[field]=u[:,index:index+1]
         values.update({name:points[:,index:index+1] for index,name in enumerate(self.coordinates)})
+        spatial_indices=[i for i,name in enumerate(self.coordinates) if name in ('x','y','z')]
         def visit(node):
             if isinstance(node,ast.Constant):return node.value
             if isinstance(node,ast.Name):return values[node.id]
@@ -72,8 +80,8 @@ class Expression:
                 return out
             name=node.func.id;value=visit(node.args[0])
             if name=='D':return derivative(value,self.coordinates.index(node.args[1].id))
-            if name=='dn':return sum(normal[i]*derivative(value,i) for i in range(self.dimensions))
-            if name=='laplace':return sum(derivative(derivative(value,i),i) for i,name in enumerate(self.coordinates) if name!='t')
+            if name=='dn':return sum(normal[i]*derivative(value,i) for i in range(min(len(normal),self.dimensions)))
+            if name=='laplace':return sum(derivative(derivative(value,i),i) for i in spatial_indices)
             tensor=torch.as_tensor(value,dtype=points.dtype,device=points.device)
             return getattr(torch,name)(tensor)
         try:result=visit(self.root)

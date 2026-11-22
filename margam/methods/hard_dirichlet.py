@@ -16,7 +16,7 @@ class BoxDirichletNetwork(torch.nn.Module):
         self.register_buffer('lower',torch.as_tensor(lower,dtype=next(network.parameters()).dtype))
         self.register_buffer('span',torch.as_tensor(upper,dtype=self.lower.dtype)-self.lower)
         self.register_buffer('value',torch.as_tensor(value,dtype=self.lower.dtype))
-        if len(lower) not in (1,2) or (self.span<=0).any():raise ValueError('Hard Dirichlet needs valid interval/rectangle bounds.')
+        if len(lower) not in (1,2,3) or (self.span<=0).any():raise ValueError('Hard Dirichlet needs valid 1D, 2D or 3D box bounds.')
 
     def forward(self,x):
         t=(x-self.lower)/self.span

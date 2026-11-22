@@ -9,7 +9,7 @@ def point_grid(data):
     points=np.asarray(data['points'],dtype=float);values=np.asarray(data['values'],dtype=float)
     fields=list(data.get('fields',['u']))
     if values.ndim==1:values=values[:,None]
-    if points.ndim!=2 or points.shape[1] not in (1,2) or not len(points) or not np.isfinite(points).all() or values.shape!=(len(points),len(fields)) or not np.isfinite(values).all():raise ValueError('VTU point export requires finite spatial 1D/2D points and matching fields.')
+    if points.ndim!=2 or points.shape[1] not in (1,2,3) or not len(points) or not np.isfinite(points).all() or values.shape!=(len(points),len(fields)) or not np.isfinite(values).all():raise ValueError('VTU point export requires finite spatial 1D/2D/3D points and matching fields.')
     if len(set(fields))!=len(fields) or any(not isinstance(f,str) or not f.strip() or f=='velocity' for f in fields):raise ValueError('Invalid VTU field names.')
     return points,fields,values
 

@@ -260,7 +260,7 @@ class OutputViews:
         if node.kind not in OUTPUT_KINDS or not output_enabled(node) or node.kind in ('export','paraview'):
             return
         if node.identifier not in self.entries:
-            view = TrainingMonitorView() if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()
+            view = TrainingMonitorView() if node.kind == 'monitor' else VectorResultView() if (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or getattr(self.window.config,'is_3d',False) or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires)) else SolutionView()
             dock = self.window.dock(node.title, view, Qt.DockWidgetArea.BottomDockWidgetArea)
             dock.setObjectName('output-' + node.identifier)
             for other,_ in self.entries.values():
@@ -302,7 +302,7 @@ class OutputViews:
             view.set_series(series, 'Requested training losses · log scale · retained updates only' if records else 'Connect this monitor and train to record losses.')
         else:
             data = (self.window.result or {}).get('outputs', {}).get(node.identifier)
-            vector=(len(data.get('fields',[]))>1 or data['config'].is_time_dependent or 'evaluation' in data) if data is not None else (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires))
+            vector=(len(data.get('fields',[]))>1 or data['config'].is_time_dependent or getattr(data['config'],'is_3d',False) or 'evaluation' in data) if data is not None else (len(self.window.config.field_names)>1 or self.window.config.is_time_dependent or getattr(self.window.config,'is_3d',False) or any(w.target.parentItem() is node and w.target.name=='points' for w in self.window.scene.wires))
             if vector!=isinstance(view,VectorResultView):
                 dock,old=entry;hidden=dock.isHidden();view=VectorResultView() if vector else SolutionView()
                 dock.setWidget(view);old.deleteLater();self.entries[node.identifier]=(dock,view)

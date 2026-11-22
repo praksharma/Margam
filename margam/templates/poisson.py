@@ -35,11 +35,17 @@ class PoissonConfig:
     x_max: float = 1.0
     y_min: float = 0.0
     y_max: float = 1.0
+    z_min: float = 0.0
+    z_max: float = 1.0
     t_min: float = 0.
     t_max: float = 1.
     cylinder_x: float = .2
     cylinder_y: float = .2
     cylinder_radius: float = .05
+    sphere_x: float = .5
+    sphere_y: float = .5
+    sphere_z: float = .5
+    sphere_radius: float = .2
     fourth_order: float = 100/16**4
     startup_time: float = .1
     pde_points: str = 'interior'  # Legacy/direct API default; UI graphs choose by wiring.
@@ -94,20 +100,28 @@ class PoissonConfig:
     scale_settings: dict = field(default_factory=scale_defaults)
 
     @property
-    def is_time_dependent(self):return self.shape in ('SpaceTime1D','SpaceTime2D','ChannelTime2D')
+    def is_3d(self):return self.shape in ('Box3D','SpaceTime3D','SphereObstacle3D')
+
+    @property
+    def is_time_dependent(self):return self.shape in ('SpaceTime1D','SpaceTime2D','ChannelTime2D','SpaceTime3D')
 
     @property
     def is_paper_case(self):return self.pde_preset.startswith('expert_')
 
     @property
-    def has_obstacle(self):return self.shape in ('Channel2D','ChannelTime2D')
+    def has_obstacle(self):return self.shape in ('Channel2D','ChannelTime2D','SphereObstacle3D')
 
     @property
-    def coordinate_names(self):return ('x','y','t') if self.shape in ('SpaceTime2D','ChannelTime2D') else ('x','t') if self.is_time_dependent else ('x','y')[:len(self.bounds[0])]
+    def coordinate_names(self):
+        if self.shape=='SpaceTime3D':return ('x','y','z','t')
+        if self.is_3d:return ('x','y','z')
+        if self.shape in ('SpaceTime2D','ChannelTime2D'):return ('x','y','t')
+        if self.is_time_dependent:return ('x','t')
+        return ('x','y')[:len(self.bounds[0])]
 
-    def constraint_name(self,side):return 'initial' if self.is_time_dependent and side=='bottom' else side
+    def constraint_name(self,side):return 'initial' if self.shape=='SpaceTime1D' and side=='bottom' else side
 
-    def side_label(self,side):return 'initial (t start)' if self.is_time_dependent and side=='bottom' else side
+    def side_label(self,side):return 'initial (t start)' if (self.shape=='SpaceTime1D' and side=='bottom') or side=='initial' else side
 
     @property
     def field_names(self):
@@ -143,10 +157,15 @@ class PoissonConfig:
     @property
     def sides(self):
         if self.shape=='Prepared2D':return tuple(self.boundary_data)
+        if self.shape=='Box3D':return ('left','right','bottom','top','front','back')
+        if self.shape=='SpaceTime3D':return ('left','right','bottom','top','front','back','initial')
+        if self.shape=='SphereObstacle3D':return ('left','right','bottom','top','front','back','sphere')
         return ('left','right','bottom') if self.is_time_dependent else ('left', 'right') if self.shape == 'Interval' else ('left', 'right', 'bottom', 'top')
 
     @property
     def bounds(self):
+        if self.shape=='SpaceTime3D':return [self.x_min,self.y_min,self.z_min,self.t_min],[self.x_max,self.y_max,self.z_max,self.t_max]
+        if self.is_3d:return [self.x_min,self.y_min,self.z_min],[self.x_max,self.y_max,self.z_max]
         if self.shape in ('SpaceTime2D','ChannelTime2D'):return [self.x_min,self.y_min,self.t_min],[self.x_max,self.y_max,self.t_max]
         if self.shape == 'Interval':
             return [self.x_min], [self.x_max]
@@ -154,7 +173,7 @@ class PoissonConfig:
 
     def boundary_recipe(self, side):
         """Unconfigured sides use grid, the template count, and stable side seeds."""
-        sides = ('left', 'right', 'bottom', 'top')
+        sides = ('left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial')
         if side not in sides:
             raise ValueError('Unknown boundary side.')
         return self.boundary_sampling.get(
@@ -168,14 +187,21 @@ class PoissonConfig:
             validate_mapping(self.interior_data)
             if self.interior_data['normals'] or self.interior_data['values'] and self.method!='inverse_burgers':raise ValueError('PDE point imports accept coordinates only; additional pointwise inputs remain deferred.')
         from ..components.training_data import valid_boundary_name
-        if not isinstance(self.boundary_data,dict) or len(self.boundary_data)>64 or any(not valid_boundary_name(name) for name in self.boundary_data) or self.shape!='Prepared2D' and set(self.boundary_data)-{'left','right','bottom','top'}:raise ValueError('Unknown or invalid imported boundary set.')
+        if not isinstance(self.boundary_data,dict) or len(self.boundary_data)>64 or any(not valid_boundary_name(name) for name in self.boundary_data) or self.shape!='Prepared2D' and set(self.boundary_data)-{'left','right','bottom','top','front','back','sphere','initial'}:raise ValueError('Unknown or invalid imported boundary set.')
         if self.shape=='Prepared2D' and ((self.pde_points!='boundary' and not self.interior_data) or not self.boundary_data):raise ValueError('Prepared 2D requires interior data and at least one named boundary set.')
         for source in self.boundary_data.values():validate_mapping(source)
-        if self.shape not in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D'):
-            raise ValueError('Choose Interval, Rectangle or 1D space–time.')
+        if self.shape not in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D','Box3D','SpaceTime3D','SphereObstacle3D'):
+            raise ValueError('Choose Interval, Rectangle, 1D space–time, or a supported 3D domain.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
             raise ValueError('Domain maximums must be greater than minimums.')
+        if self.shape=='SphereObstacle3D':
+            if not all(math.isfinite(v) for v in (self.sphere_x,self.sphere_y,self.sphere_z,self.sphere_radius)) or self.sphere_radius<=0:
+                raise ValueError('Sphere obstacle centre must be finite and radius must be positive.')
+            if not (self.x_min+self.sphere_radius<self.sphere_x<self.x_max-self.sphere_radius and
+                    self.y_min+self.sphere_radius<self.sphere_y<self.y_max-self.sphere_radius and
+                    self.z_min+self.sphere_radius<self.sphere_z<self.z_max-self.sphere_radius):
+                raise ValueError('Sphere obstacle must lie strictly inside the 3D box bounds.')
         if self.sampling not in SAMPLERS:
             raise ValueError('Unknown sampler.')
         for value, limit, label in [(self.points,100000,'Interior points'),(self.boundary_points,10000,'Boundary points')]:
@@ -183,8 +209,8 @@ class PoissonConfig:
                 raise ValueError(f'{label} must be between 1 and {limit}.')
         if type(self.seed) is not int or not 0 <= self.seed < 2**31:
             raise ValueError('Seed must be a non-negative 32-bit integer.')
-        if not isinstance(self.boundary_sampling, dict) or set(self.boundary_sampling) - {'left', 'right', 'bottom', 'top'}:
-            raise ValueError('Boundary sampling recipes must use named rectangle sides.')
+        if not isinstance(self.boundary_sampling, dict) or set(self.boundary_sampling) - {'left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial'}:
+            raise ValueError('Boundary sampling recipes must use named domain sides.')
         for side, recipe in self.boundary_sampling.items():
             if not isinstance(recipe, BoundarySampling):
                 raise ValueError(f'{side}: expected a BoundarySampling recipe.')
@@ -256,7 +282,7 @@ class PoissonConfig:
         validate_dsgnar_settings(self.dsgnar_settings)
         if self.method=='dsgnar':validate_dsgnar_problem(self)
         if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar'):raise ValueError('Unknown PINN method.')
-        if self.method=='hard_dirichlet' and (self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s)!='Dirichlet' for s in self.sides) or len({self.bc_values[s] for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in sides.')
+        if self.method=='hard_dirichlet' and (self.shape=='SphereObstacle3D' or self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s,'Dirichlet')!='Dirichlet' for s in self.sides) or len({self.bc_values.get(s,0.) for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in box sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
             raise ValueError('Iterations must be between 1 and 100000.')
@@ -289,16 +315,19 @@ class PoissonConfig:
             validate_flow_config(self);return
         if self.is_time_dependent:
             if self.method=='hard_dirichlet':raise ValueError('The all-sides hard-Dirichlet transform does not apply to an initial-value problem.')
-            if self.bc_types['bottom']!='Dirichlet':raise ValueError('The initial set requires a Dirichlet value/profile.')
+            init_side='initial' if self.shape=='SpaceTime3D' else 'bottom'
+            if self.bc_types.get(init_side,'Dirichlet')!='Dirichlet':raise ValueError('The initial set requires a Dirichlet value/profile.')
             if not self.pde_expression:raise ValueError('Choose the Burgers preset or enter an explicit time-dependent residual.')
         dimension=len(self.bounds[0])
         if self.pde_expression:Expression(self.pde_expression,dimension,coordinates=self.coordinate_names)
         for side in self.sides:
+            bc_type=self.bc_types.get(side,'Dirichlet')
+            bc_val=self.bc_values.get(side,0.)
             if self.bc_targets.get(side):Expression(self.bc_targets[side],dimension,target=True,coordinates=self.coordinate_names)
-            if self.bc_types.get(side)=='Custom':Expression(self.bc_operators.get(side,''),dimension,coordinates=self.coordinate_names)
-            if self.bc_types.get(side) not in ('Dirichlet','Neumann','Custom') or not math.isfinite(self.bc_values.get(side,float('nan'))):
+            if bc_type=='Custom':Expression(self.bc_operators.get(side,''),dimension,coordinates=self.coordinate_names)
+            if bc_type not in ('Dirichlet','Neumann','Custom') or not math.isfinite(bc_val):
                 raise ValueError(f'Assign a valid type and finite target to {side}.')
-        if not any(self.bc_types[s] == 'Dirichlet' for s in self.sides):
+        if not any(self.bc_types.get(s,'Dirichlet') == 'Dirichlet' for s in self.sides):
             raise ValueError('Pure Neumann/custom-only problems need a compatibility check and solution gauge; use at least one Dirichlet side for now.')
         # Sampling excludes corners, but incompatible endpoint values still make
         # the prescribed continuous Dirichlet problem ambiguous at those corners.
@@ -315,6 +344,19 @@ class PoissonConfig:
                     if not agree:raise ValueError(f'Dirichlet targets on {a} and {b} conflict at their shared corner.')
 
 
+def _sample_sphere_surface(cx, cy, cz, radius, count, seed=7):
+    """Deterministic golden-angle Fibonacci lattice on a 3D sphere surface."""
+    golden = math.pi * (3.0 - math.sqrt(5.0))
+    phase = (seed % 997) * 0.137
+    pts = []
+    for i in range(count):
+        y_u = 1.0 - 2.0 * (i + 0.5) / count
+        r_ring = math.sqrt(max(0.0, 1.0 - y_u * y_u))
+        theta = golden * i + phase
+        pts.append([cx + radius * math.cos(theta) * r_ring, cy + radius * y_u, cz + radius * math.sin(theta) * r_ring])
+    return pts
+
+
 def sample_problem(config):
     """Return interior and named boundary coordinates, before assigning physics."""
     config.validate_sampling()
@@ -323,9 +365,47 @@ def sample_problem(config):
         interior,boundaries=read_training_sets(config,check_physics=False)
         return interior[0].tolist(),{name:rows[0].tolist() for name,rows in boundaries.items()}
     lower, upper = config.bounds
-    interior = read_points(config.interior_data,len(lower))[0].tolist() if config.interior_data else sample_box(lower, upper, config.points, config.sampling, config.seed)
+    if config.interior_data:
+        interior = read_points(config.interior_data,len(lower))[0].tolist()
+    elif config.shape=='SphereObstacle3D':
+        raw = sample_box(lower, upper, min(100000, max(config.points, int(config.points * 1.4))), config.sampling, config.seed)
+        sx,sy,sz,sr = config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius
+        r2 = sr * sr
+        interior = [row for row in raw if (row[0]-sx)**2+(row[1]-sy)**2+(row[2]-sz)**2 > r2][:config.points]
+        if not interior:raise ValueError('No interior points remained outside the sphere obstacle; increase point budget or shrink the sphere.')
+    else:
+        interior = sample_box(lower, upper, config.points, config.sampling, config.seed)
     if config.shape == 'Interval':
         return interior, {side:read_points(config.boundary_data[side],1)[0].tolist() if config.boundary_data.get(side) else [[config.x_min if side=='left' else config.x_max]] for side in config.sides}
+    if config.is_3d:
+        boundaries = {}
+        dim = len(lower)
+        for side in config.sides:
+            if config.boundary_data.get(side):
+                boundaries[side]=read_points(config.boundary_data[side],dim)[0].tolist();continue
+            recipe = config.boundary_recipe(side)
+            if side == 'sphere':
+                boundaries[side] = _sample_sphere_surface(config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius,recipe.points,recipe.seed)
+                continue
+            if side == 'initial':
+                rows = sample_box(lower[:3], upper[:3], recipe.points, recipe.method, recipe.seed)
+                boundaries[side] = [row + [config.t_min] for row in rows]
+                continue
+            fixed_map = {'left':(0,config.x_min),'right':(0,config.x_max),'bottom':(1,config.y_min),'top':(1,config.y_max),'front':(2,config.z_min),'back':(2,config.z_max)}
+            axis, fixed_val = fixed_map[side]
+            free_axes = [i for i in range(dim) if i != axis]
+            sub_lo = [lower[i] for i in free_axes]
+            sub_hi = [upper[i] for i in free_axes]
+            rows = sample_box(sub_lo, sub_hi, recipe.points, recipe.method, recipe.seed)
+            out = []
+            for r in rows:
+                pt = [0.0] * dim
+                pt[axis] = fixed_val
+                for k, ax_i in enumerate(free_axes):
+                    pt[ax_i] = r[k]
+                out.append(pt)
+            boundaries[side] = out
+        return interior, boundaries
     boundaries = {}
     for side in config.sides:
         if config.boundary_data.get(side):
@@ -396,35 +476,48 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
         interior=imported_interior[0].tolist();boundaries={name:rows[0].tolist() for name,rows in imported_sets.items()}
     else:interior, boundaries = sample_problem(config)
     torch.manual_seed(config.seed if config.network_seed is None else config.network_seed)
-    normals = {'left': (-1.,0.), 'right': (1.,0.), 'bottom': (0.,-1.), 'top': (0.,1.)}
+    normals = {
+        'left': (-1.,0.,0.,0.), 'right': (1.,0.,0.,0.),
+        'bottom': (0.,-1.,0.,0.), 'top': (0.,1.,0.,0.),
+        'front': (0.,0.,-1.,0.), 'back': (0.,0.,1.,0.),
+        'initial': (0.,0.,0.,-1.),
+    }
     constraints = [];normal_identities={}
     for side, rows in boundaries.items():
+        dim = len(rows[0])
+        bc_type = config.bc_types.get(side, 'Dirichlet')
+        bc_val = config.bc_values.get(side, 0.0)
         imported=imported_sets[side] if imported_sets is not None else read_points(config.boundary_data[side],len(config.bounds[0])) if config.boundary_data.get(side) else None
-        normal=normals.get(side,(0.,0.))[:len(rows[0])]
+        if side == 'sphere' and config.shape == 'SphereObstacle3D':
+            sx,sy,sz,sr = config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius
+            normal = [[-(p[0]-sx)/sr, -(p[1]-sy)/sr, -(p[2]-sz)/sr] + [0.]*(dim-3) for p in rows]
+        else:
+            base_n = normals.get(side, (0.,)*dim)
+            normal = base_n[:dim] + (0.,)*max(0, dim-len(base_n))
         if imported is not None:
             if imported[1] is not None:normal_identities[side]=normal_fingerprint(imported[1])
             normal=imported[1].tolist() if imported[1] is not None else normal
             # Without imported normals a side label is meaningful only on that
             # box side. Do not silently use analytical normals for arbitrary CAD.
-            needs_normal=config.bc_types[side]=='Neumann' or config.bc_types[side]=='Custom' and Expression(config.bc_operators[side],len(rows[0]),coordinates=config.coordinate_names).uses_normal or bool(config.bc_targets.get(side)) and Expression(config.bc_targets[side],len(rows[0]),target=True,coordinates=config.coordinate_names).uses_normal
+            needs_normal=bc_type=='Neumann' or bc_type=='Custom' and Expression(config.bc_operators[side],dim,coordinates=config.coordinate_names).uses_normal or bool(config.bc_targets.get(side)) and Expression(config.bc_targets[side],dim,target=True,coordinates=config.coordinate_names).uses_normal
             if imported[1] is None and needs_normal:
-                axis=0 if side in ('left','right') else 1
-                edge={'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
+                axis=0 if side in ('left','right') else 1 if side in ('bottom','top') else 2
+                edge={'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max,'front':config.z_min,'back':config.z_max}[side]
                 if any(abs(row[axis]-edge)>1e-7 for row in rows):raise ValueError('Imported off-box boundary sets require explicit unit outward normals.')
         operator = None
-        if config.bc_types[side] == 'Neumann':
+        if bc_type == 'Neumann':
             def operator(x, u, normal=normal):
                 derivative = torch.autograd.grad(u.sum(), x, create_graph=True, retain_graph=True, allow_unused=True)[0] if u.requires_grad else None
                 if derivative is None:
                     return u.new_zeros((len(x), 1))
                 return (derivative * derivative.new_tensor(normal)).sum(dim=1, keepdim=True)
-        if config.bc_types[side]=='Custom':
-            expression=Expression(config.bc_operators[side],len(rows[0]),coordinates=config.coordinate_names)
+        if bc_type=='Custom':
+            expression=Expression(config.bc_operators[side],dim,coordinates=config.coordinate_names)
             def operator(x,u,expression=expression,normal=normal):
                 return expression(x,u,source=config.source,viscosity=config.viscosity,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
-        target=config.bc_values[side]
+        target=bc_val
         if config.bc_targets.get(side):
-            expression=Expression(config.bc_targets[side],len(rows[0]),target=True,coordinates=config.coordinate_names)
+            expression=Expression(config.bc_targets[side],dim,target=True,coordinates=config.coordinate_names)
             def target(x,expression=expression,normal=normal):
                 return expression(x,source=config.source,viscosity=config.viscosity,normal=tuple(x.new_tensor(normal)[:,i:i+1] for i in range(x.shape[1])) if isinstance(normal[0],list) else normal)
         if imported is not None and imported[2] is not None:
@@ -466,7 +559,7 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
 
 def has_custom_physics(config):
     return bool(config.interior_data or config.boundary_data or config.pde_expression or any(config.bc_targets.values()) or
-                any(config.bc_types[s]=='Custom' for s in config.sides))
+                any(config.bc_types.get(s,'Dirichlet')=='Custom' for s in config.sides))
 
 
 def interval_reference(config, points):

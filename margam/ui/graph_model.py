@@ -7,7 +7,7 @@ from ..recipes import dsgnar, baseline, self_adaptive, learning_rate_annealing, 
 PARAMETERS = {
     'dsgnar_recipe':dsgnar.PARAMETERS,
     'dsgnar_method':dsgnar.TRAINING_FIELDS,
-    'domain':('shape','x_min','x_max','y_min','y_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius'),
+    'domain':('shape','x_min','x_max','y_min','y_max','z_min','z_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','sphere_x','sphere_y','sphere_z','sphere_radius'),
     'interior':('points','sampling','seed','interior_data','adaptive_sampling'),
     'rar':('points','sampling','seed','interior_data','adaptive_sampling'),
     'importance':('points','sampling','seed','interior_data','adaptive_sampling'),
@@ -88,7 +88,7 @@ def overlay(config,kind,parameters):
         from ..templates.predefined_pdes import resolve_predefined
         resolve_predefined(config)
     elif kind=='pde':config.pde_preset=''
-    if config.shape=='Prepared2D':
+    if config.shape=='Prepared2D' or config.is_3d:
         for name in config.sides:
             config.bc_types.setdefault(name,'Dirichlet');config.bc_values.setdefault(name,0.)
     return config

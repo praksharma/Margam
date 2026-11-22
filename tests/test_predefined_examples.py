@@ -14,13 +14,13 @@ class ExampleTests(unittest.TestCase):
         torch.set_num_threads(1)
         for key, example in EXAMPLE_PROBLEMS.items():
             with self.subTest(example=key):
-                if key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale') or key.startswith(('expert_','scale_','gpinn_','rba_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
+                if not example.reference or key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale') or key.startswith(('expert_','scale_','gpinn_','rba_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
                 config=example_config(key)
                 model=build_pinn(config)
-                dimensions=1 if config.shape=='Interval' else 2
+                dimensions=len(config.bounds[0])
                 lower,upper=(torch.tensor(v) for v in config.bounds)
                 points=(lower+(upper-lower)*torch.rand(23,dimensions)).requires_grad_()
-                reference=Expression(example.reference,dimensions,target=True)
+                reference=Expression(example.reference,dimensions,target=True,coordinates=config.coordinate_names)
                 self.assertLess(model.problem.residual(points,reference(points)).abs().max().item(),1e-4)
                 model.train(2000 if key=='helmholtz_lra_2d' else 700,display_every=0)
                 points=lower+(upper-lower)*torch.rand(100,dimensions)
@@ -48,7 +48,7 @@ class ExampleTests(unittest.TestCase):
         code='''
 from PySide6.QtWidgets import QApplication
 from margam.ui.app import Window
-from margam.ui.model_document import capture_model, decode_document
+from margam.ui.model_document import CURRENT_VERSION, capture_model, decode_document
 from margam.templates.examples import EXAMPLE_PROBLEMS
 app=QApplication([])
 w=Window(state_directory=False)
@@ -60,9 +60,9 @@ assert w.evaluation_example_action in w.examples_1d_menu.actions()
 assert w.burgers_reference_action in w.examples_1d_menu.actions()
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
-    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu
+    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_3d_menu if example_config(key).is_3d else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu
     assert action in expected.actions()
-    if expected is w.examples_1d_menu:assert action not in w.examples_menu.actions()
+    if expected in (w.examples_1d_menu,w.examples_3d_menu):assert action not in w.examples_menu.actions()
 assert all(a.text().startswith('2D ') for a in (w.load_action,w.heat_action,w.flow_action))
 for key in EXAMPLE_PROBLEMS:
     assert w.load_example(key)
@@ -74,7 +74,7 @@ for key in EXAMPLE_PROBLEMS:
     assert not w.output_views.entries
     document=capture_model(w)
     decode_document(document)
-    assert document['version']==33
+    assert document['version']==CURRENT_VERSION
     from tempfile import TemporaryDirectory
     from pathlib import Path
     with TemporaryDirectory() as directory:
