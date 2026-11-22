@@ -25,8 +25,10 @@ LOSS_FORMULATIONS = {'mean':'Mean squared error', 'integral':'Domain/boundary in
 
 def apply_problem_measures(problem,config):
     """Concrete box measures; imported quadrature is deliberately not inferred."""
-    lower,upper=config.bounds
-    problem.measure=math.prod(b-a for a,b in zip(lower,upper))
+    lower,upper=getattr(config,'spatial_time_bounds',config.bounds)
+    param_axes=getattr(config,'parametric_axes',())
+    param_vol=math.prod(float(ax['max'])-float(ax['min']) for ax in param_axes) if param_axes else 1.
+    problem.measure=math.prod(b-a for a,b in zip(lower,upper))*param_vol
     if getattr(config,'is_3d',False):
         dx,dy,dz=upper[0]-lower[0],upper[1]-lower[1],upper[2]-lower[2]
         dt=(upper[3]-lower[3]) if config.is_time_dependent and len(lower)>=4 else 1.
@@ -37,7 +39,7 @@ def apply_problem_measures(problem,config):
         if config.is_time_dependent:side_measures['initial']=upper[0]-lower[0]
     for condition in problem.constraints:
         side=condition.name.split(':',1)[0]
-        condition.measure=side_measures.get(side,1.) # Pressure gauge is a point penalty.
+        condition.measure=side_measures.get(side,1.)*param_vol # Pressure gauge is a point penalty.
     return apply_boundary_identity(problem,config)
 
 

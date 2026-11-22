@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 import numpy as np
-from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtCore import Qt, QSize, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +40,71 @@ from ..visualization.dataset import DISPLAY_MODES, SolutionDataset
 from ..visualization.loaders import from_file, from_output_result, from_run_archive
 
 
+def _evaluate_parametric_dataset(
+    base_dataset: SolutionDataset,
+    params: dict[str, float],
+) -> SolutionDataset:
+    """Re-evaluate a continuous parametric SolutionDataset at new parameter values."""
+    evaluator = base_dataset.live_evaluator
+    if evaluator is None:
+        raise ValueError("No live model evaluator is attached to this dataset.")
+    pts = base_dataset.points.copy()
+    coord_names = base_dataset.coordinate_names
+    for idx, cname in enumerate(coord_names):
+        if cname in params:
+            pts[:, idx] = float(params[cname])
+
+    spatial_idx = list(base_dataset.spatial_indices)
+    if base_dataset.is_time_dependent and base_dataset.time_index_col is not None:
+        t_col = base_dataset.time_index_col
+        new_fields: dict[str, np.ndarray] = {}
+        for tv, f_idx in zip(base_dataset.times, base_dataset._frame_indices):
+            res = evaluator(pts[f_idx][:, spatial_idx], time_value=float(tv), params=params)
+            for fname, arr in res.items():
+                if fname not in new_fields:
+                    new_fields[fname] = np.empty(len(pts), dtype=np.float64)
+                new_fields[fname][f_idx] = np.asarray(arr, dtype=np.float64).reshape(-1)
+    else:
+        res = evaluator(pts[:, spatial_idx], time_value=None, params=params)
+        new_fields = {fname: np.asarray(arr, dtype=np.float64).reshape(-1) for fname, arr in res.items()}
+
+    param_summary = ", ".join(f"{k}={v:g}" for k, v in params.items())
+    return SolutionDataset(
+        points=pts,
+        coordinate_names=base_dataset.coordinate_names,
+        fields=new_fields,
+        references={},
+        title=base_dataset.title,
+        source_description=f"{base_dataset.source_description} · {param_summary}",
+        steps=base_dataset.steps,
+        point_ids=base_dataset.point_ids,
+        obstacle=base_dataset.obstacle,
+        metadata=dict(base_dataset.metadata, active_params=dict(params)),
+        live_evaluator=base_dataset.live_evaluator,
+        param_specs=list(base_dataset.param_specs),
+        spatial_bounds=base_dataset.spatial_bounds,
+        time_bounds=base_dataset.time_bounds,
+    )
+
+
+class _LiveParamWorker(QThread):
+    completed = Signal(int, dict, object)
+    failed = Signal(int, str)
+
+    def __init__(self, seq_id: int, base_dataset: SolutionDataset, params: dict[str, float], parent=None):
+        super().__init__(parent)
+        self.seq_id = seq_id
+        self.base_dataset = base_dataset
+        self.params = dict(params)
+
+    def run(self):
+        try:
+            updated = _evaluate_parametric_dataset(self.base_dataset, self.params)
+            self.completed.emit(self.seq_id, self.params, updated)
+        except Exception as exc:
+            self.failed.emit(self.seq_id, str(exc))
+
+
 class SolutionExplorerWindow(QMainWindow):
     """Standalone modeless post-processor supporting 1D, 2D, 3D, transient, and parametric PINNs."""
 
@@ -52,6 +117,14 @@ class SolutionExplorerWindow(QMainWindow):
         self._updating_controls = False
         self._locked_limits: tuple[float, float] | None = None
         self._last_line_cut: dict[str, Any] | None = None
+        self._base_parametric_dataset: SolutionDataset | None = None
+        self._live_param_controls: dict[str, tuple[QSlider, QDoubleSpinBox, dict[str, Any]]] = {}
+        self._live_resp_axis_combo: QComboBox | None = None
+        self._live_resp_metric_combo: QComboBox | None = None
+        self._live_param_status: QLabel | None = None
+        self._live_param_worker: _LiveParamWorker | None = None
+        self._live_param_seq = 0
+        self._live_param_pending: dict[str, float] | None = None
 
         self.setWindowTitle("Margam · Solution Explorer")
         self.resize(1360, 880)
@@ -64,6 +137,11 @@ class SolutionExplorerWindow(QMainWindow):
         self.play_timer = QTimer(self)
         self.play_timer.setInterval(180)
         self.play_timer.timeout.connect(self._advance_time_frame)
+
+        self._live_param_timer = QTimer(self)
+        self._live_param_timer.setSingleShot(True)
+        self._live_param_timer.setInterval(60)
+        self._live_param_timer.timeout.connect(self._trigger_live_param_eval)
 
         self.statusBar().showMessage("Ready · open a trained output, saved run, study folder, or 2D/3D data file")
         if dataset is not None:
@@ -617,6 +695,248 @@ class SolutionExplorerWindow(QMainWindow):
         self._study_resp_axis_combo = None
         self._study_resp_metric_combo = None
         self._study_status_label = None
+        self._live_param_controls = {}
+        self._live_resp_axis_combo = None
+        self._live_resp_metric_combo = None
+        self._live_param_status = None
+
+    def _build_continuous_parametric_panel(self, dataset: SolutionDataset):
+        self._clear_parametric_panel()
+        specs = list(dataset.param_specs or [])
+        if not specs:
+            placeholder = QLabel("Load a parameter study folder or train a continuous parametric PINN to explore parameter axes.")
+            placeholder.setWordWrap(True)
+            self.form_parametric.addRow(placeholder)
+            return
+
+        can_scrub = dataset.live_evaluator is not None
+        for spec in specs:
+            name = str(spec["name"])
+            lo = float(spec["min"])
+            hi = float(spec["max"])
+            default = float(spec.get("default", 0.5 * (lo + hi)))
+            if name in dataset.coordinate_names and len(dataset.points) > 0:
+                col_idx = dataset.coordinate_names.index(name)
+                default = float(np.clip(dataset.points[0, col_idx], lo, hi))
+
+            spin = QDoubleSpinBox()
+            spin.setObjectName(f"explorer_param_spin_{name}")
+            spin.setRange(lo, hi)
+            spin.setDecimals(5)
+            spin.setSingleStep((hi - lo) / 50.0)
+            spin.setKeyboardTracking(False)
+            spin.setValue(default)
+            spin.setEnabled(can_scrub)
+
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setObjectName(f"explorer_param_slider_{name}")
+            slider.setRange(0, 1000)
+            frac = 0.0 if hi <= lo else (default - lo) / (hi - lo)
+            slider.setValue(int(round(frac * 1000)))
+            slider.setEnabled(can_scrub)
+
+            def _on_slider(val, sp=spin, a=lo, b=hi):
+                sp.blockSignals(True)
+                sp.setValue(a + (b - a) * (val / 1000.0))
+                sp.blockSignals(False)
+                self._schedule_live_param_eval()
+
+            def _on_spin(val, sl=slider, a=lo, b=hi):
+                sl.blockSignals(True)
+                pos = 0 if b <= a else int(round((val - a) / (b - a) * 1000))
+                sl.setValue(max(0, min(1000, pos)))
+                sl.blockSignals(False)
+                self._schedule_live_param_eval()
+
+            slider.valueChanged.connect(_on_slider)
+            spin.valueChanged.connect(_on_spin)
+
+            row_w = QWidget()
+            rl = QHBoxLayout(row_w)
+            rl.setContentsMargins(0, 0, 0, 0)
+            rl.addWidget(slider, 1)
+            rl.addWidget(spin)
+            self.form_parametric.addRow(f"{name} [{lo:g}, {hi:g}]", row_w)
+            self._live_param_controls[name] = (slider, spin, dict(spec))
+
+        reset_btn = QPushButton("Reset default parameters")
+        reset_btn.setObjectName("explorer_param_reset")
+        reset_btn.setEnabled(can_scrub)
+        reset_btn.clicked.connect(self.reset_continuous_params)
+        self.form_parametric.addRow(reset_btn)
+
+        self._live_resp_axis_combo = QComboBox()
+        self._live_resp_axis_combo.setObjectName("explorer_live_resp_axis")
+        for spec in specs:
+            self._live_resp_axis_combo.addItem(f"{spec['name']} ∈ [{spec['min']:g}, {spec['max']:g}]", spec["name"])
+        self._live_resp_axis_combo.setEnabled(can_scrub)
+        self.form_parametric.addRow("Response parameter", self._live_resp_axis_combo)
+
+        self._live_resp_metric_combo = QComboBox()
+        self._live_resp_metric_combo.setObjectName("explorer_live_resp_metric")
+        for key, label in (("max", "Spatial max"), ("min", "Spatial min"), ("mean", "Spatial mean"), ("l2", "Spatial L2 RMS")):
+            self._live_resp_metric_combo.addItem(label, key)
+        self._live_resp_metric_combo.setEnabled(can_scrub)
+        self.form_parametric.addRow("Response metric", self._live_resp_metric_combo)
+
+        plot_btn = QPushButton("Plot parametric response")
+        plot_btn.setObjectName("explorer_live_plot_resp")
+        plot_btn.setEnabled(can_scrub)
+        plot_btn.clicked.connect(self.plot_continuous_parametric_response)
+        self.form_parametric.addRow(plot_btn)
+
+        status_msg = "Live neural inference ready" if can_scrub else "Static snapshot (open with trained model/checkpoint to scrub)"
+        self._live_param_status = QLabel(status_msg)
+        self._live_param_status.setObjectName("explorer_live_param_status")
+        self._live_param_status.setWordWrap(True)
+        self.form_parametric.addRow(self._live_param_status)
+
+    def current_continuous_params(self) -> dict[str, float]:
+        return {name: float(spin.value()) for name, (_, spin, _) in self._live_param_controls.items()}
+
+    def reset_continuous_params(self):
+        if self._base_parametric_dataset is None:
+            return
+        for name, (slider, spin, spec) in self._live_param_controls.items():
+            lo, hi = float(spec["min"]), float(spec["max"])
+            default = float(spec.get("default", 0.5 * (lo + hi)))
+            spin.blockSignals(True)
+            spin.setValue(default)
+            spin.blockSignals(False)
+            slider.blockSignals(True)
+            slider.setValue(0 if hi <= lo else int(round((default - lo) / (hi - lo) * 1000)))
+            slider.blockSignals(False)
+        self._live_param_timer.stop()
+        self._live_param_seq += 1
+        self.set_dataset(self._base_parametric_dataset, preserve_lock=True, rebuild_parametric=False)
+        if self._live_param_status is not None:
+            self._live_param_status.setText("Restored default parameters")
+
+    def _schedule_live_param_eval(self):
+        if self._base_parametric_dataset is None or self._base_parametric_dataset.live_evaluator is None:
+            return
+        self._live_param_timer.start()
+
+    def _trigger_live_param_eval(self):
+        self.evaluate_live_params(sync=False)
+
+    def evaluate_live_params(
+        self,
+        params: dict[str, float] | None = None,
+        *,
+        sync: bool = False,
+    ) -> SolutionDataset | None:
+        base = self._base_parametric_dataset
+        if base is None or base.live_evaluator is None:
+            return None
+        if params is not None:
+            for name, val in params.items():
+                if name in self._live_param_controls:
+                    slider, spin, spec = self._live_param_controls[name]
+                    lo, hi = float(spec["min"]), float(spec["max"])
+                    clamped = float(np.clip(val, lo, hi))
+                    spin.blockSignals(True)
+                    spin.setValue(clamped)
+                    spin.blockSignals(False)
+                    slider.blockSignals(True)
+                    slider.setValue(0 if hi <= lo else int(round((clamped - lo) / (hi - lo) * 1000)))
+                    slider.blockSignals(False)
+        active = self.current_continuous_params()
+        if params is not None:
+            for name, val in params.items():
+                active[name] = float(val)
+
+        if sync:
+            self._live_param_timer.stop()
+            self._live_param_seq += 1
+            updated = _evaluate_parametric_dataset(base, active)
+            self._apply_live_param_result(self._live_param_seq, active, updated)
+            return updated
+
+        self._live_param_seq += 1
+        seq = self._live_param_seq
+        if self._live_param_worker is not None and self._live_param_worker.isRunning():
+            self._live_param_pending = active
+            return None
+        if self._live_param_status is not None:
+            self._live_param_status.setText("Evaluating… " + ", ".join(f"{k}={v:g}" for k, v in active.items()))
+        worker = _LiveParamWorker(seq, base, active, self)
+        worker.completed.connect(self._on_live_param_completed)
+        worker.failed.connect(self._on_live_param_failed)
+        worker.finished.connect(self._on_live_param_finished)
+        self._live_param_worker = worker
+        worker.start()
+        return None
+
+    def _apply_live_param_result(self, seq: int, params: dict[str, float], updated: SolutionDataset):
+        if seq != self._live_param_seq:
+            return
+        if self._live_param_status is not None:
+            self._live_param_status.setText("Live: " + ", ".join(f"{k}={v:g}" for k, v in params.items()))
+        self.set_dataset(updated, preserve_lock=True, rebuild_parametric=False)
+
+    def _on_live_param_completed(self, seq: int, params: dict[str, float], updated: SolutionDataset):
+        self._apply_live_param_result(seq, params, updated)
+
+    def _on_live_param_failed(self, seq: int, message: str):
+        if seq != self._live_param_seq:
+            return
+        if self._live_param_status is not None:
+            self._live_param_status.setText(f"Evaluation failed: {message}")
+
+    def _on_live_param_finished(self):
+        worker = self._live_param_worker
+        self._live_param_worker = None
+        if worker is not None:
+            worker.deleteLater()
+        if self._live_param_pending is not None:
+            pending = self._live_param_pending
+            self._live_param_pending = None
+            self.evaluate_live_params(pending, sync=False)
+
+    def plot_continuous_parametric_response(self, samples: int = 21):
+        base = self._base_parametric_dataset
+        if base is None or base.live_evaluator is None or self._live_resp_axis_combo is None:
+            return [], []
+        param_name = self._live_resp_axis_combo.currentData()
+        metric = self._live_resp_metric_combo.currentData() if self._live_resp_metric_combo else "max"
+        field_name = self.field_combo.currentText() or base.field_names[0]
+        spec = next((s for s in base.param_specs if s["name"] == param_name), None)
+        if spec is None:
+            return [], []
+        lo, hi = float(spec["min"]), float(spec["max"])
+        xs = np.linspace(lo, hi, max(2, int(samples)))
+        base_params = self.current_continuous_params()
+        t_idx = self.time_slider.value() if base.is_time_dependent else 0
+        t_val = float(base.times[t_idx]) if base.is_time_dependent and len(base.times) > t_idx else None
+        f_idx = base._frame_indices[t_idx] if base.is_time_dependent and len(base._frame_indices) > t_idx else np.arange(len(base.points))
+        spatial_pts = base.points[f_idx][:, list(base.spatial_indices)]
+
+        ys = []
+        for xv in xs:
+            p = dict(base_params)
+            p[param_name] = float(xv)
+            pred = base.live_evaluator(spatial_pts, time_value=t_val, params=p)
+            if field_name in pred:
+                arr = np.asarray(pred[field_name], dtype=np.float64).reshape(-1)
+            else:
+                first_key = next(iter(pred))
+                arr = np.asarray(pred[first_key], dtype=np.float64).reshape(-1)
+            if metric == "max":
+                ys.append(float(np.max(arr)))
+            elif metric == "min":
+                ys.append(float(np.min(arr)))
+            elif metric == "mean":
+                ys.append(float(np.mean(arr)))
+            else:
+                ys.append(float(np.sqrt(np.mean(arr * arr))))
+
+        xs_list = xs.tolist()
+        self.probe_plot.set_series(
+            [(f"{field_name} ({metric})", list(zip(xs_list, ys)), "#2b9d91")],
+            f"Continuous parametric response · {field_name} {metric} vs {param_name}",
+        )
+        return xs_list, ys
 
     def set_study(self, collection):
         """Attach a StudyCollection and populate dynamic parametric scrubbers and response tools."""
@@ -799,10 +1119,15 @@ class SolutionExplorerWindow(QMainWindow):
         if chosen in self.datasets_by_id:
             self.set_dataset(self.datasets_by_id[chosen])
 
-    def set_dataset(self, dataset: SolutionDataset, *, preserve_lock: bool = False):
+    def set_dataset(self, dataset: SolutionDataset, *, preserve_lock: bool = False, rebuild_parametric: bool = True):
         self.play_timer.stop()
         self.play_button.setChecked(False)
         self.dataset = dataset
+        if rebuild_parametric and self.study is None:
+            self._live_param_timer.stop()
+            self._live_param_seq += 1
+            self._base_parametric_dataset = dataset
+            self._build_continuous_parametric_panel(dataset)
         if not preserve_lock:
             self._locked_limits = None
             self.lock_range_check.setChecked(False)
@@ -1283,6 +1608,11 @@ class SolutionExplorerWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.play_timer.stop()
+        self._live_param_timer.stop()
+        self._live_param_pending = None
+        self._live_param_seq += 1
+        if self._live_param_worker is not None and self._live_param_worker.isRunning():
+            self._live_param_worker.wait(5000)
         super().closeEvent(event)
 
 

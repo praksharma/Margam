@@ -153,12 +153,35 @@ def from_run_archive(path: str | Path) -> dict[str, SolutionDataset]:
     config, records, _ = decode_document(archive["model"])
     titles = {rec["id"]: rec["title"] for rec in records}
     outputs = archive.get("result", {}).get("outputs", {})
+    live_model = None
+    if archive.get("checkpoint") is not None and getattr(config, "parametric_axes", ()):
+        checkpoint = archive["checkpoint"]
+
+        class _LazyCheckpointModel:
+            def __init__(self):
+                self._model = None
+
+            def _ensure(self):
+                if self._model is None:
+                    from ..components.prediction import prediction_model
+                    self._model = prediction_model(config, checkpoint)
+                return self._model
+
+            @property
+            def dtype(self):
+                return self._ensure().dtype
+
+            def predict(self, points):
+                return self._ensure().predict(points)
+
+        live_model = _LazyCheckpointModel()
+
     datasets: dict[str, SolutionDataset] = {}
     for identifier, payload in outputs.items():
         merged = dict(payload)
         merged["config"] = config
         label = f"{titles.get(identifier, identifier)} ({Path(path).name})"
-        datasets[identifier] = from_output_result(merged, title=label)
+        datasets[identifier] = from_output_result(merged, title=label, live_model=live_model)
     return datasets
 
 

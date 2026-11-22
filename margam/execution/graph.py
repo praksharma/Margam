@@ -128,7 +128,7 @@ class ExecutableGraph:
             if node.kind=='monitor':
                 if not 25<=node.settings['history_limit']<=100000:raise ValueError('Monitor history limit must be between 25 and 100000.')
             elif point_data is None and config.shape=='Prepared2D':raise ValueError('Connect Evaluation points to '+node.title+'; a bounding-box grid is not this prepared domain.')
-            elif point_data is None and node.settings['resolution']**len(config.bounds[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
+            elif point_data is None and node.settings['resolution']**len(getattr(config,'spatial_time_bounds',config.bounds)[0])>100000:raise ValueError('Reduce evaluation resolution: at most 100000 locations are supported.')
             if node.kind=='comparison' and incoming['reference'].kind=='reference' and incoming['reference'].settings.get('reference_data'):
                 coordinates=point_data.points if point_data is not None else evaluation_points(config,node.settings['resolution'])
                 try:reference.evaluate(coordinates)

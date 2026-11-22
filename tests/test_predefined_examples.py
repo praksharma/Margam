@@ -60,15 +60,16 @@ assert w.evaluation_example_action in w.examples_1d_menu.actions()
 assert w.burgers_reference_action in w.examples_1d_menu.actions()
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
-    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_3d_menu if example_config(key).is_3d else w.examples_1d_menu if example_config(key).shape in ('Interval','SpaceTime1D') else w.examples_menu
+    ex_cfg=example_config(key)
+    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_parametric_menu if ex_cfg.parametric_axes else w.examples_3d_menu if ex_cfg.is_3d else w.examples_1d_menu if ex_cfg.shape in ('Interval','SpaceTime1D') else w.examples_menu
     assert action in expected.actions()
-    if expected in (w.examples_1d_menu,w.examples_3d_menu):assert action not in w.examples_menu.actions()
+    if expected in (w.examples_1d_menu,w.examples_3d_menu,w.examples_parametric_menu):assert action not in w.examples_menu.actions()
 assert all(a.text().startswith('2D ') for a in (w.load_action,w.heat_action,w.flow_action))
 for key in EXAMPLE_PROBLEMS:
     assert w.load_example(key)
     config=w.scene.compile_config()
     config.validate()
-    expected_pde='pde' if config.physics=='incompressible_2d' else 'predefined_pde'
+    expected_pde='pde' if (config.physics=='incompressible_2d' or not config.pde_preset) else 'predefined_pde'
     assert sum(n.kind==expected_pde for n in w.scene.nodes())==1,key
     assert not any(n.kind==('predefined_pde' if expected_pde=='pde' else 'pde') for n in w.scene.nodes()),key
     assert not w.output_views.entries

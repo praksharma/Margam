@@ -7,14 +7,14 @@ import os
 from pathlib import Path
 import tempfile
 
-from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults
+from ..templates.poisson import PoissonConfig, BoundarySampling, FLOW_RESIDUALS, flow_boundary_defaults, validate_parametric_axes
 from ..components.sampling import SAMPLERS
 from .ports import INPUTS, OUTPUTS, compatible
 
 MAX_BYTES = 4 * 1024 * 1024
 SIDES = {'left', 'right', 'bottom', 'top'}
 ALL_BUILTIN_SIDES = {'left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial'}
-CURRENT_VERSION = 34
+CURRENT_VERSION = 35
 
 
 def require(condition, message):
@@ -64,6 +64,9 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<34:
         c=dict(c)
         for key,value in (('z_min',0.),('z_max',1.),('sphere_x',.5),('sphere_y',.5),('sphere_z',.5),('sphere_radius',.2)):c.setdefault(key,value)
+    if isinstance(c,dict) and data['version']<35:
+        c=dict(c)
+        c.setdefault('parametric_axes',[])
     from ..components.dsgnar_config import validate_dsgnar_settings
     validate_dsgnar_settings(c.get('dsgnar_settings',{}) if isinstance(c,dict) else {})
     from ..components.inverse_config import validate_inverse_settings
@@ -126,7 +129,8 @@ def decode_document(data):
         require(isinstance(recipe,dict) and set(recipe) == {'points','method','seed'}, 'Invalid boundary recipe.')
         require(recipe['method'] in SAMPLERS and type(recipe['points']) is int and 1 <= recipe['points'] <= 10000 and type(recipe['seed']) is int and 0 <= recipe['seed'] < 2**31, 'Unsupported boundary recipe settings.')
         parsed[side] = BoundarySampling(**recipe)
-    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']))
+    parametric_axes = validate_parametric_axes(c['parametric_axes'])
+    values = dict(c, layers=tuple(c['layers']), boundary_sampling=parsed,flow_residuals=tuple(c['flow_residuals']),pressure_point=tuple(c['pressure_point']),parametric_axes=parametric_axes)
     config = PoissonConfig(**values)
     nodes, wires = deepcopy(data['nodes']), deepcopy(data['wires'])
     for item in nodes if isinstance(nodes,list) else []:
@@ -228,7 +232,7 @@ def decode_document(data):
                 parameters=dict(parameters,expert_settings={**expert_defaults(),**parameters['expert_settings']});node['settings']=settings=dict(settings,parameters=parameters)
             if data['version']<27 and node['kind']=='bc' and isinstance(parameters,dict):
                 parameters=dict(parameters,bc_weights=parameters.get('bc_weights',{}));node['settings']=settings=dict(settings,parameters=parameters)
-            if data['version']<34 and node['kind'] in ('domain','jorvik_geometry') and isinstance(parameters,dict):
+            if data['version']<35 and node['kind'] in ('domain','jorvik_geometry') and isinstance(parameters,dict):
                 from .graph_model import parameters_for
                 parameters={**parameters_for(node['kind'],config),**parameters};node['settings']=settings=dict(settings,parameters=parameters)
             require(isinstance(parameters,dict) and set(parameters)==set(PARAMETERS.get(node['kind'],())),'Invalid instance parameter fields.')

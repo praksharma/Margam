@@ -3,11 +3,49 @@ from ..components.dsgnar_config import dsgnar_defaults
 from dataclasses import dataclass, field
 import math
 import json
+import re
 from ..components.sampling import sample_box, SAMPLERS
 from ..components.scale_config import scale_defaults,validate_scale_settings,validate_scale_problem
 from ..components.expert_config import expert_defaults,validate_expert_settings,validate_expert_problem
 from ..components.expressions import Expression
 from ..components.prepared_data import read_points, validate_mapping, normal_fingerprint
+
+
+RESERVED_PARAM_NAMES = frozenset({
+    'x', 'y', 'z', 't', 'u', 'v', 'w', 'p', 'c', 'nu', 'pi', 'nx', 'ny', 'nz',
+    'D', 'dn', 'laplace', 'sin', 'cos', 'exp', 'tanh', 'sqrt', 'abs',
+    'True', 'False', 'None', 'and', 'or', 'not', 'in', 'is', 'if', 'else',
+    'for', 'while', 'def', 'class', 'return', 'lambda', 'import', 'from',
+})
+
+
+def validate_parametric_axes(axes):
+    """Validate continuous parametric axes: up to 4 named finite [min, max] intervals."""
+    if not isinstance(axes, (list, tuple)) or len(axes) > 4:
+        raise ValueError('Continuous parametric axes must be a sequence of at most 4 parameter definitions.')
+    seen = set()
+    normalized = []
+    for entry in axes:
+        if not isinstance(entry, dict) or set(entry) != {'name', 'min', 'max', 'default'}:
+            raise ValueError('Each parametric axis needs exact keys: name, min, max, default.')
+        name = entry['name']
+        if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,31}', name):
+            raise ValueError(f'Invalid parametric axis name: {name!r}. Use letters, digits, and underscores starting with a letter.')
+        if name in RESERVED_PARAM_NAMES:
+            raise ValueError(f'Parametric axis name {name!r} collides with a reserved coordinate, field, or math symbol.')
+        if name in seen:
+            raise ValueError(f'Duplicate parametric axis name: {name!r}.')
+        seen.add(name)
+        lo, hi, default = entry['min'], entry['max'], entry['default']
+        if any(type(v) not in (int, float) or not math.isfinite(v) for v in (lo, hi, default)):
+            raise ValueError(f'Parametric axis {name!r} bounds and default must be finite numbers.')
+        lo, hi, default = float(lo), float(hi), float(default)
+        if not (lo < hi):
+            raise ValueError(f'Parametric axis {name!r} requires min < max.')
+        if not (lo <= default <= hi):
+            raise ValueError(f'Parametric axis {name!r} default must lie within [min, max].')
+        normalized.append({'name': name, 'min': lo, 'max': hi, 'default': default})
+    return tuple(normalized)
 
 
 FLOW_RESIDUALS=('u*D(u,x)+v*D(u,y)+D(p,x)-nu*laplace(u)',
@@ -46,6 +84,7 @@ class PoissonConfig:
     sphere_y: float = .5
     sphere_z: float = .5
     sphere_radius: float = .2
+    parametric_axes: tuple = ()
     fourth_order: float = 100/16**4
     startup_time: float = .1
     pde_points: str = 'interior'  # Legacy/direct API default; UI graphs choose by wiring.
@@ -112,12 +151,29 @@ class PoissonConfig:
     def has_obstacle(self):return self.shape in ('Channel2D','ChannelTime2D','SphereObstacle3D')
 
     @property
+    def parametric_names(self):return tuple(ax['name'] for ax in self.parametric_axes)
+
+    @property
+    def spatial_dim(self):return 3 if self.is_3d else 1 if self.shape in ('Interval','SpaceTime1D') else 2
+
+    @property
+    def spatial_time_bounds(self):
+        if self.shape=='SpaceTime3D':return [self.x_min,self.y_min,self.z_min,self.t_min],[self.x_max,self.y_max,self.z_max,self.t_max]
+        if self.is_3d:return [self.x_min,self.y_min,self.z_min],[self.x_max,self.y_max,self.z_max]
+        if self.shape in ('SpaceTime2D','ChannelTime2D'):return [self.x_min,self.y_min,self.t_min],[self.x_max,self.y_max,self.t_max]
+        if self.shape == 'Interval':
+            return [self.x_min], [self.x_max]
+        return [self.x_min, self.y_min], [self.x_max, self.y_max]
+
+    @property
     def coordinate_names(self):
-        if self.shape=='SpaceTime3D':return ('x','y','z','t')
-        if self.is_3d:return ('x','y','z')
-        if self.shape in ('SpaceTime2D','ChannelTime2D'):return ('x','y','t')
-        if self.is_time_dependent:return ('x','t')
-        return ('x','y')[:len(self.bounds[0])]
+        if self.shape=='SpaceTime3D':base=('x','y','z','t')
+        elif self.is_3d:base=('x','y','z')
+        elif self.shape in ('SpaceTime2D','ChannelTime2D'):base=('x','y','t')
+        elif self.is_time_dependent:base=('x','t')
+        elif self.shape=='Interval':base=('x',)
+        else:base=('x','y')
+        return base+self.parametric_names
 
     def constraint_name(self,side):return 'initial' if self.shape=='SpaceTime1D' and side=='bottom' else side
 
@@ -164,12 +220,11 @@ class PoissonConfig:
 
     @property
     def bounds(self):
-        if self.shape=='SpaceTime3D':return [self.x_min,self.y_min,self.z_min,self.t_min],[self.x_max,self.y_max,self.z_max,self.t_max]
-        if self.is_3d:return [self.x_min,self.y_min,self.z_min],[self.x_max,self.y_max,self.z_max]
-        if self.shape in ('SpaceTime2D','ChannelTime2D'):return [self.x_min,self.y_min,self.t_min],[self.x_max,self.y_max,self.t_max]
-        if self.shape == 'Interval':
-            return [self.x_min], [self.x_max]
-        return [self.x_min, self.y_min], [self.x_max, self.y_max]
+        lo, hi = self.spatial_time_bounds
+        if self.parametric_axes:
+            lo = list(lo) + [float(ax['min']) for ax in self.parametric_axes]
+            hi = list(hi) + [float(ax['max']) for ax in self.parametric_axes]
+        return lo, hi
 
     def boundary_recipe(self, side):
         """Unconfigured sides use grid, the template count, and stable side seeds."""
@@ -192,6 +247,12 @@ class PoissonConfig:
         for source in self.boundary_data.values():validate_mapping(source)
         if self.shape not in ('Interval', 'Rectangle','Prepared2D','SpaceTime1D','SpaceTime2D','Channel2D','ChannelTime2D','Box3D','SpaceTime3D','SphereObstacle3D'):
             raise ValueError('Choose Interval, Rectangle, 1D space–time, or a supported 3D domain.')
+        validate_parametric_axes(self.parametric_axes)
+        if self.parametric_axes:
+            if self.shape not in ('Interval','Rectangle','SpaceTime1D','Box3D','SpaceTime3D','SphereObstacle3D'):
+                raise ValueError('Continuous parametric axes currently support built-in Interval, Rectangle, 1D space–time, and 3D box/sphere domains.')
+            if len(self.bounds[0])>8:
+                raise ValueError('Total spatial, time, and continuous parameter dimensionality cannot exceed 8.')
         lower, upper = self.bounds
         if not all(math.isfinite(v) for v in (*lower, *upper)) or any(b <= a for a,b in zip(lower,upper)):
             raise ValueError('Domain maximums must be greater than minimums.')
@@ -282,6 +343,8 @@ class PoissonConfig:
         validate_dsgnar_settings(self.dsgnar_settings)
         if self.method=='dsgnar':validate_dsgnar_problem(self)
         if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar'):raise ValueError('Unknown PINN method.')
+        if self.parametric_axes and (self.physics!='scalar' or self.is_paper_case or self.pde_preset in ('kdv_1d','wave_1d') or self.method in ('expert','scale','dsgnar','inverse_burgers')):
+            raise ValueError('Continuous parametric axes currently support scalar PDEs with baseline, hard Dirichlet, self-adaptive, LRA, or RBA trainers.')
         if self.method=='hard_dirichlet' and (self.shape=='SphereObstacle3D' or self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s,'Dirichlet')!='Dirichlet' for s in self.sides) or len({self.bc_values.get(s,0.) for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in box sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -337,8 +400,9 @@ class PoissonConfig:
                 if self.bc_types[a] == self.bc_types[b] == 'Dirichlet' and not self.boundary_data.get(a) and not self.boundary_data.get(b):
                     if self.bc_targets.get(a) or self.bc_targets.get(b):
                         import torch
-                        corner=torch.tensor([[self.x_min if a=='left' else self.x_max,self.y_min if b=='bottom' else self.y_max]])
-                        values=[float(Expression(self.bc_targets[s],2,target=True,coordinates=self.coordinate_names)(corner,source=self.source,viscosity=self.viscosity,normal={'left':(-1.,0.),'right':(1.,0.),'bottom':(0.,-1.),'top':(0.,1.)}[s])) if self.bc_targets.get(s) else self.bc_values[s] for s in (a,b)]
+                        p_defaults=[float(ax['default']) for ax in self.parametric_axes]
+                        corner=torch.tensor([[self.x_min if a=='left' else self.x_max,self.y_min if b=='bottom' else self.y_max,*p_defaults]])
+                        values=[float(Expression(self.bc_targets[s],dimension,target=True,coordinates=self.coordinate_names)(corner,source=self.source,viscosity=self.viscosity,normal={'left':(-1.,0.),'right':(1.,0.),'bottom':(0.,-1.),'top':(0.,1.)}[s])) if self.bc_targets.get(s) else self.bc_values[s] for s in (a,b)]
                         agree=all(math.isfinite(v) for v in values) and math.isclose(*values,rel_tol=1e-6,abs_tol=1e-6)
                     else:agree=self.bc_values[a]==self.bc_values[b]
                     if not agree:raise ValueError(f'Dirichlet targets on {a} and {b} conflict at their shared corner.')
@@ -375,21 +439,42 @@ def sample_problem(config):
         if not interior:raise ValueError('No interior points remained outside the sphere obstacle; increase point budget or shrink the sphere.')
     else:
         interior = sample_box(lower, upper, config.points, config.sampling, config.seed)
+    dim = len(lower)
     if config.shape == 'Interval':
-        return interior, {side:read_points(config.boundary_data[side],1)[0].tolist() if config.boundary_data.get(side) else [[config.x_min if side=='left' else config.x_max]] for side in config.sides}
+        boundaries = {}
+        for side in config.sides:
+            if config.boundary_data.get(side):
+                boundaries[side] = read_points(config.boundary_data[side], dim)[0].tolist()
+                continue
+            fixed_x = config.x_min if side == 'left' else config.x_max
+            if dim == 1:
+                boundaries[side] = [[fixed_x]]
+            else:
+                recipe = config.boundary_recipe(side)
+                p_rows = sample_box(lower[1:], upper[1:], recipe.points, recipe.method, recipe.seed)
+                boundaries[side] = [[fixed_x, *row] for row in p_rows]
+        return interior, boundaries
     if config.is_3d:
         boundaries = {}
-        dim = len(lower)
         for side in config.sides:
             if config.boundary_data.get(side):
                 boundaries[side]=read_points(config.boundary_data[side],dim)[0].tolist();continue
             recipe = config.boundary_recipe(side)
             if side == 'sphere':
-                boundaries[side] = _sample_sphere_surface(config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius,recipe.points,recipe.seed)
+                sp_pts = _sample_sphere_surface(config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius,recipe.points,recipe.seed)
+                if dim > 3:
+                    p_rows = sample_box(lower[3:], upper[3:], len(sp_pts), recipe.method, (recipe.seed + 17) % (2**31))
+                    # Ensure parameter rows match sphere point count even for grid rounding
+                    if len(p_rows) < len(sp_pts):
+                        p_rows = sample_box(lower[3:], upper[3:], len(sp_pts), 'hammersley', (recipe.seed + 17) % (2**31))
+                    boundaries[side] = [sp + p_rows[i] for i, sp in enumerate(sp_pts)]
+                else:
+                    boundaries[side] = sp_pts
                 continue
             if side == 'initial':
-                rows = sample_box(lower[:3], upper[:3], recipe.points, recipe.method, recipe.seed)
-                boundaries[side] = [row + [config.t_min] for row in rows]
+                free_axes = [0, 1, 2] + list(range(4, dim))
+                rows = sample_box([lower[i] for i in free_axes], [upper[i] for i in free_axes], recipe.points, recipe.method, recipe.seed)
+                boundaries[side] = [r[:3] + [config.t_min] + r[3:] for r in rows]
                 continue
             fixed_map = {'left':(0,config.x_min),'right':(0,config.x_max),'bottom':(1,config.y_min),'top':(1,config.y_max),'front':(2,config.z_min),'back':(2,config.z_max)}
             axis, fixed_val = fixed_map[side]
@@ -409,13 +494,23 @@ def sample_problem(config):
     boundaries = {}
     for side in config.sides:
         if config.boundary_data.get(side):
-            boundaries[side]=read_points(config.boundary_data[side],2)[0].tolist();continue
-        vertical = side in ('left','right')
-        a,b = (config.y_min,config.y_max) if vertical else (config.x_min,config.x_max)
-        recipe = config.boundary_recipe(side)
-        rows = sample_box([a], [b], recipe.points, recipe.method, recipe.seed)
+            boundaries[side]=read_points(config.boundary_data[side],dim)[0].tolist();continue
+        axis = 0 if side in ('left','right') else 1
         fixed = {'left':config.x_min,'right':config.x_max,'bottom':config.y_min,'top':config.y_max}[side]
-        boundaries[side] = [[fixed,t[0]] if vertical else [t[0],fixed] for t in rows]
+        free_axes = [i for i in range(dim) if i != axis]
+        recipe = config.boundary_recipe(side)
+        rows = sample_box([lower[i] for i in free_axes], [upper[i] for i in free_axes], recipe.points, recipe.method, recipe.seed)
+        if dim == 2:
+            boundaries[side] = [[fixed,t[0]] if axis==0 else [t[0],fixed] for t in rows]
+        else:
+            out = []
+            for r in rows:
+                pt = [0.0] * dim
+                pt[axis] = fixed
+                for k, ax_i in enumerate(free_axes):
+                    pt[ax_i] = r[k]
+                out.append(pt)
+            boundaries[side] = out
     return interior, boundaries
 
 
@@ -524,19 +619,19 @@ def _build_pinn(config,*,initial_teacher=None,time_origin=None):
             if config.bc_targets.get(side):raise ValueError('Choose imported target values or a target expression, not both.')
             target=torch.tensor(imported[2])
         constraints.append(PointConstraint(config.constraint_name(side), torch.tensor(rows), target, operator))
-    expression=Expression(config.pde_expression,len(config.bounds[0]),coordinates=config.coordinate_names) if config.pde_expression else None
+    expr_text = config.pde_expression or ('laplace(u) + c' if config.parametric_axes else '')
+    expression=Expression(expr_text,len(config.bounds[0]),coordinates=config.coordinate_names) if expr_text else None
     def residual(x, u):
         return expression(x,u,source=config.source,viscosity=config.viscosity) if expression else laplacian(u,x) + config.source
     from ..components.collocation import collocation_rows
     problem = PINNProblem(residual,torch.tensor(collocation_rows(config,interior,boundaries)),constraints,data_identity=json.dumps(normal_identities,sort_keys=True) if normal_identities else '')
-    lower,upper = config.bounds
     from ..components.losses import apply_problem_measures
     apply_problem_measures(problem,config)
     network = build_network(config)
     weights = config.loss_weights
     if config.method=='hard_dirichlet':
         from ..methods.hard_dirichlet import HardDirichletPINN
-        return HardDirichletPINN(problem,network,bounds=(lower,upper),value=config.bc_values['left'],weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
+        return HardDirichletPINN(problem,network,bounds=config.spatial_time_bounds,value=config.bc_values['left'],weights=weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device=config.device)
     if config.method=='expert':
         from ..methods.expert import ExpertPINN
         return ExpertPINN(problem,network,config=config,weights=weights,loss_formulation=config.loss_formulation,initial_teacher=initial_teacher).compile(lr=config.lr,device=config.device)

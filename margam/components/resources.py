@@ -87,7 +87,7 @@ def resource_report(config,counts,requests,*,memory,monitor_limits=(),output_nam
     for request in requests:
         if request.kind=='monitor':continue
         supplied=request.point_data is not None
-        outputs.append(dict(identifier=request.identifier,name=(output_names or {}).get(request.identifier,request.kind),rows=len(request.point_data.points) if supplied else request.resolution**len(config.bounds[0]),upper_bound=not supplied))
+        outputs.append(dict(identifier=request.identifier,name=(output_names or {}).get(request.identifier,request.kind),rows=len(request.point_data.points) if supplied else request.resolution**len(getattr(config,'spatial_time_bounds',config.bounds)[0]),upper_bound=not supplied))
     memory=dict(memory)
     if config.method=='dsgnar':memory.update(dtype='torch.'+config.dsgnar_settings['precision'],scalar_bytes=8 if config.dsgnar_settings['precision']=='float64' else 4)
     scalar=memory.get('scalar_bytes')

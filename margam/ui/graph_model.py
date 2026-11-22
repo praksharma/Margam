@@ -7,7 +7,7 @@ from ..recipes import dsgnar, baseline, self_adaptive, learning_rate_annealing, 
 PARAMETERS = {
     'dsgnar_recipe':dsgnar.PARAMETERS,
     'dsgnar_method':dsgnar.TRAINING_FIELDS,
-    'domain':('shape','x_min','x_max','y_min','y_max','z_min','z_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','sphere_x','sphere_y','sphere_z','sphere_radius'),
+    'domain':('shape','x_min','x_max','y_min','y_max','z_min','z_max','t_min','t_max','cylinder_x','cylinder_y','cylinder_radius','sphere_x','sphere_y','sphere_z','sphere_radius','parametric_axes'),
     'interior':('points','sampling','seed','interior_data','adaptive_sampling'),
     'rar':('points','sampling','seed','interior_data','adaptive_sampling'),
     'importance':('points','sampling','seed','interior_data','adaptive_sampling'),
@@ -51,7 +51,7 @@ def role(kind):return {'dsgnar_recipe':'method','dsgnar_method':'method','invers
 
 def encode_parameter(attribute,value):
     if attribute=='boundary_sampling':return {side:asdict(recipe) if isinstance(recipe,BoundarySampling) else deepcopy(recipe) for side,recipe in value.items()}
-    if attribute in ('layers','flow_residuals','pressure_point'):return list(value)
+    if attribute in ('layers','flow_residuals','pressure_point','parametric_axes'):return [deepcopy(v) for v in value]
     return deepcopy(value)
 
 
@@ -82,7 +82,7 @@ def overlay(config,kind,parameters):
     for key in PARAMETERS.get(kind,()):
         value=deepcopy(parameters[key])
         if key=='boundary_sampling':value={side:BoundarySampling(**recipe) for side,recipe in value.items()}
-        if key in ('layers','flow_residuals','pressure_point'):value=tuple(value)
+        if key in ('layers','flow_residuals','pressure_point','parametric_axes'):value=tuple(value)
         setattr(config,key,value)
     if kind=='predefined_pde':
         from ..templates.predefined_pdes import resolve_predefined

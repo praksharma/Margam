@@ -19,7 +19,8 @@ class BoxDirichletNetwork(torch.nn.Module):
         if len(lower) not in (1,2,3) or (self.span<=0).any():raise ValueError('Hard Dirichlet needs valid 1D, 2D or 3D box bounds.')
 
     def forward(self,x):
-        t=(x-self.lower)/self.span
+        d=len(self.lower)
+        t=(x[:,:d]-self.lower)/self.span
         factor=(4*t*(1-t)).prod(dim=1,keepdim=True)
         return self.value+factor*self.network(x)
 

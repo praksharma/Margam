@@ -106,10 +106,15 @@ def evaluate_outputs(model, config, requests, *, prediction_batch_size=None):
 
 
 def evaluation_points(config,count):
-    """Bounded regular evaluation grids; discard solid-obstacle locations."""
+    """Bounded regular evaluation grids; discard solid-obstacle locations.
+
+    Continuous parametric axes are held at their configured default values so
+    spatial/time evaluation stays bounded while the Solution Explorer scrubs
+    the parameters live.
+    """
     import itertools
     if config.shape=='Prepared2D':raise ValueError('Prepared geometry requires an Evaluation points connection; a bounding-box grid is not its domain.')
-    lower,upper=config.bounds
+    lower,upper=getattr(config,'spatial_time_bounds',config.bounds)
     if count**len(lower)>100000:raise ValueError('Evaluation exceeds 100000 locations; reduce the per-axis resolution.')
     axes=[[a+i*(b-a)/(count-1) for i in range(count)] for a,b in zip(lower,upper)]
     points=[list(reversed(row)) for row in itertools.product(*reversed(axes))]
@@ -120,4 +125,8 @@ def evaluation_points(config,count):
     elif getattr(config,'has_obstacle',False):
         from ..templates.expert_examples import inside_fluid
         points=[point for point in points if inside_fluid(config,point)]
+    param_axes=getattr(config,'parametric_axes',())
+    if param_axes:
+        defaults=[float(ax['default']) for ax in param_axes]
+        points=[point+defaults for point in points]
     return points

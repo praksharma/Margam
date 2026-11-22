@@ -102,6 +102,7 @@ HELP.update({
     'sphere_y':'y coordinate of the 3D spherical obstacle centre inside the bounding box.',
     'sphere_z':'z coordinate of the 3D spherical obstacle centre inside the bounding box.',
     'sphere_radius':'Positive radius of the 3D spherical obstacle; the sphere must lie strictly inside the 3D box bounds.',
+    'parametric_axes':'Continuous parameter inputs (e.g. mu in [0.5, 2.0]) fed alongside spatial/time coordinates so one trained PINN u(x, t, mu) covers the whole parameter range and can be scrubbed live in Solution Explorer.',
 })
 
 CHOICES = {
