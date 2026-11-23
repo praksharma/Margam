@@ -6,6 +6,7 @@ inverse probabilities to estimate uniform candidate-pool MSE. No Qt dependency.
 from copy import deepcopy
 import math
 from .sampling import sample_box
+from .geometry import fluid_mask, obstacle_spec, sample_fluid_box
 
 
 def sampling_defaults(method):
@@ -49,7 +50,7 @@ def score_statistics(event):
 
 
 class AdaptiveSampler:
-    def __init__(self,model,settings,bounds,seed):
+    def __init__(self,model,settings,bounds,seed,*,obstacle=None):
         import torch
         validate_adaptive_sampling(settings)
         if not settings:raise ValueError('Choose an adaptive sampling method.')
@@ -65,9 +66,12 @@ class AdaptiveSampler:
             raise ValueError('RAR maximum must cover the initial interior set.')
         initial=model.collocation_point_sample
         if initial.shape[1]!=len(lower) or not torch.isfinite(initial).all() or ((initial<initial.new_tensor(lower))|(initial>initial.new_tensor(upper))).any():raise ValueError('Adaptive initial points must lie in the configured interval/rectangle.')
+        self.obstacle=deepcopy(obstacle) if obstacle is not None else None
+        if self.obstacle is not None and not fluid_mask(initial.detach().cpu().numpy(),self.obstacle,strict_interior=False,tolerance=1e-6).all():
+            raise ValueError('Adaptive initial points cannot lie inside the solid obstacle.')
         self.settings=deepcopy(settings);self.bounds=(list(lower),list(upper));self.seed=seed
         if self.settings.get('pool')=='refresh':self.settings.pop('pool') # Preserve legacy state/settings exactly.
-        self.candidate_pool=model._points(sample_box(*self.bounds,settings['candidates'],'random',seed)) if settings.get('pool')=='fixed' else None
+        self.candidate_pool=model._points(sample_fluid_box(*self.bounds,settings['candidates'],'random',seed,obstacle=self.obstacle) if self.obstacle is not None else sample_box(*self.bounds,settings['candidates'],'random',seed)) if settings.get('pool')=='fixed' else None
         if self.settings.get('score')=='residual':self.settings.pop('score') # Same legacy residual state.
         self.initial_count=len(model.collocation_point_sample)
         self.boundary_anchors=None
@@ -115,7 +119,7 @@ class AdaptiveSampler:
         old=model.collocation_point_sample
         if s['method']=='rar' and len(old)>=s['maximum']:return
         event_seed=(self.seed+model.iter)%2**31
-        candidates=self.candidate_pool if self.candidate_pool is not None else model._points(sample_box(*self.bounds,s['candidates'],'random',event_seed))
+        candidates=self.candidate_pool if self.candidate_pool is not None else model._points(sample_fluid_box(*self.bounds,s['candidates'],'random',event_seed,obstacle=self.obstacle) if self.obstacle is not None else sample_box(*self.bounds,s['candidates'],'random',event_seed))
         scores=self.scores(model,candidates)
         if s['method']=='rar':
             existing={tuple(row) for row in old.detach().cpu().tolist()}
@@ -170,6 +174,7 @@ class AdaptiveSampler:
         points=payload['points'];weights=payload['weights'];history=payload['history']
         if not isinstance(points,torch.Tensor) or points.ndim!=2 or points.shape[1]!=len(self.bounds[0]) or not 1<=len(points)<=100000 or points.dtype!=model.dtype or not torch.isfinite(points).all():raise ValueError('Invalid adaptive checkpoint coordinates.')
         if ((points<points.new_tensor(self.bounds[0]))|(points>points.new_tensor(self.bounds[1]))).any():raise ValueError('Adaptive checkpoint points lie outside the domain.')
+        if self.obstacle is not None and not fluid_mask(points.detach().cpu().numpy(),self.obstacle,strict_interior=False,tolerance=1e-6).all():raise ValueError('Adaptive checkpoint points lie inside the solid obstacle.')
         if not isinstance(history,list):raise ValueError('Invalid adaptive sampling history.')
         previous=0;count=self.initial_count
         mean_key,max_key=self.statistic_keys()
@@ -206,5 +211,5 @@ def configure_adaptive_sampling(model,config):
             from ..templates.poisson import sample_problem
             from .collocation import boundary_rows
             _,sets=sample_problem(config);model.problem.boundary_anchor_count=len(boundary_rows(config,sets))
-        model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed)
+        model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed,obstacle=obstacle_spec(config))
     return model

@@ -118,13 +118,11 @@ def evaluation_points(config,count):
     if count**len(lower)>100000:raise ValueError('Evaluation exceeds 100000 locations; reduce the per-axis resolution.')
     axes=[[a+i*(b-a)/(count-1) for i in range(count)] for a,b in zip(lower,upper)]
     points=[list(reversed(row)) for row in itertools.product(*reversed(axes))]
-    if getattr(config,'shape','')=='SphereObstacle3D':
-        sx,sy,sz,sr=config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius
-        r2=sr*sr
-        points=[point for point in points if (point[0]-sx)**2+(point[1]-sy)**2+(point[2]-sz)**2>=r2]
-    elif getattr(config,'has_obstacle',False):
-        from ..templates.expert_examples import inside_fluid
-        points=[point for point in points if inside_fluid(config,point)]
+    from .geometry import fluid_mask, obstacle_spec
+    obs=obstacle_spec(config)
+    if obs is not None and points:
+        mask=fluid_mask(points,obs,strict_interior=True)
+        points=[point for point,keep in zip(points,mask) if keep]
     param_axes=getattr(config,'parametric_axes',())
     if param_axes:
         defaults=[float(ax['default']) for ax in param_axes]

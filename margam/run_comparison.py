@@ -59,18 +59,47 @@ def read_predictions(path,*,check=None):
         outputs=data['result']['outputs'],titles=titles,steps=data['result']['steps'],cancelled=data['result']['cancelled'],device=data['result']['device'])
 
 
+def validate_exact_alignment(
+    coords_a,
+    coords_b,
+    points_a,
+    points_b,
+    *,
+    fields_a=None,
+    fields_b=None,
+    ids_a=None,
+    ids_b=None,
+):
+    """Enforce Margam's exact coordinate-name, coordinate-value, ID, and field contract."""
+    import numpy as np
+    if list(coords_a) != list(coords_b):
+        raise ValueError('Coordinate names/order differ. Re-evaluate on the same coordinate contract.')
+    if fields_a is not None and fields_b is not None and list(fields_a) != list(fields_b):
+        raise ValueError('Field names/order differ; no implicit field mapping is performed.')
+    pa = array(points_a)
+    pb = array(points_b)
+    raw_a = points_a.tolist() if hasattr(points_a, 'tolist') else points_a
+    raw_b = points_b.tolist() if hasattr(points_b, 'tolist') else points_b
+    if pa.ndim != 2 or pa.shape[1] != len(coords_a) or pa.shape != pb.shape or raw_a != raw_b or not np.array_equal(pa, pb):
+        raise ValueError('Evaluation coordinates/order differ. Re-evaluate both runs on the same points; no interpolation or row sorting is performed.')
+    if (ids_a is None) != (ids_b is None) or ids_a is not None and (
+        len(ids_a) != len(pa)
+        or len(ids_a) != len(ids_b)
+        or any(type(x) is not type(y) or x != y for x, y in zip(ids_a, ids_b))
+    ):
+        raise ValueError('Point IDs/types/order differ; rows are not automatically matched.')
+    return pa
+
+
 def compare_predictions(left,left_id,right,right_id):
     """B−A on identically ordered coordinates/fields/IDs; metrics cover every row."""
     import numpy as np
-    if left['coordinates']!=right['coordinates']:raise ValueError('Coordinate names/order differ. Re-evaluate on the same coordinate contract.')
     a=left['outputs'][left_id];b=right['outputs'][right_id];fields=a.get('fields',['u'])
-    if fields!=b.get('fields',['u']):raise ValueError('Field names/order differ; no implicit field mapping is performed.')
-    points=array(a['points']);other=array(b['points'])
-    raw_points_a=a['points'].tolist() if hasattr(a['points'],'tolist') else a['points']
-    raw_points_b=b['points'].tolist() if hasattr(b['points'],'tolist') else b['points']
-    if points.shape[1]!=len(left['coordinates']) or points.shape!=other.shape or raw_points_a!=raw_points_b or not np.array_equal(points,other):raise ValueError('Evaluation coordinates/order differ. Re-evaluate both runs on the same points; no interpolation or row sorting is performed.')
     ids=a.get('point_ids');other_ids=b.get('point_ids')
-    if (ids is None)!=(other_ids is None) or ids is not None and (len(ids)!=len(points) or len(ids)!=len(other_ids) or any(type(x) is not type(y) or x!=y for x,y in zip(ids,other_ids))):raise ValueError('Point IDs/types/order differ; rows are not automatically matched.')
+    points=validate_exact_alignment(
+        left['coordinates'],right['coordinates'],a['points'],b['points'],
+        fields_a=fields,fields_b=b.get('fields',['u']),ids_a=ids,ids_b=other_ids,
+    )
     values_a=array(a['values']);values_b=array(b['values'])
     if values_a.shape!=values_b.shape or values_a.shape!=(len(points),len(fields)):raise ValueError('Prediction shape differs from the point/field contract.')
     references=[]

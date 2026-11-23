@@ -146,8 +146,10 @@ supported catalogue descriptions are shared by the library, inspector and Help.
   by default and owned by that rectangle block.
 - [x] Reuse hidden previews and update them on settings changes; remove them on
   owner deletion, shape change or template reset.
-- [x] Keep these sample previews limited to rectangles. Do not create a general
-  geometry renderer or implicit 3D preview path without a justified requirement.
+- [x] Historical milestone (26 October 2026): kept local block-owned sample
+  previews limited to rectangles. Dedicated in-app 2D/3D/parametric field
+  visualization is now implemented separately in the opt-in Solution Explorer
+  window (see the Solution Explorer section below).
 - [x] Add Undo/Redo actions to block context menus.
 - [x] Add undoable block Copy/Cut/Paste with fresh IDs, internal wires and
   canvas-scoped shortcuts. Pasted core settings remain template-backed.

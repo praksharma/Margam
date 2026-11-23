@@ -67,11 +67,15 @@ def _document(grid,time=None):
         array=_array(field,'TimeValue',[_time(time)]);array.set('NumberOfTuples','1')
     piece=ET.SubElement(image,'Piece',Extent=extent)
     attributes={'Scalars':fields[0]}
-    flow=fields in (['u','v','p'],['u','v'],['u','v','w'])
-    if flow:attributes['Vectors']='velocity'
+    is_3d=shape[2]>1
+    is_2d=shape[1]>1 and not is_3d
+    flow_3d=is_3d and fields in (['u','v','w'],['u','v','w','p'])
+    flow_2d=(not flow_3d) and (((is_2d or is_3d) and fields in (['u','v','p'],['u','v'])) or (is_2d and fields==['u','v','w']))
+    if flow_3d or flow_2d:attributes['Vectors']='velocity'
     point_data=ET.SubElement(piece,'PointData',**attributes)
     for index,name in enumerate(fields):_array(point_data,name,values[:,index])
-    if flow:_array(point_data,'velocity',np.column_stack((values[:,0],values[:,1],np.zeros(len(values)))),3)
+    if flow_3d:_array(point_data,'velocity',values[:,:3],3)
+    elif flow_2d:_array(point_data,'velocity',np.column_stack((values[:,0],values[:,1],np.zeros(len(values)))),3)
     ET.SubElement(piece,'CellData')
     return ET.ElementTree(root)
 

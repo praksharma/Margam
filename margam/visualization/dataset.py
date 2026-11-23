@@ -2,9 +2,174 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import itertools
 from typing import Any, Callable
 import math
 import numpy as np
+
+
+def _regular_grid_interp(
+    axes: tuple[np.ndarray, ...],
+    grid: np.ndarray,
+    query: np.ndarray,
+    *,
+    fill_value: float = np.nan,
+) -> np.ndarray:
+    """Pure-NumPy multilinear interpolation on 1D/2D/3D regular Cartesian grids."""
+    q = np.asarray(query, dtype=np.float64)
+    lead_shape = q.shape[:-1]
+    dim = len(axes)
+    qf = q.reshape(-1, dim)
+    m = len(qf)
+    if m == 0:
+        return np.empty(lead_shape, dtype=np.float64)
+
+    in_bounds = np.ones(m, dtype=bool)
+    i0_list: list[np.ndarray] = []
+    i1_list: list[np.ndarray] = []
+    t_list: list[np.ndarray] = []
+    for d, ax in enumerate(axes):
+        ax_arr = np.asarray(ax, dtype=np.float64)
+        lo, hi = float(ax_arr[0]), float(ax_arr[-1])
+        tol = max(1e-12, 1e-11 * max(1.0, hi - lo))
+        qd = qf[:, d]
+        in_bounds &= (qd >= lo - tol) & (qd <= hi + tol)
+        qc = np.clip(qd, lo, hi)
+        if len(ax_arr) == 1:
+            i0 = np.zeros(m, dtype=np.int64)
+            i1 = np.zeros(m, dtype=np.int64)
+            td = np.zeros(m, dtype=np.float64)
+        else:
+            i1 = np.clip(np.searchsorted(ax_arr, qc, side="right"), 1, len(ax_arr) - 1)
+            i0 = i1 - 1
+            denom = ax_arr[i1] - ax_arr[i0]
+            td = np.where(denom > 0.0, (qc - ax_arr[i0]) / np.where(denom > 0.0, denom, 1.0), 0.0)
+        i0_list.append(i0)
+        i1_list.append(i1)
+        t_list.append(td)
+
+    out = np.zeros(m, dtype=np.float64)
+    for bits in itertools.product((0, 1), repeat=dim):
+        weight = np.ones(m, dtype=np.float64)
+        idx = []
+        for d, bit in enumerate(bits):
+            if bit == 0:
+                weight *= 1.0 - t_list[d]
+                idx.append(i0_list[d])
+            else:
+                weight *= t_list[d]
+                idx.append(i1_list[d])
+        out += weight * grid[tuple(idx)]
+    out[~in_bounds] = fill_value
+    return out.reshape(lead_shape)
+
+
+def _convex_hull_2d(pts: np.ndarray) -> np.ndarray:
+    """Andrew's monotone chain 2D convex hull returning CCW vertices."""
+    uniq = np.unique(np.asarray(pts, dtype=np.float64), axis=0)
+    if len(uniq) <= 2:
+        return uniq
+    order = np.lexsort((uniq[:, 1], uniq[:, 0]))
+    sorted_pts = uniq[order].tolist()
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[list[float]] = []
+    for p in sorted_pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0.0:
+            lower.pop()
+        lower.append(p)
+    upper: list[list[float]] = []
+    for p in reversed(sorted_pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0.0:
+            upper.pop()
+        upper.append(p)
+    return np.asarray(lower[:-1] + upper[:-1], dtype=np.float64)
+
+
+def _points_in_convex_hull_2d(hull: np.ndarray, queries: np.ndarray) -> np.ndarray:
+    if len(hull) < 3:
+        return np.zeros(len(queries), dtype=bool)
+    a = hull
+    b = np.roll(hull, -1, axis=0)
+    edge = b - a
+    scale = max(1.0, float(np.max(np.abs(edge))))
+    tol = 1e-10 * scale * scale
+    # (M, H) cross products for every query against every CCW hull edge
+    dx = queries[:, None, 0] - a[None, :, 0]
+    dy = queries[:, None, 1] - a[None, :, 1]
+    c = edge[None, :, 0] * dy - edge[None, :, 1] * dx
+    return np.all(c >= -tol, axis=1)
+
+
+def _scattered_interp(
+    pts: np.ndarray,
+    vals: np.ndarray,
+    query: np.ndarray,
+    *,
+    fill_value: float = np.nan,
+) -> np.ndarray:
+    """Interpolate scattered 2D/3D data, using SciPy Delaunay when installed or pure-NumPy IDW fallback."""
+    pts_arr = np.asarray(pts, dtype=np.float64)
+    vals_arr = np.asarray(vals, dtype=np.float64).reshape(-1)
+    q = np.asarray(query, dtype=np.float64)
+    lead_shape = q.shape[:-1]
+    dim = pts_arr.shape[1]
+    if len(pts_arr) == 0:
+        return np.full(lead_shape, fill_value, dtype=np.float64)
+
+    try:
+        from scipy.interpolate import LinearNDInterpolator
+    except ImportError:
+        LinearNDInterpolator = None
+
+    if LinearNDInterpolator is not None and len(pts_arr) >= dim + 1:
+        try:
+            interp = LinearNDInterpolator(pts_arr, vals_arr, fill_value=fill_value)
+            return np.asarray(interp(q), dtype=np.float64)
+        except Exception:
+            pass
+
+    qf = q.reshape(-1, dim)
+    m = len(qf)
+    out = np.full(m, fill_value, dtype=np.float64)
+    if dim == 2:
+        hull = _convex_hull_2d(pts_arr)
+        valid = _points_in_convex_hull_2d(hull, qf)
+    else:
+        lo = np.min(pts_arr, axis=0)
+        hi = np.max(pts_arr, axis=0)
+        tol = np.maximum(1e-12, 1e-9 * (hi - lo))
+        valid = np.all((qf >= lo - tol) & (qf <= hi + tol), axis=1)
+
+    valid_idx = np.where(valid)[0]
+    if len(valid_idx) == 0:
+        return out.reshape(lead_shape)
+
+    k = min(8, len(pts_arr))
+    for start in range(0, len(valid_idx), 512):
+        batch_ids = valid_idx[start : start + 512]
+        qb = qf[batch_ids]
+        d2 = np.sum((qb[:, None, :] - pts_arr[None, :, :]) ** 2, axis=2)
+        if k < len(pts_arr):
+            top = np.argpartition(d2, k - 1, axis=1)[:, :k]
+            row_i = np.arange(len(qb))[:, None]
+            d2_k = d2[row_i, top]
+            v_k = vals_arr[top]
+        else:
+            d2_k = d2
+            v_k = np.broadcast_to(vals_arr[None, :], (len(qb), len(vals_arr)))
+        exact = d2_k <= 1e-24
+        has_exact = np.any(exact, axis=1)
+        weights = 1.0 / np.maximum(d2_k, 1e-24)
+        pred = np.sum(weights * v_k, axis=1) / np.sum(weights, axis=1)
+        if np.any(has_exact):
+            ex_rows = np.where(has_exact)[0]
+            first_match = np.argmax(exact[ex_rows], axis=1)
+            pred[ex_rows] = v_k[ex_rows, first_match]
+        out[batch_ids] = pred
+    return out.reshape(lead_shape)
 
 DERIVED_SPEED = "Velocity magnitude |u|"
 DERIVED_VORTICITY_2D = "Vorticity ω_z"
@@ -123,11 +288,22 @@ class SolutionDataset:
         )
 
         if self.time_index_col is not None and n > 0:
+            from ..components.prepared_data import cluster_1d
             t_col = self.points[:, self.time_index_col]
-            self.times = np.unique(np.round(t_col, decimals=10))
+            tol = max(
+                1e-12,
+                1e-9 * float(np.ptp(t_col)),
+                8.0 * float(np.finfo(np.float64).eps) * max(1.0, float(np.max(np.abs(t_col)))),
+            )
+            clusters = cluster_1d(t_col, tol)
+            n_frames = int(clusters.max()) + 1
             self._frame_indices: list[np.ndarray] = [
-                np.where(np.isclose(t_col, tv, rtol=1e-7, atol=1e-9))[0] for tv in self.times
+                np.where(clusters == k)[0] for k in range(n_frames)
             ]
+            self.times = np.array(
+                [float(np.mean(t_col[idx])) for idx in self._frame_indices],
+                dtype=np.float64,
+            )
         else:
             self.times = np.asarray([], dtype=np.float64)
             self._frame_indices = [np.arange(n, dtype=np.int64)]
@@ -267,7 +443,6 @@ class SolutionDataset:
         pts = self.points[rows][:, self.spatial_indices]
         if len(pts) < 4:
             return np.zeros(len(pts), dtype=np.float64)
-        from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
         xmin, xmax = float(np.min(pts[:, 0])), float(np.max(pts[:, 0]))
         ymin, ymax = float(np.min(pts[:, 1])), float(np.max(pts[:, 1]))
         if xmax <= xmin or ymax <= ymin:
@@ -275,15 +450,13 @@ class SolutionDataset:
         xs = np.linspace(xmin, xmax, 48)
         ys = np.linspace(ymin, ymax, 48)
         gx, gy = np.meshgrid(xs, ys, indexing="ij")
-        iu = LinearNDInterpolator(pts, u)
-        iv = LinearNDInterpolator(pts, v)
-        ug = iu(gx, gy)
-        vg = iv(gx, gy)
+        qgrid = np.stack([gx, gy], axis=-1)
+        ug = _scattered_interp(pts, u, qgrid)
+        vg = _scattered_interp(pts, v, qgrid)
         dv_dx = np.gradient(vg, xs, axis=0)
         du_dy = np.gradient(ug, ys, axis=1)
         vort = dv_dx - du_dy
-        sampler = RegularGridInterpolator((xs, ys), np.nan_to_num(vort, nan=0.0), bounds_error=False, fill_value=0.0)
-        return sampler(pts)
+        return _regular_grid_interp((xs, ys), np.nan_to_num(vort, nan=0.0), pts, fill_value=0.0)
 
     def field_values(
         self,
@@ -382,9 +555,7 @@ class SolutionDataset:
         xs = np.linspace(xmin, xmax, max(16, int(resolution)))
         ys = np.linspace(ymin, ymax, max(16, int(resolution)))
         gx, gy = np.meshgrid(xs, ys, indexing="xy")
-        from scipy.interpolate import LinearNDInterpolator
-        interp = LinearNDInterpolator(pts, vals)
-        grid = interp(gx, gy)
+        grid = _scattered_interp(pts, vals, np.stack([gx, gy], axis=-1))
         obs_mask = self.obstacle_mask_2d(xs, ys)
         if obs_mask is not None:
             grid[obs_mask] = np.nan
@@ -452,9 +623,7 @@ class SolutionDataset:
         xs = np.linspace(x0, x1, max(16, int(resolution)))
         ys = np.linspace(y0, y1, max(16, int(resolution)))
         gx, gy = np.meshgrid(xs, ys, indexing="xy")
-        from scipy.interpolate import LinearNDInterpolator
-        interp = LinearNDInterpolator(p2, v2)
-        grid = interp(gx, gy)
+        grid = _scattered_interp(p2, v2, np.stack([gx, gy], axis=-1))
         obs_mask = self.obstacle_mask_2d(xs, ys, slice_axis=axis, slice_value=target)
         if obs_mask is not None:
             grid[obs_mask] = np.nan
@@ -555,15 +724,11 @@ class SolutionDataset:
             vals = self.field_values(field_name, mode=m, time_index=time_index)
             axes, order = self.frame_grid(time_index)
             if axes is not None and order is not None:
-                from scipy.interpolate import RegularGridInterpolator
                 shape = tuple(len(ax) for ax in axes)
                 grid = vals[order].reshape(shape)
-                rgi = RegularGridInterpolator(axes, grid, bounds_error=False, fill_value=np.nan)
-                return rgi(coords)
+                return _regular_grid_interp(axes, grid, coords, fill_value=np.nan)
             pts = self.spatial_points(time_index)
-            from scipy.interpolate import LinearNDInterpolator
-            interp = LinearNDInterpolator(pts, vals)
-            return interp(coords)
+            return _scattered_interp(pts, vals, coords, fill_value=np.nan)
 
         values = eval_mode(mode)
         ref_values = eval_mode("reference") if (mode == "prediction" and self.has_reference_for(field_name, time_index)) else None
@@ -631,13 +796,25 @@ class SolutionDataset:
         return stats
 
     def with_difference(self, baseline: "SolutionDataset", *, label: str = "Difference") -> "SolutionDataset":
-        """Create a new dataset representing ``self - baseline`` on matching points and fields."""
-        if self.points.shape != baseline.points.shape or not np.allclose(self.points, baseline.points, rtol=1e-6, atol=1e-8):
-            raise ValueError("Datasets must share identical evaluation coordinates to compute a difference.")
-        common = [name for name in self.fields if name in baseline.fields]
-        if not common:
-            raise ValueError("Datasets share no common fields.")
-        diff_fields = {name: self.fields[name] - baseline.fields[name] for name in common}
+        """Create a new dataset representing ``self - baseline`` on strictly matching points, IDs, and fields."""
+        from ..run_comparison import validate_exact_alignment
+        validate_exact_alignment(
+            self.coordinate_names,
+            baseline.coordinate_names,
+            self.points,
+            baseline.points,
+            fields_a=list(self.fields),
+            fields_b=list(baseline.fields),
+            ids_a=self.point_ids,
+            ids_b=baseline.point_ids,
+        )
+        diff_fields = {}
+        for name in self.fields:
+            a_vals = self.fields[name]
+            b_vals = baseline.fields[name]
+            if not np.isfinite(a_vals).all() or not np.isfinite(b_vals).all():
+                raise ValueError(f"Field '{name}' contains non-finite values; difference cannot be computed.")
+            diff_fields[name] = a_vals - b_vals
         return SolutionDataset(
             points=self.points.copy(),
             coordinate_names=self.coordinate_names,
@@ -646,7 +823,7 @@ class SolutionDataset:
             title=label,
             source_description=f"{self.title} − {baseline.title}",
             steps=self.steps,
-            point_ids=self.point_ids,
+            point_ids=list(self.point_ids) if self.point_ids is not None else None,
             obstacle=self.obstacle,
             metadata={"baseline": baseline.title, "compared": self.title},
         )

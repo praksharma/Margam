@@ -48,8 +48,8 @@
   Keep operational progress/errors separate from numerical output views.
 - In-app 2D/3D field visualization, vector overlays, probes, and parametric
   exploration are actively supported in the dedicated Solution Explorer window
-  (using native PySide6/OpenGL with a deterministic software fallback so
-  offscreen tests work cleanly).
+  (using native PySide6 QPainter software rendering so desktop and offscreen
+  tests behave deterministically without extra plotting dependencies).
 - ParaView file export remains supported through its own opt-in block alongside
   the in-app Solution Explorer. Concrete 2D and 3D transient/steady flows and
   continuous parametric PINNs are supported where explicitly configured.
