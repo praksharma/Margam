@@ -432,14 +432,9 @@ def sample_problem(config):
     lower, upper = config.bounds
     if config.interior_data:
         interior = read_points(config.interior_data,len(lower))[0].tolist()
-    elif config.shape=='SphereObstacle3D':
-        raw = sample_box(lower, upper, min(100000, max(config.points, int(config.points * 1.4))), config.sampling, config.seed)
-        sx,sy,sz,sr = config.sphere_x,config.sphere_y,config.sphere_z,config.sphere_radius
-        r2 = sr * sr
-        interior = [row for row in raw if (row[0]-sx)**2+(row[1]-sy)**2+(row[2]-sz)**2 > r2][:config.points]
-        if not interior:raise ValueError('No interior points remained outside the sphere obstacle; increase point budget or shrink the sphere.')
     else:
-        interior = sample_box(lower, upper, config.points, config.sampling, config.seed)
+        from ..components.geometry import obstacle_spec, sample_fluid_box
+        interior = sample_fluid_box(lower, upper, config.points, config.sampling, config.seed, obstacle=obstacle_spec(config))
     dim = len(lower)
     if config.shape == 'Interval':
         boundaries = {}

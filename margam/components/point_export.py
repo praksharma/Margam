@@ -23,7 +23,10 @@ def point_document(grid,time=None):
     piece=ET.SubElement(mesh,'Piece',NumberOfPoints=str(n),NumberOfCells=str(n))
     point_data=ET.SubElement(piece,'PointData',Scalars=fields[0])
     for i,name in enumerate(fields):_array(point_data,name,values[:,i])
-    if fields in (['u','v'],['u','v','p'],['u','v','w']):
+    spatial_dim=points.shape[1]
+    if spatial_dim==3 and fields in (['u','v','w'],['u','v','w','p']):
+        point_data.set('Vectors','velocity');_array(point_data,'velocity',values[:,:3],3)
+    elif (spatial_dim in (2,3) and fields in (['u','v'],['u','v','p'])) or (spatial_dim==2 and fields==['u','v','w']):
         point_data.set('Vectors','velocity');_array(point_data,'velocity',np.column_stack((values[:,:2],np.zeros(n))),3)
     spatial=ET.SubElement(piece,'Points');_array(spatial,'Points',np.column_stack((points,np.zeros((n,3-points.shape[1])))),3)
     cells=ET.SubElement(piece,'Cells')

@@ -1,9 +1,11 @@
 """Dedicated Solution Explorer window for interactive 1D, 2D, 3D, and parametric post-processing."""
 from __future__ import annotations
 
+import atexit
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+import threading
 from typing import Any
 import numpy as np
 from PySide6.QtCore import Qt, QSize, QThread, QTimer, Signal
@@ -40,14 +42,44 @@ from ..visualization.dataset import DISPLAY_MODES, SolutionDataset
 from ..visualization.loaders import from_file, from_output_result, from_run_archive
 
 
+_ACTIVE_LIVE_WORKERS: set["_LiveParamWorker"] = set()
+_ACTIVE_CLOSING_EXPLORERS: set["SolutionExplorerWindow"] = set()
+_QUIT_HOOK_APPS: set[int] = set()
+
+
+def _drain_live_workers():
+    """Ensure all background Explorer inference threads terminate before Qt teardown."""
+    for worker in list(_ACTIVE_LIVE_WORKERS):
+        worker.request_cancel()
+    for worker in list(_ACTIVE_LIVE_WORKERS):
+        if worker.isRunning():
+            worker.wait()
+        _ACTIVE_LIVE_WORKERS.discard(worker)
+    _ACTIVE_CLOSING_EXPLORERS.clear()
+
+
+atexit.register(_drain_live_workers)
+
+
+def _ensure_quit_hook():
+    app = QApplication.instance()
+    if app is not None and id(app) not in _QUIT_HOOK_APPS:
+        _QUIT_HOOK_APPS.add(id(app))
+        app.aboutToQuit.connect(_drain_live_workers)
+
+
 def _evaluate_parametric_dataset(
     base_dataset: SolutionDataset,
     params: dict[str, float],
+    *,
+    cancel_event: threading.Event | None = None,
 ) -> SolutionDataset:
     """Re-evaluate a continuous parametric SolutionDataset at new parameter values."""
     evaluator = base_dataset.live_evaluator
     if evaluator is None:
         raise ValueError("No live model evaluator is attached to this dataset.")
+    if cancel_event is not None and cancel_event.is_set():
+        raise InterruptedError("Live evaluation cancelled.")
     pts = base_dataset.points.copy()
     coord_names = base_dataset.coordinate_names
     for idx, cname in enumerate(coord_names):
@@ -56,9 +88,10 @@ def _evaluate_parametric_dataset(
 
     spatial_idx = list(base_dataset.spatial_indices)
     if base_dataset.is_time_dependent and base_dataset.time_index_col is not None:
-        t_col = base_dataset.time_index_col
         new_fields: dict[str, np.ndarray] = {}
         for tv, f_idx in zip(base_dataset.times, base_dataset._frame_indices):
+            if cancel_event is not None and cancel_event.is_set():
+                raise InterruptedError("Live evaluation cancelled.")
             res = evaluator(pts[f_idx][:, spatial_idx], time_value=float(tv), params=params)
             for fname, arr in res.items():
                 if fname not in new_fields:
@@ -67,6 +100,9 @@ def _evaluate_parametric_dataset(
     else:
         res = evaluator(pts[:, spatial_idx], time_value=None, params=params)
         new_fields = {fname: np.asarray(arr, dtype=np.float64).reshape(-1) for fname, arr in res.items()}
+
+    if cancel_event is not None and cancel_event.is_set():
+        raise InterruptedError("Live evaluation cancelled.")
 
     param_summary = ", ".join(f"{k}={v:g}" for k, v in params.items())
     return SolutionDataset(
@@ -91,18 +127,31 @@ class _LiveParamWorker(QThread):
     completed = Signal(int, dict, object)
     failed = Signal(int, str)
 
-    def __init__(self, seq_id: int, base_dataset: SolutionDataset, params: dict[str, float], parent=None):
-        super().__init__(parent)
+    def __init__(self, seq_id: int, base_dataset: SolutionDataset, params: dict[str, float]):
+        super().__init__(None)
         self.seq_id = seq_id
         self.base_dataset = base_dataset
         self.params = dict(params)
+        self.cancel_event = threading.Event()
+
+    def request_cancel(self):
+        self.cancel_event.set()
+        self.requestInterruption()
 
     def run(self):
         try:
-            updated = _evaluate_parametric_dataset(self.base_dataset, self.params)
-            self.completed.emit(self.seq_id, self.params, updated)
+            updated = _evaluate_parametric_dataset(
+                self.base_dataset,
+                self.params,
+                cancel_event=self.cancel_event,
+            )
+            if not self.cancel_event.is_set():
+                self.completed.emit(self.seq_id, self.params, updated)
+        except InterruptedError:
+            return
         except Exception as exc:
-            self.failed.emit(self.seq_id, str(exc))
+            if not self.cancel_event.is_set():
+                self.failed.emit(self.seq_id, str(exc))
 
 
 class SolutionExplorerWindow(QMainWindow):
@@ -125,6 +174,8 @@ class SolutionExplorerWindow(QMainWindow):
         self._live_param_worker: _LiveParamWorker | None = None
         self._live_param_seq = 0
         self._live_param_pending: dict[str, float] | None = None
+        self._close_pending = False
+        _ensure_quit_hook()
 
         self.setWindowTitle("Margam · Solution Explorer")
         self.resize(1360, 880)
@@ -856,20 +907,25 @@ class SolutionExplorerWindow(QMainWindow):
         self._live_param_seq += 1
         seq = self._live_param_seq
         if self._live_param_worker is not None and self._live_param_worker.isRunning():
+            self._live_param_worker.request_cancel()
             self._live_param_pending = active
             return None
         if self._live_param_status is not None:
             self._live_param_status.setText("Evaluating… " + ", ".join(f"{k}={v:g}" for k, v in active.items()))
-        worker = _LiveParamWorker(seq, base, active, self)
+        worker = _LiveParamWorker(seq, base, active)
         worker.completed.connect(self._on_live_param_completed)
         worker.failed.connect(self._on_live_param_failed)
         worker.finished.connect(self._on_live_param_finished)
         self._live_param_worker = worker
+        _ACTIVE_LIVE_WORKERS.add(worker)
         worker.start()
         return None
 
+    def is_evaluating(self) -> bool:
+        return self._live_param_worker is not None and self._live_param_worker.isRunning()
+
     def _apply_live_param_result(self, seq: int, params: dict[str, float], updated: SolutionDataset):
-        if seq != self._live_param_seq:
+        if self._close_pending or seq != self._live_param_seq:
             return
         if self._live_param_status is not None:
             self._live_param_status.setText("Live: " + ", ".join(f"{k}={v:g}" for k, v in params.items()))
@@ -879,7 +935,7 @@ class SolutionExplorerWindow(QMainWindow):
         self._apply_live_param_result(seq, params, updated)
 
     def _on_live_param_failed(self, seq: int, message: str):
-        if seq != self._live_param_seq:
+        if self._close_pending or seq != self._live_param_seq:
             return
         if self._live_param_status is not None:
             self._live_param_status.setText(f"Evaluation failed: {message}")
@@ -888,7 +944,14 @@ class SolutionExplorerWindow(QMainWindow):
         worker = self._live_param_worker
         self._live_param_worker = None
         if worker is not None:
+            worker.wait()
+            _ACTIVE_LIVE_WORKERS.discard(worker)
             worker.deleteLater()
+        if self._close_pending:
+            _ACTIVE_CLOSING_EXPLORERS.discard(self)
+            self._live_param_pending = None
+            self.close()
+            return
         if self._live_param_pending is not None:
             pending = self._live_param_pending
             self._live_param_pending = None
@@ -1611,8 +1674,20 @@ class SolutionExplorerWindow(QMainWindow):
         self._live_param_timer.stop()
         self._live_param_pending = None
         self._live_param_seq += 1
-        if self._live_param_worker is not None and self._live_param_worker.isRunning():
-            self._live_param_worker.wait(5000)
+        worker = self._live_param_worker
+        if worker is not None and worker.isRunning():
+            self._close_pending = True
+            worker.request_cancel()
+            if not worker.wait(100):
+                _ACTIVE_CLOSING_EXPLORERS.add(self)
+                self.hide()
+                event.ignore()
+                return
+            _ACTIVE_LIVE_WORKERS.discard(worker)
+            self._live_param_worker = None
+            worker.deleteLater()
+        self._close_pending = False
+        _ACTIVE_CLOSING_EXPLORERS.discard(self)
         super().closeEvent(event)
 
 

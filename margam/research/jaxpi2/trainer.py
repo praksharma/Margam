@@ -504,6 +504,16 @@ class Jaxpi2SphereTrainer(Trainer):
 
     def training_state(self):
         self._healthy()
+        for label, module in (
+            ("network", self.network),
+            ("prev_network", self._prev_network),
+            ("init_network", self._init_network),
+        ):
+            if module is None:
+                continue
+            for key, value in module.state_dict().items():
+                if not torch.isfinite(value).all().item():
+                    raise FloatingPointError(f"Non-finite {label} tensor '{key}'; refusing to save corrupted checkpoint.")
         return deepcopy(
             dict(
                 identity=self.identity(),
@@ -528,36 +538,163 @@ class Jaxpi2SphereTrainer(Trainer):
             )
         )
 
+    @staticmethod
+    def _validate_module_state(module, payload, label):
+        expected = module.state_dict()
+        if not isinstance(payload, dict) or set(payload) != set(expected):
+            raise ValueError(f"{label} state fields differ.")
+        for key, value in payload.items():
+            target = expected[key]
+            if (
+                not isinstance(value, torch.Tensor)
+                or value.shape != target.shape
+                or value.dtype != target.dtype
+                or not torch.isfinite(value).all().item()
+            ):
+                raise ValueError(f"{label} tensor '{key}' shape/dtype or finite-value mismatch.")
+
     def load_training_state(self, state):
+        from ..checkpoint import validate_optimizer
+
+        expected_keys = {
+            "identity",
+            "network",
+            "prev_network",
+            "init_network",
+            "optimizer",
+            "iter",
+            "weights",
+            "pts_weights",
+            "balance_history",
+            "pts_history",
+            "loss_history",
+            "balance_count",
+            "pts_count",
+            "log_position",
+            "minimum_causal_weight",
+            "training_history",
+            "sampler_rng",
+            "torch_rng",
+            "cuda_rng",
+        }
+        if not isinstance(state, dict) or set(state) != expected_keys:
+            raise ValueError("Invalid JAXPI2 checkpoint structure.")
         if json.dumps(state["identity"], sort_keys=True) != json.dumps(self.identity(), sort_keys=True):
             raise ValueError("Checkpoint code, initial data, configuration or device differs.")
-        if type(state["iter"]) is not int or state["iter"] < 0:
+        steps = state["iter"]
+        if type(steps) is not int or steps < 0:
             raise ValueError("Invalid checkpoint update index.")
+        if type(state["balance_count"]) is not int or state["balance_count"] < 0:
+            raise ValueError("Invalid checkpoint balance_count.")
+        if type(state["pts_count"]) is not int or state["pts_count"] < 0:
+            raise ValueError("Invalid checkpoint pts_count.")
+        min_causal = state["minimum_causal_weight"]
+        if min_causal is not None and (
+            type(min_causal) not in (int, float) or not math.isfinite(min_causal) or min_causal < 0.0
+        ):
+            raise ValueError("Invalid checkpoint minimum_causal_weight.")
+        for label, table in (("weights", state["weights"]), ("pts_weights", state["pts_weights"])):
+            if not isinstance(table, dict) or any(
+                not isinstance(k, str) or type(v) not in (int, float) or not math.isfinite(v) or v < 0.0
+                for k, v in table.items()
+            ):
+                raise ValueError(f"Invalid checkpoint {label}.")
+        loss_history = state["loss_history"]
+        training_history = state["training_history"]
+        if (
+            not isinstance(loss_history, list)
+            or not isinstance(training_history, list)
+            or len(loss_history) != len(training_history)
+            or any(type(v) not in (int, float) or not math.isfinite(v) for v in training_history)
+            or any(
+                not isinstance(rec, dict)
+                or any(not isinstance(k, str) or type(v) not in (int, float) or not math.isfinite(v) for k, v in rec.items())
+                for rec in loss_history
+            )
+        ):
+            raise ValueError("Invalid checkpoint loss or training history.")
+        for label in ("balance_history", "pts_history"):
+            if not isinstance(state[label], list):
+                raise ValueError(f"Invalid checkpoint {label}.")
+
+        # Validate all model state dicts and optimizer tensors before mutating live state.
+        self._validate_module_state(self.network, state["network"], "Network")
+        if (state["prev_network"] is None) != (self._prev_network is None):
+            raise ValueError("Checkpoint prev_network presence differs from trainer.")
+        if self._prev_network is not None:
+            self._validate_module_state(self._prev_network, state["prev_network"], "prev_network")
+        if (state["init_network"] is None) != (self._init_network is None):
+            raise ValueError("Checkpoint init_network presence differs from trainer.")
+        if self._init_network is not None:
+            self._validate_module_state(self._init_network, state["init_network"], "init_network")
+
+        validate_optimizer(self, state["optimizer"], steps)
+
+        expected_sampler_rng = self.sampler.generator.get_state()
+        sampler_rng = state["sampler_rng"]
+        if (
+            not isinstance(sampler_rng, torch.Tensor)
+            or sampler_rng.dtype != torch.uint8
+            or sampler_rng.shape != expected_sampler_rng.shape
+        ):
+            raise ValueError("Invalid checkpoint sampler RNG state.")
+        expected_torch_rng = torch.get_rng_state()
+        torch_rng = state["torch_rng"]
+        if (
+            not isinstance(torch_rng, torch.Tensor)
+            or torch_rng.dtype != torch.uint8
+            or torch_rng.shape != expected_torch_rng.shape
+        ):
+            raise ValueError("Invalid checkpoint Torch CPU RNG state.")
+        if self.device.type == "cuda":
+            expected_cuda_rng = torch.cuda.get_rng_state_all()
+            cuda_rng = state["cuda_rng"]
+            if (
+                not isinstance(cuda_rng, list)
+                or len(cuda_rng) != len(expected_cuda_rng)
+                or any(
+                    not isinstance(t, torch.Tensor) or t.dtype != torch.uint8 or t.shape != exp.shape
+                    for t, exp in zip(cuda_rng, expected_cuda_rng)
+                )
+            ):
+                raise ValueError("CUDA checkpoint has missing or invalid GPU RNG state.")
+        elif state["cuda_rng"] != []:
+            raise ValueError("CPU checkpoint cannot contain CUDA RNG state.")
+
+        # Snapshot prior live state so any load error rolls back cleanly.
+        old_network = deepcopy(self.network.state_dict())
+        old_prev = deepcopy(self._prev_network.state_dict()) if self._prev_network is not None else None
+        old_init = deepcopy(self._init_network.state_dict()) if self._init_network is not None else None
+        old_opt = deepcopy(self.optimizer.state_dict())
         try:
             self.network.load_state_dict(state["network"], strict=True)
-            if state.get("prev_network") is not None and self._prev_network is not None:
+            if self._prev_network is not None:
                 self._prev_network.load_state_dict(state["prev_network"], strict=True)
-            if state.get("init_network") is not None and self._init_network is not None:
+            if self._init_network is not None:
                 self._init_network.load_state_dict(state["init_network"], strict=True)
-            self.optimizer.load_state_dict(state["optimizer"])
-            self.iter = state["iter"]
+            self.optimizer.load_state_dict(deepcopy(state["optimizer"]))
+            self.iter = steps
             self.weights = deepcopy(state["weights"])
             self.pts_weights = deepcopy(state["pts_weights"])
             self.balance_history = deque(deepcopy(state["balance_history"]), maxlen=self.history_limit)
             self.pts_history = deque(deepcopy(state["pts_history"]), maxlen=self.history_limit)
-            self.loss_history = deque(deepcopy(state["loss_history"]), maxlen=self.history_limit)
-            self.training_history = deque(deepcopy(state["training_history"]), maxlen=self.history_limit)
+            self.loss_history = deque(deepcopy(loss_history), maxlen=self.history_limit)
+            self.training_history = deque(deepcopy(training_history), maxlen=self.history_limit)
             self.balance_count = state["balance_count"]
             self.pts_count = state["pts_count"]
             self.log_position = deepcopy(state["log_position"])
-            self.minimum_causal_weight = state["minimum_causal_weight"]
-            self.sampler.generator.set_state(state["sampler_rng"])
-            torch.set_rng_state(state["torch_rng"])
+            self.minimum_causal_weight = min_causal
+            self.sampler.generator.set_state(sampler_rng.detach().cpu().clone())
+            torch.set_rng_state(torch_rng.detach().cpu().clone())
             if self.device.type == "cuda":
-                if not state.get("cuda_rng"):
-                    raise ValueError("CUDA checkpoint has no GPU RNG state.")
-                torch.cuda.set_rng_state_all(state["cuda_rng"])
+                torch.cuda.set_rng_state_all([t.detach().cpu().clone() for t in state["cuda_rng"]])
         except BaseException as error:
+            self.network.load_state_dict(old_network, strict=True)
+            if self._prev_network is not None and old_prev is not None:
+                self._prev_network.load_state_dict(old_prev, strict=True)
+            if self._init_network is not None and old_init is not None:
+                self._init_network.load_state_dict(old_init, strict=True)
+            self.optimizer.load_state_dict(old_opt)
             self._failed_update = f"Checkpoint restore failed: {error}"
             raise
         self._failed_update = None

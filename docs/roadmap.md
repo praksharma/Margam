@@ -3,7 +3,10 @@
 Discussion roadmap · 26 October 2026
 
 This file preserves the original discussions and staged intentions. Historical
-statements below such as “not implemented” describe their discussion stage.
+statements below such as “not implemented” or earlier 3D/visualization pauses
+describe their original discussion stage; dedicated in-app 2D/3D/parametric
+visualization (see [Solution Explorer](use/solution-explorer.md)), native 3D
+domains, and continuous parametric PINNs are now implemented.
 For current support and limits, use [README](../README.md),
 [components](components.md), [UI implementation](ui-prototype.md), and
 [remaining TODOs](todo.md). The 27 October implementation includes owned graph

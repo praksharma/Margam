@@ -238,9 +238,10 @@ def load_run(path):
             else:model=PINN(problem,network,weights=config.loss_weights,loss_formulation=config.loss_formulation).compile(lr=config.lr,device='cpu')
             if config.adaptive_sampling:
                 from ..components.adaptive_sampling import AdaptiveSampler
+                from ..components.geometry import obstacle_spec
                 if config.pde_points=='both':
                     model.problem.boundary_anchor_count=anchor_count
-                model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed)
+                model.sampling_controller=AdaptiveSampler(model,config.adaptive_sampling,config.bounds,config.seed,obstacle=obstacle_spec(config))
             if 'data_fingerprint' not in data['checkpoint']:
                 require(data['version']==1 and not config.interior_data and not config.boundary_data,'Legacy archives cannot resume imported data without a fingerprint.')
                 from ..templates.poisson import build_pinn

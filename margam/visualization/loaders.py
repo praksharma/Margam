@@ -12,25 +12,8 @@ from .dataset import SolutionDataset
 
 
 def _obstacle_from_config(config) -> dict[str, Any] | None:
-    if config is None:
-        return None
-    if getattr(config, "shape", "") == "SphereObstacle3D":
-        return {
-            "kind": "sphere",
-            "center": (
-                float(getattr(config, "sphere_x", getattr(config, "cylinder_x", 0.5))),
-                float(getattr(config, "sphere_y", getattr(config, "cylinder_y", 0.5))),
-                float(getattr(config, "sphere_z", 0.5)),
-            ),
-            "radius": float(getattr(config, "sphere_radius", getattr(config, "cylinder_radius", 0.2))),
-        }
-    if getattr(config, "has_obstacle", False):
-        return {
-            "kind": "cylinder",
-            "center": (float(getattr(config, "cylinder_x", 0.2)), float(getattr(config, "cylinder_y", 0.2))),
-            "radius": float(getattr(config, "cylinder_radius", 0.05)),
-        }
-    return None
+    from ..components.geometry import obstacle_spec
+    return obstacle_spec(config)
 
 
 def _build_live_evaluator(model, config):
@@ -259,9 +242,31 @@ def _load_npz(path: Path) -> SolutionDataset:
                 used.add(cname)
         if not cols:
             raise ValueError("NPZ file must contain a 'points' array or coordinate arrays ('x', 'y', 'z', 't').")
-        # If coordinate arrays are 1D axes of a regular meshgrid and field arrays match their product shape
-        lengths = [c.size for c in cols]
-        if all(c.ndim == 1 for c in cols) and len(set(lengths)) > 1:
+        # If coordinate arrays are 1D axes of a regular meshgrid, expand when axes differ in length
+        # OR when candidate field arrays match the Cartesian product shape (including square/cubic grids).
+        lengths = tuple(int(c.size) for c in cols)
+        expand_grid = False
+        if all(c.ndim == 1 for c in cols) and len(cols) > 1:
+            if len(set(lengths)) > 1:
+                expand_grid = True
+            else:
+                import math
+                prod_len = math.prod(lengths)
+                single_len = lengths[0]
+                packed_keys = {"values", "pred", "prediction", "fields", "reference", "ref", "truth"}
+                for k, arr in arrays.items():
+                    if k in used or arr.dtype.kind not in ("f", "i", "u"):
+                        continue
+                    if arr.shape == lengths and (len(cols) >= 3 or k not in packed_keys):
+                        expand_grid = True
+                        break
+                    if arr.ndim == len(cols) + 1 and arr.shape[: len(cols)] == lengths:
+                        expand_grid = True
+                        break
+                    if prod_len != single_len and arr.size == prod_len:
+                        expand_grid = True
+                        break
+        if expand_grid:
             mesh = np.meshgrid(*cols, indexing="ij")
             pts = np.column_stack([m.reshape(-1) for m in mesh])
         else:
