@@ -394,6 +394,245 @@ assert sl.shape == (17, 17) and np.any(np.isfinite(sl))
             self.assertEqual(ds_p.points.shape, (3, 2))
             np.testing.assert_allclose(ds_p.fields['u'], [10.0, 20.0, 30.0])
 
+            # Paired 3 points with packed 3x3 velocity/pressure matrix must NOT become a 3x3 scalar grid
+            packed = root / 'packed_3x3.npz'
+            vel_p = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+            np.savez(packed, x=x3, y=y3, values=vel_p)
+            ds_pk = from_file(packed)
+            self.assertEqual(ds_pk.points.shape, (3, 2))
+            self.assertEqual(set(ds_pk.fields), {'u', 'v', 'p'})
+            np.testing.assert_allclose(ds_pk.fields['u'], [1.0, 4.0, 7.0])
+            np.testing.assert_allclose(ds_pk.fields['p'], [3.0, 6.0, 9.0])
+
+            # Square 3x3 grid with packed (3, 3, 3) vector/pressure fields
+            packed_grid = root / 'packed_grid_3x3x3.npz'
+            grid_vals = np.arange(27, dtype=np.float64).reshape(3, 3, 3)
+            np.savez(packed_grid, x=x3, y=y3, values=grid_vals)
+            ds_pg = from_file(packed_grid)
+            self.assertEqual(ds_pg.points.shape, (9, 2))
+            self.assertEqual(set(ds_pg.fields), {'u', 'v', 'p'})
+
+    def test_sphere_grid_and_structured_sampling_cover_full_domain(self):
+        from margam.templates.poisson import sample_problem
+
+        for method in ('grid', 'hammersley', 'stratified', 'random'):
+            with self.subTest(sampling=method):
+                cfg = PoissonConfig(
+                    shape='SphereObstacle3D',
+                    sphere_x=0.5,
+                    sphere_y=0.5,
+                    sphere_z=0.5,
+                    sphere_radius=0.2,
+                    points=10000,
+                    boundary_points=8,
+                    sampling=method,
+                )
+                interior, _ = sample_problem(cfg)
+                pts = np.asarray(interior, dtype=np.float64)
+                self.assertGreater(len(pts), 0)
+                self.assertLessEqual(len(pts), 10000)
+                dist = np.sqrt((pts[:, 0] - 0.5) ** 2 + (pts[:, 1] - 0.5) ** 2 + (pts[:, 2] - 0.5) ** 2)
+                self.assertTrue(np.all(dist > 0.2))
+                for axis in range(3):
+                    self.assertLess(float(np.min(pts[:, axis])), 0.05)
+                    self.assertGreater(float(np.max(pts[:, axis])), 0.95)
+
+    def test_standalone_explorer_event_loop_exits_after_deferred_close(self):
+        code = r'''
+import time
+import numpy as np
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from margam.visualization import from_arrays
+from margam.ui.solution_explorer import SolutionExplorerWindow
+
+app = QApplication([])
+pts = np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+
+def slow_evaluator(spatial_pts, *, time_value=None, params=None):
+    time.sleep(1.2)
+    return {"u": np.ones(len(spatial_pts), dtype=np.float64)}
+
+ds = from_arrays(
+    pts,
+    {"u": np.ones(4)},
+    coordinate_names=("x", "y", "mu"),
+    live_evaluator=slow_evaluator,
+    param_specs=[{"name": "mu", "min": 0.5, "max": 2.0, "default": 1.0}],
+)
+win = SolutionExplorerWindow(dataset=ds)
+win.show()
+win.evaluate_live_params({"mu": 1.5}, sync=False)
+QTimer.singleShot(150, win.close)
+
+# Safety guard: fail explicitly if app.exec() hangs instead of exiting cleanly.
+timed_out = False
+def on_timeout():
+    global timed_out
+    timed_out = True
+    app.quit()
+
+QTimer.singleShot(8000, on_timeout)
+app.exec()
+assert not timed_out, "Standalone SolutionExplorer event loop hung after deferred close"
+assert not win.is_evaluating()
+app.clipboard().clear()
+'''
+        result = subprocess.run(
+            [sys.executable, '-c', code],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            env=dict(
+                os.environ,
+                QT_QPA_PLATFORM='offscreen',
+                CUDA_VISIBLE_DEVICES='',
+                PYTHONDONTWRITEBYTECODE='1',
+            ),
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + '\n' + result.stderr)
+        self.assertNotIn('Destroyed while thread', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
+    def test_jaxpi2_checkpoint_rejects_empty_weights_and_rolls_back_all_state_on_rng_failure(self):
+        torch.set_num_threads(1)
+        from unittest.mock import patch
+        from margam.research.jaxpi2 import (
+            ArchConfig,
+            Domain,
+            Jaxpi2SphereTrainer,
+            Jaxpi2TrainingConfig,
+            OptimConfig,
+            SpatialPools,
+            SphereField,
+            SphereSampler,
+            create_arch,
+        )
+
+        domain = Domain()
+        pools = SpatialPools.from_domain(domain, volume_count=32, boundary_count=16, seed=42)
+        q = torch.tensor([[0.0, 1.0, 0.7, 0.6], [0.0, 2.0, -0.7, 0.8], [0.0, 3.0, 0.9, -0.7]])
+        values = torch.tensor([[1.0, 0.1, 0.2, -0.1], [0.9, -0.2, 0.1, 0.2], [0.8, 0.2, -0.1, -0.2]])
+        sampler = SphereSampler(
+            domain, q, values, residual_count=8, boundary_count=2, initial_count=3, spatial_pools=pools
+        )
+        net = SphereField(
+            create_arch(ArchConfig(arch_name='Mlp', input_dim=4, out_dim=4, num_layers=2, hidden_dim=8))
+        )
+        cfg = Jaxpi2TrainingConfig(
+            reynolds=100.0,
+            causal_enabled=True,
+            chunks=2,
+            optim=OptimConfig(optimizer='adam', learning_rate=1e-3, warmup_steps=0, schedule_free=False),
+        )
+        trainer = Jaxpi2SphereTrainer(net, sampler, cfg).compile(device='cpu')
+        trainer.train(2, display_every=0)
+        state_2 = trainer.training_state()
+
+        # Empty weights or pts_weights dicts must be rejected.
+        empty_w = deepcopy(state_2)
+        empty_w['weights'] = {}
+        with self.assertRaisesRegex(ValueError, 'weights'):
+            trainer.load_training_state(empty_w)
+
+        empty_pts = deepcopy(state_2)
+        empty_pts['pts_weights'] = {}
+        with self.assertRaisesRegex(ValueError, 'pts_weights'):
+            trainer.load_training_state(empty_pts)
+
+        # Train one more step so live state differs from state_2, then trigger an RNG restore failure.
+        trainer.train(1, display_every=0)
+        self.assertEqual(trainer.iter, 3)
+        before_iter = trainer.iter
+        before_weights = deepcopy(trainer.weights)
+        before_loss_len = len(trainer.loss_history)
+        before_sampler_rng = trainer.sampler.generator.get_state().clone()
+        before_net = deepcopy(trainer.network.state_dict())
+
+        with patch('torch.set_rng_state', side_effect=RuntimeError('malformed RNG bytes')):
+            with self.assertRaisesRegex(RuntimeError, 'malformed RNG bytes'):
+                trainer.load_training_state(state_2)
+
+        # Rollback must leave iter, weights, histories, network, AND sampler RNG untouched.
+        self.assertEqual(trainer.iter, before_iter)
+        self.assertEqual(trainer.weights, before_weights)
+        self.assertEqual(len(trainer.loss_history), before_loss_len)
+        self.assertTrue(torch.equal(trainer.sampler.generator.get_state(), before_sampler_rng))
+        for k, v in before_net.items():
+            self.assertTrue(torch.equal(trainer.network.state_dict()[k], v))
+
+    def test_physical_time_frames_separate_multiscale_timestamps(self):
+        pts = np.array([
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.05],
+            [1.0, 0.0, 0.05],
+            [0.0, 0.0, 100_000_000.0],
+            [1.0, 0.0, 100_000_000.0],
+        ])
+        vals = np.array([1.0, 1.0, 2.0, 2.0, 3.0, 3.0])
+        ds = from_arrays(pts, {'u': vals}, coordinate_names=('x', 'y', 't'))
+        self.assertEqual(ds.num_frames, 3)
+        np.testing.assert_allclose(ds.times, [0.0, 0.05, 100_000_000.0], rtol=0, atol=1e-12)
+        np.testing.assert_allclose(ds.field_values('u', time_index=0), [1.0, 1.0])
+        np.testing.assert_allclose(ds.field_values('u', time_index=1), [2.0, 2.0])
+        np.testing.assert_allclose(ds.field_values('u', time_index=2), [3.0, 3.0])
+
+        # Float64 roundoff (0.1 + 0.2 vs 0.3) still merges cleanly into one frame.
+        pts_fp = np.array([[0.0, 0.0, 0.3], [1.0, 0.0, 0.1 + 0.2]])
+        ds_fp = from_arrays(pts_fp, {'u': np.array([5.0, 6.0])}, coordinate_names=('x', 'y', 't'))
+        self.assertEqual(ds_fp.num_frames, 1)
+
+    def test_scipy_free_3d_interpolation_respects_3d_convex_hull(self):
+        code = r'''
+import sys
+import numpy as np
+
+class _BlockSciPy:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == 'scipy' or fullname.startswith('scipy.'):
+            raise ImportError('Simulated missing optional scipy dependency')
+        return None
+
+sys.meta_path.insert(0, _BlockSciPy())
+for name in list(sys.modules):
+    if name == 'scipy' or name.startswith('scipy.'):
+        sys.modules.pop(name, None)
+
+from margam.visualization import from_arrays
+
+# 3D simplex tetrahedron in [0, 1]^3: x + y + z <= 1
+pts = np.array([
+    [0.0, 0.0, 0.0],
+    [1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0],
+    [0.0, 0.0, 1.0],
+    [0.25, 0.25, 0.25],
+    [0.5, 0.2, 0.1],
+    [0.1, 0.5, 0.2],
+    [0.2, 0.1, 0.5],
+])
+vals = pts[:, 0] + 2.0 * pts[:, 1] + 3.0 * pts[:, 2]
+ds = from_arrays(pts, {'u': vals}, coordinate_names=('x', 'y', 'z'))
+
+# Line from (0.1, 0.1, 0.1) [inside tetrahedron] to (0.9, 0.9, 0.9) [inside bbox, OUTSIDE hull]
+cut = ds.sample_line('u', (0.1, 0.1, 0.1), (0.9, 0.9, 0.9), n_samples=9)
+assert np.isfinite(cut['values'][0]), f'Expected finite value inside 3D convex hull, got {cut["values"][0]}'
+assert np.isnan(cut['values'][-1]), f'Expected NaN outside 3D convex hull, got {cut["values"][-1]}'
+assert np.isnan(cut['values'][-2]), f'Expected NaN outside 3D convex hull, got {cut["values"][-2]}'
+'''
+        result = subprocess.run(
+            [sys.executable, '-c', code],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + '\n' + result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

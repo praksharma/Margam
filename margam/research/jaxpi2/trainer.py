@@ -593,10 +593,17 @@ class Jaxpi2SphereTrainer(Trainer):
             type(min_causal) not in (int, float) or not math.isfinite(min_causal) or min_causal < 0.0
         ):
             raise ValueError("Invalid checkpoint minimum_causal_weight.")
-        for label, table in (("weights", state["weights"]), ("pts_weights", state["pts_weights"])):
-            if not isinstance(table, dict) or any(
-                not isinstance(k, str) or type(v) not in (int, float) or not math.isfinite(v) or v < 0.0
-                for k, v in table.items()
+        for label, table, expected_table in (
+            ("weights", state["weights"], self.weights),
+            ("pts_weights", state["pts_weights"], self.pts_weights),
+        ):
+            if (
+                not isinstance(table, dict)
+                or set(table) != set(expected_table)
+                or any(
+                    not isinstance(k, str) or type(v) not in (int, float) or not math.isfinite(v) or v < 0.0
+                    for k, v in table.items()
+                )
             ):
                 raise ValueError(f"Invalid checkpoint {label}.")
         loss_history = state["loss_history"]
@@ -613,8 +620,20 @@ class Jaxpi2SphereTrainer(Trainer):
             )
         ):
             raise ValueError("Invalid checkpoint loss or training history.")
+
+        def _all_finite_nested(obj):
+            if isinstance(obj, dict):
+                return all(isinstance(k, str) and _all_finite_nested(v) for k, v in obj.items())
+            if isinstance(obj, (list, tuple)):
+                return all(_all_finite_nested(v) for v in obj)
+            if type(obj) in (int, float):
+                return math.isfinite(obj)
+            return obj is None or isinstance(obj, str)
+
         for label in ("balance_history", "pts_history"):
-            if not isinstance(state[label], list):
+            if not isinstance(state[label], list) or any(
+                not isinstance(rec, dict) or not _all_finite_nested(rec) for rec in state[label]
+            ):
                 raise ValueError(f"Invalid checkpoint {label}.")
 
         # Validate all model state dicts and optimizer tensors before mutating live state.
@@ -661,11 +680,20 @@ class Jaxpi2SphereTrainer(Trainer):
         elif state["cuda_rng"] != []:
             raise ValueError("CPU checkpoint cannot contain CUDA RNG state.")
 
-        # Snapshot prior live state so any load error rolls back cleanly.
+        # Snapshot all mutable state (tensors, optimizer, and RNGs) before applying any update.
         old_network = deepcopy(self.network.state_dict())
         old_prev = deepcopy(self._prev_network.state_dict()) if self._prev_network is not None else None
         old_init = deepcopy(self._init_network.state_dict()) if self._init_network is not None else None
         old_opt = deepcopy(self.optimizer.state_dict())
+        old_sampler_rng = expected_sampler_rng.detach().cpu().clone()
+        old_torch_rng = expected_torch_rng.detach().cpu().clone()
+        old_cuda_rng = (
+            [t.detach().cpu().clone() for t in torch.cuda.get_rng_state_all()]
+            if self.device.type == "cuda"
+            else []
+        )
+        # Perform all fallible state_dict and RNG restorations first; commit scalar/history
+        # attributes only after every restoration succeeds so failure leaves live state untouched.
         try:
             self.network.load_state_dict(state["network"], strict=True)
             if self._prev_network is not None:
@@ -673,30 +701,34 @@ class Jaxpi2SphereTrainer(Trainer):
             if self._init_network is not None:
                 self._init_network.load_state_dict(state["init_network"], strict=True)
             self.optimizer.load_state_dict(deepcopy(state["optimizer"]))
-            self.iter = steps
-            self.weights = deepcopy(state["weights"])
-            self.pts_weights = deepcopy(state["pts_weights"])
-            self.balance_history = deque(deepcopy(state["balance_history"]), maxlen=self.history_limit)
-            self.pts_history = deque(deepcopy(state["pts_history"]), maxlen=self.history_limit)
-            self.loss_history = deque(deepcopy(loss_history), maxlen=self.history_limit)
-            self.training_history = deque(deepcopy(training_history), maxlen=self.history_limit)
-            self.balance_count = state["balance_count"]
-            self.pts_count = state["pts_count"]
-            self.log_position = deepcopy(state["log_position"])
-            self.minimum_causal_weight = min_causal
             self.sampler.generator.set_state(sampler_rng.detach().cpu().clone())
             torch.set_rng_state(torch_rng.detach().cpu().clone())
             if self.device.type == "cuda":
                 torch.cuda.set_rng_state_all([t.detach().cpu().clone() for t in state["cuda_rng"]])
-        except BaseException as error:
+        except BaseException:
             self.network.load_state_dict(old_network, strict=True)
             if self._prev_network is not None and old_prev is not None:
                 self._prev_network.load_state_dict(old_prev, strict=True)
             if self._init_network is not None and old_init is not None:
                 self._init_network.load_state_dict(old_init, strict=True)
             self.optimizer.load_state_dict(old_opt)
-            self._failed_update = f"Checkpoint restore failed: {error}"
+            self.sampler.generator.set_state(old_sampler_rng)
+            torch.set_rng_state(old_torch_rng)
+            if self.device.type == "cuda":
+                torch.cuda.set_rng_state_all(old_cuda_rng)
             raise
+
+        self.iter = steps
+        self.weights = deepcopy(state["weights"])
+        self.pts_weights = deepcopy(state["pts_weights"])
+        self.balance_history = deque(deepcopy(state["balance_history"]), maxlen=self.history_limit)
+        self.pts_history = deque(deepcopy(state["pts_history"]), maxlen=self.history_limit)
+        self.loss_history = deque(deepcopy(loss_history), maxlen=self.history_limit)
+        self.training_history = deque(deepcopy(training_history), maxlen=self.history_limit)
+        self.balance_count = state["balance_count"]
+        self.pts_count = state["pts_count"]
+        self.log_position = deepcopy(state["log_position"])
+        self.minimum_causal_weight = min_causal
         self._failed_update = None
         return self
 

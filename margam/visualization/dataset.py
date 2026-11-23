@@ -103,6 +103,171 @@ def _points_in_convex_hull_2d(hull: np.ndarray, queries: np.ndarray) -> np.ndarr
     return np.all(c >= -tol, axis=1)
 
 
+def _convex_hull_3d_planes(pts: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+    """Pure-NumPy 3D Quickhull returning outward unit face planes ``(normals, offsets)``.
+
+    Returns ``None`` for degenerate (<4, collinear, or coplanar) 3D point clouds.
+    """
+    p = np.unique(np.asarray(pts, dtype=np.float64), axis=0)
+    n = len(p)
+    if n < 4:
+        return None
+    span = np.max(p, axis=0) - np.min(p, axis=0)
+    scale = float(np.max(span))
+    if scale <= 1e-12:
+        return None
+    tol = 1e-9 * scale
+
+    # Build initial non-degenerate tetrahedron (i0, i1, i2, i3).
+    axis = int(np.argmax(span))
+    i0 = int(np.argmin(p[:, axis]))
+    i1 = int(np.argmax(p[:, axis]))
+    if i0 == i1:
+        return None
+    edge01 = p[i1] - p[i0]
+    edge01_norm = float(np.linalg.norm(edge01))
+    if edge01_norm <= tol:
+        return None
+    cross_line = np.cross(p - p[i0], edge01)
+    line_dist = np.linalg.norm(cross_line, axis=1) / edge01_norm
+    i2 = int(np.argmax(line_dist))
+    if float(line_dist[i2]) <= tol:
+        return None
+
+    base_normal = np.cross(p[i1] - p[i0], p[i2] - p[i0])
+    base_norm = float(np.linalg.norm(base_normal))
+    if base_norm <= 1e-15:
+        return None
+    base_normal /= base_norm
+    plane_dist = np.abs((p - p[i0]) @ base_normal)
+    i3 = int(np.argmax(plane_dist))
+    if float(plane_dist[i3]) <= tol:
+        return None
+
+    centroid = 0.25 * (p[i0] + p[i1] + p[i2] + p[i3])
+
+    def make_face(a: int, b: int, c: int):
+        normal = np.cross(p[b] - p[a], p[c] - p[a])
+        norm = float(np.linalg.norm(normal))
+        if norm <= 1e-15:
+            return None
+        normal = normal / norm
+        if float((p[a] - centroid) @ normal) < 0.0:
+            b, c = c, b
+            normal = -normal
+        offset = float(p[a] @ normal)
+        return [a, b, c, normal, offset, np.empty(0, dtype=np.int64)]
+
+    faces = []
+    for tri in ((i0, i1, i2), (i0, i1, i3), (i0, i2, i3), (i1, i2, i3)):
+        face = make_face(*tri)
+        if face is None:
+            return None
+        faces.append(face)
+
+    remaining = np.ones(n, dtype=bool)
+    remaining[[i0, i1, i2, i3]] = False
+    cand = np.where(remaining)[0]
+    for face in faces:
+        if len(cand) == 0:
+            break
+        dists = p[cand] @ face[3] - face[4]
+        out_mask = dists > tol
+        if np.any(out_mask):
+            face[5] = cand[out_mask]
+            cand = cand[~out_mask]
+
+    while True:
+        pivot = None
+        for face in faces:
+            if len(face[5]) > 0:
+                pivot = face
+                break
+        if pivot is None:
+            break
+        out_idx = pivot[5]
+        dists = p[out_idx] @ pivot[3] - pivot[4]
+        apex = int(out_idx[int(np.argmax(dists))])
+        apex_pt = p[apex]
+
+        visible = [face for face in faces if float(apex_pt @ face[3] - face[4]) > tol]
+        if not visible:
+            pivot[5] = np.empty(0, dtype=np.int64)
+            continue
+
+        visible_ids = {id(face) for face in visible}
+        visible_edges = set()
+        for face in visible:
+            a, b, c = face[0], face[1], face[2]
+            visible_edges.add((a, b))
+            visible_edges.add((b, c))
+            visible_edges.add((c, a))
+        horizon = [(u, v) for (u, v) in visible_edges if (v, u) not in visible_edges]
+
+        reassigned_chunks = [face[5] for face in visible if len(face[5]) > 0]
+        pool = np.unique(np.concatenate(reassigned_chunks)) if reassigned_chunks else np.empty(0, dtype=np.int64)
+        pool = pool[pool != apex]
+
+        faces = [face for face in faces if id(face) not in visible_ids]
+        new_faces = []
+        for u, v in horizon:
+            nf = make_face(u, v, apex)
+            if nf is not None:
+                new_faces.append(nf)
+        for nf in new_faces:
+            if len(pool) == 0:
+                break
+            d_pool = p[pool] @ nf[3] - nf[4]
+            mask = d_pool > tol
+            if np.any(mask):
+                nf[5] = pool[mask]
+                pool = pool[~mask]
+        faces.extend(new_faces)
+
+    if len(faces) < 4:
+        return None
+    normals = np.vstack([face[3] for face in faces])
+    offsets = np.array([face[4] for face in faces], dtype=np.float64)
+    return normals, offsets
+
+
+def _points_in_convex_hull_3d(pts: np.ndarray, queries: np.ndarray) -> np.ndarray:
+    planes = _convex_hull_3d_planes(pts)
+    if planes is None:
+        return np.zeros(len(queries), dtype=bool)
+    normals, offsets = planes
+    scale = max(1.0, float(np.max(np.abs(offsets))))
+    tol = 1e-8 * scale
+    # Chunk query half-space dot products to bound memory on large query sets.
+    valid = np.empty(len(queries), dtype=bool)
+    for start in range(0, len(queries), 1024):
+        chunk = queries[start : start + 1024]
+        valid[start : start + len(chunk)] = np.all(chunk @ normals.T <= offsets[None, :] + tol, axis=1)
+    return valid
+
+
+def _cluster_physical_times(t_col: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
+    """Partition timestamps into strictly disjoint sorted frames using local float64 roundoff tolerance."""
+    t_arr = np.asarray(t_col, dtype=np.float64)
+    n = len(t_arr)
+    if n == 0:
+        return np.asarray([], dtype=np.float64), []
+    order = np.argsort(t_arr, kind="mergesort")
+    sorted_t = t_arr[order]
+    clusters = np.zeros(n, dtype=np.int64)
+    if n > 1:
+        eps = float(np.finfo(np.float64).eps)
+        local_scale = np.maximum(1.0, np.maximum(np.abs(sorted_t[:-1]), np.abs(sorted_t[1:])))
+        tol_pair = np.maximum(1e-12, 64.0 * eps * local_scale)
+        clusters[1:] = np.cumsum(np.diff(sorted_t) > tol_pair)
+    labels = np.empty(n, dtype=np.int64)
+    labels[order] = clusters
+    n_frames = int(clusters[-1]) + 1
+    frame_indices = [np.where(labels == k)[0] for k in range(n_frames)]
+    times = np.array([float(np.mean(t_arr[idx])) for idx in frame_indices], dtype=np.float64)
+    return times, frame_indices
+
+
 def _scattered_interp(
     pts: np.ndarray,
     vals: np.ndarray,
@@ -137,6 +302,8 @@ def _scattered_interp(
     if dim == 2:
         hull = _convex_hull_2d(pts_arr)
         valid = _points_in_convex_hull_2d(hull, qf)
+    elif dim == 3:
+        valid = _points_in_convex_hull_3d(pts_arr, qf)
     else:
         lo = np.min(pts_arr, axis=0)
         hi = np.max(pts_arr, axis=0)
@@ -288,22 +455,7 @@ class SolutionDataset:
         )
 
         if self.time_index_col is not None and n > 0:
-            from ..components.prepared_data import cluster_1d
-            t_col = self.points[:, self.time_index_col]
-            tol = max(
-                1e-12,
-                1e-9 * float(np.ptp(t_col)),
-                8.0 * float(np.finfo(np.float64).eps) * max(1.0, float(np.max(np.abs(t_col)))),
-            )
-            clusters = cluster_1d(t_col, tol)
-            n_frames = int(clusters.max()) + 1
-            self._frame_indices: list[np.ndarray] = [
-                np.where(clusters == k)[0] for k in range(n_frames)
-            ]
-            self.times = np.array(
-                [float(np.mean(t_col[idx])) for idx in self._frame_indices],
-                dtype=np.float64,
-            )
+            self.times, self._frame_indices = _cluster_physical_times(self.points[:, self.time_index_col])
         else:
             self.times = np.asarray([], dtype=np.float64)
             self._frame_indices = [np.arange(n, dtype=np.int64)]
