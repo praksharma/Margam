@@ -182,7 +182,7 @@ class DSGNARPINN(PINN):
     def __init__(self,problem,network,*,weights=None,settings=None,configuration=None):
         super().__init__(problem,network,weights=weights)
         self.configuration=deepcopy(configuration or {})
-        for key in ('iterations','device'):self.configuration.pop(key,None)
+        for key in ('iterations','device','fbpinn_settings'):self.configuration.pop(key,None)
         self.settings=deepcopy(dsgnar_defaults() if settings is None else settings)
         self.settings.setdefault('stage_grace',0)
         if isinstance(self.configuration.get('dsgnar_settings'),dict):self.configuration['dsgnar_settings'].setdefault('stage_grace',0)

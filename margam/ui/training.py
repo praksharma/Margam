@@ -100,7 +100,7 @@ class IsolatedJob:
             previous=self.model
             checkpoint=self.checkpoint if self.checkpoint is not None else previous.training_state() if previous is not None else None
             metadata=previous.metadata if isinstance(previous,RetainedModel) else {}
-            dtype=next(iter(checkpoint['network'].values())).dtype if checkpoint is not None else torch.get_default_dtype()
+            dtype=next((v.dtype for v in checkpoint['network'].values() if v.is_floating_point()),torch.get_default_dtype()) if checkpoint is not None else torch.get_default_dtype()
             payload=dict(operation=operation,config=encode_config(self.config),requests=[encode_request(r) for r in self.requests],
                 checkpoint=checkpoint,metadata=metadata,dtype=str(dtype).removeprefix('torch.'))
             def event(value):

@@ -6,7 +6,7 @@ DESCRIPTION='Initial displacement: sin(πx)+0.5 sin(4πx). Initial velocity: ∂
 
 
 def validate_wave(c):
-    if c.shape!='SpaceTime1D' or c.physics!='scalar' or c.method not in ('baseline','dsgnar'):raise ValueError('Standing wave supports baseline or DSGNAR on 1D space–time.')
+    if c.shape!='SpaceTime1D' or c.physics!='scalar' or c.method not in ('baseline','dsgnar','fbpinn'):raise ValueError('Standing wave supports baseline, DSGNAR or FBPINN on 1D space–time.')
     if c.interior_data or c.boundary_data or c.adaptive_sampling or c.loss_formulation!='mean':raise ValueError('Standing wave uses fixed built-in samples and mean loss.')
     if (c.x_min,c.x_max,c.y_min)!=(0.,1.,0.) or not math.isfinite(c.source) or c.source<=0:raise ValueError('Standing wave needs x in [0,1], initial t=0 and positive wave speed c.')
     if any(c.bc_types[s]!='Dirichlet' or c.bc_values[s]!=0 or c.bc_operators.get(s) for s in c.sides) or any(c.bc_targets.get(s,'')!=(INITIAL if s=='bottom' else '') for s in c.sides):raise ValueError('Standing-wave preset owns its initial displacement/velocity and zero endpoint conditions.')

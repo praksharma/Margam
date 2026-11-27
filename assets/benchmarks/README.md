@@ -258,3 +258,15 @@ checks. Three-plus-two updates are workflow evidence, not shock-accuracy evidenc
 CPU/CUDA two-trial owned-reference runs, input/source identities and verified
 CSV/physical-time ParaView/native-archive artifacts. Two/three updates establish
 workflow correctness, not trained solution accuracy or synchronized performance.
+
+
+## Finite Basis PINN multiscale comparison (CUDA)
+
+[fbpinn-multiscale-cuda.json](fbpinn-multiscale-cuda.json) records three-seed
+(`7, 11, 19`) equal-data, equal-budget comparisons between matched-width/
+parameter-matched Baseline FCNNs and FBPINN (1-level, 2-level coarse-to-fine,
+and progressive marching) on 1D multiscale Poisson, 2D multiscale Poisson, and
+1D space–time standing wave on CUDA (`float32`). Reproduce with
+`.venv/bin/python -m examples.fbpinn_benchmark --device cuda`. Per-seed errors,
+final losses and wall-clock runtimes (including the soft-IC wave negative case)
+are preserved in full; see [the FBPINN guide](../../docs/fbpinn.md).

@@ -1,0 +1,12 @@
+{
+  "generator": "examples.capture_fbpinn",
+  "example": "fbpinn_multiscale_2d",
+  "model_version": 36,
+  "scope": "FBPINN multiscale 2D graph and FBPINN trainer inspector (no training run).",
+  "files": {
+    "manual-fbpinn.png": {
+      "bytes": 205319,
+      "sha256": "1971d88aa0b3f0782d8fcbfec968ad41229746fba9978139c5221c3282cc6b5f"
+    }
+  }
+}

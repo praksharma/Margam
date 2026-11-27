@@ -91,6 +91,8 @@ implemented or a regression threshold as a measured benchmark result.
 
 - [DSGNAR](dsgnar.md): independent sketched Gauss–Newton trainer, adaptive-ratio probes and CPU/CUDA checkpoints.
 
+- [FBPINN](fbpinn.md): overlapping partition-of-unity domain decomposition, 2-level coarse-to-fine hierarchy, progressive active-subdomain marching and equal-budget multiscale benchmarks.
+
 - [SCALE cavity reproduction attempts](scale-cavity-benchmark.md): full-budget research protocol, derivative checks, timing and raw CFD metrics.
 
 For planned multi-run work, start with the [parameter-study preview](use/parameter-studies.md). It saves/opens portable snapshots; the [headless CLI](use/study-cli.md) executes them serially. The [results browser](use/study-results.md) collects reported outcomes and verifies completed trials before native opening.

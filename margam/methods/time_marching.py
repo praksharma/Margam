@@ -46,7 +46,7 @@ class TimeMarchingPINN:
         lower,upper=config.bounds;self.start=lower[-1];self.end=upper[-1]
         self.edges=[self.start+(self.end-self.start)*i/self.count for i in range(self.count+1)]
         self.signature=asdict(config)
-        for key in ('iterations','device','dsgnar_settings'):self.signature.pop(key,None)
+        for key in ('iterations','device','dsgnar_settings','fbpinn_settings'):self.signature.pop(key,None)
         self.active=self._build(0)
 
     def _build(self,index,teacher=None):
@@ -122,7 +122,7 @@ class TimeMarchingPINN:
         payload=state.get('marching') if isinstance(state,dict) else None
         if isinstance(payload,dict) and isinstance(payload.get('configuration'),dict):
             from ..components.scale_config import scale_defaults
-            payload=deepcopy(payload);payload['configuration'].pop('dsgnar_settings',None)
+            payload=deepcopy(payload);payload['configuration'].pop('dsgnar_settings',None);payload['configuration'].pop('fbpinn_settings',None)
             payload['configuration'].setdefault('scale_settings',scale_defaults())
             from ..components.gpinn_config import gpinn_defaults
             payload['configuration'].setdefault('gpinn_weights',gpinn_defaults())

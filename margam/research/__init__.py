@@ -1,5 +1,6 @@
 """Script-first research components; no desktop or block registration required."""
 from ..methods.dsgnar import DSGNARPINN
+from ..methods.fbpinn import FiniteBasisNetwork, FiniteBasisPINN
 from .trainer import Trainer
 from .schedules import StepDecay, CosineDecay
 from . import jaxpi2
@@ -35,6 +36,8 @@ from ..components.error_norms import error_norms
 
 __all__ = [
     'DSGNARPINN',
+    'FiniteBasisNetwork',
+    'FiniteBasisPINN',
     'Trainer',
     'StepDecay',
     'CosineDecay',

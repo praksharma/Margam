@@ -109,3 +109,12 @@ to the separate Inverse Burgers PDE block. See [the inverse guide](inverse-burge
 `margam/recipes/dsgnar.py` owns the compact DSGNAR PINN and expanded DSGNAR
 trainer/network representation. See [the method guide](dsgnar.md) for fixed-point
 scope, attempt counts, precision, adaptive-ratio controls and checkpoint rules.
+
+## Finite Basis PINN (FBPINN)
+
+`margam/recipes/fbpinn.py` owns the compact Finite Basis PINN and expanded
+FBPINN trainer/network representation. The connected Neural network block sets
+the base pointwise architecture replicated across each overlapping subdomain
+(and optional Level-0 coarse network) with clipped local coordinate normalization.
+See [the FBPINN guide](fbpinn.md) for window smoothness, multilevel coupling,
+progressive marching, checkpoint rules and benchmarks.

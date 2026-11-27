@@ -10,6 +10,7 @@ A Python API capability is not automatically an executable UI block option.
 
 | Component | Implementation | Current support and limits |
 | --- | --- | --- |
+| Finite Basis PINN (FBPINN) | `margam/methods/fbpinn.py`; recipe `margam/recipes/fbpinn.py`; config `margam/components/fbpinn_config.py` | Independent overlapping partition-of-unity domain decomposition (up to 64 fine subdomains), $C^2$/$C^\infty$/$C^1$ windows, optional 2-level coarse-to-fine hierarchy, optional progressive active-subdomain marching; built-in 1D/2D/3D, space–time, sphere-obstacle, continuous parametric and steady 2D flow domains; fixed points and mean MSE only; [scope and evidence](fbpinn.md) |
 | Scale-PINN | `margam/methods/scale.py`; recipe `margam/recipes/scale.py` | Independent sequential residual correction, frozen previous iterate, scalar and standard u/v/p mappings; [scope and evidence](scale-pinn.md) |
 | Expert PINN | `margam/methods/expert.py`; recipe `margam/recipes/expert.py` | Independent Expert’s Guide v1 causal gradient-norm/NTK pipeline with optional sequential time windows, fresh uniform samples, Adam decay, optional reusable RWF; concrete scalar/2D flow/space–time cases with mean MSE; no Reynolds curriculum; see [Expert PINN](expert-pinn.md) |
 | Learning-rate annealing PINN | `margam/methods/learning_rate_annealing.py`; recipe `margam/recipes/learning_rate_annealing.py` | Max PDE / mean raw constraint parameter-gradient balancing, detached scalar coefficients, EMA, cap/floor and exact resume; existing networks; no base-rate scheduler; see [LRA](lra-pinn.md) |

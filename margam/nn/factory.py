@@ -5,19 +5,15 @@ from .FCNN import FullyConnected
 from ..components.network_config import validate_network
 
 
-def _build_network(config):
-    options=validate_network(config.network_type,config.network_options,config.layers)
-    inputs=len(config.bounds[0]);outputs=len(config.field_names);bounds=config.bounds;layers=config.layers
-    seed=config.seed if config.network_seed is None else config.network_seed
+def _build_single_network(kind,inputs,outputs,layers,bounds,options,coordinate_names,seed):
     torch.manual_seed(seed)
-    kind=config.network_type
     if kind=='fcnn':network=FullyConnected([inputs,*layers,outputs],'tanh','Xavier normal',input_bounds=bounds)
     elif kind in ('fourier','fourier_mlp'):
         from .fourier import FourierNetwork
         network=FourierNetwork(inputs,outputs,layers,bounds,options,angular=kind=='fourier_mlp')
     elif kind=='affine_fourier':
         from .affine_fourier import AffineFourierNetwork
-        network=AffineFourierNetwork(inputs,outputs,layers,bounds,options,config.coordinate_names)
+        network=AffineFourierNetwork(inputs,outputs,layers,bounds,options,coordinate_names)
     elif kind=='highway_fourier':
         from .highway import HighwayFourierNetwork
         network=HighwayFourierNetwork(inputs,outputs,layers,bounds,options)
@@ -40,10 +36,24 @@ def _build_network(config):
     if options.get('weight_factorization',False):
         from .weight_factorization import factorize_linear_layers
         factorize_linear_layers(network,options['factor_mean'],options['factor_std'])
+        clean_options=options
     else:
         # Disabled options must preserve historical architecture checkpoint specs.
-        options={key:value for key,value in options.items() if key not in ('weight_factorization','factor_mean','factor_std')}
-    network._margam_spec=deepcopy(dict(type=kind,options=options,layers=list(layers),inputs=inputs,outputs=outputs,bounds=[list(row) for row in bounds],seed=seed))
+        clean_options={key:value for key,value in options.items() if key not in ('weight_factorization','factor_mean','factor_std')}
+    spec=deepcopy(dict(type=kind,options=clean_options,layers=list(layers),inputs=inputs,outputs=outputs,bounds=[list(row) for row in bounds],seed=seed))
+    network._margam_spec=spec
+    return network,spec
+
+
+def _build_network(config):
+    options=validate_network(config.network_type,config.network_options,config.layers)
+    inputs=len(config.bounds[0]);outputs=len(config.field_names);bounds=config.bounds;layers=config.layers
+    seed=config.seed if config.network_seed is None else config.network_seed
+    kind=config.network_type
+    if config.method=='fbpinn':
+        from ..methods.fbpinn import build_fbpinn_network
+        return build_fbpinn_network(config,lambda sub_bounds,sub_seed:_build_single_network(kind,inputs,outputs,layers,sub_bounds,options,config.coordinate_names,sub_seed))
+    network,_=_build_single_network(kind,inputs,outputs,layers,bounds,options,config.coordinate_names,seed)
     if config.method=='inverse_burgers':
         from ..methods.inverse_burgers import InverseBurgersNetwork
         network=InverseBurgersNetwork(network,config.inverse_settings)

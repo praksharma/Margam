@@ -777,3 +777,18 @@
   discard cancelled/failed results. Share concrete run-slot widgets with history
   overlays, release snapshots/reader closures on main-window/dialog close, and
   preserve current model/results/Undo/RNG without network/optimizer restoration.
+
+- FBPINN (`margam/methods/fbpinn.py`, `margam/components/fbpinn_config.py`,
+  `margam/recipes/fbpinn.py`) is an independent paper-based PyTorch implementation
+  of Moseley et al. (2023) and multilevel Dolean et al. (2024). Partition only
+  spatial/time coordinates (keep `parametric_axes` un-partitioned across all
+  subdomains), enforce `overlap >= 1.05`, cap fine subdomains at 64, default to
+  compact $C^2$ `cosine_sq` windows with sparse out-of-place `index_add` autograd,
+  and require $C^\infty$ `smooth_sigmoid` for 3rd/4th-order PDEs. Reject
+  `multilevel` combined with `progressive` marching, non-mean losses, adaptive
+  samplers, and imported/paper-case domains. In progressive mode, freeze trailing
+  slices via parameter `requires_grad_(False)` (never `torch.no_grad()` so overlap
+  coordinate derivatives remain exact), check non-empty slices at `compile()`, and
+  persist `subdomain_state` in `state_dict()` and checkpoint metadata with atomic
+  rollback on malformed loads. Model 36 adds `fbpinn_settings` with `< 36` migration
+  and backward-compatible stripping in existing method checkpoint signatures.

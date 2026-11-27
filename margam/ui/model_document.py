@@ -14,7 +14,7 @@ from .ports import INPUTS, OUTPUTS, compatible
 MAX_BYTES = 4 * 1024 * 1024
 SIDES = {'left', 'right', 'bottom', 'top'}
 ALL_BUILTIN_SIDES = {'left', 'right', 'bottom', 'top', 'front', 'back', 'sphere', 'initial'}
-CURRENT_VERSION = 35
+CURRENT_VERSION = 36
 
 
 def require(condition, message):
@@ -67,8 +67,13 @@ def decode_document(data):
     if isinstance(c,dict) and data['version']<35:
         c=dict(c)
         c.setdefault('parametric_axes',[])
+    if isinstance(c,dict) and data['version']<36:
+        from ..components.fbpinn_config import fbpinn_defaults
+        c=dict(c,fbpinn_settings=c.get('fbpinn_settings',fbpinn_defaults()))
     from ..components.dsgnar_config import validate_dsgnar_settings
     validate_dsgnar_settings(c.get('dsgnar_settings',{}) if isinstance(c,dict) else {})
+    from ..components.fbpinn_config import validate_fbpinn_settings
+    validate_fbpinn_settings(c.get('fbpinn_settings',{}) if isinstance(c,dict) else {})
     from ..components.inverse_config import validate_inverse_settings
     validate_inverse_settings(c.get('inverse_settings',{}) if isinstance(c,dict) else {})
     require(isinstance(c, dict) and set(c) == {f.name for f in fields(PoissonConfig)}, 'Invalid template settings.')
@@ -101,7 +106,7 @@ def decode_document(data):
     validate_gpinn_weights(c['gpinn_weights'])
     from ..components.rba_config import validate_rba_settings
     validate_rba_settings(c['rba_settings'])
-    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar'),'Unknown PINN method.')
+    require(c['method'] in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar','fbpinn'),'Unknown PINN method.')
     require(all(number(c[key]) and c[key]>0 for key in ('sa_lr','sa_initial','sa_max')) and c['sa_initial']<=c['sa_max'] and type(c['sa_boundary']) is bool,'Invalid adaptive settings.')
     require(number(c['lra_alpha']) and 0<c['lra_alpha']<=1 and type(c['lra_interval']) is int and 1<=c['lra_interval']<=100000 and number(c['lra_epsilon']) and 0<c['lra_epsilon']<=1 and number(c['lra_max']) and 1<=c['lra_max']<=1e12,'Invalid LRA settings.')
     require(c['physics'] in ('scalar','incompressible_2d','paper_case') and number(c['viscosity']) and number(c['pressure_value']) and number(c['pressure_weight']),'Invalid flow settings.')
@@ -209,6 +214,7 @@ def decode_document(data):
             require(type(settings['parameters']['network_seed']) is int,'Recipe network requires an explicit seed.')
         if node['kind']=='inverse_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='inverse_burgers','Invalid inverse trainer settings.')
         if node['kind']=='dsgnar_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='dsgnar','Invalid DSGNAR trainer settings.')
+        if node['kind']=='fbpinn_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='fbpinn','Invalid FBPINN trainer settings.')
         if node['kind']=='rba_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='rba','Invalid RBA trainer settings.')
         if node['kind']=='gpinn_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='gpinn','Invalid gPINN trainer settings.')
         if node['kind']=='scale_method':require(isinstance(settings.get('parameters'),dict) and settings['parameters'].get('method')=='scale','Invalid Scale trainer settings.')

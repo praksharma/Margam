@@ -131,3 +131,8 @@ INPUTS['dsgnar_recipe']=INPUTS['recipe']
 INPUTS['dsgnar_method']=INPUTS['method']
 OUTPUTS['dsgnar_recipe']=OUTPUTS['recipe']
 OUTPUTS['dsgnar_method']=OUTPUTS['method']
+
+INPUTS['fbpinn_recipe']=INPUTS['recipe']
+INPUTS['fbpinn_method']=INPUTS['method']
+OUTPUTS['fbpinn_recipe']=OUTPUTS['recipe']
+OUTPUTS['fbpinn_method']=OUTPUTS['method']

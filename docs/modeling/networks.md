@@ -71,6 +71,16 @@ its compact recipe or separate trainer. Use fixed built-in scalar points and an
 explicit precision; rejected steps count toward the attempt budget. Existing
 pointwise networks and output blocks remain replaceable.
 
+### Finite Basis PINN (FBPINN)
+
+[FBPINN](../fbpinn.md) partitions spatial or space–time domains into overlapping
+subdomains blended by smooth $C^2$/$C^\infty$ partition-of-unity windows, with
+clipped local coordinate normalization per subdomain. Enable **Two-level
+coarse-to-fine hierarchy** for global elliptic coupling across many subdomains,
+or choose **Progressive active marching** to advance a moving frontier along time
+or space. Existing pointwise architectures, 3D domains, continuous parameter axes
+and the Solution Explorer all work directly.
+
 ## Quick snippets: configuring all 10 pointwise architectures
 
 In Python scripts or studies, choose `network_type` and pass architecture-specific

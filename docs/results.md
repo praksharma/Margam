@@ -368,3 +368,17 @@ with both initialization modes, six short updates, detached point weights and
 identical same-device continuation. Raw physical and attention-weighted PDE losses
 are reported separately. These are implementation checks without accuracy or
 speedup claims. See [the illustrated guide](rba-pinn.md).
+
+
+## Finite Basis PINN (FBPINN)
+
+[fbpinn-multiscale-cuda.json](../assets/benchmarks/fbpinn-multiscale-cuda.json)
+records three-seed (`7, 11, 19`) equal-budget comparisons against matched-width
+and parameter-matched baseline FCNNs on CUDA (`float32`, NVIDIA GeForce RTX 3060
+Laptop GPU). Two-level FBPINN reduces median relative L2 error from `0.7445` to
+`0.1310` on 1D multiscale Poisson (`5.7×`, 2,000 updates) and from `0.9611` to
+`0.0572` on 2D multiscale Poisson (`16.8×`, 2,000 updates) while incurring higher
+wall-clock time per step (`5.7×`–`8.6×`). On the soft-IC 1D standing-wave case
+(1,600 updates), neither baseline (`0.7058`) nor `2×4` FBPINN (`0.9883`
+simultaneous, `1.0958` progressive) converges accurately without a hard IC
+ansatz. See [the FBPINN guide](fbpinn.md) for full tables and limits.

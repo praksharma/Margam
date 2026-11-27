@@ -31,6 +31,9 @@ def _example_config(identifier):
     if identifier.startswith('dsgnar_'):
         from .dsgnar_examples import dsgnar_example_config
         return dsgnar_example_config(identifier)
+    if identifier.startswith('fbpinn_'):
+        from .fbpinn_examples import fbpinn_example_config
+        return fbpinn_example_config(identifier)
     if identifier.startswith('rba_'):
         from .rba_examples import rba_example_config
         return rba_example_config(identifier)
@@ -111,3 +114,6 @@ def example_config(identifier):
 
 from .dsgnar_examples import DSGNAR_EXAMPLES
 for _key,(_label,_description,_reference) in DSGNAR_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,_reference)
+
+from .fbpinn_examples import FBPINN_EXAMPLES
+for _key,(_label,_description,_reference) in FBPINN_EXAMPLES.items():EXAMPLE_PROBLEMS[_key]=ExampleProblem(_label,_description,_reference)
