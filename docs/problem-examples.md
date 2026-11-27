@@ -89,3 +89,12 @@ These are [correctness starting points](dsgnar.md), not paper reproductions.
 The same submenu also includes [Wave (1D + time) and Multiscale Poisson (2D)](dsgnar-analytic-examples.md).
 Wave explicitly imposes initial displacement **and velocity**, without a final-time
 condition. Both have analytical references and ordinary replaceable networks.
+
+## FBPINN examples
+
+**File → Examples → FBPINN examples** contains five overlapping domain-decomposition
+presets with analytical references: 1D and 2D multiscale Poisson (two-level coarse-to-fine
+FBPINN), 1D space–time standing wave with progressive active-subdomain marching along
+physical time $t$, continuous parametric 1D multiscale Poisson $u(x; \mu)$ for live
+Solution Explorer scrubbing, and 3D multiscale Poisson on $[0, 1]^3$ using $2\times 2\times 2$
+overlapping subdomains. See [the FBPINN guide](fbpinn.md).

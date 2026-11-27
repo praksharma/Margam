@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import replace,asdict
 from pathlib import Path
 import json
-from ..recipes import dsgnar, baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
+from ..recipes import dsgnar, fbpinn, baseline, self_adaptive, learning_rate_annealing, expert, scale, gradient_enhanced, residual_attention, COMPACT_RECIPES, TRAINER_RECIPES
 from ..templates.poisson import PoissonConfig, make_poisson_reference
 from ..templates.predefined_pdes import PREDEFINED_PDES
 from ..templates.examples import EXAMPLE_PROBLEMS,example_config
@@ -622,12 +622,13 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scale_examples_menu=self.examples_menu.addMenu('Scale-PINN examples');self.scale_examples_menu.setIcon(icon('scale_recipe'))
         self.gpinn_examples_menu=self.examples_menu.addMenu('gPINN examples');self.gpinn_examples_menu.setIcon(icon('gpinn_recipe'))
         self.dsgnar_examples_menu=self.examples_menu.addMenu('DSGNAR examples');self.dsgnar_examples_menu.setIcon(icon('dsgnar_recipe'))
+        self.fbpinn_examples_menu=self.examples_menu.addMenu('FBPINN examples');self.fbpinn_examples_menu.setIcon(icon('fbpinn_recipe'))
         self.rba_examples_menu=self.examples_menu.addMenu('RBA examples');self.rba_examples_menu.setIcon(icon('rba_recipe'))
         self.example_actions={}
         for identifier,example in EXAMPLE_PROBLEMS.items():
             cfg_ex=example_config(identifier)
             cfg_shape=cfg_ex.shape
-            menu=self.dsgnar_examples_menu if identifier.startswith('dsgnar_') else self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_parametric_menu if cfg_ex.parametric_axes else self.examples_3d_menu if cfg_shape in ('Box3D','SpaceTime3D','SphereObstacle3D') else self.examples_1d_menu if cfg_shape in ('Interval','SpaceTime1D') else self.examples_menu
+            menu=self.dsgnar_examples_menu if identifier.startswith('dsgnar_') else self.fbpinn_examples_menu if identifier.startswith('fbpinn_') else self.rba_examples_menu if identifier.startswith('rba_') else self.gpinn_examples_menu if identifier.startswith('gpinn_') else self.scale_examples_menu if identifier.startswith('scale_') else self.expert_examples_menu if identifier.startswith('expert_') else self.examples_parametric_menu if cfg_ex.parametric_axes else self.examples_3d_menu if cfg_shape in ('Box3D','SpaceTime3D','SphereObstacle3D') else self.examples_1d_menu if cfg_shape in ('Interval','SpaceTime1D') else self.examples_menu
             action=menu.addAction(example.label);action.setToolTip(example.description)
             action.triggered.connect(lambda checked=False,key=identifier:self.request_example(key));self.example_actions[identifier]=action
         recipes=file_menu.addMenu('Insert PINN recipe');recipes.setIcon(icon('recipe'))
@@ -1350,6 +1351,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             summary.triggered.connect(self.show_adaptive_summary)
         if node.kind in ('dsgnar_recipe','dsgnar_method'):
             action=menu.addAction('Step diagnostics');action.triggered.connect(self.show_dsgnar_summary)
+        if node.kind in ('fbpinn_recipe','fbpinn_method'):
+            action=menu.addAction('Subdomain diagnostics');action.triggered.connect(self.show_fbpinn_summary)
         if node.kind in ('rba_recipe','rba_method'):
             action=menu.addAction('Attention statistics');action.triggered.connect(self.show_rba_summary)
         if node.kind in ('scale_recipe','scale_method'):
@@ -1643,8 +1646,8 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                     self.scene.wires.remove(wire);self.scene.removeItem(wire)
                     self.scene.connect_nodes(wire.source.parentItem(),interior,wire.target.name)
             self.scene.removeItem(old_interior)
-        if config.method in ('self_adaptive','lra','expert','scale','gpinn','rba','dsgnar'):
-            recipe=dsgnar if config.method=='dsgnar' else residual_attention if config.method=='rba' else gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
+        if config.method in ('self_adaptive','lra','expert','scale','gpinn','rba','dsgnar','fbpinn'):
+            recipe=fbpinn if config.method=='fbpinn' else dsgnar if config.method=='dsgnar' else residual_attention if config.method=='rba' else gradient_enhanced if config.method=='gpinn' else scale if config.method=='scale' else expert if config.method=='expert' else self_adaptive if config.method=='self_adaptive' else learning_rate_annealing
             title=next(title for kind,title,_,_ in recipe.COMPONENTS if kind==recipe.ROOT)
             old_method=method;method=self.make_node(title,'',old_method.pos().x(),old_method.pos().y())
             for wire in list(self.scene.wires):
@@ -1658,7 +1661,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         self.scene.connect_nodes(interior,pde);self.scene.connect_nodes(boundary,pde,'boundary_points');self.scene.connect_nodes(pde,method)
         comparison=None
         output_titles=('Training Monitor','Solution Plot','Comparison','CSV Export') if example.reference else ('Training Monitor','Solution Plot','CSV Export','ParaView Export')
-        if identifier=='dsgnar_wave' or (config.is_3d and 'ParaView Export' not in output_titles):output_titles+=('ParaView Export',)
+        if identifier in ('dsgnar_wave','fbpinn_wave_progressive') or (config.is_3d and 'ParaView Export' not in output_titles):output_titles+=('ParaView Export',)
         for index,title in enumerate(output_titles):
             node=self.add_node(title);node.setPos(1000,index*150);self.scene.connect_nodes(method,node)
             if node.kind=='comparison':comparison=node
@@ -1996,6 +1999,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                      'bc':'Case initial/boundary constraints' if c.is_paper_case or c.pde_preset in ('kdv_1d','wave_1d') else 'Component BCs + p gauge' if c.physics=='incompressible_2d' else ', '.join(c.bc_types.get(s,'Dirichlet')[0] for s in c.sides),
                      'recipe':f'Baseline · Adam · {c.iterations} steps',
                      'dsgnar_recipe':f'DSGNAR · {c.iterations} attempts','dsgnar_method':f'SVD · sketch {c.dsgnar_settings["sketch_size"]}',
+                     'fbpinn_recipe':self._fbpinn_detail(c,compact=True),'fbpinn_method':self._fbpinn_detail(c,compact=False),
                      'rba_recipe':f'RBA · {c.iterations} steps','rba_method':'Fixed-point residual attention',
                      'gpinn_recipe':f'gPINN · {c.iterations} steps','gpinn_method':'Flow component residual gradients' if c.physics=='incompressible_2d' else 'Scalar residual gradients',
                      'scale_recipe':f'Scale · {c.iterations} steps','scale_method':'Sequential residual correction',
@@ -2248,11 +2252,11 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
     def loss_formulation_field(self):
         choice=QComboBox();choice.setObjectName('loss_formulation')
         for key,label in LOSS_FORMULATIONS.items():choice.addItem(label,key)
-        if self.config.method in ('expert','scale','gpinn','rba','inverse_burgers','dsgnar'):choice.model().item(choice.findData('integral')).setEnabled(False)
+        if self.config.method in ('expert','scale','gpinn','rba','inverse_burgers','dsgnar','fbpinn'):choice.model().item(choice.findData('integral')).setEnabled(False)
         choice.setCurrentIndex(choice.findData(self.config.loss_formulation))
         choice.currentIndexChanged.connect(lambda index:self.change('loss_formulation',choice.itemData(index)))
         self.form.addRow('Loss formulation',choice)
-        note=QLabel('DSGNAR uses a weighted least-squares objective with adaptive condition weights. No integral quadrature or Adam update.' if self.config.method=='dsgnar' else 'RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
+        note=QLabel('DSGNAR uses a weighted least-squares objective with adaptive condition weights. No integral quadrature or Adam update.' if self.config.method=='dsgnar' else 'FBPINN uses mean-squared residual and boundary losses across overlapping partition-of-unity subdomains. Integral quadrature is not implemented.' if self.config.method=='fbpinn' else 'RBA weights the scalar PDE residual with detached attention; raw PDE and attention-weighted PDE are recorded separately.' if self.config.method=='rba' else 'gPINN uses mean-squared residual/gradient losses; integral gradient quadrature is not implemented.' if self.config.method=='gpinn' else 'Scale-PINN uses mean-squared error; PDE is the corrected training residual. Physical PDE diagnostics are separate.' if self.config.method=='scale' else 'Expert PINN follows the paper mean-squared-error formulation.' if self.config.method=='expert' else 'Integral mode uses domain volume / boundary length and sums residual components. Point gauges use unit measure. Mean squared error remains the default.')
         note.setWordWrap(True);self.form.addRow(note)
 
     def change_sampling_score(self,value):
@@ -2666,6 +2670,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
                 if attribute=='lra_alpha':self.field('EMA new-estimate fraction','lra_alpha',minimum=.001,maximum=1)
                 elif attribute=='lra_interval':self.field('Balance every (updates)','lra_interval','int',minimum=1,maximum=100000)
             if self.config.method=='dsgnar':self.dsgnar_settings_fields()
+            if self.config.method=='fbpinn':self.fbpinn_settings_fields()
             if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
@@ -2687,6 +2692,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if node.kind=='inverse_method':variant.addItem('Inverse Burgers PINN','inverse_burgers');variant.setEnabled(False)
             if node.kind=='sa_method':variant.addItem('Self-adaptive PINN','self_adaptive');variant.setEnabled(False)
             if node.kind=='dsgnar_method':variant.addItem('DSGNAR PINN','dsgnar');variant.setEnabled(False)
+            if node.kind=='fbpinn_method':variant.addItem('Finite Basis PINN','fbpinn');variant.setEnabled(False)
             if node.kind=='rba_method':variant.addItem('Residual-based attention PINN','rba');variant.setEnabled(False)
             if node.kind=='gpinn_method':variant.addItem('Gradient-enhanced PINN','gpinn');variant.setEnabled(False)
             if node.kind=='scale_method':variant.addItem('Scale-PINN','scale');variant.setEnabled(False)
@@ -2722,6 +2728,7 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
             if node.kind=='inverse_method':
                 button=QPushButton('Learned coefficients…');button.clicked.connect(self.show_inverse_parameters);self.form.addRow(button)
             if self.config.method=='dsgnar':self.dsgnar_settings_fields()
+            if self.config.method=='fbpinn':self.fbpinn_settings_fields()
             if self.config.method=='rba':self.rba_settings_fields()
             if self.config.method=='gpinn':self.gpinn_settings_fields()
             self.property_section('Optimisation')
@@ -2889,6 +2896,101 @@ class Window(BlockLabels,InverseActions,CanvasTools,RecentModels,DeviceSettings,
         if rows:
             last=rows[-1];text+=f"\nLast ratio: {last['ratio']:.6g} · regularization: {last['regularization']:.6g}\nObjective: {last['objective_before']:.6g} → {last['objective_after']:.6g}"
         QMessageBox.information(self,'DSGNAR step diagnostics',text)
+
+    def _fbpinn_detail(self,c,*,compact):
+        from ..components.fbpinn_config import active_subdomain_counts
+        grid='×'.join(map(str,active_subdomain_counts(c)))
+        s=c.fbpinn_settings
+        if compact:
+            tag=' · ML' if s['multilevel'] else ' · prog' if s['schedule']=='progressive' else ''
+            return f'FBPINN · {grid}{tag} · {c.iterations} steps'
+        mode='Progressive' if s['schedule']=='progressive' else '2-level' if s['multilevel'] else '1-level'
+        return f'{mode} · {grid} · w={s["overlap"]:g}'
+
+    def fbpinn_settings_fields(self):
+        from ..components.fbpinn_config import spatial_time_axes,active_subdomain_counts,total_subdomains,total_networks
+        self.property_section('Finite Basis domain decomposition')
+        s=self.config.fbpinn_settings
+        axes=spatial_time_axes(self.config)
+        for axis in ('x','y','z','t'):
+            key='subdomains_'+axis
+            widget=QSpinBox();widget.setRange(1,32);widget.setKeyboardTracking(False);widget.setValue(s[key]);widget.setObjectName('fbpinn_'+key)
+            widget.setEnabled(axis in axes)
+            widget.valueChanged.connect(lambda value,name=key:self.change_fbpinn_setting(name,value))
+            self.form.addRow(f'Subdomains ({axis})',widget)
+        overlap=QDoubleSpinBox();overlap.setDecimals(4);overlap.setSingleStep(.1);overlap.setRange(1.05,3.);overlap.setKeyboardTracking(False);overlap.setValue(s['overlap']);overlap.setObjectName('fbpinn_overlap')
+        overlap.valueChanged.connect(lambda value:self.change_fbpinn_setting('overlap',value));self.form.addRow('Overlap factor w',overlap)
+        window=QComboBox();window.setObjectName('fbpinn_window')
+        window.addItem('Cosine squared (C2 compact)','cosine_sq')
+        window.addItem('Smooth sigmoid (C∞, Moseley Eq. 11)','smooth_sigmoid')
+        window.addItem('Raised cosine (C1 compact)','cosine')
+        window.setCurrentIndex(max(0,window.findData(s['window'])))
+        window.currentIndexChanged.connect(lambda i,w=window:self.change_fbpinn_setting('window',w.itemData(i),refresh=True))
+        self.form.addRow('Window function',window)
+        sigma=QDoubleSpinBox();sigma.setDecimals(4);sigma.setSingleStep(.01);sigma.setRange(.01,.5);sigma.setKeyboardTracking(False);sigma.setValue(s['window_sigma']);sigma.setObjectName('fbpinn_window_sigma')
+        sigma.setEnabled(s['window']=='smooth_sigmoid')
+        sigma.valueChanged.connect(lambda value:self.change_fbpinn_setting('window_sigma',value));self.form.addRow('Sigmoid softness σ',sigma)
+        multilevel=QCheckBox('Two-level coarse-to-fine hierarchy (Dolean et al.)');multilevel.setChecked(s['multilevel']);multilevel.setObjectName('fbpinn_multilevel')
+        multilevel.setEnabled(s['schedule']=='simultaneous')
+        multilevel.toggled.connect(lambda value:self.change_fbpinn_setting('multilevel',value));self.form.addRow(multilevel)
+        schedule=QComboBox();schedule.setObjectName('fbpinn_schedule')
+        schedule.addItem('Simultaneous (all subdomains)','simultaneous')
+        schedule.addItem('Progressive active marching','progressive')
+        schedule.setCurrentIndex(max(0,schedule.findData(s['schedule'])))
+        schedule.currentIndexChanged.connect(lambda i,w=schedule:self.change_fbpinn_setting('schedule',w.itemData(i),refresh=True))
+        self.form.addRow('Activation schedule',schedule)
+        progressive=s['schedule']=='progressive'
+        axis_choice=QComboBox();axis_choice.setObjectName('fbpinn_schedule_axis')
+        for code,label in [('auto','Auto (time if present, else first decomposed axis)'),('x','x axis'),('y','y axis'),('z','z axis'),('t','t axis')]:
+            axis_choice.addItem(label,code)
+        axis_choice.setCurrentIndex(max(0,axis_choice.findData(s['schedule_axis'])))
+        axis_choice.setEnabled(progressive)
+        axis_choice.currentIndexChanged.connect(lambda i,w=axis_choice:self.change_fbpinn_setting('schedule_axis',w.itemData(i)))
+        self.form.addRow('Marching axis',axis_choice)
+        active_steps=QSpinBox();active_steps.setRange(1,100000);active_steps.setKeyboardTracking(False);active_steps.setValue(s['active_steps']);active_steps.setObjectName('fbpinn_active_steps')
+        active_steps.setEnabled(progressive)
+        active_steps.valueChanged.connect(lambda value:self.change_fbpinn_setting('active_steps',value));self.form.addRow('Updates per slice',active_steps)
+        freeze=QCheckBox('Freeze completed trailing slices');freeze.setChecked(s['freeze_completed']);freeze.setObjectName('fbpinn_freeze_completed')
+        freeze.setEnabled(progressive)
+        freeze.toggled.connect(lambda value:self.change_fbpinn_setting('freeze_completed',value));self.form.addRow(freeze)
+        button=QPushButton('Subdomain diagnostics…');button.clicked.connect(self.show_fbpinn_summary);self.form.addRow(button)
+        counts=active_subdomain_counts(self.config)
+        note=QLabel(f'Active grid: {"×".join(map(str,counts))} = {total_subdomains(self.config)} fine subdomains ({total_networks(self.config)} total networks). Up to 64 fine subdomains; built-in domains and mean MSE only.');note.setWordWrap(True);self.form.addRow(note)
+
+    def change_fbpinn_setting(self,key,value,*,refresh=False):
+        settings=deepcopy(self.config.fbpinn_settings);settings[key]=value
+        if key=='schedule' and value=='progressive' and settings['multilevel']:settings['multilevel']=False
+        self.change('fbpinn_settings',settings)
+        if refresh:self.selection_changed()
+
+    def show_fbpinn_summary(self):
+        summary=self.last_run.model.fbpinn_summary() if self.last_run is not None and self.last_run.model is not None and hasattr(self.last_run.model,'fbpinn_summary') and not self.is_running() else None
+        if summary is None:
+            state=self.loaded_checkpoint if not self.is_running() else None
+            if not state or 'fbpinn' not in state:self.statusBar().showMessage('Train or reopen an FBPINN run first.');return
+            payload=state['fbpinn'];sig=payload['signature'];states=payload['subdomain_state']
+            text=(f"Step: {state['iter']}\nGrid: {'×'.join(map(str,sig['counts']))} ({', '.join(sig['axes'])})\n"
+                  f"Window: {sig['settings']['window']} · overlap w={sig['settings']['overlap']:g} · multilevel={sig['settings']['multilevel']}\n"
+                  f"Schedule: {sig['settings']['schedule']}\n"
+                  f"Subdomains — active: {states.count(1)}, fixed: {states.count(2)}, inactive: {states.count(0)}")
+            QMessageBox.information(self,'FBPINN subdomain diagnostics',text);return
+        st=summary['states']
+        lines=[
+            f"Step: {summary['step']}",
+            f"Grid: {'×'.join(map(str,summary['subdomains']))} ({', '.join(summary['axes'])}) = {summary['total_subdomains']} fine subdomains ({summary['total_networks']} networks total)",
+            f"Trainable parameters: {summary['trainable_parameters']:,}",
+            f"Window: {summary['window']} · overlap w={summary['overlap']:g} · multilevel={summary['multilevel']}",
+            f"Schedule: {summary['schedule']}"+(f" (axis {summary['schedule_axis']})" if summary['schedule_axis'] else ''),
+            f"Subdomains — active: {st['active']}, fixed: {st['fixed']}, inactive: {st['inactive']}",
+        ]
+        rows=summary.get('subdomain_residuals',[])
+        if rows:
+            lines.append('')
+            for row in rows[:16]:
+                rmse='n/a' if row['pde_rmse'] is None else f"{row['pde_rmse']:.4g}"
+                lines.append(f"  Subdomain {tuple(row['multi_index'])} [{row['state']}]: {row['points']} pts · PDE RMSE {rmse}")
+            if len(rows)>16:lines.append(f"  … and {len(rows)-16} more subdomains")
+        QMessageBox.information(self,'FBPINN subdomain diagnostics','\n'.join(lines))
 
     def rba_settings_fields(self):
         self.property_section('Residual-based attention')

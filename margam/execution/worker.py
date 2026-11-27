@@ -97,7 +97,7 @@ def main():
             if hasattr(model,'collocation_point_sample'):
                 metadata['points']=model.collocation_point_sample
                 metadata['constraints']=[dict(name=c.name,points=p,target=t) for c,p,t in model._constraints]
-            for name in ('adaptive_summary','balancing_summary','scale_summary','expert_summary','attention_summary','dsgnar_summary'):
+            for name in ('adaptive_summary','balancing_summary','scale_summary','expert_summary','attention_summary','dsgnar_summary','fbpinn_summary'):
                 if hasattr(model,name):metadata[name]=getattr(model,name)()
             if hasattr(model.network,'estimated_parameters'):metadata['estimated_parameters']=model.network.estimated_parameters()
         if any(name=='PySide6' or name.startswith('PySide6.') for name in sys.modules):raise RuntimeError('Numerical child unexpectedly imported Qt.')

@@ -185,3 +185,18 @@ HELP.update({
 
 
 HELP['output_enabled']='Include this optional monitor, solution, comparison or export in execution requests. Disabled blocks keep their wiring and settings but request no recording/evaluation/export. Closing a view only hides it; disabling changes the requested outputs and clears old result views while preserving matching trained weights for Evaluate outputs. An enabled export cannot depend on a disabled Comparison. Physics blocks cannot be disabled.'
+
+HELP.update({
+ 'fbpinn_subdomains_x':'Number of overlapping FBPINN subdomains along the x axis (1–32). Total fine subdomains across all active spatial/time axes cannot exceed 64.',
+ 'fbpinn_subdomains_y':'Number of overlapping FBPINN subdomains along the y axis (1–32). Ignored on 1D domains without y.',
+ 'fbpinn_subdomains_z':'Number of overlapping FBPINN subdomains along the z axis (1–32). Active on 3D domains only.',
+ 'fbpinn_subdomains_t':'Number of overlapping FBPINN subdomains along physical time t (1–32). Active on space–time domains only.',
+ 'fbpinn_overlap':'Overlap width factor w (1.05–3.0) relative to each cell width. Values strictly greater than 1 ensure positive partition-of-unity coverage across every interior point, edge and corner; larger overlap widens transition zones and raises per-subdomain overlap compute.',
+ 'fbpinn_window':'Partition-of-unity window family. cosine_sq (default) is compactly supported and C2 continuous everywhere for exact 2nd-order PDE derivatives; smooth_sigmoid (Moseley et al. Eq. 11) is C-infinity smooth for arbitrary derivative orders; cosine is classic C1 compact support (rejected for 3rd/4th-order PDEs).',
+ 'fbpinn_window_sigma':'Transition softness for smooth_sigmoid windows (0.01–0.5). Smaller values sharpen transitions toward the subdomain box edges; ignored by compact cosine windows.',
+ 'fbpinn_multilevel':'Add a Level-0 global coarse network spanning the entire domain alongside the fine overlapping subdomains (Dolean et al. 2024). Improves global elliptic coupling across many subdomains; requires at least 2 fine subdomains and simultaneous training.',
+ 'fbpinn_schedule':'Training schedule for subdomain activation. Simultaneous trains all subdomains together. Progressive advances an active frontier of subdomains along one coordinate axis (Moseley et al. 2023 Section 2.2); incompatible with multilevel coarse-to-fine mode.',
+ 'fbpinn_schedule_axis':'Axis along which progressive marching advances (auto selects physical time t if present with at least 2 slices, otherwise the first decomposed axis). Ignored in simultaneous mode.',
+ 'fbpinn_active_steps':'Adam updates spent per progressive slice before advancing the active frontier along the schedule axis. Ignored in simultaneous mode.',
+ 'fbpinn_freeze_completed':'In progressive mode, freeze weights of trailing slices behind the active frontier while preserving exact coordinate derivatives through overlap zones. Uncheck to keep reached slices jointly trainable.',
+})

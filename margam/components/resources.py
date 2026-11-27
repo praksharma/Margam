@@ -48,6 +48,10 @@ def architecture_size(config):
         linear(width,out)
     else:raise ValueError('No resource arithmetic for this architecture.')
     if config.method=='inverse_burgers':parameters+=2
+    if config.method=='fbpinn':
+        from .fbpinn_config import total_networks,total_subdomains
+        n_nets=total_networks(config);n_sub=total_subdomains(config);d_st=len(getattr(config,'spatial_time_bounds',config.bounds)[0])
+        parameters*=n_nets;buffers=buffers*n_nets+n_sub*(4*d_st+1)
     return dict(parameters=parameters,buffer_elements=buffers,expanded_inputs=expanded)
 
 
@@ -139,6 +143,7 @@ def report_text(config,report):
     if config.method=='expert':lines.append('Expert balancing/NTK workspace and retained time-window teachers add memory beyond the subtotal.')
     if config.method=='self_adaptive':lines.append('SA-PINN point masks and their optimizer state add memory beyond the network subtotal.')
     if config.method=='gpinn':lines.append('gPINN differentiates residuals again; derivative graphs can dominate network storage.')
+    if config.method=='fbpinn':lines.append('FBPINN multiplies network weights/Adam moments by the total number of subdomain (and optional coarse) networks. Compact windows evaluate only active support points per subdomain.')
     lines+=['WARNING: '+warning for warning in report['warnings']]
     lines+=['This review does not reserve memory, run a probe or guarantee that training fits. Resource advice never changes samples, architecture or precision automatically.']
     return '\n'.join(lines)

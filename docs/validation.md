@@ -2047,3 +2047,21 @@ working snapshots and teacher device copies. Source/generator/image and archive
 identities match; the model, source file and parent RNG stay unchanged.
 The manual checks 90 rendered pages. CUDA audit discovery selects 52 cases; the
 complete audit was not rerun. No real memory exhaustion was induced.
+
+
+## Finite Basis PINN (FBPINN) verification
+
+`tests/test_fbpinn.py` and `tests/test_fbpinn_ui.py` verify FBPINN configuration
+validation and explicit rejections, multiplied resource accounting, exact
+single-subdomain equivalence to baseline `PINN`, partition-of-unity sum unity
+and finite-difference vs autograd 1st/2nd derivatives strictly on compact support
+edges, vectorized batched FCNN vs sequential forward parity (`atol=1e-12`),
+progressive marching weight freezing while preserving overlap coordinate
+derivatives, 1D multiscale accuracy beating baseline at equal budget, multi-domain
+support (`Interval`, `Rectangle`, `SpaceTime1D`, `Box3D`, `SphereObstacle3D`,
+steady 2D flow `u/v/p`, continuous `parametric_axes`), exact CPU and CUDA
+checkpoint continuation with atomic rollback on malformed states, lazy `torch`
+desktop import, compact↔expanded recipe equivalence, model format 35→36 migration,
+Run Summary, validation report, settings search, subdomain diagnostics and run
+archive persistence. See [the FBPINN guide](fbpinn.md) and
+[fbpinn-multiscale-cuda.json](../assets/benchmarks/fbpinn-multiscale-cuda.json).

@@ -868,3 +868,18 @@ linked diagnostics, recovery and owned data remain the supported workflows.
   `parametric_poisson_2d` example under `File → Examples → Parametric examples`,
   live debounced background-thread sliders and response-curve sweeping in Solution
   Explorer, and the `margam.visualization.explore(...)` research bridge.
+
+## Finite Basis PINN (FBPINN) domain decomposition
+
+- [x] Add independent PyTorch `FiniteBasisNetwork` and `FiniteBasisPINN` trainer
+  (`margam/methods/fbpinn.py`, `margam/components/fbpinn_config.py`,
+  `margam/recipes/fbpinn.py`) supporting overlapping $C^2$ (`cosine_sq`),
+  $C^\infty$ (`smooth_sigmoid`) and $C^1$ (`cosine`) partition-of-unity windows,
+  clipped per-subdomain local normalization, optional 2-level coarse-to-fine
+  multilevel hierarchy (Dolean et al. 2024), and optional progressive active-subdomain
+  marching with frozen trailing weights preserving overlap derivatives (Moseley et al. 2023).
+- [x] Integrate `fbpinn_recipe` and `fbpinn_method` across built-in 1D/2D/3D,
+  space–time, sphere-obstacle, continuous parametric and steady 2D flow domains,
+  model format 36 with `< 36` migration, strict checkpoint validation with atomic
+  rollback, multiplied resource accounting, `File → Examples → FBPINN examples`,
+  subdomain diagnostics, reproducible equal-budget benchmarks, and `docs/fbpinn.md`.

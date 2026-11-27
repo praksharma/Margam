@@ -46,6 +46,12 @@ def execution_plan(window):
     if config.physics=='incompressible_2d':text+=['Residuals: '+ ' ; '.join(config.flow_residuals)]
     elif config.pde_expression:text+=['Residual: '+config.pde_expression]
     if config.method=='dsgnar':text+=['DSGNAR controls: '+json.dumps(config.dsgnar_settings),'Minimum radius can stop before the attempt budget. No Adam update; fixed samples and adaptive condition weights.']
+    if config.method=='fbpinn':
+        from ..components.fbpinn_config import active_subdomain_counts,spatial_time_axes,total_subdomains,total_networks
+        grid=' × '.join(f'{n} ({ax})' for ax,n in zip(spatial_time_axes(config),active_subdomain_counts(config)))
+        s=config.fbpinn_settings
+        text+=[f'FBPINN decomposition: {grid} = {total_subdomains(config)} fine subdomains ({total_networks(config)} networks total); overlap {s["overlap"]:g}; window {s["window"]}'+(f' (sigma={s["window_sigma"]:g})' if s['window']=='smooth_sigmoid' else '')+('; 2-level coarse-to-fine' if s['multilevel'] else '; single-level'),
+               f'FBPINN schedule: {s["schedule"]}'+(f' along {s["schedule_axis"]} every {s["active_steps"]} updates (freeze completed={s["freeze_completed"]})' if s['schedule']=='progressive' else '')]
     if config.method=='gpinn':text+=['Residual-gradient coefficients: '+json.dumps(config.gpinn_weights)]
     if config.method=='self_adaptive':text +=[f'Mask Adam ascent rate: {config.sa_lr:g}']
     if windows>1:text +=[f'Time marching: {windows} windows × {config.expert_settings["window_steps"]} updates; counts above are for the first window.']

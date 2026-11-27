@@ -66,7 +66,7 @@ def validate_run(data):
             previous=row[0]
     checkpoint=data['checkpoint']
     if checkpoint is not None:
-        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','weights','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba','inverse','dsgnar'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
+        require(isinstance(checkpoint,dict) and {'network','optimiser','iter','loss_history','training_history'}<=set(checkpoint)<={'network','optimiser','data_fingerprint','iter','loss_history','training_history','weights','adaptive','network_spec','lra','sampling','loss_formulation','expert','marching','scale','gpinn','rba','inverse','dsgnar','fbpinn'} and checkpoint['iter']==steps,'Invalid checkpoint metadata.')
         require(('loss_formulation' in checkpoint)==(config.loss_formulation=='integral'),'Checkpoint loss formulation/config mismatch.')
         require(('sampling' in checkpoint)==bool(config.adaptive_sampling),'Checkpoint sampler/config mismatch.')
         require(('marching' in checkpoint)==(config.method=='expert' and config.expert_settings['windows']>1),'Checkpoint time marching/config mismatch.')
@@ -76,8 +76,12 @@ def validate_run(data):
             from ..components.dsgnar_state import validate_state
             from dataclasses import asdict
             description=asdict(config)
-            for key in ('iterations','device'):description.pop(key,None)
+            for key in ('iterations','device','fbpinn_settings'):description.pop(key,None)
             validate_state(checkpoint,config.dsgnar_settings,config.loss_weights,description)
+        require(('fbpinn' in checkpoint)==(config.method=='fbpinn'),'Checkpoint FBPINN method/state mismatch.')
+        if config.method=='fbpinn':
+            payload=checkpoint['fbpinn']
+            require(isinstance(payload,dict) and set(payload)=={'version','signature','subdomain_state'} and payload['version']==1 and isinstance(payload['subdomain_state'],list) and 1<=len(payload['subdomain_state'])<=64 and all(type(v) is int and v in (0,1,2) for v in payload['subdomain_state']),'Invalid FBPINN checkpoint metadata.')
         require(('rba' in checkpoint)==(config.method=='rba'),'Checkpoint RBA method/state mismatch.')
         if config.method=='rba':
             import torch
@@ -170,7 +174,7 @@ def load_run(path):
     from copy import deepcopy
     temp_workspace=archive_workspace(data) if data.get('owned_files') else None
     try:
-        if data['checkpoint'] is not None and config.method in ('expert','scale','dsgnar'):
+        if data['checkpoint'] is not None and config.method in ('expert','scale','dsgnar','fbpinn'):
             from ..templates.poisson import build_pinn
             run_cfg=temp_workspace.resolve_config(deepcopy(config),create=False) if temp_workspace is not None else deepcopy(config)
             run_cfg.device='cpu'

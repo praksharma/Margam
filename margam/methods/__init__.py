@@ -14,6 +14,8 @@ _EXPORTS = {
     'ResidualAttentionPINN': '.rba',
     'InverseBurgersPINN': '.inverse_burgers',
     'DSGNARPINN': '.dsgnar',
+    'FiniteBasisNetwork': '.fbpinn',
+    'FiniteBasisPINN': '.fbpinn',
 }
 
 __all__ = (
@@ -28,11 +30,14 @@ __all__ = (
     'ResidualAttentionPINN',
     'InverseBurgersPINN',
     'DSGNARPINN',
+    'FiniteBasisNetwork',
+    'FiniteBasisPINN',
 )
 
 if TYPE_CHECKING:
     from .dsgnar import DSGNARPINN
     from .expert import ExpertPINN
+    from .fbpinn import FiniteBasisNetwork, FiniteBasisPINN
     from .gpinn import GradientEnhancedPINN
     from .hard_dirichlet import HardDirichletPINN
     from .inverse_burgers import InverseBurgersPINN

@@ -1,5 +1,6 @@
 """Editable Poisson template; method-specific training remains in methods/pinn.py."""
 from ..components.dsgnar_config import dsgnar_defaults
+from ..components.fbpinn_config import fbpinn_defaults
 from dataclasses import dataclass, field
 import math
 import json
@@ -113,6 +114,7 @@ class PoissonConfig:
     network_seed: int | None = None
     inverse_settings: dict = field(default_factory=lambda:dict(lambda_1=0.,log_lambda_2=-6.))
     dsgnar_settings: dict = field(default_factory=dsgnar_defaults)
+    fbpinn_settings: dict = field(default_factory=fbpinn_defaults)
     method: str = 'baseline'
     expert_settings: dict = field(default_factory=expert_defaults)
     physics: str = 'scalar'
@@ -342,9 +344,12 @@ class PoissonConfig:
         from ..components.dsgnar_config import validate_dsgnar_settings,validate_dsgnar_problem
         validate_dsgnar_settings(self.dsgnar_settings)
         if self.method=='dsgnar':validate_dsgnar_problem(self)
-        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar'):raise ValueError('Unknown PINN method.')
+        from ..components.fbpinn_config import validate_fbpinn_settings,validate_fbpinn_problem
+        validate_fbpinn_settings(self.fbpinn_settings)
+        if self.method=='fbpinn':validate_fbpinn_problem(self)
+        if self.method not in ('baseline','hard_dirichlet','self_adaptive','lra','expert','scale','gpinn','rba','inverse_burgers','dsgnar','fbpinn'):raise ValueError('Unknown PINN method.')
         if self.parametric_axes and (self.physics!='scalar' or self.is_paper_case or self.pde_preset in ('kdv_1d','wave_1d') or self.method in ('expert','scale','dsgnar','inverse_burgers')):
-            raise ValueError('Continuous parametric axes currently support scalar PDEs with baseline, hard Dirichlet, self-adaptive, LRA, or RBA trainers.')
+            raise ValueError('Continuous parametric axes currently support scalar PDEs with baseline, hard Dirichlet, self-adaptive, LRA, RBA, or FBPINN trainers.')
         if self.method=='hard_dirichlet' and (self.shape=='SphereObstacle3D' or self.boundary_data or any(self.bc_targets.values()) or any(self.bc_types.get(s,'Dirichlet')!='Dirichlet' for s in self.sides) or len({self.bc_values.get(s,0.) for s in self.sides})!=1):raise ValueError('Hard Dirichlet requires equal constant Dirichlet values on all built-in box sides.')
         if self.network_seed is not None and (type(self.network_seed) is not int or not 0<=self.network_seed<2**31):raise ValueError('Network seed must be a non-negative 32-bit integer.')
         if type(self.iterations) is not int or not 1 <= self.iterations <= 100000:
@@ -528,6 +533,16 @@ def build_pinn(config,*,initial_teacher=None,time_origin=None):
             model=_build_pinn(baseline)
         finally:torch.set_default_dtype(previous_dtype)
         return DSGNARPINN(model.problem,model.network,weights=config.loss_weights,settings=config.dsgnar_settings,configuration=asdict(config)).compile(lr=config.lr,device=config.device)
+    if config.method=='fbpinn':
+        from copy import deepcopy
+        from dataclasses import asdict
+        from ..components.fbpinn_config import spatial_time_axes
+        from ..methods.fbpinn import FiniteBasisPINN
+        from ..nn.factory import build_network
+        baseline=deepcopy(config);baseline.method='baseline'
+        model=_build_pinn(baseline)
+        network=build_network(config)
+        return FiniteBasisPINN(model.problem,network,settings=config.fbpinn_settings,axes=spatial_time_axes(config),weights=config.loss_weights,configuration=asdict(config)).compile(lr=config.lr,device=config.device)
     if config.method=='scale':
         from copy import deepcopy
         from ..methods.scale import ScalePINN

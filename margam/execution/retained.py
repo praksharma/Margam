@@ -35,7 +35,8 @@ class RetainedModel:
         # asynchronous worker. Research code uses actual margam.research trainers.
         import torch
         from .transport import JobTransport
+        dtype=next((v.dtype for v in self._checkpoint['network'].values() if v.is_floating_point()),torch.get_default_dtype())
         payload=dict(operation='predict',config=encode_config(self.config),checkpoint=self.training_state(),requests=[],
-            dtype=str(next(iter(self._checkpoint['network'].values())).dtype).removeprefix('torch.'),
-            points=torch.as_tensor(points,dtype=next(iter(self._checkpoint['network'].values())).dtype).detach().cpu(),metadata=self.metadata)
+            dtype=str(dtype).removeprefix('torch.'),
+            points=torch.as_tensor(points,dtype=dtype).detach().cpu(),metadata=self.metadata)
         return JobTransport().run(payload)['result']['prediction']

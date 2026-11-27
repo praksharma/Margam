@@ -14,7 +14,7 @@ class ExampleTests(unittest.TestCase):
         torch.set_num_threads(1)
         for key, example in EXAMPLE_PROBLEMS.items():
             with self.subTest(example=key):
-                if not example.reference or key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale') or key.startswith(('expert_','scale_','gpinn_','rba_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
+                if not example.reference or key in ('burgers_1d','dsgnar_burgers','dsgnar_cavity','dsgnar_wave','dsgnar_multiscale') or key.startswith(('expert_','scale_','gpinn_','rba_','fbpinn_')):continue # Dedicated transient residual/IC tests; no manufactured exact profile.
                 config=example_config(key)
                 model=build_pinn(config)
                 dimensions=len(config.bounds[0])
@@ -61,7 +61,7 @@ assert w.burgers_reference_action in w.examples_1d_menu.actions()
 from margam.templates.examples import example_config
 for key,action in w.example_actions.items():
     ex_cfg=example_config(key)
-    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_parametric_menu if ex_cfg.parametric_axes else w.examples_3d_menu if ex_cfg.is_3d else w.examples_1d_menu if ex_cfg.shape in ('Interval','SpaceTime1D') else w.examples_menu
+    expected=w.dsgnar_examples_menu if key.startswith('dsgnar_') else w.fbpinn_examples_menu if key.startswith('fbpinn_') else w.rba_examples_menu if key.startswith('rba_') else w.gpinn_examples_menu if key.startswith('gpinn_') else w.scale_examples_menu if key.startswith('scale_') else w.expert_examples_menu if key.startswith('expert_') else w.examples_parametric_menu if ex_cfg.parametric_axes else w.examples_3d_menu if ex_cfg.is_3d else w.examples_1d_menu if ex_cfg.shape in ('Interval','SpaceTime1D') else w.examples_menu
     assert action in expected.actions()
     if expected in (w.examples_1d_menu,w.examples_3d_menu,w.examples_parametric_menu):assert action not in w.examples_menu.actions()
 assert all(a.text().startswith('2D ') for a in (w.load_action,w.heat_action,w.flow_action))

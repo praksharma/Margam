@@ -14,9 +14,12 @@ def validate_state(state,settings,initial_weights,configuration=None):
     require(isinstance(payload,dict) and set(payload)==fields and type(payload['version']) is int and payload['version']==1)
     payload=deepcopy(payload)
     if isinstance(payload.get('settings'),dict):payload['settings'].setdefault('stage_grace',0)
-    if isinstance(payload.get('configuration'),dict) and isinstance(payload['configuration'].get('dsgnar_settings'),dict):payload['configuration']['dsgnar_settings'].setdefault('stage_grace',0)
-    if isinstance(configuration,dict) and isinstance(configuration.get('dsgnar_settings'),dict):
-        configuration=deepcopy(configuration);configuration['dsgnar_settings'].setdefault('stage_grace',0)
+    if isinstance(payload.get('configuration'),dict):
+        payload['configuration'].pop('fbpinn_settings',None)
+        if isinstance(payload['configuration'].get('dsgnar_settings'),dict):payload['configuration']['dsgnar_settings'].setdefault('stage_grace',0)
+    if isinstance(configuration,dict):
+        configuration=deepcopy(configuration);configuration.pop('fbpinn_settings',None)
+        if isinstance(configuration.get('dsgnar_settings'),dict):configuration['dsgnar_settings'].setdefault('stage_grace',0)
     validate_dsgnar_settings(payload['settings'])
     require(payload['settings']==settings and payload['initial_weights']==initial_weights,'DSGNAR settings/initial coefficients differ from this checkpoint.')
     if configuration is not None:require(payload['configuration']==configuration,'DSGNAR physics/configuration differs from this checkpoint.')

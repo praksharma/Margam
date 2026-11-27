@@ -99,3 +99,5 @@ def icon(name):return QIcon(GlyphEngine(name))
 
 PATHS['dsgnar_recipe']='M3 3h18v18H3z M6 16l4-8 4 8 4-8 M6 19h12'
 PATHS['dsgnar_method']=PATHS['dsgnar_recipe']
+PATHS['fbpinn_recipe']='M3 3h11v11H3z M10 10h11v11H10z'
+PATHS['fbpinn_method']=PATHS['fbpinn_recipe']

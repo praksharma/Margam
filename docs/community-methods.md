@@ -20,6 +20,7 @@ composition, implementation differences and validation evidence.
 | Residual derivatives | Yu, Lu, Meng and Karniadakis; [gPINN](gpinn.md) |
 | Residual-based attention | Anagnostopoulos and colleagues; [RBA](rba-pinn.md) |
 | Inverse coefficient identification | Raissi, Perdikaris and Karniadakis; [inverse Burgers](inverse-burgers.md) |
+| Finite Basis domain decomposition | Moseley, Markham and Nissen-Meyer; Dolean, Heinlein, Mishra and Moseley; [FBPINN](fbpinn.md) |
 | 3D turbulence & PirateNet / SOAP | Wang, Sankaran, Fan, Stinis and Perdikaris; [3D sphere flow & JAXPI2](sphere-turbulence.md) |
 
 ## Inverse Burgers
@@ -68,6 +69,21 @@ Independent PyTorch implementation from Webb, Jerad and Cartis,
 [DSGNAR guide](dsgnar.md) records the inspected repository revision, algorithm
 ambiguities, implementation choices and validation scope. No upstream code/data
 is copied; the reference checkout has no declared top-level source licence.
+
+
+## Finite Basis PINN (FBPINN)
+
+Independent PyTorch implementation of overlapping partition-of-unity domain
+decomposition and active-subdomain marching from Moseley, Markham and
+Nissen-Meyer, *Advances in Computational Mathematics* **49**, 62 (2023),
+[arXiv:2107.07871](https://arxiv.org/abs/2107.07871), together with the optional
+two-level coarse-to-fine multilevel hierarchy from Dolean, Heinlein, Mishra and
+Moseley, *Computer Methods in Applied Mechanics and Engineering* **429**, 117116
+(2024), [arXiv:2306.05486](https://arxiv.org/abs/2306.05486). No upstream JAX
+code or datasets are copied. The [FBPINN guide](fbpinn.md) documents the default
+$C^2$ squared raised-cosine window alongside paper sigmoid ($C^\infty$) and
+raised-cosine ($C^1$) windows, boundary handling, progressive freezing rules and
+measured equal-budget benchmarks.
 
 
 ## Burgers reference quadrature
