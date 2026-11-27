@@ -243,9 +243,10 @@ def _load_npz(path: Path) -> SolutionDataset:
         if not cols:
             raise ValueError("NPZ file must contain a 'points' array or coordinate arrays ('x', 'y', 'z', 't').")
         # If coordinate arrays are 1D axes of a regular meshgrid, expand when axes differ in length
-        # OR when candidate field arrays match the Cartesian product shape (including square/cubic grids).
+        # OR when candidate field arrays indicate a Cartesian grid (and not paired 1D / packed (N, C) rows).
         lengths = tuple(int(c.size) for c in cols)
         expand_grid = False
+        packed_keys = {"values", "pred", "prediction", "fields", "reference", "ref", "truth"}
         if all(c.ndim == 1 for c in cols) and len(cols) > 1:
             if len(set(lengths)) > 1:
                 expand_grid = True
@@ -253,19 +254,22 @@ def _load_npz(path: Path) -> SolutionDataset:
                 import math
                 prod_len = math.prod(lengths)
                 single_len = lengths[0]
-                packed_keys = {"values", "pred", "prediction", "fields", "reference", "ref", "truth"}
+                has_grid_evidence = False
+                has_paired_evidence = False
                 for k, arr in arrays.items():
                     if k in used or arr.dtype.kind not in ("f", "i", "u"):
                         continue
-                    if arr.shape == lengths and (len(cols) >= 3 or k not in packed_keys):
-                        expand_grid = True
-                        break
-                    if arr.ndim == len(cols) + 1 and arr.shape[: len(cols)] == lengths:
-                        expand_grid = True
-                        break
-                    if prod_len != single_len and arr.size == prod_len:
-                        expand_grid = True
-                        break
+                    if arr.ndim == 1 and arr.size == single_len:
+                        has_paired_evidence = True
+                    elif k in packed_keys and arr.ndim == 2 and arr.shape[0] == single_len:
+                        has_paired_evidence = True
+                    elif k not in packed_keys and arr.shape == lengths:
+                        has_grid_evidence = True
+                    elif arr.ndim == len(cols) + 1 and arr.shape[: len(cols)] == lengths:
+                        has_grid_evidence = True
+                    elif k not in packed_keys and arr.ndim == 1 and prod_len != single_len and arr.size == prod_len:
+                        has_grid_evidence = True
+                expand_grid = has_grid_evidence and not has_paired_evidence
         if expand_grid:
             mesh = np.meshgrid(*cols, indexing="ij")
             pts = np.column_stack([m.reshape(-1) for m in mesh])
@@ -275,9 +279,35 @@ def _load_npz(path: Path) -> SolutionDataset:
     n = len(pts)
     fields: dict[str, np.ndarray] = {}
     references: dict[str, np.ndarray] = {}
+    packed_field_keys = {"values", "pred", "prediction", "fields"}
+    packed_ref_keys = {"reference", "ref", "truth"}
     for k, arr in arrays.items():
         if k in used or arr.dtype.kind not in ("f", "i", "u"):
             continue
+        if k in packed_field_keys | packed_ref_keys and arr.ndim >= 2:
+            if arr.ndim == 2 and arr.shape[0] == n:
+                matrix = arr.astype(np.float64)
+            elif arr.size == n * arr.shape[-1] and arr.shape[-1] >= 1:
+                matrix = arr.astype(np.float64).reshape(n, arr.shape[-1])
+            else:
+                matrix = None
+            if matrix is not None:
+                c_count = matrix.shape[1]
+                default_names = (
+                    ("u", "v", "w", "p")
+                    if c_count == 4
+                    else ("u", "v", "p")
+                    if c_count == 3
+                    else ("u", "v")
+                    if c_count == 2
+                    else ("u",)
+                    if c_count == 1
+                    else tuple(f"f{i}" for i in range(c_count))
+                )
+                target_map = fields if k in packed_field_keys else references
+                for idx in range(c_count):
+                    target_map[default_names[idx] if idx < len(default_names) else f"f{idx}"] = matrix[:, idx]
+                continue
         if arr.size == n:
             flat = arr.astype(np.float64).reshape(-1)
             if k.startswith("ref_"):
@@ -288,15 +318,6 @@ def _load_npz(path: Path) -> SolutionDataset:
                 references[k[:-4]] = flat
             elif not k.startswith("error"):
                 fields[k] = flat
-        elif arr.ndim == 2 and arr.shape[0] == n:
-            if k in ("values", "pred", "prediction", "fields"):
-                default_names = ("u", "v", "w", "p") if arr.shape[1] == 4 else ("u", "v", "p") if arr.shape[1] == 3 else tuple(f"f{i}" for i in range(arr.shape[1]))
-                for idx in range(arr.shape[1]):
-                    fields[default_names[idx] if idx < len(default_names) else f"f{idx}"] = arr[:, idx].astype(np.float64)
-            elif k in ("reference", "ref", "truth"):
-                default_names = ("u", "v", "w", "p") if arr.shape[1] == 4 else ("u", "v", "p") if arr.shape[1] == 3 else tuple(f"f{i}" for i in range(arr.shape[1]))
-                for idx in range(arr.shape[1]):
-                    references[default_names[idx] if idx < len(default_names) else f"f{idx}"] = arr[:, idx].astype(np.float64)
 
     if not fields:
         raise ValueError("NPZ file contains no field arrays matching the coordinate point count.")

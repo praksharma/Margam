@@ -951,6 +951,12 @@ class SolutionExplorerWindow(QMainWindow):
             _ACTIVE_CLOSING_EXPLORERS.discard(self)
             self._live_param_pending = None
             self.close()
+            self.deleteLater()
+            app = QApplication.instance()
+            if app is not None and app.quitOnLastWindowClosed():
+                other_visible = any(w is not self and w.isVisible() for w in app.topLevelWidgets())
+                if not other_visible and not _ACTIVE_CLOSING_EXPLORERS:
+                    app.quit()
             return
         if self._live_param_pending is not None:
             pending = self._live_param_pending

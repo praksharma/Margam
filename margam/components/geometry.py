@@ -97,33 +97,99 @@ def fluid_spatial_measure(config) -> float:
 
 
 def sample_fluid_box(lower, upper, count: int, method: str, seed: int, obstacle: dict | None = None) -> list[list[float]]:
-    """Sample up to ``count`` points strictly in the fluid region of a bounding box."""
+    """Sample up to ``count`` points strictly in the fluid region of a bounding box.
+
+    Structured lattices (``grid``) return complete symmetric layers covering the
+    entire bounding box rather than truncating lexicographically ordered rows.
+    ``hammersley`` and ``stratified`` keep full-domain coverage by uniformly
+    subsampling across the entire sequence if oversampling exceeds ``count``.
+    ``random`` uses deterministic i.i.d. rejection sampling up to ``count``.
+    """
     if not obstacle:
         return sample_box(lower, upper, count, method, seed)
     if count <= 0:
         return []
-    # Estimate obstacle fraction so rejection sampling usually fills count in one pass.
+    dim = len(lower)
+    # Estimate obstacle fraction so rejection sampling targets count accurately.
     box_vol = 1.0
     obs_vol = 0.0
-    if obstacle.get('kind') == 'sphere' and len(lower) >= 3:
+    if obstacle.get('kind') == 'sphere' and dim >= 3:
         box_vol = max(1e-12, (upper[0] - lower[0]) * (upper[1] - lower[1]) * (upper[2] - lower[2]))
         obs_vol = (4.0 / 3.0) * math.pi * (float(obstacle['radius']) ** 3)
-    elif obstacle.get('kind') == 'cylinder' and len(lower) >= 2:
+    elif obstacle.get('kind') == 'cylinder' and dim >= 2:
         box_vol = max(1e-12, (upper[0] - lower[0]) * (upper[1] - lower[1]))
         obs_vol = math.pi * (float(obstacle['radius']) ** 2)
     fluid_frac = max(0.05, min(1.0, 1.0 - obs_vol / box_vol))
+
+    if method == 'grid':
+        # Choose the largest complete symmetric per-axis grid side whose fluid count <= count.
+        max_side = 1
+        while (max_side + 1) ** dim <= 100000:
+            max_side += 1
+        est_total = min(100000, max(count, int(math.ceil(count / fluid_frac))))
+        est_side = max(1, min(max_side, int(round(est_total ** (1.0 / dim)))))
+
+        def _grid_fluid(side: int) -> list[list[float]]:
+            raw = sample_box(lower, upper, side ** dim, 'grid', seed)
+            mask = fluid_mask(raw, obstacle, strict_interior=True)
+            return [row for row, keep in zip(raw, mask) if keep]
+
+        best_rows: list[list[float]] = []
+        side = est_side
+        rows = _grid_fluid(side)
+        if len(rows) <= count:
+            best_rows = rows
+            while side < max_side:
+                cand = _grid_fluid(side + 1)
+                if len(cand) > count:
+                    break
+                best_rows = cand
+                side += 1
+        else:
+            while side > 1:
+                side -= 1
+                cand = _grid_fluid(side)
+                if len(cand) <= count:
+                    best_rows = cand
+                    break
+        if not best_rows:
+            # Tiny count where even the smallest non-empty grid exceeds count: subsample uniformly across the full grid.
+            for probe_side in range(2, max_side + 1):
+                cand = _grid_fluid(probe_side)
+                if cand:
+                    if len(cand) <= count:
+                        best_rows = cand
+                    else:
+                        indices = [int(i * len(cand) / count) for i in range(count)]
+                        best_rows = [cand[idx] for idx in indices]
+                    break
+        if not best_rows:
+            raise ValueError('No interior points remained outside the solid obstacle; increase point budget or shrink the obstacle.')
+        return best_rows
+
+    if method in ('hammersley', 'stratified'):
+        oversample = min(100000, max(count, int(math.ceil(count / fluid_frac * 1.15))))
+        raw = sample_box(lower, upper, oversample, method, seed)
+        mask = fluid_mask(raw, obstacle, strict_interior=True)
+        fluid_rows = [row for row, keep in zip(raw, mask) if keep]
+        if not fluid_rows:
+            raise ValueError('No interior points remained outside the solid obstacle; increase point budget or shrink the obstacle.')
+        if len(fluid_rows) > count:
+            # Uniformly stride across the full ordered/stratified sequence so no region of the box is dropped.
+            indices = [int(i * len(fluid_rows) / count) for i in range(count)]
+            return [fluid_rows[idx] for idx in indices]
+        return fluid_rows
+
+    # Uniform random: i.i.d. rejection sampling fills exact count with uniform fluid coverage.
     oversample = min(100000, max(count, int(math.ceil(count / fluid_frac * 1.25))))
     collected: list[list[float]] = []
-    # For structured/grid/hammersley/stratified initial draws, use the requested method on attempt 0,
-    # then deterministic random retries only if needed to reach count for random sampling.
-    max_attempts = 8 if method == 'random' else 1
-    for attempt in range(max_attempts):
+    for attempt in range(8):
         need = count - len(collected)
         if need <= 0:
             break
         batch_n = oversample if attempt == 0 else min(100000, max(need, int(math.ceil(need / fluid_frac * 1.5))))
         attempt_seed = (int(seed) + attempt * 104729) % (2 ** 31)
-        raw = sample_box(lower, upper, batch_n, method if attempt == 0 else 'random', attempt_seed)
+        raw = sample_box(lower, upper, batch_n, 'random', attempt_seed)
         if not raw:
             continue
         mask = fluid_mask(raw, obstacle, strict_interior=True)
